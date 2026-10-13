@@ -16,7 +16,6 @@ import {
   useCreatePathway,
   useUpdatePathway,
   useDeletePathway,
-  useImportPathway,
   useAgeCategories,
   useCreateAgeCategory,
   useUpdateAgeCategory,
@@ -515,56 +514,22 @@ function StepIndicator({ current }) {
 
 /* ── PathwaysPanel ─────────────────────────────────────────────────── */
 
-function ImportPathwayDropdown({ available, onImport, isPending }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+// A pathway is stored as one record per Developmental Stage, and the records that share a name
+// within a curriculum are the same pathway (see CompetencyService.createPathway). This is the
+// key those records are grouped by.
+const pathwayKey = (name) => (name || "").trim().toLowerCase();
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
-
-  return (
-    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
-      <button type="button" className="cp-btn-secondary" onClick={() => setOpen((v) => !v)}>
-        Import Template
-      </button>
-      {open && (
-        <div className="cp-card-menu" style={{ minWidth: "260px", maxHeight: "320px", overflowY: "auto", right: 0 }}>
-          {available.length === 0 ? (
-            <div style={{ padding: "14px 12px", fontSize: "12px", color: "#9CA3AF", textAlign: "center" }}>
-              Nothing left to import — either the catalog is empty or every entry is already added here.
-            </div>
-          ) : (
-            available.map((area) => (
-              <button
-                key={area.id}
-                type="button"
-                className="cp-card-menu-item"
-                disabled={isPending}
-                onClick={() => { onImport(area.id); setOpen(false); }}
-              >
-                {area.name}
-              </button>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+const stageAgeLabel = (stage) =>
+  stage.minAge != null || stage.maxAge != null ? `Ages ${stage.minAge ?? "0"}-${stage.maxAge ?? "∞"}` : "";
 
 function PathwaysPanel({ curriculumId }) {
   const { data: areas = [], isLoading, isError } = usePathways(curriculumId);
   const { mutate: create, isPending: creating } = useCreatePathway(curriculumId);
   const { mutate: update, isPending: updating } = useUpdatePathway(curriculumId);
   const { mutate: remove, isPending: deleting } = useDeletePathway(curriculumId);
+  const { mutateAsync: removeQuietly } = useDeletePathway(curriculumId, null);
   const { requestDelete, confirmDialog } = useConfirmDelete();
   const { data: catalogAreas = [] } = useCatalogPathways();
-  const { mutate: importArea, isPending: importing } = useImportPathway(curriculumId);
-  const { mutate: reorderCourses } = useReorderPathwayCourses(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const allCourses = coursesResponse?.data || [];
   const courseById = new Map(allCourses.map((c) => [c.id, c]));
@@ -573,124 +538,134 @@ function PathwaysPanel({ curriculumId }) {
   // them directly — see assessment-submission.controller.js's getOrCreateSubmission) — picking
   // one here as a diagnostic would auto-issue it to a learner who can never start it.
   const assessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
-  const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
   const queryClient = useQueryClient();
   // Adding to the Settings catalog needs Settings → Add; staff without it still save the
   // curriculum's own pathway, just without the catalog copy.
   const { can } = usePermissions();
   const canAddToCatalog = can("settings", "create");
-  const availableToImport = catalogAreas.filter(
-    (c) => !areas.some((a) => a.name.toLowerCase() === c.name.toLowerCase())
-  );
 
-  // A Pathway now belongs to exactly one Developmental Stage (same "belongs to one stage" shape
-  // Performance Bands already use) instead of its own independent age range — needs at least one
-  // stage defined before a pathway can be created.
-  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const { data: stageList = [] } = useAgeCategories(curriculumId);
+  const stages = [...stageList].sort(
+    (a, b) => (a.minAge ?? Infinity) - (b.minAge ?? Infinity) || a.name.localeCompare(b.name)
+  );
   const stageById = new Map(stages.map((s) => [s.id, s]));
   // All pathway-course bands across every pathway in this curriculum — fetched once here and
-  // filtered per-pathway below, same "one query, many consumers" shape usePerformanceBands
+  // filtered per stage below, same "one query, many consumers" shape usePerformanceBands
   // already has for Progress Arc's own stage ladders.
   const { data: allBands = [] } = usePerformanceBands(curriculumId);
 
+  const groupByKey = new Map();
+  for (const row of areas) {
+    const key = pathwayKey(row.name);
+    if (!groupByKey.has(key)) {
+      groupByKey.set(key, { key, name: row.name, description: row.description || "", color: row.color || "#25476a", rows: [] });
+    }
+    groupByKey.get(key).rows.push(row);
+  }
+  const groups = [...groupByKey.values()].sort((a, b) => a.name.localeCompare(b.name));
+
+  const [selectedKey, setSelectedKey] = useState("");
+  const selected = groupByKey.get(selectedKey) || groups[0] || null;
+
   const [showForm, setShowForm]   = useState(false);
-  const [editId,   setEditId]     = useState(null);
+  const [editKey,  setEditKey]    = useState(null);
   const [name,     setName]       = useState("");
   const [desc,     setDesc]       = useState("");
   const [color,    setColor]      = useState(AREA_COLORS[0]);
-  const [courses,  setCourses]    = useState([]);
-  const [ageCategoryId, setAgeCategoryId] = useState("");
-  const [diagnosticAssessmentId, setDiagnosticAssessmentId] = useState("");
-  const [publicDiagnosticEnabled, setPublicDiagnosticEnabled] = useState(false);
-  // Optional override: when set, the public website serves THIS assessment instead of
-  // diagnosticAssessmentId. Left blank, the public flow falls back to reusing the internal one —
-  // exactly today's single-assessment behavior, unchanged unless an admin explicitly picks one.
-  const [publicDiagnosticAssessmentId, setPublicDiagnosticAssessmentId] = useState("");
+  // Create only: start blank, or from one of the pathways defined in Settings → Pathways
+  // (prefills the form, which is then saved as this curriculum's own copy).
+  const [source, setSource] = useState("scratch");
+  const [templateId, setTemplateId] = useState("");
+  const [templateCourses, setTemplateCourses] = useState([]);
+  const [templateStageId, setTemplateStageId] = useState("");
   const nameRef = useRef(null);
-
-  // Quick diagnostic assign/change — separate from the create/edit form so it can be set
-  // directly from the card without opening full edit mode (see openDiagPicker/saveDiagPicker).
-  const [diagPickerAreaId, setDiagPickerAreaId] = useState(null);
-  const [diagPickerValue,  setDiagPickerValue]  = useState("");
-  // publicDiagnosticEnabled toggled alongside the assessment picker on the card — same
-  // "quick assign" flow, not the full edit form (see the form's own toggle below for create).
-  const [diagPickerPublic, setDiagPickerPublic] = useState(false);
-  const [diagPickerPublicValue, setDiagPickerPublicValue] = useState("");
-
-  function openDiagPicker(area) {
-    setDiagPickerAreaId(area.id);
-    setDiagPickerValue(area.diagnosticAssessmentId || "");
-    setDiagPickerPublic(!!area.publicDiagnosticEnabled);
-    setDiagPickerPublicValue(area.publicDiagnosticAssessmentId || "");
-  }
-  function closeDiagPicker() { setDiagPickerAreaId(null); }
-  function saveDiagPicker(area) {
-    update(
-      {
-        id: area.id,
-        data: {
-          diagnosticAssessmentId: diagPickerValue || null,
-          publicDiagnosticEnabled: diagPickerValue ? diagPickerPublic : false,
-          publicDiagnosticAssessmentId: diagPickerValue ? (diagPickerPublicValue || null) : null,
-        },
-      },
-      { onSuccess: closeDiagPicker }
-    );
-  }
-  function clearDiagnostic(area) {
-    update({ id: area.id, data: { diagnosticAssessmentId: null, publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null } });
-  }
 
   useEffect(() => { if (showForm) nameRef.current?.focus(); }, [showForm]);
 
   function openCreate() {
-    setEditId(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]); setCourses([]);
-    setAgeCategoryId(stages[0]?.id || ""); setDiagnosticAssessmentId(""); setPublicDiagnosticEnabled(false);
-    setPublicDiagnosticAssessmentId(""); setShowForm(true);
+    setEditKey(null); setName(""); setDesc(""); setColor(AREA_COLORS[0]);
+    setSource("scratch"); setTemplateId(""); setTemplateCourses([]); setTemplateStageId("");
+    setShowForm(true);
   }
-  function openEdit(area) {
-    setEditId(area.id); setName(area.name); setDesc(area.description || ""); setColor(area.color || AREA_COLORS[0]);
-    setCourses(area.courses || []);
-    setAgeCategoryId(area.ageCategoryId || ""); setDiagnosticAssessmentId(area.diagnosticAssessmentId || "");
-    setPublicDiagnosticEnabled(!!area.publicDiagnosticEnabled);
-    setPublicDiagnosticAssessmentId(area.publicDiagnosticAssessmentId || ""); setShowForm(true);
+  function chooseSource(next) {
+    if (next === source) return;
+    setSource(next); setTemplateId(""); setTemplateCourses([]); setTemplateStageId("");
+    setName(""); setDesc(""); setColor(AREA_COLORS[0]);
   }
-  function cancel() { setShowForm(false); setEditId(null); }
+  function chooseTemplate(id) {
+    setTemplateId(id);
+    const tpl = catalogAreas.find((c) => c.id === id);
+    setName(tpl?.name || ""); setDesc(tpl?.description || "");
+    setColor(tpl?.color || AREA_COLORS[0]); setTemplateCourses(tpl?.courses || []);
+  }
+  function openEdit(group) {
+    setEditKey(group.key); setName(group.name); setDesc(group.description); setColor(group.color);
+    setShowForm(true);
+  }
+  function cancel() { setShowForm(false); setEditKey(null); }
+
+  const nameTaken = !!name.trim() && pathwayKey(name) !== editKey && groupByKey.has(pathwayKey(name));
 
   function submit() {
-    if (!name.trim() || !ageCategoryId) return;
-    const data = {
-      name: name.trim(), description: desc.trim(), color, courses,
-      ageCategoryId,
-      diagnosticAssessmentId: diagnosticAssessmentId || null,
-      // Can only ever be true alongside an assessment — the checkbox is disabled without one
-      // (see the form below), but guard here too in case state gets out of sync.
-      publicDiagnosticEnabled: diagnosticAssessmentId ? publicDiagnosticEnabled : false,
-      publicDiagnosticAssessmentId: diagnosticAssessmentId ? (publicDiagnosticAssessmentId || null) : null,
-    };
-    if (editId) {
-      update({ id: editId, data }, { onSuccess: cancel });
-    } else {
-      // A brand-new pathway authored here should also become a reusable template so other
-      // curricula/courses/assessments can pick it up — but only if it's genuinely new;
-      // otherwise we'd mint a duplicate catalog entry alongside the existing one. Synced
-      // silently (no toast) since the curriculum-copy creation above already confirmed the save.
-      const existsInCatalog = catalogAreas.some((c) => c.name.toLowerCase() === data.name.toLowerCase());
-      create(data, {
-        onSuccess: () => {
-          if (!existsInCatalog && canAddToCatalog) {
-            pathwayTemplateApi.create(data).then(() => {
-              queryClient.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
-            }).catch(() => {});
-          }
-          cancel();
-        },
-      });
+    if (!name.trim() || nameTaken) return;
+    const details = { name: name.trim(), description: desc.trim(), color };
+    const done = () => { setSelectedKey(pathwayKey(details.name)); cancel(); };
+    if (editKey) {
+      // Name, description and colour are shared by every stage of the pathway — the server
+      // carries the change across them.
+      const group = groupByKey.get(editKey);
+      if (!group) return cancel();
+      update({ id: group.rows[0].id, data: details }, { onSuccess: done });
+      return;
     }
+    const data = {
+      ...details,
+      courses: templateCourses,
+      ageCategoryId: templateCourses.length > 0 && templateStageId ? templateStageId : null,
+    };
+    // A brand-new pathway authored here should also become a reusable template so other
+    // curricula/courses/assessments can pick it up — but only if it's genuinely new;
+    // otherwise we'd mint a duplicate catalog entry alongside the existing one. Synced
+    // silently (no toast) since the curriculum-copy creation above already confirmed the save.
+    const existsInCatalog = catalogAreas.some((c) => pathwayKey(c.name) === pathwayKey(data.name));
+    create(data, {
+      onSuccess: () => {
+        if (!existsInCatalog && canAddToCatalog) {
+          pathwayTemplateApi.create({ ...details, courses: [] }).then(() => {
+            queryClient.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
+          }).catch(() => {});
+        }
+        done();
+      },
+    });
+  }
+
+  function deleteGroup(group) {
+    requestDelete({
+      title: `Delete "${group.name}"?`,
+      message: "This pathway will be permanently removed from every developmental stage, along with its courses, advancement rules and diagnostic settings. This cannot be undone.",
+      onConfirm: async () => {
+        const [last, ...rest] = group.rows;
+        try {
+          await Promise.all(rest.map((r) => removeQuietly(r.id)));
+          remove(last.id);
+          setSelectedKey("");
+        } catch { /* the failed delete already reported itself */ }
+      },
+    });
   }
 
   if (isLoading) return <div className="cp-spinner" style={{ marginTop: "32px" }} />;
   if (isError) return <ErrorNotice message="Couldn't load Pathways — try refreshing the page." />;
+
+  // Records of the selected pathway that sit in no (current) stage — older pathways made before
+  // stages, or courses adopted automatically from a course's own pathway tag.
+  const unplacedRows = selected
+    ? selected.rows.filter((r) => !stageById.has(r.ageCategoryId) && ((r.courses || []).length > 0 || r.diagnosticAssessmentId))
+    : [];
+  const freeStages = selected
+    ? stages.filter((s) => !selected.rows.some((r) => r.ageCategoryId === s.id))
+    : [];
 
   return (
     <div className="cp-card">
@@ -699,21 +674,59 @@ function PathwaysPanel({ curriculumId }) {
         <div>
           <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0F2645" }}>Pathways</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {areas.length} pathway{areas.length !== 1 ? "s" : ""} — each a roadmap of courses a learner follows, with its own diagnostic and age range
+            {groups.length} pathway{groups.length !== 1 ? "s" : ""} — pick one to see its courses, advancement rules and diagnostic for each developmental stage
           </p>
         </div>
         {!showForm && (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <ImportPathwayDropdown available={availableToImport} onImport={importArea} isPending={importing} />
-            <button type="button" className="cp-btn-add" onClick={openCreate}>
-              + Add Pathway
-            </button>
-          </div>
+          <button type="button" className="cp-btn-add" onClick={openCreate}>
+            + Add Pathway
+          </button>
         )}
       </div>
 
       {showForm && (
         <div className="cp-form">
+          {!editKey && (
+            <div style={{ marginBottom: "12px" }}>
+              <div className="cp-arc-section-nav">
+                <button
+                  type="button" className={`cp-arc-section-btn${source === "scratch" ? " active" : ""}`}
+                  onClick={() => chooseSource("scratch")}
+                >
+                  Create from scratch
+                </button>
+                <button
+                  type="button" className={`cp-arc-section-btn${source === "template" ? " active" : ""}`}
+                  onClick={() => chooseSource("template")}
+                >
+                  Use a pathway from Settings
+                </button>
+              </div>
+              {source === "template" && (
+                catalogAreas.length === 0 ? (
+                  <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#9CA3AF" }}>
+                    No pathways in Settings yet — add one under Settings → Pathways, or create from scratch.
+                  </p>
+                ) : (
+                  <select
+                    className="cp-input" style={{ width: "100%", boxSizing: "border-box", marginTop: "8px" }}
+                    value={templateId}
+                    onChange={(e) => chooseTemplate(e.target.value)}
+                  >
+                    <option value="">Select a pathway…</option>
+                    {catalogAreas.map((c) => {
+                      const added = groupByKey.has(pathwayKey(c.name));
+                      return (
+                        <option key={c.id} value={c.id} disabled={added}>
+                          {c.name}{added ? " (already added)" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )
+              )}
+            </div>
+          )}
           <div className="cp-form-row">
             <input
               ref={nameRef}
@@ -724,6 +737,11 @@ function PathwaysPanel({ curriculumId }) {
               onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") cancel(); }}
             />
           </div>
+          {nameTaken && (
+            <p style={{ margin: "4px 0 8px", fontSize: "12px", color: "#DC2626" }}>
+              This curriculum already has a pathway with this name.
+            </p>
+          )}
           <RichTextEditorControlled value={desc} onChange={setDesc} size="md" />
           <div className="cp-swatches">
             {AREA_COLORS.map((c) => (
@@ -735,300 +753,363 @@ function PathwaysPanel({ curriculumId }) {
             ))}
           </div>
 
-          <div style={{ marginTop: "12px" }}>
-            <label className="cp-field-label">
-              Courses <span className="cp-optional">(optional)</span>
-              {courses.length > 0 && (
-                <span style={{ fontWeight: 400, color: "#9CA3AF" }}> · {courses.length} added</span>
-              )}
-            </label>
-            <div style={{ marginTop: "4px" }}>
-              <CoursePickerField value={courses} onChange={setCourses} color={color} />
-            </div>
-          </div>
-
-          <div style={{ marginTop: "12px" }}>
-            <label className="cp-field-label">Developmental Stage</label>
-            <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-              A pathway belongs to exactly one Developmental Stage — only learners placed at that stage are auto-issued this pathway's diagnostic.
-            </p>
-            {stages.length === 0 ? (
-              <p style={{ margin: 0, fontSize: "12.5px", color: "#9CA3AF" }}>
-                No Developmental Stages defined yet — add one on the Developmental Stages tab first.
-              </p>
-            ) : (
+          {!editKey && templateCourses.length > 0 && (
+            <div style={{ marginTop: "12px" }}>
+              <label className="cp-field-label">
+                This pathway comes with {templateCourses.length} course{templateCourses.length !== 1 ? "s" : ""} — put them under
+              </label>
               <select
                 className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                value={ageCategoryId}
-                onChange={(e) => setAgeCategoryId(e.target.value)}
+                value={templateStageId}
+                onChange={(e) => setTemplateStageId(e.target.value)}
               >
-                <option value="">Select a stage…</option>
+                <option value="">Decide later (kept under "No stage yet")</option>
                 {stages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}{s.minAge != null || s.maxAge != null ? ` · Ages ${s.minAge ?? "0"}-${s.maxAge ?? "∞"}` : ""}
-                  </option>
+                  <option key={s.id} value={s.id}>{[s.name, stageAgeLabel(s)].filter(Boolean).join(" · ")}</option>
                 ))}
               </select>
-            )}
-          </div>
-
-          {/* Existing areas set/change their diagnostic from the dedicated section on the card
-              instead (see the "Diagnostic Assessment" cp-diag-section below) — kept here only
-              for create, since a brand-new pathway has no card yet to attach that to. */}
-          {!editId && (
-            <div style={{ marginTop: "12px" }}>
-              <label className="cp-field-label">Diagnostic Assessment <span className="cp-optional">(optional)</span></label>
-              <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                Auto-issued once to a learner placed at this pathway's Developmental Stage. Its graded score places them at a starting course via the course thresholds set up below.
-              </p>
-              <select
-                className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                value={diagnosticAssessmentId}
-                onChange={(e) => setDiagnosticAssessmentId(e.target.value)}
-              >
-                <option value="">— None —</option>
-                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-
-              <label
-                className="cp-comp-check-row"
-                style={{ marginTop: "8px", opacity: diagnosticAssessmentId ? 1 : 0.5 }}
-                title={diagnosticAssessmentId ? undefined : "Choose a diagnostic assessment first"}
-              >
-                <input
-                  type="checkbox"
-                  checked={publicDiagnosticEnabled}
-                  disabled={!diagnosticAssessmentId}
-                  onChange={(e) => setPublicDiagnosticEnabled(e.target.checked)}
-                />
-                <span style={{ fontSize: "12.5px", color: "#374151" }}>
-                  Offer this diagnostic to anonymous visitors on the public website
-                </span>
-              </label>
-
-              {publicDiagnosticEnabled && (
-                <div style={{ marginTop: "10px", paddingLeft: "2px" }}>
-                  <label className="cp-field-label">Public website diagnostic <span className="cp-optional">(optional override)</span></label>
-                  <p style={{ margin: "2px 0 8px", fontSize: "11px", color: "#9CA3AF" }}>
-                    Leave blank to reuse the diagnostic above for public visitors too. Pick a different one only if the public website should offer a different diagnostic than enrolled learners get.
-                  </p>
-                  <select
-                    className="cp-input" style={{ width: "100%", boxSizing: "border-box" }}
-                    value={publicDiagnosticAssessmentId}
-                    onChange={(e) => setPublicDiagnosticAssessmentId(e.target.value)}
-                  >
-                    <option value="">— Same as above —</option>
-                    {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </div>
-              )}
             </div>
           )}
 
+          {!editKey && (
+            <p style={{ margin: "12px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+              Courses, advancement rules and the diagnostic are set per developmental stage once the pathway is created.
+            </p>
+          )}
+
           <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || !ageCategoryId}>
-              {creating || updating ? "Saving…" : editId ? "Update" : "Create"}
+            <button type="button" className="cp-btn-primary" onClick={submit} disabled={creating || updating || !name.trim() || nameTaken}>
+              {creating || updating ? "Saving…" : editKey ? "Update" : "Create"}
             </button>
             <button type="button" className="cp-btn-secondary" onClick={cancel}>Cancel</button>
           </div>
         </div>
       )}
 
-      {areas.length === 0 && !showForm ? (
+      {groups.length === 0 && !showForm && (
         <div className="cp-empty">
           <div style={{ fontSize: "32px", color: "#9CA3AF", display: "flex", justifyContent: "center", marginBottom: "10px" }}><FolderOpenIcon fontSize="inherit" /></div>
           <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: "700", color: "#374151" }}>No pathways yet</p>
-          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Build a roadmap of courses, a diagnostic and an age range for each area a learner can specialise in.</p>
+          <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#9CA3AF" }}>Build a roadmap of courses and a diagnostic for each developmental stage of an area a learner can specialise in.</p>
           <button type="button" className="cp-btn-ghost" onClick={openCreate}>+ Add First Pathway</button>
         </div>
-      ) : (
-        <div className="cp-list">
-          {areas.map((area) => {
-            const areaColor = area.color || "#25476a";
-            return (
-              <div key={area.id} className="cp-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                  <div className="cp-item-dot" style={{ backgroundColor: areaColor }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="cp-item-name">{area.name}</div>
-                    {!isEmptyHtml(area.description) && <div className="cp-item-sub"><RichContent html={area.description} /></div>}
-                    {area.ageCategoryId && stageById.get(area.ageCategoryId) && (
-                      <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
-                        {stageById.get(area.ageCategoryId).name}
-                      </p>
-                    )}
-                  </div>
-                  <button type="button" className="cp-icon-btn" onClick={() => openEdit(area)} title="Edit">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                  <button
-                    type="button"
-                    className="cp-icon-btn danger"
-                    onClick={() => requestDelete({
-                      title: `Delete "${area.name}"?`,
-                      message: "This pathway will be permanently removed, along with its course sequence and placement thresholds. This cannot be undone.",
-                      onConfirm: () => remove(area.id),
-                    })}
-                    disabled={deleting}
-                    title="Delete"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </button>
-                </div>
-
-                {area.courses?.length > 0 && (() => {
-                  // The pathway's own authored course order — Performance Bands with
-                  // pathwayId+courseId set, ordered by `order` (see
-                  // PerformanceBandModel.findByPathway server-side) — then any courses[] entries
-                  // with no band configured yet, appended at the end.
-                  const pathwayBands = allBands
-                    .filter((b) => b.pathwayId === area.id)
-                    .sort((a, b) => a.order - b.order);
-                  const sequencedIds = pathwayBands.map((b) => b.courseId).filter((cid) => area.courses.includes(cid));
-                  const orderedIds = [...sequencedIds, ...area.courses.filter((cid) => !sequencedIds.includes(cid))];
-                  const bandByCourseId = new Map(pathwayBands.map((b) => [b.courseId, b]));
-
-                  function moveCourseUp(idx) {
-                    if (idx === 0) return;
-                    const ids = [...orderedIds];
-                    [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
-                    reorderCourses({ pathwayId: area.id, orderedIds: ids });
-                  }
-                  function moveCourseDown(idx) {
-                    if (idx === orderedIds.length - 1) return;
-                    const ids = [...orderedIds];
-                    [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
-                    reorderCourses({ pathwayId: area.id, orderedIds: ids });
-                  }
-
-                  return (
-                    <div className="cp-course-section">
-                      <div className="cp-course-header">
-                        <div className="cp-course-header-left">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color: areaColor, flexShrink: 0 }}>
-                            <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor"/>
-                            <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          <span className="cp-course-title">Courses</span>
-                        </div>
-                        <span className="cp-course-count-badge" style={{ backgroundColor: `${areaColor}12`, borderColor: `${areaColor}35`, color: areaColor }}>
-                          {area.courses.length}
-                        </span>
-                      </div>
-                      <p style={{ margin: "0 0 10px", fontSize: "11.5px", color: "#9CA3AF" }}>
-                        Reorder with the arrows, or click a course to set what it takes to advance to the next one.
-                      </p>
-                      <PathwayCourseLadderSection
-                        curriculumId={curriculumId}
-                        pathway={area}
-                        color={areaColor}
-                        orderedCourseIds={orderedIds}
-                        courseById={courseById}
-                        bandByCourseId={bandByCourseId}
-                        onMoveCourseUp={moveCourseUp}
-                        onMoveCourseDown={moveCourseDown}
-                      />
-                    </div>
-                  );
-                })()}
-
-                <div className="cp-diag-section">
-                  <div className="cp-diag-header">
-                    <span className="cp-diag-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><MedicalServicesIcon fontSize="inherit" /> Diagnostic Assessment</span>
-                  </div>
-
-                  {diagPickerAreaId === area.id ? (
-                    <div className="cp-diag-picker" style={{ flexWrap: "wrap" }}>
-                      <select
-                        className="cp-select" style={{ flex: 1, minWidth: "160px" }}
-                        value={diagPickerValue}
-                        onChange={(e) => setDiagPickerValue(e.target.value)}
-                      >
-                        <option value="">— None —</option>
-                        {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
-                      <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={() => saveDiagPicker(area)} disabled={updating}>
-                        {updating ? "Saving…" : "Save"}
-                      </button>
-                      <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={closeDiagPicker}>Cancel</button>
-
-                      <label
-                        className="cp-comp-check-row"
-                        style={{ width: "100%", marginTop: "4px", opacity: diagPickerValue ? 1 : 0.5 }}
-                        title={diagPickerValue ? undefined : "Choose a diagnostic assessment first"}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={diagPickerPublic}
-                          disabled={!diagPickerValue}
-                          onChange={(e) => setDiagPickerPublic(e.target.checked)}
-                        />
-                        <span style={{ fontSize: "12.5px", color: "#374151" }}>
-                          Offer this diagnostic to anonymous visitors on the public website
-                        </span>
-                      </label>
-
-                      {diagPickerPublic && (
-                        <div style={{ width: "100%", marginTop: "6px" }}>
-                          <label style={{ fontSize: "11px", color: "#9CA3AF", display: "block", marginBottom: "4px" }}>
-                            Public website diagnostic — leave blank to reuse the one above
-                          </label>
-                          <select
-                            className="cp-select" style={{ width: "100%", boxSizing: "border-box" }}
-                            value={diagPickerPublicValue}
-                            onChange={(e) => setDiagPickerPublicValue(e.target.value)}
-                          >
-                            <option value="">— Same as above —</option>
-                            {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  ) : area.diagnosticAssessmentId ? (
-                    <div className="cp-diag-row">
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-                        <span className="cp-diag-name">
-                          {assessmentNameById[area.diagnosticAssessmentId] || "Diagnostic assigned"}
-                          {area.publicDiagnosticEnabled && (
-                            <span
-                              style={{
-                                marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
-                                backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
-                                padding: "2px 8px", verticalAlign: "middle",
-                              }}
-                              title={
-                                area.publicDiagnosticAssessmentId
-                                  ? `Public visitors get a different diagnostic: ${assessmentNameById[area.publicDiagnosticAssessmentId] || "Diagnostic assigned"}`
-                                  : "Public visitors get the same diagnostic as enrolled learners"
-                              }
-                            >
-                              Public{area.publicDiagnosticAssessmentId ? " · different" : ""}
-                            </span>
-                          )}
-                        </span>
-                        {area.publicDiagnosticEnabled && area.publicDiagnosticAssessmentId && (
-                          <span style={{ fontSize: "11px", color: "#6B7280" }}>
-                            Public website uses: <strong>{assessmentNameById[area.publicDiagnosticAssessmentId] || "Diagnostic assigned"}</strong>
-                          </span>
-                        )}
-                      </div>
-                      <div className="cp-diag-actions">
-                        <button type="button" className="cp-diag-btn cp-diag-btn-change" onClick={() => openDiagPicker(area)}>Change</button>
-                        <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => clearDiagnostic(area)} disabled={updating}>Clear</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="cp-diag-empty">
-                      <span className="cp-diag-hint">Auto-issued once a learner's class exposes one of this pathway's courses.</span>
-                      <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={() => openDiagPicker(area)}>+ Assign</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       )}
+
+      {selected && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+            <div className="cp-item-dot" style={{ backgroundColor: selected.color, marginTop: 0 }} />
+            <select
+              className="cp-select" style={{ flex: 1, minWidth: 0, fontWeight: 700 }}
+              value={selected.key}
+              onChange={(e) => setSelectedKey(e.target.value)}
+              aria-label="Pathway"
+            >
+              {groups.map((g) => <option key={g.key} value={g.key}>{g.name}</option>)}
+            </select>
+            <button type="button" className="cp-icon-btn" onClick={() => openEdit(selected)} title="Edit name, description and colour">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <button type="button" className="cp-icon-btn danger" onClick={() => deleteGroup(selected)} disabled={deleting} title="Delete pathway">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+          {!isEmptyHtml(selected.description) && (
+            <div className="cp-item-sub" style={{ marginBottom: "10px" }}><RichContent html={selected.description} /></div>
+          )}
+
+          {stages.length === 0 && (
+            <p style={{ margin: "10px 0", fontSize: "12.5px", color: "#9CA3AF" }}>
+              No Developmental Stages defined yet — add them on the Developmental Stages tab, then set this pathway's courses for each one here.
+            </p>
+          )}
+
+          <div className="cp-list" style={{ marginTop: "12px" }}>
+            {stages.map((stage) => (
+              <PathwayStageSection
+                key={`${selected.key}:${stage.id}`}
+                curriculumId={curriculumId}
+                group={selected}
+                stage={stage}
+                row={selected.rows.find((r) => r.ageCategoryId === stage.id) || null}
+                courseById={courseById}
+                allBands={allBands}
+                assessments={assessments}
+              />
+            ))}
+            {unplacedRows.map((row) => (
+              <PathwayStageSection
+                key={`${selected.key}:${row.id}`}
+                curriculumId={curriculumId}
+                group={selected}
+                stage={null}
+                row={row}
+                freeStages={freeStages}
+                courseById={courseById}
+                allBands={allBands}
+                assessments={assessments}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── PathwayStageSection ──────────────────────────────────────────────────
+ * One Developmental Stage of the selected pathway: its courses (order + what it takes to advance)
+ * and its diagnostic. `row` is the pathway's record for this stage — null until something is first
+ * saved here, at which point it's created with the pathway's shared name/description/colour.
+ * `stage` null is the "No stage yet" holder, which can only be emptied or moved into a stage. */
+
+function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [], courseById, allBands, assessments }) {
+  const { mutate: createRow, isPending: creating } = useCreatePathway(curriculumId, "Stage saved");
+  const { mutate: updateRow, isPending: updating } = useUpdatePathway(curriculumId, "Stage saved");
+  const { mutate: reorderCourses } = useReorderPathwayCourses(curriculumId);
+  const saving = creating || updating;
+  const color = group.color;
+  const courses = row?.courses || [];
+  const assessmentNameById = Object.fromEntries(assessments.map((a) => [a.id, a.name]));
+
+  function saveRow(data, onSuccess) {
+    if (row) {
+      updateRow({ id: row.id, data }, { onSuccess });
+    } else {
+      createRow(
+        { name: group.name, description: group.description, color: group.color, courses: [], ageCategoryId: stage.id, ...data },
+        { onSuccess }
+      );
+    }
+  }
+
+  const [editingCourses, setEditingCourses] = useState(false);
+  const [courseDraft, setCourseDraft] = useState([]);
+  function openCourses() { setCourseDraft(courses); setEditingCourses(true); }
+  function saveCourses() { saveRow({ courses: courseDraft }, () => setEditingCourses(false)); }
+
+  // Quick diagnostic assign/change — its own small picker rather than a full form.
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diagValue, setDiagValue] = useState("");
+  const [diagPublic, setDiagPublic] = useState(false);
+  // Optional override: when set, the public website serves THIS assessment instead of
+  // diagnosticAssessmentId. Left blank, the public flow reuses the internal one.
+  const [diagPublicValue, setDiagPublicValue] = useState("");
+
+  function openDiag() {
+    setDiagValue(row?.diagnosticAssessmentId || "");
+    setDiagPublic(!!row?.publicDiagnosticEnabled);
+    setDiagPublicValue(row?.publicDiagnosticAssessmentId || "");
+    setDiagOpen(true);
+  }
+  function saveDiag() {
+    saveRow(
+      {
+        diagnosticAssessmentId: diagValue || null,
+        // Can only ever be true alongside an assessment.
+        publicDiagnosticEnabled: diagValue ? diagPublic : false,
+        publicDiagnosticAssessmentId: diagValue ? (diagPublicValue || null) : null,
+      },
+      () => setDiagOpen(false)
+    );
+  }
+  function clearDiag() {
+    saveRow({ diagnosticAssessmentId: null, publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null });
+  }
+
+  // The stage's own authored course order — Performance Bands with pathwayId+courseId set,
+  // ordered by `order` (see PerformanceBandModel.findByPathway server-side) — then any courses[]
+  // entries with no band configured yet, appended at the end.
+  const stageBands = row
+    ? allBands.filter((b) => b.pathwayId === row.id).sort((a, b) => a.order - b.order)
+    : [];
+  const sequencedIds = stageBands.map((b) => b.courseId).filter((cid) => courses.includes(cid));
+  const orderedIds = [...sequencedIds, ...courses.filter((cid) => !sequencedIds.includes(cid))];
+  const bandByCourseId = new Map(stageBands.map((b) => [b.courseId, b]));
+
+  function moveCourse(idx, delta) {
+    const to = idx + delta;
+    if (to < 0 || to >= orderedIds.length) return;
+    const ids = [...orderedIds];
+    [ids[idx], ids[to]] = [ids[to], ids[idx]];
+    reorderCourses({ pathwayId: row.id, orderedIds: ids });
+  }
+
+  return (
+    <div className="cp-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="cp-item-name">{stage ? stage.name : "No stage yet"}</div>
+          <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: "600", color: "#9CA3AF" }}>
+            {stage
+              ? stageAgeLabel(stage)
+              : "Set up before pathways were split by developmental stage — move it to the stage it belongs to."}
+          </p>
+        </div>
+        {!stage && freeStages.length > 0 && (
+          <select
+            className="cp-select"
+            value=""
+            disabled={saving}
+            onChange={(e) => { if (e.target.value) updateRow({ id: row.id, data: { ageCategoryId: e.target.value } }); }}
+            aria-label="Move to stage"
+          >
+            <option value="">Move to stage…</option>
+            {freeStages.map((s) => (
+              <option key={s.id} value={s.id}>{[s.name, stageAgeLabel(s)].filter(Boolean).join(" · ")}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div className="cp-course-section">
+        <div className="cp-course-header">
+          <div className="cp-course-header-left">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ color, flexShrink: 0 }}>
+              <path d="M12 3L2 8l10 5 8-4.09V17h2V8L12 3z" fill="currentColor"/>
+              <path d="M6 10.5V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="cp-course-title">Courses</span>
+            <span className="cp-course-count-badge" style={{ backgroundColor: `${color}12`, borderColor: `${color}35`, color }}>
+              {courses.length}
+            </span>
+          </div>
+          {!editingCourses && (
+            <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={openCourses}>
+              {courses.length > 0 ? "Edit courses" : "+ Add courses"}
+            </button>
+          )}
+        </div>
+
+        {editingCourses ? (
+          <>
+            <CoursePickerField value={courseDraft} onChange={setCourseDraft} color={color} />
+            <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+              <button type="button" className="cp-btn-primary" onClick={saveCourses} disabled={saving}>
+                {saving ? "Saving…" : "Save courses"}
+              </button>
+              <button type="button" className="cp-btn-secondary" onClick={() => setEditingCourses(false)}>Cancel</button>
+            </div>
+          </>
+        ) : courses.length > 0 ? (
+          <>
+            <p style={{ margin: "0 0 10px", fontSize: "11.5px", color: "#9CA3AF" }}>
+              Reorder with the arrows, or click a course to set what it takes to advance to the next one.
+            </p>
+            <PathwayCourseLadderSection
+              curriculumId={curriculumId}
+              pathway={row}
+              color={color}
+              orderedCourseIds={orderedIds}
+              courseById={courseById}
+              bandByCourseId={bandByCourseId}
+              onMoveCourseUp={(idx) => moveCourse(idx, -1)}
+              onMoveCourseDown={(idx) => moveCourse(idx, 1)}
+            />
+          </>
+        ) : (
+          <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
+            No courses for this stage yet.
+          </p>
+        )}
+      </div>
+
+      <div className="cp-diag-section">
+        <div className="cp-diag-header">
+          <span className="cp-diag-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><MedicalServicesIcon fontSize="inherit" /> Diagnostic Assessment</span>
+        </div>
+
+        {diagOpen ? (
+          <div className="cp-diag-picker" style={{ flexWrap: "wrap" }}>
+            <select
+              className="cp-select" style={{ flex: 1, minWidth: "160px" }}
+              value={diagValue}
+              onChange={(e) => setDiagValue(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={saveDiag} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => setDiagOpen(false)}>Cancel</button>
+
+            <label
+              className="cp-comp-check-row"
+              style={{ width: "100%", marginTop: "4px", opacity: diagValue ? 1 : 0.5 }}
+              title={diagValue ? undefined : "Choose a diagnostic assessment first"}
+            >
+              <input
+                type="checkbox"
+                checked={diagPublic}
+                disabled={!diagValue}
+                onChange={(e) => setDiagPublic(e.target.checked)}
+              />
+              <span style={{ fontSize: "12.5px", color: "#374151" }}>
+                Offer this diagnostic to anonymous visitors on the public website
+              </span>
+            </label>
+
+            {diagPublic && (
+              <div style={{ width: "100%", marginTop: "6px" }}>
+                <label style={{ fontSize: "11px", color: "#9CA3AF", display: "block", marginBottom: "4px" }}>
+                  Public website diagnostic — leave blank to reuse the one above
+                </label>
+                <select
+                  className="cp-select" style={{ width: "100%", boxSizing: "border-box" }}
+                  value={diagPublicValue}
+                  onChange={(e) => setDiagPublicValue(e.target.value)}
+                >
+                  <option value="">— Same as above —</option>
+                  {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        ) : row?.diagnosticAssessmentId ? (
+          <div className="cp-diag-row">
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+              <span className="cp-diag-name">
+                {assessmentNameById[row.diagnosticAssessmentId] || "Diagnostic assigned"}
+                {row.publicDiagnosticEnabled && (
+                  <span
+                    style={{
+                      marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
+                      backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
+                      padding: "2px 8px", verticalAlign: "middle",
+                    }}
+                    title={
+                      row.publicDiagnosticAssessmentId
+                        ? `Public visitors get a different diagnostic: ${assessmentNameById[row.publicDiagnosticAssessmentId] || "Diagnostic assigned"}`
+                        : "Public visitors get the same diagnostic as enrolled learners"
+                    }
+                  >
+                    Public{row.publicDiagnosticAssessmentId ? " · different" : ""}
+                  </span>
+                )}
+              </span>
+              {row.publicDiagnosticEnabled && row.publicDiagnosticAssessmentId && (
+                <span style={{ fontSize: "11px", color: "#6B7280" }}>
+                  Public website uses: <strong>{assessmentNameById[row.publicDiagnosticAssessmentId] || "Diagnostic assigned"}</strong>
+                </span>
+              )}
+            </div>
+            <div className="cp-diag-actions">
+              <button type="button" className="cp-diag-btn cp-diag-btn-change" onClick={openDiag}>Change</button>
+              <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={clearDiag} disabled={saving}>Clear</button>
+            </div>
+          </div>
+        ) : (
+          <div className="cp-diag-empty">
+            <span className="cp-diag-hint">
+              {stage
+                ? "Auto-issued once to a learner placed at this developmental stage."
+                : "Not issued until this is moved to a developmental stage."}
+            </span>
+            <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={openDiag}>+ Assign</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

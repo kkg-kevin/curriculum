@@ -322,27 +322,30 @@ const CurriculumService = {
     // template's own `courses` list (that's a separate, manually-curated field unrelated to why
     // this pathway is being adopted here). If the curriculum already has this pathway
     // from an earlier course, this course is appended to it instead of being dropped.
-    const curriculumPathways = await PathwayModel.findByCurriculumId(curriculumId);
-    const pathwayByName = new Map(curriculumPathways.map((p) => [p.name.toLowerCase(), p]));
+    //
+    // A pathway is one row per Developmental Stage, all sharing a name (see
+    // CompetencyService.createPathway). Nothing here says which stage the course belongs to, so
+    // it lands on the pathway's stage-less row for an admin to place — unless one of the
+    // pathway's rows already has it.
     const coursePathwayLinks = await CoursePathwayLinkModel.findByCourseId(courseId);
     for (const link of coursePathwayLinks) {
       const source = await PathwayTemplateModel.findById(link.pathwayId);
       if (!source) continue;
-      const existing = pathwayByName.get(source.name.toLowerCase());
-      if (existing) {
-        if (!(existing.courses || []).includes(courseId)) {
-          const updated = await PathwayModel.update(existing.id, { courses: [...(existing.courses || []), courseId] });
-          pathwayByName.set(source.name.toLowerCase(), updated);
-        }
+      const key = source.name.trim().toLowerCase();
+      const rows = (await PathwayModel.findByCurriculumId(curriculumId))
+        .filter((p) => (p.name || "").trim().toLowerCase() === key);
+      if (rows.some((p) => (p.courses || []).includes(courseId))) continue;
+      const holder = rows.find((p) => !p.ageCategoryId);
+      if (holder) {
+        await PathwayModel.update(holder.id, { courses: [...(holder.courses || []), courseId] });
       } else {
-        const created = await PathwayModel.create({
+        await PathwayModel.create({
           curriculumId,
-          name:        source.name,
-          description: source.description,
-          color:       source.color,
+          name:        rows[0]?.name ?? source.name,
+          description: rows[0]?.description ?? source.description,
+          color:       rows[0]?.color ?? source.color,
           courses:     [courseId],
         });
-        pathwayByName.set(source.name.toLowerCase(), created);
       }
     }
   },

@@ -135,38 +135,38 @@ export function usePathways(curriculumId) {
   });
 }
 
-export function useCreatePathway(curriculumId) {
+export function useCreatePathway(curriculumId, successMessage = "Pathway created") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => competenciesApi.createPathway(curriculumId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Pathway created");
+      if (successMessage) toast.success(successMessage);
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to create pathway"),
   });
 }
 
-export function useUpdatePathway(curriculumId) {
+export function useUpdatePathway(curriculumId, successMessage = "Pathway updated") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => competenciesApi.updatePathway(curriculumId, id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Pathway updated");
+      if (successMessage) toast.success(successMessage);
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to update pathway"),
   });
 }
 
-export function useDeletePathway(curriculumId) {
+export function useDeletePathway(curriculumId, successMessage = "Pathway deleted") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id) => competenciesApi.deletePathway(curriculumId, id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
       qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-      toast.success("Pathway deleted");
+      if (successMessage) toast.success(successMessage);
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to delete pathway"),
   });

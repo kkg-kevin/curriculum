@@ -48,13 +48,17 @@ async function assertCoursesExist(courseIds) {
 // curriculum — same cross-tenant/cross-curriculum guard every other FK on this record already
 // gets (assertCoursesExist above, assertPublicDiagnosticAllowed below).
 async function assertStageExists(curriculumId, ageCategoryId) {
-  if (ageCategoryId === undefined) return;
+  if (ageCategoryId == null) return;
   const stage = await AgeCategoryModel.findById(ageCategoryId);
   if (!stage || stage.curriculumId !== curriculumId) {
     const err = new Error("Developmental Stage not found");
     err.statusCode = 404;
     throw err;
   }
+}
+
+function samePathwayName(a, b) {
+  return (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 }
 
 const DEFAULT_RUNGS = [
@@ -225,17 +229,37 @@ const CompetencyService = {
     }
   },
 
+  // A pathway spans Developmental Stages: each row is ONE pathway in ONE stage (its own courses,
+  // course ladder and diagnostic — everything downstream still works per row), and the rows that
+  // share a name within a curriculum are the same pathway. So a name may repeat, but only once
+  // per stage; name/description/color are shared and kept identical across the rows. A row with
+  // no stage is the pathway's "not placed yet" holder (older pathways, or a brand-new one).
   async createPathway(curriculumId, data) {
     const existing = await PathwayModel.findByCurriculumId(curriculumId);
-    if (existing.some((a) => a.name.toLowerCase() === data.name.toLowerCase())) {
-      const err = new Error("A pathway with this name already exists");
+    const group = existing.filter((a) => samePathwayName(a.name, data.name));
+    const stageId = data.ageCategoryId || null;
+    if (group.some((a) => (a.ageCategoryId || null) === stageId)) {
+      const err = new Error(
+        stageId ? "This pathway is already set up for that developmental stage" : "A pathway with this name already exists"
+      );
       err.statusCode = 409;
       throw err;
     }
     await assertCoursesExist(data.courses);
     await assertStageExists(curriculumId, data.ageCategoryId);
     await this.assertPublicDiagnosticAllowed(data, null);
-    return PathwayModel.create({ curriculumId, ...data });
+    const shared = group[0]
+      ? { name: group[0].name, description: group[0].description, color: group[0].color }
+      : {};
+    const created = await PathwayModel.create({ curriculumId, ...data, ...shared });
+    // Once the pathway has a real stage, an empty "not placed yet" holder has no job left.
+    if (stageId) {
+      const emptyHolders = group.filter(
+        (a) => !a.ageCategoryId && !(a.courses || []).length && !a.diagnosticAssessmentId
+      );
+      for (const holder of emptyHolders) await this.deletePathway(curriculumId, holder.id);
+    }
+    return created;
   },
 
   async updatePathway(curriculumId, id, data) {
@@ -245,11 +269,20 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    if (data.name) {
-      const all = await PathwayModel.findByCurriculumId(curriculumId);
-      const others = all.filter((p) => p.id !== id);
-      if (others.some((p) => p.name.toLowerCase() === data.name.toLowerCase())) {
+    const all = await PathwayModel.findByCurriculumId(curriculumId);
+    // The same pathway's rows for its other stages (see createPathway).
+    const siblings = all.filter((p) => p.id !== id && samePathwayName(p.name, pathway.name));
+    if (data.name && !samePathwayName(data.name, pathway.name)) {
+      if (all.some((p) => samePathwayName(p.name, data.name))) {
         const err = new Error("A pathway with this name already exists");
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+    if (data.ageCategoryId !== undefined) {
+      const stageId = data.ageCategoryId || null;
+      if (siblings.some((p) => (p.ageCategoryId || null) === stageId)) {
+        const err = new Error("This pathway is already set up for that developmental stage");
         err.statusCode = 409;
         throw err;
       }
@@ -257,7 +290,15 @@ const CompetencyService = {
     await assertCoursesExist(data.courses);
     await assertStageExists(curriculumId, data.ageCategoryId);
     await this.assertPublicDiagnosticAllowed(data, pathway);
-    return PathwayModel.update(id, data);
+    const updated = await PathwayModel.update(id, data);
+    const shared = {};
+    for (const key of ["name", "description", "color"]) {
+      if (data[key] !== undefined) shared[key] = data[key];
+    }
+    if (Object.keys(shared).length > 0) {
+      await Promise.all(siblings.map((p) => PathwayModel.update(p.id, shared)));
+    }
+    return updated;
   },
 
   async deletePathway(curriculumId, id) {

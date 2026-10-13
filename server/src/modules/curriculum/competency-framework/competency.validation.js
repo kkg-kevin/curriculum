@@ -52,7 +52,9 @@ const pathwayFields = z.object({
   // The stage's own age range is what now gates diagnostic auto-issuance (see
   // maybeAutoIssuePathwayDiagnostics in learner.service.js, which resolves a learner's stage
   // rather than walking a flat age range).
-  ageCategoryId: z.string().min(1, "ageCategoryId is required"),
+  // A pathway now spans stages as one row per stage (see CompetencyService.createPathway); null
+  // is the pathway's "not placed in a stage yet" row.
+  ageCategoryId: z.string().min(1).nullable().optional().default(null),
   // Offers a diagnostic to anonymous website visitors (see public-diagnostic.service.js), not
   // just enrolled learners. Only meaningful alongside publicDiagnosticAssessmentId (below) or
   // diagnosticAssessmentId (above) — the "effective" one is resolved as
