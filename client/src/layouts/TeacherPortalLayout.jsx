@@ -5,7 +5,7 @@ import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
 import { useTeacherPortalScope } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
-import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
+import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -14,10 +14,8 @@ function TeacherPortalLayout() {
   const { teacher, hubs, selectedHubId, setSelectedHubId, hasNoHubs } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Same storage key ("teacher") as TeacherSidebar.jsx — both must agree on the current
-  // collapsed state so the content area's reserved margin matches the sidebar's actual width.
-  const [collapsed] = useSidebarCollapse("teacher");
-  const reservedWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+  // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).
+  const reservedWidth = SIDEBAR_COLLAPSED_WIDTH;
 
   useEffect(() => {
     const handleResize = () => {
@@ -40,11 +38,11 @@ function TeacherPortalLayout() {
         <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} photo={teacher?.photo} />
 
         <main className="teacher-shell__main" style={{ padding: isMobile ? "20px 16px 24px" : "28px 32px 36px" }}>
-          {/* max-width caps content for readability at the normal sidebar width — but that cap
-              would otherwise turn a collapsed sidebar's reclaimed space into dead empty margin
-              on both sides instead of usable width, so it widens by exactly the space the
-              sidebar gave back (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) while collapsed. */}
-          <div className="teacher-shell__main-inner" style={!isMobile && collapsed ? { maxWidth: 1480 + (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) } : undefined}>
+          {/* max-width caps content for readability at the full sidebar width — but that cap
+              would otherwise turn the rail's reclaimed space into dead empty margin on both
+              sides instead of usable width, so it widens by exactly the space the rail gives
+              back (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) on desktop. */}
+          <div className="teacher-shell__main-inner" style={!isMobile ? { maxWidth: 1480 + (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) } : undefined}>
             {hasNoHubs ? (
               <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
                 <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>You haven't been assigned to a learning hub yet</h3>

@@ -1,13 +1,13 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiChevronLeft, FiMail, FiHeart, FiActivity,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity,
 } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
 import { useAuth } from "../../context/AuthContext";
 import { canViewAny, isStaff } from "../../hooks/usePermissions";
-import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../hooks/useSidebarCollapse";
+import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../hooks/useSidebarHover";
 
 // `module` is the staff-role permission key that gates an item (see
 // server/src/modules/access/access.registry.js — keep the keys identical): a staff account sees it
@@ -52,10 +52,10 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
   const menuItems = user?.role === "curriculumAdmin"
     ? CURRICULUM_ADMIN_MENU_ITEMS
     : isStaff(user) ? staffMenu(user) : ADMIN_MENU_ITEMS;
-  const [collapsed, setCollapsed] = useSidebarCollapse("admin");
-  // Never collapsed on mobile — the drawer already fully hides/shows, collapsing it too would
-  // just be a narrow drawer with no way to reach labels.
-  const isCollapsed = !isMobile && collapsed;
+  // Desktop: an icon rail that opens while hovered. Never collapsed on mobile — the drawer
+  // already fully hides/shows, collapsing it too would just be a narrow drawer with no labels.
+  const { expanded, handlers } = useSidebarHover(!isMobile);
+  const isCollapsed = !isMobile && !expanded;
 
   return (
     <>
@@ -74,6 +74,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
 
       <aside
         className="no-print"
+        {...handlers}
         style={{
           width: isMobile ? "min(86vw, 300px)" : isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
           height: "100vh",
@@ -87,7 +88,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
           fontFamily: "Inter, sans-serif",
           zIndex: 1300,
           transition: "left 0.25s ease, width 0.2s ease",
-          boxShadow: isMobile ? "0 18px 60px rgba(0,0,0,0.28)" : "none",
+          boxShadow: isMobile ? "0 18px 60px rgba(0,0,0,0.28)" : expanded ? "8px 0 32px rgba(0,0,0,0.22)" : "none",
           overflowY: "auto",
           overflowX: "hidden",
         }}
@@ -144,7 +145,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
               <NavLink
                 key={item.name}
                 to={item.path}
-                onClick={() => { if (isMobile) onClose(); else setCollapsed(true); }}
+                onClick={isMobile ? onClose : undefined}
                 title={isCollapsed ? item.name : undefined}
                 style={({ isActive }) => ({
                   display: "flex",
@@ -168,35 +169,6 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
             );
           })}
         </nav>
-
-        {!isMobile && (
-          <div style={{ padding: isCollapsed ? "8px" : "8px 12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: isCollapsed ? "center" : "flex-start",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "10px",
-                border: "none",
-                background: "rgba(255,255,255,0.06)",
-                color: "rgba(255,255,255,0.85)",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 500,
-              }}
-            >
-              <FiChevronLeft size={16} style={{ flexShrink: 0, transition: "transform 0.2s ease", transform: isCollapsed ? "rotate(180deg)" : "none" }} />
-              {!isCollapsed && <span>Collapse</span>}
-            </button>
-          </div>
-        )}
 
         <div
           style={{

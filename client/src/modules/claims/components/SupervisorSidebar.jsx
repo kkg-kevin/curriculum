@@ -1,8 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiChevronLeft } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
-import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarCollapse";
+import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
 
 const menuItems = [
   { name: "Dashboard",    path: "/supervisor-portal", icon: FiGrid },
@@ -15,8 +15,8 @@ const menuItems = [
 // (TeacherSidebar.jsx), with the supervisor's own pages. `waiting` is how many claims need their
 // review, shown against Claims.
 function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {}, waiting = 0 }) {
-  const [collapsed, setCollapsed] = useSidebarCollapse("supervisor");
-  const isCollapsed = !isMobile && collapsed;
+  const { expanded, handlers } = useSidebarHover(!isMobile);
+  const isCollapsed = !isMobile && !expanded;
 
   return (
     <>
@@ -29,6 +29,7 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
       ) : null}
 
       <aside
+        {...handlers}
         style={{
           width: isMobile ? "min(86vw, 300px)" : isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
           height: "100vh",
@@ -42,7 +43,7 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
           fontFamily: "Inter, sans-serif",
           zIndex: 1300,
           transition: "left 0.25s ease, width 0.2s ease",
-          boxShadow: isMobile ? "0 18px 60px rgba(0,0,0,0.28)" : "none",
+          boxShadow: isMobile ? "0 18px 60px rgba(0,0,0,0.28)" : expanded ? "8px 0 32px rgba(0,0,0,0.22)" : "none",
           overflowY: "auto",
           overflowX: "hidden",
         }}
@@ -73,7 +74,7 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
                 key={item.name}
                 to={item.path}
                 end={item.path === "/supervisor-portal"}
-                onClick={() => { if (isMobile) onClose(); else setCollapsed(true); }}
+                onClick={isMobile ? onClose : undefined}
                 title={isCollapsed ? `${item.name}${showBadge ? ` (${waiting} to review)` : ""}` : undefined}
                 style={({ isActive }) => ({
                   position: "relative",
@@ -107,26 +108,6 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
             );
           })}
         </nav>
-
-        {!isMobile && (
-          <div style={{ padding: isCollapsed ? "8px" : "8px 12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              style={{
-                width: "100%", display: "flex", alignItems: "center",
-                justifyContent: isCollapsed ? "center" : "flex-start", gap: "10px",
-                padding: "10px 12px", borderRadius: "10px", border: "none",
-                background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.85)",
-                cursor: "pointer", fontSize: "13px", fontFamily: "Inter, sans-serif", fontWeight: 500,
-              }}
-            >
-              <FiChevronLeft size={16} style={{ flexShrink: 0, transition: "transform 0.2s ease", transform: isCollapsed ? "rotate(180deg)" : "none" }} />
-              {!isCollapsed && <span>Collapse</span>}
-            </button>
-          </div>
-        )}
 
         <div style={{ padding: isCollapsed ? "8px" : "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <LogoutButton collapsed={isCollapsed} />
