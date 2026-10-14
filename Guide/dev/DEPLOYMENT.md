@@ -102,6 +102,107 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (14 Oct 2026, Dev only) — One organisation for all admins; invites reuse deleted people's emails; hover sidebar
+
+**Dev only, to rehearse the admin merge before Live.** Backend and portal rebuilt from commit
+`55897b9` (curriculum, branch `modules`; the code is `a4a4253` and `55897b9`). Live and Capable
+are **not** rebuilt — their files in `Guide/live/` and `Guide/capable/` are still the 13 Oct ones.
+The website has not changed. Upload the backend and the portal together.
+
+**One new migration**, `20261013110000_add_organisation_to_users.js`: adds `users.organisationId`
+and `curricula.mergedFromAdminId`, both nullable. Additive, applied on Restart. No new npm
+package (`package.json` only gained two scripts), so Run NPM Install is not needed.
+
+**One new, optional environment variable**, `ORG_BASE_EMAIL` — only for the merge below: the email
+of the admin whose data stays as it is and whom the others join. Without it the merge uses
+`PUBLIC_CONTENT_ADMIN_ID`.
+
+What was run: the server tests (7 pass), the portal build, the merge report against a local
+database, and the invite fix against local data. **Not tried in a browser on the hosting, and the
+merge has not been applied anywhere but a development machine** — that is what this Dev deploy is
+for.
+
+### What changed
+
+**One organisation, equal admins.** Until now every admin had a separate workspace and saw only
+their own hubs, curricula, courses and so on. Admins can now share one pool: every admin of an
+organisation sees, adds, changes and deletes the same content, with the same rights. Nothing
+changes for an admin until they are in an organisation with another admin:
+
+- **Settings → People & sharing → Admins → Add Admin** now puts the new admin in your
+  organisation (it used to give them an empty workspace of their own).
+- Admins who already have separate workspaces are joined by the **merge** below.
+- Notifications meant for "the admin" go to every admin. The activity log, Settings → Emails and
+  the Users list cover the whole organisation; Users shows each admin as "The whole organisation".
+- **Sharing** is hidden once there are two or more admins (there is nobody left to share with);
+  the Admins card shows how many admins there are.
+- The website keeps showing what it showed before: it still reads `PUBLIC_CONTENT_ADMIN_ID`'s
+  content, and nothing of another admin's is published by the merge.
+
+**Invites no longer fail for deleted people.** Deleting an educator, hub or learner left its
+login behind, still holding the email, so inviting that email as staff (or adding it as an
+educator, hub, learner or supervisor) failed with "already registered". Such a leftover login is
+now removed and the email reused. A real clash says what the email is used by ("…already used by
+an educator login").
+
+**Sidebar opens on hover.** In every portal the desktop sidebar is a row of icons that opens to
+full width while the pointer is over it, and closes when it leaves; it slides over the page
+rather than pushing it. The Collapse button is gone. Phones are unchanged.
+
+### The merge (scripts/mergeOrganisation.js)
+
+Joins every admin into the organisation of the base admin (`ORG_BASE_EMAIL`, else
+`PUBLIC_CONTENT_ADMIN_ID`). The base admin's data stays exactly as it is. For each other admin:
+their data moves into the organisation; a Settings entry with the same name as the base's — a
+competency, pathway, system level, item or staff role — is **combined** with the base's (and
+everything that used it is re-pointed); a curriculum, course, assessment, bootcamp or competition
+with the same name is **kept and renamed** with their first name in brackets, e.g. "Robotics 1
+(Ken)"; email settings, certificate signatory and claim rates keep the base's; anything of theirs
+that was for sale goes back to internal; sharing connections between them are removed.
+
+Run from **Setup Node.js App → the app → Run JS script**:
+
+- **`org:merge:report`** — runs the whole merge and undoes it, printing what it would do. Changes
+  nothing.
+- **`org:merge:apply`** — does it. **Database backup first.**
+
+### Deploy order (Dev)
+
+1. **Database backup.**
+2. **Backend**: upload `backend-deploy.zip` to the app root, Extract, **Restart**.
+3. **Portal**: upload `assets.zip` and `index.html` to the portal document root; extract
+   `assets.zip`, replacing the `assets` folder.
+4. **Setup Node.js App → nodeapp**: add `ORG_BASE_EMAIL` = the main admin's email → Save →
+   **Restart**.
+5. **Run JS script → `org:merge:report`**. Read the output (send it over before going on).
+6. **Run JS script → `org:merge:apply`**, then **Restart**.
+7. **Verify:**
+   - Sign in as the second admin: the main admin's hubs, curricula and courses are there, as
+     well as their own.
+   - Sign in as the main admin: the second admin's hub, learners and courses are there; a course
+     whose name both had shows "(Name)" in brackets; a competency both had appears once.
+   - Settings → People & sharing: no Sharing card; Admins says "2 admins"; Users lists both
+     admins as "The whole organisation".
+   - Notifications: something that notifies the admin (e.g. a new enquiry) reaches both.
+   - The website shows the same pathways as before.
+   - Delete a test educator, then invite their email as staff: it works.
+   - Hover over the sidebar: it opens; move away: it closes.
+
+**If the app page has no "Run JS script" section**, stop after step 4 and say so — the merge then
+needs another way to run.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive --format=zip HEAD:server src knexfile.js package.json package-lock.json` from
+`55897b9`; 474 entries, 115 migrations, the newest `20261013110000_add_organisation_to_users.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+Dev build (`npm run build`): **`index-DG2ipVCp.js`** / CSS `index-hXTMed0K.css` (unchanged). 68
+entries in `assets.zip`.
+
+---
+
 ## This release (13 Oct 2026) — Pathways across developmental stages; duplicate a curriculum; Users list with deactivate; classes in curriculum order
 
 **Backend, portal and website.** Rebuilt from commit `f5ba9c7` (curriculum, branch `modules`) and
