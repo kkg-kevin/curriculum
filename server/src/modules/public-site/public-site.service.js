@@ -18,7 +18,11 @@ const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/
 // website keeps showing — see pickForSlug.
 async function designatedAdminPathways() {
   const ownerAdminId = requirePublicContentAdminId();
+  // A curriculum folded in from another admin (curricula.mergedFromAdminId, set by
+  // scripts/mergeOrganisation.js) is left off the website: merging admins into one organisation
+  // must not publish anything that wasn't public before.
   const curricula = (await CurriculumModel.findAll({ ownerAdminId }))
+    .filter((c) => !c.mergedFromAdminId)
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const lists = await Promise.all(curricula.map((c) => PathwayModel.findByCurriculumId(c.id)));
   return lists.flat();

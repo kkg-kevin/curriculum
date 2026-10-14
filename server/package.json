@@ -9,6 +9,8 @@
     "dev": "nodemon src/server.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "mail:process": "node src/scripts/processEmailOutbox.js",
+    "org:merge:report": "node src/scripts/mergeOrganisation.js",
+    "org:merge:apply": "node src/scripts/mergeOrganisation.js --apply",
     "db:migrate": "knex migrate:latest",
     "db:migrate:rollback": "knex migrate:rollback",
     "db:migrate:status": "knex migrate:status",

@@ -4,18 +4,15 @@ import Sidebar from "../components/ui/Sidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import StaffAccessGate from "../routes/StaffAccessGate";
-import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
+import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 
 const MOBILE_BREAKPOINT = 900;
 
 function MainLayout() {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Same storage key ("admin") as Sidebar.jsx reads/writes — both must agree on the current
-  // collapsed state so the content area's reserved margin always matches the sidebar's actual
-  // rendered width.
-  const [collapsed] = useSidebarCollapse("admin");
-  const reservedWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+  // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).
+  const reservedWidth = SIDEBAR_COLLAPSED_WIDTH;
 
   useEffect(() => {
     const handleResize = () => {

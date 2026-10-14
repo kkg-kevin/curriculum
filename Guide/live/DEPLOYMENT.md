@@ -102,6 +102,107 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (14 Oct 2026) — One organisation for all admins; invites reuse deleted people's emails; hover sidebar
+
+**Backend and portal rebuilt for Live and Capable** from commit `55897b9` (curriculum, branch
+`modules`; the code is `a4a4253` and `55897b9`) — the same code Dev received earlier on 14 Oct,
+where the admin merge was rehearsed and checked (two admins, both then saw the same data). The
+website has not changed. Upload the backend and the portal together.
+
+**One new migration**, `20261013110000_add_organisation_to_users.js`: adds `users.organisationId`
+and `curricula.mergedFromAdminId`, both nullable. Additive. No new npm package (`package.json`
+only gained two scripts), so Run NPM Install is not needed. **On Dev the migration did not apply
+on Restart** — it took Run JS script → `db:migrate`; step 4 below covers that.
+
+**One new, optional environment variable**, `ORG_BASE_EMAIL` — only for the merge: the email of
+the admin whose data stays as it is and whom the others join. On Live: `admin@digifunzi.com`.
+
+### What changed
+
+**One organisation, equal admins.** Until now every admin had a separate workspace. Admins now
+share one pool: every admin of the organisation sees, adds, changes and deletes the same content,
+with the same rights.
+
+- **Settings → People & sharing → Admins → Add Admin** puts the new admin in your organisation
+  (it used to give them an empty workspace of their own).
+- Admins who already have separate workspaces are joined by the **merge** below — until it runs,
+  nothing changes for them.
+- Notifications meant for "the admin" go to every admin. The activity log, Settings → Emails and
+  the Users list cover the whole organisation; Users shows each admin as "The whole organisation".
+- **Sharing** is hidden once there are two or more admins; the Admins card shows how many there
+  are.
+- The website keeps showing what it showed before, and nothing of another admin's is published by
+  the merge.
+
+**Invites no longer fail for deleted people.** Deleting an educator, hub or learner left its
+login behind, still holding the email, so inviting that email as staff (or adding it as an
+educator, hub, learner or supervisor) failed with "already registered". Such a leftover login is
+now removed and the email reused. A real clash says what the email is used by.
+
+**Sidebar opens on hover.** The desktop sidebar is a row of icons that opens to full width while
+the pointer is over it and closes when it leaves, sliding over the page. The Collapse button is
+gone. Phones are unchanged.
+
+### The merge on Live
+
+Joins every admin into `admin@digifunzi.com`'s organisation; `admin@digifunzi.com`'s data stays
+exactly as it is. After the 14 Oct clean-up, the admins it folds in are
+`tabithakimani@digifunzi.com` (her remaining courses, assessments and competencies move in) and
+`kenmaina@digifunzi.com` **if his login still exists** — he would become an admin with full access,
+so delete his login first if he should not have it. For each folded-in admin: a competency,
+pathway, system level, item or staff role with the same name as `admin@digifunzi.com`'s is
+**combined** with it; a curriculum, course, assessment, bootcamp or competition with the same name
+is **kept and renamed** with their first name in brackets, e.g. "Robotics 1 (Tabitha)"; anything
+of theirs for sale goes back to internal.
+
+Both runs are in **Setup Node.js App → dcf-api app → Run JS script**: **`org:merge:report`**
+(changes nothing) and **`org:merge:apply`**.
+
+### Deploy order (Live) — one step at a time
+
+1. **Database backup** (phpMyAdmin → Export → Quick → SQL).
+2. **Backend**: upload `backend-deploy.zip` to the app root, Extract **into the app root itself**
+   (`package.json`, `knexfile.js` and `src/` must sit directly in it — on Dev a wrong location gave
+   "package.json file is required"), **Restart**.
+3. **Portal**: upload `assets.zip` and `index.html` to the `dcf.digifunzi.com` document root;
+   extract `assets.zip`, replacing the `assets` folder.
+4. **Run JS script → `db:migrate`**. Expect `Batch … run: 1 migrations` or `Already up to date`.
+   Check in phpMyAdmin: `SHOW COLUMNS FROM users LIKE 'organisationId';` returns one row.
+5. **Environment variables**: add `ORG_BASE_EMAIL` = `admin@digifunzi.com` → Save → **Restart**.
+   Open `https://dcf-api.digifunzi.com/health` — `{"status":"ok"}`.
+6. **Run JS script → `org:merge:report`**. Read the output: base `admin@digifunzi.com`, the admins
+   to fold in, what is combined, renamed and moved, ending `REPORT ONLY — nothing was changed.`
+7. **Run JS script → `org:merge:apply`** — same lines, ending `APPLIED.` Then **Restart**.
+8. **Verify:**
+   - Sign in as Tabitha: `admin@digifunzi.com`'s hubs, curricula and courses are there, and her
+     own courses and assessments.
+   - Sign in as `admin@digifunzi.com`: Tabitha's courses and assessments are there; any with a
+     name both had shows "(Tabitha)".
+   - Settings → People & sharing: no Sharing card; Admins says how many admins; Users lists them
+     as "The whole organisation".
+   - The website shows the same pathways as before.
+   - Hover over the sidebar: it opens; move away: it closes.
+
+**Rolling back:** restore the step 1 backup, then upload the 13 Oct `backend-deploy.zip`,
+`assets.zip` and `index.html`.
+
+### Backend (`backend-deploy.zip`)
+
+From `55897b9`, byte-identical in Dev, Live and Capable; 474 entries, 115 migrations, the newest
+`20261013110000_add_organisation_to_users.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DG2ipVCp.js` |
+| Live | `npm run build:live` | `index-CGC9RNAE.js` |
+| Capable | `npm run build:capable` | `index-CO2HB_2k.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`.
+
+---
+
 ## This release (13 Oct 2026) — Pathways across developmental stages; duplicate a curriculum; Users list with deactivate; classes in curriculum order
 
 **Backend, portal and website.** Rebuilt from commit `f5ba9c7` (curriculum, branch `modules`) and

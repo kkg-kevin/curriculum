@@ -7,13 +7,13 @@ const statusSchema = z.object({ active: z.boolean() });
 // Mounted under admin-tools (authorize("admin") + blockIfCollaboratorRestricted at the app.js
 // level), so only the workspace's own admin reaches these — same as the staff routes beside them.
 const listUsers = asyncHandler(async (req, res) => {
-  const data = await WorkspaceUsersService.list(req.ownerAdminId);
+  const data = await WorkspaceUsersService.list(req.ownerAdminId, req.user.id);
   res.json({ success: true, data });
 });
 
 const setUserStatus = asyncHandler(async (req, res) => {
   const { active } = statusSchema.parse(req.body);
-  const data = await WorkspaceUsersService.setActive(req.ownerAdminId, req.params.id, active);
+  const data = await WorkspaceUsersService.setActive(req.ownerAdminId, req.user.id, req.params.id, active);
   res.json({ success: true, data });
 });
 

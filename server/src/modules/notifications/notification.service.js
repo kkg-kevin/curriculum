@@ -1,5 +1,6 @@
 const NotificationModel = require("./notification.model");
 const UserModel = require("../auth/user.model");
+const { adminIdsOf } = require("../../shared/utils/organisation");
 const LearnerModel = require("../learners/learner.model");
 const TeacherModel = require("../teachers/teacher.model");
 const ClassModel = require("../classes/class.model");
@@ -42,7 +43,21 @@ const NotificationService = {
   // ownerAdminId, when the caller knows it, is the workspace the event happened in — it decides
   // whether that workspace has this email switched off (otherwise it's worked out from the
   // recipient).
-  async _notify(recipientId, { type, title, message, payload = null, dedupeKey = null, ownerAdminId = null }) {
+  //
+  // A recipient that is an organisation's key means "the admin" — callers hand over
+  // `ownerAdminId` for that — so it goes to every admin of that organisation, not to whichever
+  // one's user id happens to be the key.
+  async _notify(recipientId, event) {
+    if (!recipientId) return null;
+    const adminIds = await adminIdsOf(recipientId);
+    if (adminIds.length > 1) {
+      const sent = await Promise.all(adminIds.map((id) => this._deliver(id, event)));
+      return sent[0];
+    }
+    return this._deliver(recipientId, event);
+  },
+
+  async _deliver(recipientId, { type, title, message, payload = null, dedupeKey = null, ownerAdminId = null }) {
     if (!recipientId) return null;
     if (dedupeKey) {
       const existing = await NotificationModel.findOne({ recipientId, dedupeKey });

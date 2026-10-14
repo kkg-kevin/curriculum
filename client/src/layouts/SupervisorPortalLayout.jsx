@@ -4,7 +4,7 @@ import SupervisorSidebar from "../modules/claims/components/SupervisorSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import { useSupervisorClaims } from "../modules/claims/hooks/useClaims";
-import { useSidebarCollapse, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarCollapse";
+import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -14,10 +14,8 @@ const MOBILE_BREAKPOINT = 900;
 function SupervisorPortalLayout() {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Same storage key ("supervisor") as SupervisorSidebar.jsx — both must agree on the collapsed
-  // state so the content area's reserved margin matches the sidebar's actual width.
-  const [collapsed] = useSidebarCollapse("supervisor");
-  const reservedWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+  // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).
+  const reservedWidth = SIDEBAR_COLLAPSED_WIDTH;
   // The pages read the same claims (one cached request); here it only feeds the sidebar's badge.
   const { data } = useSupervisorClaims();
   const waiting = data?.counts?.pending_supervisor || 0;

@@ -94,7 +94,7 @@ export default function CollaboratorsPanel({ onManageRoles }) {
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>Staff</h2>
           <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF", maxWidth: "480px", lineHeight: "1.6" }}>
             People who help run your workspace. What each person can do comes from their role — set roles up in{" "}
-            {onManageRoles ? <button type="button" onClick={onManageRoles} style={{ padding: 0, border: "none", background: "none", color: "#2e7db5", fontWeight: 700, fontSize: "inherit", fontFamily: "inherit", cursor: "pointer", textDecoration: "underline" }}>Roles &amp; access</button> : <>Roles &amp; access</>}. Managing staff and roles always stays with you.
+            {onManageRoles ? <button type="button" onClick={onManageRoles} style={{ padding: 0, border: "none", background: "none", color: "#2e7db5", fontWeight: 700, fontSize: "inherit", fontFamily: "inherit", cursor: "pointer", textDecoration: "underline" }}>Roles &amp; access</button> : <>Roles &amp; access</>}. Only admins can manage staff and roles.
           </p>
         </div>
         <button type="button" className="stg-btn-primary" onClick={() => setOpen(true)}>

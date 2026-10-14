@@ -142,8 +142,12 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
   // the tenant id is just the admin's own user id. See learning_hubs/curricula/courses/
   // assessments' ownerAdminId column and withOwnerScope in model.utils.js for how this is
   // actually enforced on queries.
+  //
+  // Admins of one organisation share its pool: an admin who has joined one works under the
+  // organisation's key rather than their own id (see shared/utils/organisation.js), so every
+  // admin of it reads and writes exactly the same content. An admin on their own is unchanged.
   if (role === "admin") {
-    req.ownerAdminId = id;
+    req.ownerAdminId = req.user.organisationId || id;
   }
 
   next();

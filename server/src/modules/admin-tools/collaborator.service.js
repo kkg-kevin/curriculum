@@ -3,6 +3,17 @@ const AuthService = require("../auth/auth.service");
 const { MODULE_KEYS } = require("./module-registry");
 const AccessService = require("../access/access.service");
 const AccessRoleModel = require("../access/access-role.model");
+const { releaseIfLeftover } = require("../auth/leftover-login");
+
+// How an account type reads in "this email is already used by …".
+const ACCOUNT_LABELS = {
+  admin: "an admin",
+  teacher: "an educator",
+  school: "a learning hub",
+  learner: "a learner or parent",
+  supervisor: "a claims supervisor",
+  curriculumAdmin: "a curriculum admin",
+};
 
 function sanitize(user) {
   const { passwordHash, ...safe } = user;
@@ -19,14 +30,20 @@ const CollaboratorService = {
   // email that already collaborates with a DIFFERENT admin's tenant. So the cross-tenant check
   // runs first, before any password is touched.
   async invite({ name, email, password, invitedByAdminId, allowedModules, roleId }) {
-    const existing = await UserModel.findByEmail(email);
+    let existing = await UserModel.findByEmail(email);
+    // An account no record points at any more (its educator, hub or learner was deleted, or the
+    // workspace that invited it is gone) is invisible everywhere — free its email instead of
+    // refusing. Checked only after the role, so nothing is removed for an invite that then fails.
+    const isOtherAccount = existing && (existing.role !== "collaborator" || existing.invitedByAdminId !== invitedByAdminId);
+    if (roleId) await AccessService.assertOwnRole(invitedByAdminId, roleId);
+    if (isOtherAccount && (await releaseIfLeftover(existing))) existing = null;
     if (existing && existing.role !== "collaborator") {
-      const err = new Error(`This email is already registered as a ${existing.role} account`);
+      const err = new Error(`This email is already used by ${ACCOUNT_LABELS[existing.role] || `a ${existing.role}`} login — staff need an email of their own`);
       err.statusCode = 409;
       throw err;
     }
     if (existing && existing.invitedByAdminId !== invitedByAdminId) {
-      const err = new Error("This email already collaborates with a different admin");
+      const err = new Error("This email is already a staff member of another workspace");
       err.statusCode = 409;
       throw err;
     }
@@ -35,8 +52,6 @@ const CollaboratorService = {
     // UI always sends an explicit array in practice; this default only matters for a caller that
     // bypasses it (e.g. direct API use).
     const modules = allowedModules === undefined ? MODULE_KEYS : allowedModules;
-    // Checked before any account is created or its password touched.
-    if (roleId) await AccessService.assertOwnRole(invitedByAdminId, roleId);
     const user = await AuthService.setOrCreatePassword({ name, email, password, role: "collaborator" });
     // Re-inviting an existing collaborator (password reset) also updates their module grant, so
     // editing access is possible through a re-invite, not only the dedicated PATCH endpoint below.

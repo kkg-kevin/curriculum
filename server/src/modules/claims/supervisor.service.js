@@ -2,6 +2,7 @@ const db = require("../../config/db");
 const UserModel = require("../auth/user.model");
 const UserSessionModel = require("../auth/user-session.model");
 const AuthService = require("../auth/auth.service");
+const { releaseIfLeftover } = require("../auth/leftover-login");
 
 // Claim supervisors: accounts that exist only to review the claims of the educators assigned to
 // them (see the 20261008090000 migration). Created and managed by the workspace's admin; an
@@ -33,7 +34,8 @@ const SupervisorService = {
   // A supervisor login is its own account: an email already used by an educator, staff member or
   // anyone else can't double as one.
   async create(ownerAdminId, { name, email, password }) {
-    const existing = await UserModel.findByEmail(email);
+    let existing = await UserModel.findByEmail(email);
+    if (existing && await releaseIfLeftover(existing)) existing = null;
     if (existing) fail(existing.role === "supervisor" ? "A supervisor with this email already exists" : `This email is already registered as a ${existing.role} account — a supervisor needs an email of their own`, 409);
     const user = await AuthService.createUser({ name, email, password, role: "supervisor" });
     return publicShape(await UserModel.update(user.id, { invitedByAdminId: ownerAdminId }));
