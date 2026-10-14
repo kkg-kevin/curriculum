@@ -8,7 +8,7 @@ const UserSessionModel = require("../auth/user-session.model");
 // `users` has no workspace column for most account types — a login is tied to its workspace
 // through the record it signs in as (the same links scope.middleware.js's attachOwnRecords and
 // audit.service.js's workspace lookup follow, read here in the other direction):
-//   admin            the owner themself
+//   admin            the organisation's admins (its key, or users.organisationId = its key)
 //   collaborator     users.invitedByAdminId (staff — access comes from their role)
 //   supervisor       users.invitedByAdminId
 //   curriculumAdmin  curricula.curriculumAdminId on one of the owner's curricula
@@ -20,7 +20,7 @@ const UserSessionModel = require("../auth/user-session.model");
 const INACTIVE_AFTER_DAYS = 30;
 
 const TYPE_LABELS = {
-  admin: "Admin (owner)",
+  admin: "Admin",
   collaborator: "Staff",
   supervisor: "Supervisor",
   curriculumAdmin: "Curriculum admin",
@@ -75,7 +75,7 @@ function statusOf(user, lastActiveAt, now) {
 }
 
 const WorkspaceUsersService = {
-  async list(ownerAdminId) {
+  async list(ownerAdminId, currentUserId = ownerAdminId) {
     const { hubs, teachers, learners } = await workspacePeople(ownerAdminId);
     const curricula = await db("curricula").where({ ownerAdminId }).whereNotNull("curriculumAdminId").select("name", "curriculumAdminId");
     const roles = await db("access_roles").where({ ownerAdminId }).select("id", "name");
@@ -95,11 +95,12 @@ const WorkspaceUsersService = {
 
     const candidates = await db("users")
       .where({ id: ownerAdminId })
+      .orWhere({ role: "admin", organisationId: ownerAdminId })
       .orWhere({ invitedByAdminId: ownerAdminId })
       .orWhereIn("id", curriculumAdminIds)
       .orWhere((q) => q.whereIn("role", ["school", "teacher", "learner"]).whereIn(db.raw("LOWER(email)"), emails.length ? emails : [""]))
       .orWhere((q) => q.where({ role: "learner" }).whereIn(db.raw("LOWER(username)"), usernames.length ? usernames : [""]))
-      .select("id", "name", "email", "username", "role", "roleId", "photo", "createdAt", "deactivatedAt", "invitedByAdminId");
+      .select("id", "name", "email", "username", "role", "roleId", "photo", "createdAt", "deactivatedAt", "invitedByAdminId", "organisationId");
 
     // Last time each account did anything the activity log records (a sign-in included). Failed
     // sign-in attempts aren't the account being used.
@@ -124,8 +125,8 @@ const WorkspaceUsersService = {
       let suspended = false; // their hub / educator / learner record is itself switched off
 
       if (user.role === "admin") {
-        if (user.id !== ownerAdminId) continue;
-        attachedTo = "This workspace";
+        if (user.id !== ownerAdminId && user.organisationId !== ownerAdminId) continue;
+        attachedTo = "The whole organisation";
       } else if (user.role === "collaborator" || user.role === "supervisor") {
         if (user.invitedByAdminId !== ownerAdminId) continue;
       } else if (user.role === "curriculumAdmin") {
@@ -175,8 +176,9 @@ const WorkspaceUsersService = {
         lastActiveAt,
         createdAt: user.createdAt,
         deactivatedAt: user.deactivatedAt || null,
-        // The owner can't switch themself off — nobody would be left to switch them back on.
-        canDeactivate: user.id !== ownerAdminId,
+        // Nobody switches themself off — that always leaves an admin able to switch them back on.
+        canDeactivate: user.id !== currentUserId,
+        isYou: user.id === currentUserId,
       });
     }
 
@@ -201,9 +203,9 @@ const WorkspaceUsersService = {
   },
 
   // Switches a login off (it can't sign in, and anywhere it is signed in is ended now) or back
-  // on. Only ever an account in this owner's own workspace, and never the owner's own.
-  async setActive(ownerAdminId, userId, active) {
-    const { users } = await this.list(ownerAdminId);
+  // on. Only ever an account in this organisation, and never the acting admin's own.
+  async setActive(ownerAdminId, currentUserId, userId, active) {
+    const { users } = await this.list(ownerAdminId, currentUserId);
     const target = users.find((u) => u.id === userId);
     if (!target) throw fail("User not found", 404);
     if (!target.canDeactivate) throw fail("You can't deactivate your own account", 400);
@@ -211,7 +213,7 @@ const WorkspaceUsersService = {
     await db("users").where({ id: userId }).update({ deactivatedAt: active ? null : new Date() });
     if (!active) await UserSessionModel.deleteByUserId(userId);
 
-    const updated = (await this.list(ownerAdminId)).users.find((u) => u.id === userId);
+    const updated = (await this.list(ownerAdminId, currentUserId)).users.find((u) => u.id === userId);
     return updated;
   },
 };

@@ -99,7 +99,7 @@ export default function AdminsPanel() {
         </div>
         <p style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: "800", color: "#374151" }}>Add another admin</p>
         <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9CA3AF", maxWidth: "360px", marginInline: "auto", lineHeight: "1.6" }}>
-          They'll get their own login and their own empty workspace — nothing you've set up carries over to them.
+          They'll get their own login and work on the same content as you, with the same rights — one organisation, not a separate workspace.
         </p>
         <button type="button" className="stg-btn-primary" onClick={() => setOpen(true)}>
           <FiUserPlus size={14} strokeWidth={2.2} /> Add Admin
@@ -109,7 +109,7 @@ export default function AdminsPanel() {
       {open && (
         <Modal
           title="Add Admin"
-          subtitle="They'll start with a completely empty workspace of their own."
+          subtitle="They join your organisation and can see, add, change and delete everything you can."
           onClose={() => { setOpen(false); setErrors({}); }}
           footer={(
             <>

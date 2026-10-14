@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const UserModel = require("../auth/user.model");
+const { organisationIdOf } = require("../../shared/utils/organisation");
 const NotificationService = require("../notifications/notification.service");
 const AdminConnectionModel = require("./admin-connection.model");
 const { copyBetweenAdmins } = require("./share-copy.service");
@@ -95,6 +96,7 @@ const SharingService = {
     const other = await UserModel.findByEmail(String(email || "").trim());
     if (!other || other.role !== "admin") fail("No admin account found with that email", 404);
     if (other.id === adminId) fail("That's your own account");
+    if (organisationIdOf(other) === adminId) fail("That admin is already in your organisation and works on the same content");
 
     const existing = await AdminConnectionModel.findBetween(adminId, other.id);
     if (existing) {

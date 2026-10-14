@@ -4,6 +4,8 @@ const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPassw
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 const jwt = require("jsonwebtoken");
 const AuditService = require("../audit/audit.service");
+const UserModel = require("./user.model");
+const { organisationIdOf, forgetAdmins } = require("../../shared/utils/organisation");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
 // fine locally where client and server share the "localhost" site across ports, but breaks
@@ -111,7 +113,11 @@ const resetPassword = asyncHandler(async (req, res) => {
 // learner login.
 const createAdmin = asyncHandler(async (req, res) => {
   const data = createUserSchema.parse({ ...req.body, role: "admin" });
-  const user = await AuthService.createUser(data);
+  // The new admin joins the organisation of the admin adding them and works on the same content,
+  // with the same rights — not an empty workspace of their own (see shared/utils/organisation.js).
+  const organisationId = organisationIdOf(await UserModel.findById(req.user.id));
+  const user = await AuthService.createUser({ ...data, organisationId });
+  forgetAdmins(organisationId);
   res.status(201).json({ success: true, data: user });
 });
 

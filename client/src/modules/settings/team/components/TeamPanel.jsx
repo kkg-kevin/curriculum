@@ -8,10 +8,12 @@ import { useCollaborators } from "../../collaborators/hooks/useCollaborators";
 import { useAccessRoles } from "../../access/hooks/useAccessRoles";
 import { useConnections } from "../../sharing/hooks/useSharing";
 import { useWorkspaceUsers } from "../../users/hooks/useWorkspaceUsers";
+import { useAuth } from "../../../../context/AuthContext";
 
 // Everything about WHO works with this workspace, in one place (owner-only): the people helping
 // inside it (Staff) and what they may do (Roles & access), other admins content is exchanged with
-// (Sharing), creating a separate workspace for someone (Admins), and every login the workspace
+// (Sharing — hidden once there are several admins in one organisation), adding admins to the
+// organisation (Admins), and every login the workspace
 // has, of any kind, with whether it is in use and switched on (Users). Each card says what it is
 // for and where things stand; picking one shows it underneath.
 
@@ -54,7 +56,14 @@ export default function TeamPanel({ section, onSectionChange }) {
 
   const connected = (connections || []).filter((c) => c.status === "accepted").length;
   const waitingForMe = (connections || []).filter((c) => c.status === "pending" && c.direction === "received").length;
-  const active = TEAM_SECTIONS.includes(section) ? section : "staff";
+  // Admins who share one organisation already work on the same content — there is nobody left
+  // to exchange copies with, so Sharing is put away for all of them: one who joined (has an
+  // organisationId) and the organisation's first admin alike (the Users list shows its admins).
+  const { user } = useAuth();
+  const adminCount = (workspaceUsers?.users || []).filter((u) => u.type === "admin").length;
+  const inOrganisation = !!user?.organisationId || adminCount > 1;
+  const sections = inOrganisation ? TEAM_SECTIONS.filter((key) => key !== "sharing") : TEAM_SECTIONS;
+  const active = sections.includes(section) ? section : "staff";
 
   const cards = [
     {
@@ -82,15 +91,15 @@ export default function TeamPanel({ section, onSectionChange }) {
     },
     {
       key: "admins", Icon: FiShield, title: "Admins",
-      purpose: "Give someone a separate, empty workspace of their own.",
-      status: "Add an admin",
+      purpose: "Add another admin to your organisation, with the same rights as you.",
+      status: adminCount > 1 ? plural(adminCount, "admin") : "Add an admin",
     },
   ];
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12, marginBottom: 22 }}>
-        {cards.map(({ key, ...card }) => (
+        {cards.filter((card) => sections.includes(card.key)).map(({ key, ...card }) => (
           <SectionCard key={key} {...card} active={active === key} onClick={() => onSectionChange(key)} />
         ))}
       </div>

@@ -33,7 +33,7 @@ async function adminOfLearner(learner) {
 // parent can have children in more than one workspace.
 async function workspaceOf(user, { learnerId } = {}) {
   if (!user) return null;
-  if (user.role === "admin") return user.id;
+  if (user.role === "admin") return user.organisationId || user.id;
   if (user.invitedByAdminId) return user.invitedByAdminId; // staff and supervisors
   if (user.role === "learner") {
     if (learnerId) return adminOfLearner(await LearnerModel.findById(learnerId));

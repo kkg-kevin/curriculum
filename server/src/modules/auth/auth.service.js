@@ -12,6 +12,7 @@ const UserSessionModel = require("./user-session.model");
 const PasswordResetTokenModel = require("./password-reset-token.model");
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
+const { releaseIfLeftover } = require("./leftover-login");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
 
@@ -148,14 +149,16 @@ function signToken(user) {
 }
 
 const AuthService = {
-  async createUser({ name, email, password, role }) {
+  // `organisationId` (admins only) puts the new admin in an existing organisation — see
+  // auth.controller.js's createAdmin.
+  async createUser({ name, email, password, role, organisationId }) {
     if (await UserModel.findByEmail(email)) {
       const err = new Error("A user with this email already exists");
       err.statusCode = 409;
       throw err;
     }
     const passwordHash = await passwords.hash(password, SALT_ROUNDS);
-    const user = await UserModel.create({ name, email, passwordHash, role });
+    const user = await UserModel.create({ name, email, passwordHash, role, ...(organisationId ? { organisationId } : {}) });
     return sanitize(user);
   },
 
@@ -170,10 +173,14 @@ const AuthService = {
   // portal password from the learning hub form itself. If an account with that email already exists, its
   // password is reset (only when the role matches — never silently repurpose an unrelated
   // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
-  // account is created, same as self-signup.
+  // account is created, same as self-signup. A leftover login of another kind (see
+  // leftover-login.js — its record was deleted) gives its email up rather than refusing.
   async setOrCreatePassword({ name, email, password, role }) {
     const existing = await UserModel.findByEmail(email);
     if (existing) {
+      if (existing.role !== role && await releaseIfLeftover(existing)) {
+        return this.createUser({ name, email, password, role });
+      }
       if (existing.role !== role) {
         const err = new Error(`This email is already registered as a ${existing.role} account`);
         err.statusCode = 409;
