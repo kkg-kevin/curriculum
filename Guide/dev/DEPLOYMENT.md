@@ -102,62 +102,37 @@ the frontend needs a second, separately-built zip.
 
 ---
 
-## This release (14 Oct 2026, website) — The website moves to digifunzi.co.ke and takes its data from Live; the "digifunzi" wordmark in the logo
+## This release (14 Oct 2026, website) — Two websites: africa.digifunzi.com for Dev, digifunzi.co.ke for Live; the "digifunzi" wordmark in the logo
 
-**Website only**, rebuilt from commit `cbbc0a1` (curriculum-web, branch `new`). Nothing for the portal or
-Capable. Three changes at once:
+**Website only**, from the `curriculum-web` repo (branch `new`). Nothing for the portal. The
+website is now built **twice**, one per system:
 
-- **New address: `https://digifunzi.co.ke`** (no longer `africa.digifunzi.com`). The zip is
-  renamed **`digifunzi-co-ke-dist.zip`**.
-- **Data from Live**: the site now reads from and sends its forms to **`https://dcf-api.digifunzi.com`**
-  (it used to be the Dev API, `nodeapp.digifunzi.com`). A bootcamp learner whose account is created
-  from the site is sent to sign in at **`https://dcf.digifunzi.com`**.
-- **Logo**: the mascot plus the "digifunzi" wordmark image instead of the typed name (white on dark
-  backgrounds: the footer, and dark mode).
+| Website | Data from | Build | Zip | In |
+|---|---|---|---|---|
+| **`https://africa.digifunzi.com`** | **Dev** — `nodeapp.digifunzi.com` (learners sign in at `curriculum.digifunzi.com`) | `npm run deploy:build:dev` (`.env.dev`) | `africa-digifunzi-com-dist.zip` | `Guide/dev/` |
+| `https://digifunzi.co.ke` | Live — `dcf-api.digifunzi.com` (learners sign in at `dcf.digifunzi.com`) | `npm run deploy:build` (`.env.production`) | `digifunzi-co-ke-dist.zip` | `Guide/live/` |
 
-### Live has no public content yet
+Both carry the new logo: the mascot plus the "digifunzi" wordmark image instead of the typed name
+(white on dark backgrounds: the footer, and dark mode). The settings for each build are listed in
+`digifunzi-landing/.env.example`.
 
-At build time every public list on the Live API was empty: 0 pathways, bootcamps, competitions,
-projects, store items and Home Learning packages. So the site's pages and forms work, but those
-sections show nothing until content is published in the **Live** portal (`dcf.digifunzi.com`):
-pathways switched to "Offer on the public website", bootcamps and competitions made public,
-projects and goods marked for sale, Home Learning packages added. Once published, the lists appear
-on the site straight away (the browser asks the API); **rebuild and re-upload the website** then as
-well, so each item gets its own pre-rendered page and its place in `sitemap.xml` for search engines.
+### africa.digifunzi.com (this folder's zip)
 
-### Required on the Live API before the site's forms work
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build:dev` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes** pre-rendered (11 pathways, 2 projects,
+1 store item, 5 bootcamps, 3 competitions), 34 URLs in `sitemap.xml`. Every canonical address,
+share link, `sitemap.xml` and `robots.txt` say `https://africa.digifunzi.com`.
 
-In **Setup Node.js App → the Live app (dcf-api) → Environment variables**, set `PUBLIC_SITE_URL`
-(comma-separated, no spaces, the new address first — emails link to the first one):
-
-    PUBLIC_SITE_URL=https://digifunzi.co.ke,https://www.digifunzi.co.ke
-
-then **Save** and **Restart**. Without it every form on digifunzi.co.ke (Enroll, Contact, the
-diagnostic, "Enquire to buy") fails. Enquiries then arrive in the **Live** portal's Enquiries.
-
-### Website (`digifunzi-co-ke-dist.zip`)
-
-`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
-`digifunzi-landing/` with `.env.production` pointing at the Live API: **14/14 routes** pre-rendered
-(the 12 main pages, `200.html`, `404.html` — no item pages, as Live has none published), 12 URLs in
-`sitemap.xml`; 167 entries. Every canonical address, share link, `sitemap.xml` and `robots.txt` say
-`https://digifunzi.co.ke`. The same file is in `Guide/dev/` and `Guide/live/`. The old
-`africa-digifunzi-com-dist.zip` is retired.
+**Dev API setting**: the nodeapp app's `PUBLIC_SITE_URL` must include
+`https://africa.digifunzi.com` (it already did for the old site — leave it in).
 
 ### Deploy order
 
-1. **Live API setting**: `PUBLIC_SITE_URL` as above → Save → Restart →
-   `https://dcf-api.digifunzi.com/health` shows `{"status":"ok"}`.
-2. **Website**: in cPanel, make sure `digifunzi.co.ke` has its domain and an SSL certificate
-   (AutoSSL) — the `.htaccess` sends every visit to https. Upload `digifunzi-co-ke-dist.zip` to
-   **the `digifunzi.co.ke` document root** and Extract, including the hidden `.htaccess`.
-3. **Verify** (reload with Ctrl+F5):
-   - `https://digifunzi.co.ke` opens; `http://` and `www.` versions land on it.
-   - Reload a deeper page, e.g. `https://digifunzi.co.ke/pathways/` — it opens (not a 404).
-   - Send a test enquiry from Contact: it is accepted and appears in the **Live** portal's Enquiries.
-   - The header shows the mascot and the "digifunzi" wordmark; the footer shows it white.
-4. **The old site** at `africa.digifunzi.com` (Dev data) keeps working as it is. Once
-   digifunzi.co.ke is confirmed, redirect it there or remove it.
+1. Upload `africa-digifunzi-com-dist.zip` to **the `africa.digifunzi.com` document root** and
+   Extract, replacing the existing files.
+2. **Verify** (Ctrl+F5): the header shows the mascot and the "digifunzi" wordmark, the footer shows
+   it white; `https://africa.digifunzi.com/bootcamps/` lists Dev's bootcamps; a test enquiry
+   appears in the **Dev** portal's Enquiries.
 
 ---
 
