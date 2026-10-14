@@ -102,6 +102,40 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (14 Oct 2026, website) — Two websites: africa.digifunzi.com for Dev, digifunzi.co.ke for Live; the "digifunzi" wordmark in the logo
+
+**Website only**, from the `curriculum-web` repo (branch `new`). Nothing for the portal. The
+website is now built **twice**, one per system:
+
+| Website | Data from | Build | Zip | In |
+|---|---|---|---|---|
+| **`https://africa.digifunzi.com`** | **Dev** — `nodeapp.digifunzi.com` (learners sign in at `curriculum.digifunzi.com`) | `npm run deploy:build:dev` (`.env.dev`) | `africa-digifunzi-com-dist.zip` | `Guide/dev/` |
+| `https://digifunzi.co.ke` | Live — `dcf-api.digifunzi.com` (learners sign in at `dcf.digifunzi.com`) | `npm run deploy:build` (`.env.production`) | `digifunzi-co-ke-dist.zip` | `Guide/live/` |
+
+Both carry the new logo: the mascot plus the "digifunzi" wordmark image instead of the typed name
+(white on dark backgrounds: the footer, and dark mode). The settings for each build are listed in
+`digifunzi-landing/.env.example`.
+
+### africa.digifunzi.com (this folder's zip)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build:dev` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes** pre-rendered (11 pathways, 2 projects,
+1 store item, 5 bootcamps, 3 competitions), 34 URLs in `sitemap.xml`. Every canonical address,
+share link, `sitemap.xml` and `robots.txt` say `https://africa.digifunzi.com`.
+
+**Dev API setting**: the nodeapp app's `PUBLIC_SITE_URL` must include
+`https://africa.digifunzi.com` (it already did for the old site — leave it in).
+
+### Deploy order
+
+1. Upload `africa-digifunzi-com-dist.zip` to **the `africa.digifunzi.com` document root** and
+   Extract, replacing the existing files.
+2. **Verify** (Ctrl+F5): the header shows the mascot and the "digifunzi" wordmark, the footer shows
+   it white; `https://africa.digifunzi.com/bootcamps/` lists Dev's bootcamps; a test enquiry
+   appears in the **Dev** portal's Enquiries.
+
+---
+
 ## This release (14 Oct 2026, Dev only) — One organisation for all admins; invites reuse deleted people's emails; hover sidebar
 
 **Dev only, to rehearse the admin merge before Live.** Backend and portal rebuilt from commit

@@ -102,6 +102,45 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (14 Oct 2026, website) — Two websites: digifunzi.co.ke for Live, africa.digifunzi.com for Dev; the "digifunzi" wordmark in the logo
+
+**Website only**, from the `curriculum-web` repo (branch `new`). Nothing for the portal or
+Capable. The website is now built **twice**, one per system:
+
+| Website | Data from | Build | Zip | In |
+|---|---|---|---|---|
+| **`https://digifunzi.co.ke`** | **Live** — `dcf-api.digifunzi.com` (learners sign in at `dcf.digifunzi.com`) | `npm run deploy:build` (`.env.production`) | `digifunzi-co-ke-dist.zip` | `Guide/live/` |
+| `https://africa.digifunzi.com` | Dev — `nodeapp.digifunzi.com` (learners sign in at `curriculum.digifunzi.com`) | `npm run deploy:build:dev` (`.env.dev`) | `africa-digifunzi-com-dist.zip` | `Guide/dev/` |
+
+Both carry the new logo: the mascot plus the "digifunzi" wordmark image instead of the typed name
+(white on dark backgrounds: the footer, and dark mode). The settings for each build are listed in
+`digifunzi-landing/.env.example`.
+
+### digifunzi.co.ke (this folder's zip)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
+`digifunzi-landing/`, against the Live API: **16/16 routes** pre-rendered — the 12 main pages,
+**1 pathway and 1 bootcamp** (all Live had published), `200.html`, `404.html`; 14 URLs in
+`sitemap.xml`. Every canonical address, share link, `sitemap.xml` and `robots.txt` say
+`https://digifunzi.co.ke`. Rebuild and re-upload whenever more is published on Live, so each item
+gets its own page and its place in the sitemap (the lists themselves update on their own).
+
+**Live API setting** (already in place on 14 Oct — the site's forms were checked to be accepted):
+`PUBLIC_SITE_URL=https://digifunzi.co.ke,https://www.digifunzi.co.ke` on the dcf-api app. The
+site lists only what belongs to the admin in the Live app's `PUBLIC_CONTENT_ADMIN_ID`, which since
+the merge is the organisation key `ce824ad7-4e94-4ce1-a83a-81aaca6f4d94`; a bootcamp also needs
+"List on the website" ticked.
+
+### Deploy order
+
+1. Upload `digifunzi-co-ke-dist.zip` to **the `digifunzi.co.ke` document root** and Extract,
+   replacing the existing files (keep `.well-known`, `cgi-bin`, `.user.ini`, `php.ini`).
+2. **Verify** (Ctrl+F5): `https://digifunzi.co.ke/bootcamps/` lists the bootcamp and its page
+   opens; `https://digifunzi.co.ke/pathways/` lists the pathway; a test enquiry from Contact
+   appears in the **Live** portal's Enquiries; the header shows the wordmark.
+
+---
+
 ## This release (14 Oct 2026) — One organisation for all admins; invites reuse deleted people's emails; hover sidebar
 
 **Backend and portal rebuilt for Live and Capable** from commit `55897b9` (curriculum, branch
