@@ -54,6 +54,28 @@ const INTEREST_LABELS = {
   general: "Not sure yet",
 };
 
+// How the family found the website (lead.visitSource — the website's first-visit record, see the
+// server's leads/visit-source.js). The referring site's host, named when it's one parents use.
+const REFERRER_NAMES = [
+  [/(^|\.)google\./, "Google search"],
+  [/(^|\.)bing\.com$/, "Bing search"],
+  [/(^|\.)(facebook\.com|fb\.com|fb\.me)$/, "Facebook"],
+  [/(^|\.)instagram\.com$/, "Instagram"],
+  [/(^|\.)(whatsapp\.com|wa\.me)$/, "WhatsApp"],
+  [/(^|\.)linkedin\.com$/, "LinkedIn"],
+  [/(^|\.)(youtube\.com|youtu\.be)$/, "YouTube"],
+  [/(^|\.)tiktok\.com$/, "TikTok"],
+  [/(^|\.)(t\.co|twitter\.com|x\.com)$/, "X (Twitter)"],
+];
+
+function describeVisit(visit) {
+  if (!visit?.landingPage) return null;
+  const host = visit.referrer || "";
+  const from = host ? (REFERRER_NAMES.find(([re]) => re.test(host))?.[1] || host) : "Direct or not known";
+  const campaign = [visit.utmCampaign, [visit.utmSource, visit.utmMedium].filter(Boolean).join(" / ")].filter(Boolean).join(" · ");
+  return { from, landingPage: visit.landingPage, campaign };
+}
+
 const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item", home_learning_package: "Home Learning package" };
 
 function StatusBadge({ status }) {
@@ -256,6 +278,7 @@ function LeadRow({ lead, highlighted, rowRef }) {
   // Only a bootcamp-enrollment lead has a provisioned learner to unlock — see
   // bootcamp-enrollment.service.js. Once paid, show a badge instead of the action.
   const isPayable = lead.source === "enroll" && !!lead.learnerId;
+  const visit = describeVisit(lead.visitSource);
   return (
     <div
       ref={rowRef}
@@ -286,6 +309,12 @@ function LeadRow({ lead, highlighted, rowRef }) {
               <LinkIcon sx={{ fontSize: 14 }} />
               Enquired from: <strong>{lead.reference.referenceName}</strong>
               <span style={{ color: "#9CA3AF" }}>({REFERENCE_TYPE_LABELS[lead.reference.referenceType] || lead.reference.referenceType})</span>
+            </div>
+          )}
+          {visit && (
+            <div style={{ marginTop: 6, fontSize: 12, color: "#6B7280" }}>
+              Found us: <strong style={{ color: "#374151" }}>{visit.from}</strong> → {visit.landingPage}
+              {visit.campaign && <> · campaign {visit.campaign}</>}
             </div>
           )}
           {lead.message && (

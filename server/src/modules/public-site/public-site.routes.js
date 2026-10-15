@@ -9,6 +9,7 @@ const HomeLearningService = require("../home-learning/home-learning.service");
 const asyncHandler = require("express-async-handler");
 const rateLimit = require("express-rate-limit");
 const HomeLearningSignupService = require("../home-learning/home-learning-signup.service");
+const { visitSourceFrom } = require("../leads/visit-source");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -74,7 +75,7 @@ const homeLearningSignupLimiter = rateLimit({
   message: { success: false, message: "Too many sign-ups from here. Please try again later." },
 });
 router.post("/home-learning/signups", homeLearningSignupLimiter, asyncHandler(async (req, res) => {
-  res.status(201).json({ success: true, data: await HomeLearningSignupService.signup(req.body) });
+  res.status(201).json({ success: true, data: await HomeLearningSignupService.signup(req.body, visitSourceFrom(req)) });
 }));
 
 module.exports = router;

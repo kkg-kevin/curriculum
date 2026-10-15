@@ -86,7 +86,7 @@ const BootcampEnrollmentService = {
   // state, so a failure after the learner is created rolls it back before rethrowing, unlike the
   // lead-notification/acknowledgement-email side effects elsewhere in this app which already
   // tolerate failure.
-  async submitBootcampEnrollment(data) {
+  async submitBootcampEnrollment(data, visitSource = null) {
     const { bootcamp, offering } = await resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId);
     const classId = offering.classIds[0];
 
@@ -103,6 +103,7 @@ const BootcampEnrollmentService = {
       message: data.attemptId ? `Diagnostic attempt: ${data.attemptId}` : null,
       bootcampId: bootcamp.id,
       hubId: offering.hubId,
+      visitSource,
     });
     await LeadService._notifyAdmins(lead);
 

@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const crypto = require("crypto");
 const PublicDiagnosticService = require("./public-diagnostic.service");
 const { submitDiagnosticSchema } = require("./public-diagnostic.validation");
+const { visitSourceFrom } = require("../leads/visit-source");
 
 // Never store/log a raw IP — a one-way hash is enough for "one IP, many attempts" abuse
 // visibility (public_diagnostic_attempts.ipHash) without keeping anything that identifies a
@@ -43,7 +44,7 @@ const getAttemptReport = asyncHandler(async (req, res) => {
 // so the website can render the report from this one response, no second round-trip.
 const submitDiagnostic = asyncHandler(async (req, res) => {
   const body = submitDiagnosticSchema.parse(req.body);
-  const result = await PublicDiagnosticService.submitDiagnostic(req.params.pathwayIdOrSlug, body, hashIp(req));
+  const result = await PublicDiagnosticService.submitDiagnostic(req.params.pathwayIdOrSlug, body, hashIp(req), visitSourceFrom(req));
   res.status(201).json({
     ok: true,
     success: true,
