@@ -6,6 +6,8 @@ import {
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
 import { usePermissions } from "../../../hooks/usePermissions";
+import { useDraft, isSameContent } from "../../../hooks/useDraft";
+import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { useGoods } from "../../settings/items/hooks/useItems";
@@ -1573,6 +1575,16 @@ export default function AssessmentBuilderPage() {
   const [createCompetencyOpen, setCreateCompetencyOpen] = useState(false);
   const [createPathwayOpen, setCreatePathwayOpen] = useState(false);
   const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
+  // The form as it was loaded (or blank), to tell whether there's unsaved work to keep as a draft.
+  const loadedForm = useRef(null);
+
+  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
+  const draft = useDraft(form ? (isEdit ? `assessment:edit:${id}` : `assessment:new:${routeType}`) : null, {
+    value: form,
+    dirty: Boolean(form) && !isSameContent(form, loadedForm.current),
+    baseUpdatedAt: assessment?.updatedAt ?? null,
+    saved: loadedForm.current,
+  });
 
   // `name` (competency — indicator) disambiguates in the picker dropdown when more than one
   // linked competency is in play; `chipName` (just the indicator) keeps the selected chip and
@@ -1617,10 +1629,14 @@ export default function AssessmentBuilderPage() {
       const competencyIds = linkedCompetencies.map((c) => c.id);
       const pathwayIds = linkedPathways.map((a) => a.id);
       const inventory = linkedInventory.map((i) => ({ itemId: i.id, quantity: i.quantity }));
-      setForm(buildFormFromAssessment(assessment, competencyIds, pathwayIds, inventory));
+      const loaded = buildFormFromAssessment(assessment, competencyIds, pathwayIds, inventory);
+      loadedForm.current = loaded;
+      setForm(loaded);
       setOriginalTags({ competencyIds, pathwayIds, inventory });
     } else {
-      setForm(buildBlankForm(routeType));
+      const blank = buildBlankForm(routeType);
+      loadedForm.current = blank;
+      setForm(blank);
     }
   }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingPathways, loadingInventory, assessment, linkedCompetencies, linkedPathways, linkedInventory, routeType]);
 
@@ -1792,9 +1808,9 @@ export default function AssessmentBuilderPage() {
     if (!form.name.trim()) { setActiveTab("info"); return; }
     const data = buildPayload();
     if (isEdit) {
-      updateAssessment({ id, data }, { onSuccess: async () => { await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
+      updateAssessment({ id, data }, { onSuccess: async () => { draft.clear(); await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
     } else {
-      createAssessment(data, { onSuccess: async (created) => { await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
+      createAssessment(data, { onSuccess: async (created) => { draft.clear(); await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
     }
   }
 
@@ -1822,6 +1838,7 @@ export default function AssessmentBuilderPage() {
           </div>
         </div>
         <div className="tb-actions">
+          <DraftSavedNote savedAt={draft.savedAt} style={{ alignSelf: "center" }} />
           <button type="button" className="tb-btn-secondary" onClick={() => setPreviewOpen(true)}>Preview Assessment</button>
           <button type="button" className="tb-btn-primary" onClick={handleSave} disabled={isPending}>{isPending ? "Saving…" : "Save Assessment"}</button>
         </div>
@@ -1949,6 +1966,13 @@ export default function AssessmentBuilderPage() {
           onCreated={(itemId) => setForm((f) => ({ ...f, inventory: [...f.inventory, { itemId, quantity: 1 }] }))}
         />
       )}
+      <DraftRestoreDialog
+        draft={draft.found}
+        recordUpdatedAt={assessment?.updatedAt ?? null}
+        what="assessment"
+        onRestore={() => { const restored = draft.restore(); if (restored) setForm(restored); }}
+        onDiscard={draft.discard}
+      />
     </div>
   );
 }

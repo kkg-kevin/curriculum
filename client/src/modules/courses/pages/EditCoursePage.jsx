@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useUpdateCourse, useCoursePathways, useCourseCompetencies, COURSE_KEYS } from "../hooks/useCourse";
@@ -9,6 +9,8 @@ import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
+import { useDraft, isSameContent } from "../../../hooks/useDraft";
+import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
 
 export default function EditCoursePage() {
   const { id } = useParams();
@@ -25,11 +27,14 @@ export default function EditCoursePage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, reset, formState: { isDirty } } = methods;
+  const { handleSubmit, reset, control, formState: { isDirty } } = methods;
+  // The course as loaded into the form. Filled once per course: a background refetch (coming back
+  // to the tab after a while) must not reload the form over unsaved edits.
+  const loaded = useRef(null);
 
   useEffect(() => {
-    if (course && linkedPathways && linkedCompetencies) {
-      reset({
+    if (course && linkedPathways && linkedCompetencies && loaded.current?.id !== id) {
+      const values = {
         name: course.name || "",
         code: course.code || "",
         status: course.status || "draft",
@@ -40,13 +45,29 @@ export default function EditCoursePage() {
         pathwayIds: linkedPathways.map((a) => a.id),
         competencyIds: linkedCompetencies.map((c) => c.id),
         requirements: course.requirements || [],
-      });
+      };
+      loaded.current = { id, values };
+      reset(values);
     }
-  }, [course, linkedPathways, linkedCompetencies, reset]);
+  }, [id, course, linkedPathways, linkedCompetencies, reset]);
+
+  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
+  const values = useWatch({ control });
+  const draft = useDraft(loaded.current?.id === id ? `course:edit:${id}` : null, {
+    value: values,
+    dirty: loaded.current?.id === id && !isSameContent(values, loaded.current.values),
+    baseUpdatedAt: course?.updatedAt ?? null,
+    saved: loaded.current?.values,
+  });
+  const restoreDraft = () => {
+    const restored = draft.restore();
+    if (restored) reset({ ...loaded.current.values, ...restored }, { keepDefaultValues: true });
+  };
 
   const onSubmit = ({ pathwayIds, competencyIds, ...data }) => {
     updateCourse({ id, data }, {
       onSuccess: async () => {
+        draft.clear();
         const originalAreaIds = (linkedPathways || []).map((a) => a.id);
         const areasToAdd = pathwayIds.filter((aid) => !originalAreaIds.includes(aid));
         const areasToRemove = originalAreaIds.filter((aid) => !pathwayIds.includes(aid));
@@ -109,6 +130,7 @@ export default function EditCoursePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <DraftSavedNote savedAt={draft.savedAt} />
           <button
             type="button"
             onClick={handleCancel}
@@ -146,8 +168,15 @@ export default function EditCoursePage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate(`/courses/${id}/view`)}
+        onConfirm={() => { draft.clear(); navigate(`/courses/${id}/view`); }}
         onCancel={() => setConfirmLeave(false)}
+      />
+      <DraftRestoreDialog
+        draft={draft.found}
+        recordUpdatedAt={course?.updatedAt ?? null}
+        what="course"
+        onRestore={restoreDraft}
+        onDiscard={draft.discard}
       />
     </div>
   );
