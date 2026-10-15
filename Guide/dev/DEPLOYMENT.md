@@ -102,6 +102,61 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Oct 2026, website) — Estate Tech Clubs, new header and footer, bootcamp and club pages redesigned
+
+**Website only in this folder's zip**, from `curriculum-web` (branch `new`) at `1550c04`. The
+backend and portal were **not** rebuilt this time (their code is committed at `583653e`, see
+"Backend and portal, not yet bundled" below).
+
+### What changed
+
+- **Estate Tech Clubs** (`/estate-tech-clubs/`): every active, non-school learning hub, with its
+  own page per club (`/estate-tech-clubs/<club-name>/`) — photos, about, amenities, days and
+  hours, an Enquire button and a **Location** map. Each club page is in the sitemap and marked to
+  search engines as a local place. A club added in the portal shows on the list straight away;
+  its own page is saved for search engines at the next website rebuild.
+- **Header:** Bootcamps · Home Schooling · Estate Tech Clubs · Schools · Pathways, then Enroll.
+  The logo is the "digifunzi" wordmark only. **Footer:** Programmes and More columns; the
+  separate "Chat on WhatsApp" link is gone (the floating button stays).
+- **Home page** "Ways to learn with us": Bootcamps, Home Schooling, Estate Tech Clubs, Schools,
+  Pathways, Store.
+- **Bootcamp page:** facts (dates, where, price) and Enquire up front; the images on the right,
+  each shown whole, with arrows, thumbnails and a full-screen view; the curriculum description
+  has Read more.
+- **Cards** (bootcamps, clubs): a clean image with the name below, the same size with or
+  without an image.
+- **Privacy page:** one line saying the club pages show a Google map.
+
+### Works with the current backend
+
+Uploaded with today's backend, everything above works except two extras that need the new
+backend: a bootcamp's **extra images** (only the cover shows) and the map's **exact pin** (the
+map uses the typed address instead).
+
+### Website (this folder's zip)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` (Live,
+`digifunzi-co-ke-dist.zip`): **24/24 routes**, 20 URLs in `sitemap.xml` including the 5 club
+pages. Dev (`africa-digifunzi-com-dist.zip`, `deploy:build:dev`): **39/39 routes**, 37 URLs, the
+noindex header in `.htaccess`.
+
+### Deploy order
+
+1. Upload the website zip to its document root and Extract, replacing the existing files (keep
+   `.well-known`, `cgi-bin`, `.user.ini`, `php.ini` and the Google verification file).
+2. **Verify** (Ctrl+F5): the header shows the five links and Enroll; `/estate-tech-clubs/` lists
+   the clubs and each opens with its map; a bootcamp page shows its image on the right.
+3. Search Console (Live): URL Inspection → Request indexing on `/estate-tech-clubs/`.
+
+### Backend and portal, not yet bundled
+
+Committed at `583653e` (curriculum, `modules`), for a later release: unsaved assessments,
+courses and sessions kept as drafts and offered back; up to 3 extra images per bootcamp
+(migration `20261015100000_add_images_to_bootcamps.js`, additive); hub photos capped at 3; a
+crop step when uploading bootcamp and hub images; the map pin for the website.
+
+---
+
 ## This release (15 Oct 2026) — africa.digifunzi.com kept out of search results; website pages checked at build time; enquiries show how the family found the website
 
 **Website, backend and portal.** Website from `curriculum-web` (branch `new`) at `ce26f35`;
