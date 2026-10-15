@@ -138,7 +138,8 @@ export const learningHubSchema = z
     description: z.string().max(10000, "Max 10000 characters").default(""),
     // Single profile/logo image — distinct from the `photos` gallery below.
     photo: z.string().optional().nullable(),
-    photos: z.array(z.string()).default([]),
+    // At most 3, same as the server — the website shows them as the club's gallery.
+    photos: z.array(z.string()).max(3, "A learning hub can have at most 3 photos").default([]),
     amenities: z.array(z.string()).default([]),
     operatingHours: operatingHoursSchema.default({}),
     spaces: z.array(spaceSchema).default([]),

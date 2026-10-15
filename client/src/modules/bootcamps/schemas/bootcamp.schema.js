@@ -56,6 +56,8 @@ export const bootcampSchema = z
     description:   z.string().trim().max(15000).default(""),
     tagline:       z.string().trim().max(200).default(""),
     coverImage:    z.string().nullable().default(null),
+    // More images after the cover, shown on the website with buttons to move between them.
+    images:        z.array(z.string()).max(3, "A bootcamp can have at most 3 more images").default([]),
     curriculumId:  z.string().nullable().default(null),
     // Which of curriculumId's pathways this bootcamp actually runs — not every pathway under a
     // curriculum is relevant to a given bootcamp. Empty means "every pathway", same as before

@@ -105,7 +105,8 @@ const baseLearningHubSchema = z.object({
   description: z.string().max(10000).default(""),
   // Single profile/logo image — distinct from the `photos` gallery below.
   photo: z.string().optional().nullable().default(null),
-  photos: z.array(z.string()).default([]),
+  // At most 3 — the website shows a hub's (Estate Tech Club's) photos as one gallery.
+  photos: z.array(z.string()).max(3, "A learning hub can have at most 3 photos").default([]),
   amenities: z.array(z.string()).default([]),
   operatingHours: operatingHoursSchema.default({}),
   spaces: z.array(spaceSchema).default([]),

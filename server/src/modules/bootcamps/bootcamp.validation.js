@@ -57,6 +57,9 @@ const bootcampFields = z.object({
   tagline:       z.string().trim().max(200).optional().default(""),
   // A stored "/uploads/x.png" path or an absolute URL — same shape as course.coverImage.
   coverImage:    z.string().max(500).optional().nullable(),
+  // Up to 3 more images after the cover (the website's bootcamp page lets visitors move between
+  // them). No default: a save that doesn't send it leaves the stored images as they are.
+  images:        z.array(z.string().trim().min(1).max(500)).max(3, "A bootcamp can have at most 3 more images").optional(),
   // curriculumId is never client-forced into the general payload beyond an id string — the
   // controller checks it belongs to the same admin (same posture as competition.curriculumId).
   curriculumId:  z.string().max(36).optional().nullable(),
