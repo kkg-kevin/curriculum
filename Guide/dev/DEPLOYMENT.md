@@ -102,6 +102,72 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Oct 2026) — africa.digifunzi.com kept out of search results; website pages checked at build time; enquiries show how the family found the website
+
+**Website, backend and portal.** Website from `curriculum-web` (branch `new`) at `ce26f35`;
+backend and portal from `curriculum` (branch `modules`) at `09bb3d9`. The website can go up on
+its own; the backend and portal go up together.
+
+### What changed
+
+- **africa.digifunzi.com is kept out of search results.** It is a test copy of the real website,
+  digifunzi.co.ke, and was competing with it on Google. Its `.htaccess` now sends
+  `X-Robots-Tag: noindex, nofollow` with every page and file (switched on by
+  `SITE_NOINDEX=true` in `digifunzi-landing/.env.dev`). `robots.txt` stays open on purpose, so
+  Google can read the noindex and drop the pages it already lists; that takes a few weeks.
+- **Website build checks:** the build stops with an error if a page would be saved without its
+  content (the cause of the faulty 14 Oct digifunzi.co.ke zip — see `Guide/live/DEPLOYMENT.md`).
+  The nodeapp app's `PUBLIC_SITE_URL` already includes `http://localhost:4199`, which the check
+  needs; leave it in.
+- **Search details on the website:** the home page heading is now "Robotics, AI & coding for kids
+  in Kenya"; Store and Projects are kept out of search while empty; `sitemap.xml` lists page
+  addresses only; the organisation is described as an educational organisation and a local
+  business in Thika.
+- **Enquiries show how the family found the website:** the first page opened, the site that sent
+  them and any campaign tag, as "Found us: **Google search** → /bootcamps/" on each new enquiry.
+  The website's privacy page says so.
+
+**One new migration**, `20261015090000_add_visit_source_to_leads.js`: adds `leads.visitSource`
+(JSON, nullable). Additive. No new environment variable; no new npm package.
+
+### Website (`africa-digifunzi-com-dist.zip`)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build:dev` in
+`digifunzi-landing/`, against the Dev API: **36/36 routes**; 34 URLs in `sitemap.xml`; the
+noindex header at the end of `.htaccess`. 211 files.
+
+### Backend (`backend-deploy.zip`)
+
+From `09bb3d9`, byte-identical in Dev, Live and Capable; 476 entries, 116 migrations, the newest
+`20261015090000_add_visit_source_to_leads.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DH7EJzqp.js` |
+| Live | `npm run build:live` | `index-DNPrJ7QE.js` |
+| Capable | `npm run build:capable` | `index-D1P6e-en.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`.
+
+### Deploy order
+
+1. **Website:** upload `africa-digifunzi-com-dist.zip` to the `africa.digifunzi.com` document
+   root and Extract, replacing the existing files (keep `.well-known`, `cgi-bin`, `.user.ini`,
+   `php.ini`).
+2. **Verify the website:** the site still opens normally; in the browser's developer tools →
+   Network, the page's response headers include `X-Robots-Tag: noindex, nofollow`.
+3. **Take a database backup** (one column is added).
+4. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check the
+   column exists (`SHOW COLUMNS FROM leads LIKE 'visitSource';`); if it doesn't, Run JS script →
+   `db:migrate`.
+5. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root.
+6. **Verify the portal:** send a test enquiry from `https://africa.digifunzi.com/contact/`; in the
+   Dev portal's Enquiries it shows "Found us: …".
+
+---
+
 ## This release (14 Oct 2026, website) — Two websites: africa.digifunzi.com for Dev, digifunzi.co.ke for Live; the "digifunzi" wordmark in the logo
 
 **Website only**, from the `curriculum-web` repo (branch `new`). Nothing for the portal. The

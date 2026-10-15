@@ -102,6 +102,82 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (15 Oct 2026) — Website pages reach search engines with their content; enquiries show how the family found the website
+
+**Website, backend and portal.** Website from `curriculum-web` (branch `new`) at `ce26f35`;
+backend and portal from `curriculum` (branch `modules`) at `09bb3d9`. The website can go up on
+its own and first; the backend and portal go up together.
+
+### What changed
+
+- **The fault this fixes.** The 14 Oct `digifunzi.co.ke` zip was built while the dcf-api app's
+  `PUBLIC_SITE_URL` lacked `http://localhost:4199`, the address the build's page-capture step
+  uses. So eight pages were saved without their content — Pathways, Bootcamps, Projects, Store,
+  Competitions and Home Schooling showed "We couldn't load this: Network Error", and the pathway
+  and bootcamp pages "not found", marked for search engines to ignore. Visitors saw the real pages
+  (the browser reloads the content), but Google read the saved copies. **The setting is now
+  `PUBLIC_SITE_URL=https://digifunzi.co.ke,https://www.digifunzi.co.ke,http://localhost:4199`**
+  (checked on 15 Oct). The website build now stops with an error naming the pages if this happens
+  again, instead of producing a zip.
+- **Search details on the website:** the home page heading is now "Robotics, AI & coding for kids
+  in Kenya"; Store and Projects are kept out of search results while they have nothing in them;
+  `sitemap.xml` lists page addresses only and leaves out pages kept out of search; the
+  organisation is described to search engines as an educational organisation and a local business
+  in Thika.
+- **Enquiries show how the family found the website:** the website remembers the first page a
+  visitor opened, the site that sent them (Google, Facebook…) and any campaign tag, for 30 days,
+  and sends it with any form. Each new enquiry on the Enquiries page shows a line like
+  "Found us: **Google search** → /bootcamps/". Enquiries from before this release have no such
+  line. The website's privacy page says so (updated 15 Oct 2026).
+
+**One new migration**, `20261015090000_add_visit_source_to_leads.js`: adds `leads.visitSource`
+(JSON, nullable). Additive. No new environment variable; no new npm package. Until the backend
+is updated, the website's new information is simply ignored — nothing fails.
+
+### Website (`digifunzi-co-ke-dist.zip`)
+
+`NODE_OPTIONS="--network-family-autoselection-attempt-timeout=5000" npm run deploy:build` in
+`digifunzi-landing/`, against the Live API: **16/16 routes**, every list and detail page with its
+content; 12 URLs in `sitemap.xml` (Projects and Store left out — nothing is for sale on Live yet;
+they return by themselves once something is, after a rebuild). 171 files.
+
+### Backend (`backend-deploy.zip`)
+
+From `09bb3d9`, byte-identical in Dev, Live and Capable; 476 entries, 116 migrations, the newest
+`20261015090000_add_visit_source_to_leads.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DH7EJzqp.js` |
+| Live | `npm run build:live` | `index-DNPrJ7QE.js` |
+| Capable | `npm run build:capable` | `index-D1P6e-en.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`.
+
+### Deploy order
+
+1. **Website:** upload `digifunzi-co-ke-dist.zip` to the `digifunzi.co.ke` document root and
+   Extract, replacing the existing files (keep `.well-known`, `cgi-bin`, `.user.ini`, `php.ini`).
+2. **Verify the website** (Ctrl+F5, then View source):
+   `https://digifunzi.co.ke/pathways/digital-exploration/` has the title "Digital Exploration
+   Pathway | Digifunzi" and no `noindex`; `https://digifunzi.co.ke/sitemap.xml` lists 12 addresses.
+3. **Take a database backup** (one column is added).
+4. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check the
+   column exists (`SHOW COLUMNS FROM leads LIKE 'visitSource';`); if it doesn't, Run JS script →
+   `db:migrate`.
+5. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root.
+6. **Verify the portal:** send a test enquiry from `https://digifunzi.co.ke/contact/`; in the
+   Live portal's Enquiries it shows "Found us: …".
+7. In **Google Search Console**, submit `https://digifunzi.co.ke/sitemap.xml` and use URL
+   Inspection → Request indexing on `/bootcamps/` and the bootcamp's page.
+
+**Rolling back:** restore the backup, then upload the 14 Oct backend and portal zips. Don't roll
+the website back: the 14 Oct website zip is the faulty one.
+
+---
+
 ## This release (14 Oct 2026, website) — Two websites: digifunzi.co.ke for Live, africa.digifunzi.com for Dev; the "digifunzi" wordmark in the logo
 
 **Website only**, from the `curriculum-web` repo (branch `new`). Nothing for the portal or
