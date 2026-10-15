@@ -1,17 +1,32 @@
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { uploadApi, IMAGE_UPLOAD_HINT } from "../services/uploadApi";
+import ImageCropDialog from "./ImageCropDialog";
 
 // Immediate-upload image picker: uploads on file select and hands the resolved
 // URL back via onChange, so the parent form already holds a real URL by Save.
-export default function ImageUploadField({ value, onChange, label, width = "220px", height = "140px" }) {
+//
+// Optional, for images the public website shows (a bootcamp's cover, a hub's logo):
+//   cropAspect — width ÷ height of the website's frame; a crop step (ImageCropDialog) opens
+//                before the upload. GIFs (often animated) skip it.
+//   guide      — what to upload, shown above the usual size/type hint.
+export default function ImageUploadField({ value, onChange, label, width = "220px", height = "140px", cropAspect, guide }) {
   const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFilePicked = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (cropAspect && file.type !== "image/gif") {
+      setPending(file);
+      return;
+    }
+    upload(file);
+  };
+
+  const upload = async (file) => {
     setUploading(true);
     try {
       const url = await uploadApi.uploadImage(file);
@@ -40,7 +55,10 @@ export default function ImageUploadField({ value, onChange, label, width = "220p
           <img
             src={value}
             alt={label || "Uploaded"}
-            style={{ width: "100%", height, objectFit: "cover", borderRadius: "10px", border: "1.5px solid #E5E7EB" }}
+            style={{
+              width: "100%", height, objectFit: cropAspect ? "contain" : "cover", borderRadius: "10px", border: "1.5px solid #E5E7EB",
+              background: cropAspect ? "#F3F4F6" : undefined,
+            }}
           />
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
             <button
@@ -76,8 +94,19 @@ export default function ImageUploadField({ value, onChange, label, width = "220p
         </button>
       )}
 
+      {guide && <p style={{ margin: 0, maxWidth: width, fontSize: "11.5px", lineHeight: 1.4, color: "#4B5563" }}>{guide}</p>}
       {/* The same rules on every image field — see uploadApi.uploadImage. */}
       <p style={{ margin: 0, maxWidth: width, fontSize: "11px", lineHeight: 1.4, color: "#9CA3AF" }}>{IMAGE_UPLOAD_HINT}</p>
+
+      {pending && (
+        <ImageCropDialog
+          file={pending}
+          aspect={cropAspect}
+          title={label ? `Crop: ${label}` : "Crop image"}
+          onDone={(file) => { setPending(null); upload(file); }}
+          onCancel={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+const { resolveMapPin } = require("../../shared/utils/map-pin");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -303,6 +304,8 @@ const PublicBootcampService = {
     return {
       ...listItem(bootcamp),
       description: htmlToText(bootcamp.description),
+      // The images after the cover, in the admin's order (the cover itself stays in coverImage).
+      images: arr(bootcamp.images).map(toAbsoluteMediaUrl).filter(Boolean),
       highlights: arr(bootcamp.highlights),
       // The games and play that come with this bootcamp, in the admin's chosen order, and the
       // optional line on how play fits into the day. Empty/blank when the bootcamp has none.
@@ -334,7 +337,10 @@ const PublicBootcampService = {
     const ownerAdminId = requirePublicContentAdminId();
     const hub = await LearningHubModel.findById(id);
     if (!hub || hub.ownerAdminId !== ownerAdminId || hub.status !== "active") return null;
-    return projectHub(hub);
+    // mapPin — where the hub's map link points ({ lat, lng }, or { query } with a place name, or
+    // null), so the website's map pins the exact spot rather than geocoding the typed address.
+    // Only on this one-hub profile; remembered per link for a day (shared/utils/map-pin.js).
+    return { ...projectHub(hub), mapPin: await resolveMapPin(hub.mapLink) };
   },
 };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiAlertTriangle, FiBookOpen, FiFileText, FiList } from "react-icons/fi";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useCourseQuery,
@@ -26,6 +26,9 @@ import CourseInventoryPanel from "../components/CourseInventoryPanel";
 import RichContent, { isEmptyHtml } from "../components/RichContent";
 import { Editor as RichTextEditorControlled } from "../components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useAuth } from "../../../context/AuthContext";
+import { useDraft, removeDraft, isSameContent } from "../../../hooks/useDraft";
+import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 import { normalizeActivityItems } from "../utils/sessionActivity";
@@ -106,7 +109,7 @@ function NavArrow({ direction }) {
 }
 
 function SessionModal({ courseId, sessions, modules, sessionPosition, startSessionId, onClose }) {
-  const { mutate: updateSession, isPending: saving } = useUpdateSession(courseId);
+  const { mutateAsync: updateSession, isPending: saving } = useUpdateSession(courseId);
   const [currentId, setCurrentId] = useState(startSessionId);
 
   // Prev/Next still moves seamlessly across module boundaries (closing the modal at the edge
@@ -123,11 +126,14 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
     mode: "onTouched",
   });
 
-  const { reset, getValues } = methods;
+  const { reset, getValues, control } = methods;
+  const { user } = useAuth();
+  // The session as loaded into the form ({ id, values }) — what "unsaved" is measured against.
+  const [loaded, setLoaded] = useState(null);
 
   useEffect(() => {
     if (current) {
-      reset({
+      const values = {
         title: current.title || "",
         moduleId: current.moduleId || null,
         outcomes: current.outcomes || [],
@@ -139,7 +145,9 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
         notes: current.notes?.length ? current.notes : defaultNotes(),
         resources: current.resources || [],
         indicatorIds: current.indicatorIds || [],
-      });
+      };
+      reset(values);
+      setLoaded({ id: current.id, values });
     }
     // `current` is looked up from the `sessions` prop, which can still be the pre-creation
     // list on first render right after "+ Add Session" (query invalidation hasn't resolved
@@ -150,9 +158,31 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId, Boolean(current)]);
 
+  // Unsaved work in the open session is kept in this browser as it's typed (useDraft), so a closed
+  // tab or a power cut between Prev/Next/Done saves doesn't lose it; it's offered back the next
+  // time that session is opened.
+  const isLoaded = Boolean(current) && loaded?.id === current.id;
+  const values = useWatch({ control });
+  const draft = useDraft(isLoaded ? `course-session:${current.id}` : null, {
+    value: values,
+    dirty: isLoaded && !isSameContent(values, loaded.values),
+    baseUpdatedAt: current?.updatedAt ?? null,
+    saved: loaded?.values,
+  });
+  const restoreDraft = () => {
+    const restored = draft.restore();
+    if (restored) reset({ ...loaded.values, ...restored }, { keepDefaultValues: true });
+  };
+
   const saveCurrent = () => {
     if (!current) return;
-    updateSession({ id: current.id, data: getValues() });
+    const draftKey = `course-session:${current.id}`;
+    // mutateAsync, not mutate's onSuccess: Done closes the modal before the save returns, and
+    // mutate's own callbacks don't run once the component has gone. A failed save keeps the draft
+    // (the hook's onError already says it failed).
+    updateSession({ id: current.id, data: getValues() })
+      .then(() => removeDraft(user?.id, draftKey))
+      .catch(() => {});
   };
 
   const goTo = (targetId) => {
@@ -214,9 +244,19 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
             <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontSize: "13px" }}>Loading session…</div>
           )}
         </div>
+        <DraftRestoreDialog
+          draft={draft.found}
+          recordUpdatedAt={current?.updatedAt ?? null}
+          what="session"
+          onRestore={restoreDraft}
+          onDiscard={draft.discard}
+        />
 
         <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: "0 0 16px 16px", borderTop: "1px solid #E5E7EB" }}>
-          <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Changes save automatically as you move between sessions.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Changes save automatically as you move between sessions.</p>
+            <DraftSavedNote savedAt={draft.savedAt} />
+          </div>
           <button
             type="button"
             onClick={handleClose}

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ImageUploadField from "../../../components/ImageUploadField";
+import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField";
 import CoursePricingField from "../../../components/CoursePricingField";
 import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -38,6 +39,7 @@ const toFormValues = (b) => ({
   description: b?.description || "",
   tagline: b?.tagline || "",
   coverImage: b?.coverImage || null,
+  images: b?.images || [],
   curriculumId: b?.curriculumId || null,
   pathwayIds: b?.pathwayIds || [],
   startDate: b?.startDate || "",
@@ -397,7 +399,31 @@ export default function CreateBootcampPage() {
                 control={control}
                 name="coverImage"
                 render={({ field }) => (
-                  <ImageUploadField value={field.value || ""} onChange={field.onChange} width="260px" height="150px" />
+                  <ImageUploadField
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    width="260px"
+                    height="162px"
+                    cropAspect={16 / 10}
+                    guide="A landscape photo of the bootcamp (learners building, the venue) works best — at least 1200 × 750 px. You can crop it to the website's shape."
+                  />
+                )}
+              />
+            </div>
+
+            <div style={S.field}>
+              <Controller
+                control={control}
+                name="images"
+                render={({ field }) => (
+                  <PhotoGalleryField
+                    label="More images (optional, up to 3)"
+                    hint="Shown after the cover on the website's bootcamp page, with buttons to move between them. Landscape photos, at least 1200 px wide."
+                    max={3}
+                    cropAspect={16 / 10}
+                    value={field.value || []}
+                    onChange={field.onChange}
+                  />
                 )}
               />
             </div>

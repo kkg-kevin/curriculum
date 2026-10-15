@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateCourse } from "../hooks/useCourse";
 import { courseSchema } from "../schemas/course.schema";
@@ -9,6 +9,8 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
 import { Editor as RichTextEditor } from "../components/RichTextEditor";
 import { isEmptyHtml } from "../components/RichContent";
+import { useDraft, isSameContent } from "../../../hooks/useDraft";
+import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
 
 const DEFAULT_VALUES = {
   name: "",
@@ -43,8 +45,23 @@ export default function CreateCoursePage() {
     mode: "onTouched",
   });
 
-  const { handleSubmit, formState: { isDirty } } = methods;
+  const { handleSubmit, reset, control, formState: { isDirty } } = methods;
   const isBusy = isPending || creatingContent;
+
+  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
+  const values = useWatch({ control });
+  const draftValue = { values, moduleRows };
+  const draft = useDraft("course:new", {
+    value: draftValue,
+    dirty: !isSameContent(draftValue, { values: DEFAULT_VALUES, moduleRows: [] }),
+    saved: { values: DEFAULT_VALUES, moduleRows: [] },
+  });
+  const restoreDraft = () => {
+    const restored = draft.restore();
+    if (!restored) return;
+    reset({ ...DEFAULT_VALUES, ...restored.values }, { keepDefaultValues: true });
+    setModuleRows(restored.moduleRows || []);
+  };
 
   const addModuleRow = () => {
     setModuleRows((rows) => [...rows, {
@@ -65,6 +82,7 @@ export default function CreateCoursePage() {
   const onSubmit = ({ pathwayIds, competencyIds, ...data }) => {
     createCourse(data, {
       onSuccess: async (course) => {
+        draft.clear();
         setCreatingContent(true);
         if (pathwayIds.length > 0) {
           await Promise.all(pathwayIds.map((aid) => courseApi.linkPathway(course.id, aid)));
@@ -94,7 +112,7 @@ export default function CreateCoursePage() {
   };
 
   const handleCancel = () => {
-    if (isDirty) setConfirmLeave(true);
+    if (isDirty || moduleRows.length > 0) setConfirmLeave(true);
     else navigate("/courses");
   };
 
@@ -120,6 +138,7 @@ export default function CreateCoursePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <DraftSavedNote savedAt={draft.savedAt} />
           <button
             type="button"
             onClick={handleCancel}
@@ -230,9 +249,10 @@ export default function CreateCoursePage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => navigate("/courses")}
+        onConfirm={() => { draft.clear(); navigate("/courses"); }}
         onCancel={() => setConfirmLeave(false)}
       />
+      <DraftRestoreDialog draft={draft.found} what="new course" onRestore={restoreDraft} onDiscard={draft.discard} />
     </div>
   );
 }

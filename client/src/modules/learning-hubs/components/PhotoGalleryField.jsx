@@ -2,14 +2,21 @@ import { useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { uploadApi, IMAGE_TYPES, IMAGE_MAX_MB } from "../../../services/uploadApi";
+import ImageCropDialog from "../../../components/ImageCropDialog";
 
 // Multi-photo uploader: uploads each picked/dropped file immediately (reusing the same
 // /api/uploads/image endpoint ImageUploadField uses) and keeps `value` as a plain array of
 // resolved URLs, so the parent form already holds real URLs by Save. `max` caps how many photos
 // the field holds; the drop zone hides once it's full.
-export default function PhotoGalleryField({ value = [], onChange, label = "Photos", max, hint = "Upload images of the learning hub (JPG, PNG)" }) {
+//
+// `cropAspect` (width ÷ height of the website's frame): each picked photo goes through a crop step
+// (ImageCropDialog), one after another, before they're uploaded together. GIFs skip it.
+export default function PhotoGalleryField({ value = [], onChange, label = "Photos", max, hint = "Upload images of the learning hub (JPG, PNG)", cropAspect }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // Photos still waiting for their crop step, and the ones already decided (cropped or whole).
+  const [cropQueue, setCropQueue] = useState([]);
+  const decided = useRef([]);
   const fileInputRef = useRef(null);
   const remaining = max == null ? Infinity : Math.max(0, max - value.length);
 
@@ -32,6 +39,31 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
     }
     if (valid.length === 0) return;
 
+    if (cropAspect) {
+      decided.current = valid.filter((f) => f.type === "image/gif");
+      const toCrop = valid.filter((f) => f.type !== "image/gif");
+      if (toCrop.length > 0) {
+        setCropQueue(toCrop);
+        return;
+      }
+    }
+    send(valid);
+  };
+
+  // One crop step done (file = the cropped or whole photo, or null when cancelled): the next one,
+  // or once none are left, upload everything decided.
+  const nextCrop = (file) => {
+    if (file) decided.current.push(file);
+    const rest = cropQueue.slice(1);
+    setCropQueue(rest);
+    if (rest.length === 0 && decided.current.length > 0) {
+      const files = decided.current;
+      decided.current = [];
+      send(files);
+    }
+  };
+
+  const send = async (valid) => {
     setUploading(true);
     try {
       // Each photo stands alone: one that is refused (too large, a failed upload) is reported
@@ -103,8 +135,8 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
       {value.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: "10px" }}>
           {value.map((url, i) => (
-            <div key={url + i} style={{ position: "relative", aspectRatio: "1", borderRadius: "10px", overflow: "hidden", border: "1.5px solid #E5E7EB" }}>
-              <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div key={url + i} style={{ position: "relative", aspectRatio: String(cropAspect || 1), borderRadius: "10px", overflow: "hidden", border: "1.5px solid #E5E7EB", background: "#F3F4F6" }}>
+              <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: cropAspect ? "contain" : "cover" }} />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
@@ -119,6 +151,17 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
       )}
 
       {hint && <p style={{ margin: 0, fontSize: "11px", color: "#9CA3AF" }}>{hint}</p>}
+
+      {cropQueue.length > 0 && (
+        <ImageCropDialog
+          key={cropQueue.length}
+          file={cropQueue[0]}
+          aspect={cropAspect}
+          title={cropQueue.length > 1 ? `Crop photo (${cropQueue.length} to go)` : "Crop photo"}
+          onDone={nextCrop}
+          onCancel={() => nextCrop(null)}
+        />
+      )}
     </div>
   );
 }

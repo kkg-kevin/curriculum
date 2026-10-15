@@ -660,11 +660,22 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
             />
           </Field>
 
-          <Field label="Profile Photo">
+          {/* The website shows `photo` as the hub's logo beside its name, and `photos` as the
+              gallery of the space — so a logo goes here, never in Photos. */}
+          <Field label="Logo">
             <Controller
               name="photo"
               control={control}
-              render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="180px" height="120px" />}
+              render={({ field }) => (
+                <ImageUploadField
+                  value={field.value}
+                  onChange={field.onChange}
+                  width="140px"
+                  height="140px"
+                  cropAspect={1}
+                  guide="The hub's logo, square — ideally a PNG on a transparent background. Shown beside its name on the website."
+                />
+              )}
             />
           </Field>
 
@@ -672,7 +683,14 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
             name="photos"
             control={control}
             render={({ field }) => (
-              <PhotoGalleryField value={field.value || []} onChange={field.onChange} label="Learning Hub Photos" />
+              <PhotoGalleryField
+                value={field.value || []}
+                onChange={field.onChange}
+                label="Photos of the space (up to 3)"
+                max={3}
+                cropAspect={16 / 10}
+                hint="Real photos — the room, learners at work, the entrance. Landscape, at least 1200 px wide. Not logos: the logo goes above."
+              />
             )}
           />
         </div>
