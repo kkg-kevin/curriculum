@@ -1,10 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const BootcampEnrollmentService = require("./bootcamp-enrollment.service");
+const { visitSourceFrom } = require("../leads/visit-source");
 const { submitBootcampEnrollmentSchema, markLeadPaidSchema } = require("./bootcamp-enrollment.validation");
 
 const submitBootcampEnrollment = asyncHandler(async (req, res) => {
   const data = submitBootcampEnrollmentSchema.parse(req.body);
-  const result = await BootcampEnrollmentService.submitBootcampEnrollment(data);
+  const result = await BootcampEnrollmentService.submitBootcampEnrollment(data, visitSourceFrom(req));
   res.status(201).json({ success: true, data: result });
 });
 

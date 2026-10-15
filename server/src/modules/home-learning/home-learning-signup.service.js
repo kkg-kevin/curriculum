@@ -81,7 +81,7 @@ async function parentHouseholds(email) {
 }
 
 const HomeLearningSignupService = {
-  async signup(input) {
+  async signup(input, visitSource = null) {
     // Honeypot (the website's hidden hp_field) — only a bot fills it.
     if (input?.hp_field) fail("Your sign-up couldn't be sent. Please try again.");
     const parsed = signupSchema.safeParse(input);
@@ -164,7 +164,7 @@ const HomeLearningSignupService = {
     const names = data.children.map(fullName).join(", ");
     await LeadModel.create({
       source: "enroll", name: data.parent.name, email: data.parent.email, phone: data.parent.phone,
-      learnerName: names.slice(0, 150), interestedIn: "home_schooling", referenceId: pkg.slug, homeLearningHouseholdId: household.id,
+      learnerName: names.slice(0, 150), interestedIn: "home_schooling", referenceId: pkg.slug, homeLearningHouseholdId: household.id, visitSource,
       message: `Signed up on the website: ${pkg.name} for ${data.children.length} ${data.children.length === 1 ? "child" : "children"}. Awaiting payment (${invoice.invoiceNumber}).`,
     }).catch(() => {});
     await NotificationService._notify(ownerAdminId, {

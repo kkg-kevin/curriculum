@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const LeadService = require("./lead.service");
+const { visitSourceFrom } = require("./visit-source");
 const {
   createLeadSchema,
   createContactSchema,
@@ -17,7 +18,7 @@ const {
 // Guide/WEBSITE_INTEGRATION_CONTRACT.md §3.
 const submitLead = asyncHandler(async (req, res) => {
   const data = createLeadSchema.parse(req.body);
-  const record = await LeadService.submitLead(data);
+  const record = await LeadService.submitLead(data, visitSourceFrom(req));
   res.status(201).json({
     ok: true,
     success: true,
@@ -29,7 +30,7 @@ const submitLead = asyncHandler(async (req, res) => {
 // Public — POST /api/public/contact. digifunzi-landing's ContactForm default path.
 const submitContact = asyncHandler(async (req, res) => {
   const data = createContactSchema.parse(req.body);
-  const record = await LeadService.submitContact(data);
+  const record = await LeadService.submitContact(data, visitSourceFrom(req));
   res.status(201).json({
     ok: true,
     success: true,

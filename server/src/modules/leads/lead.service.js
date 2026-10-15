@@ -19,8 +19,9 @@ const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
 
 const LeadService = {
   // Enroll form → POST /api/public/leads. `note` (EnrollForm's optional "Anything else?") maps
-  // onto the shared `message` column.
-  async submitLead(data) {
+  // onto the shared `message` column. `visitSource` = how the family found the website, or null
+  // (visit-source.js) — the same on every lead the website creates.
+  async submitLead(data, visitSource = null) {
     const record = await LeadModel.create({
       source: "enroll",
       name: data.parentName,
@@ -31,6 +32,7 @@ const LeadService = {
       interestedIn: data.interestedIn,
       referenceId: data.referenceId || null,
       message: data.note || null,
+      visitSource,
     });
     await LeadService._notifyAdmins(record);
     // Fire-and-forget — a slow/failed/no-op SMTP send must never delay or fail the visitor's
@@ -40,13 +42,14 @@ const LeadService = {
   },
 
   // Contact form's simpler default endpoint → POST /api/public/contact.
-  async submitContact(data) {
+  async submitContact(data, visitSource = null) {
     const record = await LeadModel.create({
       source: "contact",
       name: data.name,
       email: data.email,
       phone: data.phone || null,
       message: data.message,
+      visitSource,
     });
     await LeadService._notifyAdmins(record);
     sendLeadAcknowledgement(record).catch(() => {});

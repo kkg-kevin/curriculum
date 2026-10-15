@@ -266,7 +266,7 @@ const PublicDiagnosticService = {
   // `source: "diagnostic"` lead (admins notified, same as the enrol form). The attempt row still
   // holds everything for the shareable report link and completion analytics, and now also carries
   // the lead id. `childName` stays optional context for how the report reads.
-  async submitDiagnostic(pathwayIdOrSlug, body, ipHash) {
+  async submitDiagnostic(pathwayIdOrSlug, body, ipHash, visitSource = null) {
     const { answers, parentName, parentPhone, childName, childAge } = body;
     const candidates = await resolveDesignatedPathways(pathwayIdOrSlug);
     if (candidates.length === 0) throw notFound("Pathway not found");
@@ -318,6 +318,7 @@ const PublicDiagnosticService = {
         message:
           `Completed the ${pathway.name} diagnostic — scored ${autoScore}/${maxScore}` +
           `${childName ? ` for ${childName}` : ""} (age ${childAge}).`,
+        visitSource,
       });
       leadId = lead.id;
       await LeadService._notifyAdmins(lead);

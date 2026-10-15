@@ -1,11 +1,13 @@
 const db = require("../../config/db");
-const { createRecord, updateRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { createRecord, updateRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const TABLE = "leads";
 
 const LeadModel = {
-  create(data) {
-    return createRecord(db, TABLE, data);
+  // visitSource is a JSON column (how the family found the website — leads/visit-source.js).
+  async create(data) {
+    const record = await createRecord(db, TABLE, stringifyJsonFields(data, ["visitSource"]));
+    return { ...record, visitSource: data.visitSource ?? null };
   },
 
   findById(id) {
