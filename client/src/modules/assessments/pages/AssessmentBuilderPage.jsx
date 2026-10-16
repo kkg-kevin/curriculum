@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
   useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory,
 } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
 import { usePermissions } from "../../../hooks/usePermissions";
-import { useDraft, isSameContent } from "../../../hooks/useDraft";
-import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
+import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
 import { useGoods } from "../../settings/items/hooks/useItems";
@@ -1545,12 +1547,23 @@ function buildFormFromAssessment(a, competencyIds, pathwayIds, inventory) {
   };
 }
 
+// A draft's form as the builder uses it now — a draft written before a field was added to the
+// builder still opens with that field at its blank value.
+function formFromDraft(draft, fallbackType) {
+  const content = draft.content || {};
+  return { ...buildBlankForm(content.type || draft.type || fallbackType), ...content };
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function AssessmentBuilderPage() {
   const { type: routeType, id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
+  // ?draft=<id> — carrying on a draft of unsaved work (from the Assessments page, or this page's
+  // own once it has started one, so a reload picks it back up).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const draftParam = searchParams.get("draft");
 
   const { data: assessment, isLoading: loadingAssessment } = useAssessmentQuery(id);
   const { data: linkedCompetencies, isLoading: loadingCompetencies } = useAssessmentCompetencies(id);
@@ -1577,14 +1590,28 @@ export default function AssessmentBuilderPage() {
   const [createInventoryOpen, setCreateInventoryOpen] = useState(false);
   // The form as it was loaded (or blank), to tell whether there's unsaved work to keep as a draft.
   const loadedForm = useRef(null);
+  const [draftOfferDone, setDraftOfferDone] = useState(false);
 
-  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
-  const draft = useDraft(form ? (isEdit ? `assessment:edit:${id}` : `assessment:new:${routeType}`) : null, {
+  // Unsaved work is written to the workspace as it's typed (useWorkspaceDraft) — several people
+  // share one account, so it's kept per assessment being built, not per browser or per login.
+  const autosave = useWorkspaceDraft({
+    endpoint: DRAFT_ENDPOINTS.assessments,
+    kind: "assessment",
     value: form,
     dirty: Boolean(form) && !isSameContent(form, loadedForm.current),
-    baseUpdatedAt: assessment?.updatedAt ?? null,
-    saved: loadedForm.current,
+    recordId: isEdit ? id : null,
+    type: form?.type ?? routeType,
+    onCreated: (draftId) => setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      next.set("draft", draftId);
+      return next;
+    }, { replace: true }),
   });
+  // The draft named in the address, read once to open the form from it.
+  const { data: openedDraft, isError: openedDraftMissing } = useDraftQuery(DRAFT_ENDPOINTS.assessments, draftParam, { enabled: form === null });
+  // Editing without one: drafts other visits left of this assessment, offered back below.
+  const { data: assessmentDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.assessments, { recordId: id }, { enabled: isEdit && !draftParam });
+  const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.assessments);
 
   // `name` (competency — indicator) disambiguates in the picker dropdown when more than one
   // linked competency is in play; `chipName` (just the indicator) keeps the selected chip and
@@ -1624,21 +1651,51 @@ export default function AssessmentBuilderPage() {
 
   useEffect(() => {
     if (form) return;
+    if (draftParam && !openedDraft && !openedDraftMissing) return;
+    // Only a draft of this same assessment (or, for a new one, of no assessment) is opened.
+    const fromDraft = draftParam && openedDraft && (openedDraft.recordId || null) === (isEdit ? id : null) ? openedDraft : null;
+    let start;
     if (isEdit) {
       if (loadingAssessment || loadingCompetencies || loadingPathways || loadingInventory || !assessment) return;
       const competencyIds = linkedCompetencies.map((c) => c.id);
       const pathwayIds = linkedPathways.map((a) => a.id);
       const inventory = linkedInventory.map((i) => ({ itemId: i.id, quantity: i.quantity }));
-      const loaded = buildFormFromAssessment(assessment, competencyIds, pathwayIds, inventory);
-      loadedForm.current = loaded;
-      setForm(loaded);
+      start = buildFormFromAssessment(assessment, competencyIds, pathwayIds, inventory);
       setOriginalTags({ competencyIds, pathwayIds, inventory });
     } else {
-      const blank = buildBlankForm(routeType);
-      loadedForm.current = blank;
-      setForm(blank);
+      start = buildBlankForm(routeType);
     }
-  }, [form, isEdit, loadingAssessment, loadingCompetencies, loadingPathways, loadingInventory, assessment, linkedCompetencies, linkedPathways, linkedInventory, routeType]);
+    loadedForm.current = start;
+    if (fromDraft) {
+      const restored = formFromDraft(fromDraft, start.type);
+      autosave.adopt({ id: fromDraft.id, revision: fromDraft.revision, content: restored });
+      setForm(restored);
+    } else {
+      setForm(start);
+      if (draftParam) {
+        toast("That draft is no longer there — it may have been saved or deleted by someone else.", { duration: 6000 });
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [form, isEdit, id, loadingAssessment, loadingCompetencies, loadingPathways, loadingInventory, assessment, linkedCompetencies, linkedPathways, linkedInventory, routeType, draftParam, openedDraft, openedDraftMissing, autosave, setSearchParams]);
+
+  // Editing, with drafts of this assessment left from before: offer the newest back — only while
+  // the form is still as it opened, so it never lands on top of new typing.
+  const offeredDraft = isEdit && !draftParam && !draftOfferDone && form && isSameContent(form, loadedForm.current) ? assessmentDrafts.find((d) => d.id !== autosave.currentDraftId()) || null : null;
+
+  async function restoreOfferedDraft() {
+    const offered = offeredDraft;
+    setDraftOfferDone(true);
+    try {
+      const full = await draftsApi.get(DRAFT_ENDPOINTS.assessments, offered.id);
+      const restored = formFromDraft(full, form.type);
+      autosave.adopt({ id: full.id, revision: full.revision, content: restored });
+      setForm(restored);
+      setSearchParams({ draft: full.id }, { replace: true });
+    } catch (err) {
+      toast.error(err.statusCode === 404 ? "That draft is no longer there — it may have been saved or deleted by someone else." : err.message || "Couldn't open the draft");
+    }
+  }
 
   useEffect(() => { document.title = "Assessment Builder"; }, []);
 
@@ -1808,9 +1865,9 @@ export default function AssessmentBuilderPage() {
     if (!form.name.trim()) { setActiveTab("info"); return; }
     const data = buildPayload();
     if (isEdit) {
-      updateAssessment({ id, data }, { onSuccess: async () => { draft.clear(); await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
+      updateAssessment({ id, data }, { onSuccess: async () => { autosave.clear(); await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
     } else {
-      createAssessment(data, { onSuccess: async (created) => { draft.clear(); await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
+      createAssessment(data, { onSuccess: async (created) => { autosave.clear(); await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
     }
   }
 
@@ -1838,7 +1895,7 @@ export default function AssessmentBuilderPage() {
           </div>
         </div>
         <div className="tb-actions">
-          <DraftSavedNote savedAt={draft.savedAt} style={{ alignSelf: "center" }} />
+          <WorkspaceDraftNote status={autosave.status} style={{ alignSelf: "center" }} />
           <button type="button" className="tb-btn-secondary" onClick={() => setPreviewOpen(true)}>Preview Assessment</button>
           <button type="button" className="tb-btn-primary" onClick={handleSave} disabled={isPending}>{isPending ? "Saving…" : "Save Assessment"}</button>
         </div>
@@ -1967,11 +2024,14 @@ export default function AssessmentBuilderPage() {
         />
       )}
       <DraftRestoreDialog
-        draft={draft.found}
+        draft={offeredDraft}
         recordUpdatedAt={assessment?.updatedAt ?? null}
+        otherCount={Math.max(0, assessmentDrafts.length - 1)}
+        listedOn="the Assessments page"
         what="assessment"
-        onRestore={() => { const restored = draft.restore(); if (restored) setForm(restored); }}
-        onDiscard={draft.discard}
+        onRestore={restoreOfferedDraft}
+        onDiscard={() => { setDraftOfferDone(true); deleteDraft(offeredDraft.id); }}
+        onDismiss={() => setDraftOfferDone(true)}
       />
     </div>
   );

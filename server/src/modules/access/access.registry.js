@@ -113,6 +113,14 @@ const ACTION_OVERRIDES = [
   // assessment — nothing is deleted (attaching one is already an edit).
   { method: "DELETE", pattern: /^\/api\/courses\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "courses", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/assessments\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "assessments", action: "edit" },
+  // A form's draft of unsaved work is kept, changed and thrown away as the form is used — anyone
+  // who can add or edit assessments (or courses) uses it, whichever they're doing.
+  { method: "POST", pattern: /^\/api\/assessments\/drafts$/, module: "assessments", action: "create", orActions: ["edit"] },
+  { method: "PUT", pattern: /^\/api\/assessments\/drafts\/[^/]+$/, module: "assessments", action: "create", orActions: ["edit"] },
+  { method: "DELETE", pattern: /^\/api\/assessments\/drafts\/[^/]+$/, module: "assessments", action: "create", orActions: ["edit"] },
+  { method: "POST", pattern: /^\/api\/courses\/drafts$/, module: "courses", action: "create", orActions: ["edit"] },
+  { method: "PUT", pattern: /^\/api\/courses\/drafts\/[^/]+$/, module: "courses", action: "create", orActions: ["edit"] },
+  { method: "DELETE", pattern: /^\/api\/courses\/drafts\/[^/]+$/, module: "courses", action: "create", orActions: ["edit"] },
   // A claim's second stage — final approval and recording the payment — and the session rate
   // belong to "Claim approvals", not to the supervisor's review. (The supervisor's own decision,
   // POST /api/claims/:id/supervisor-decision, falls under the default rule: Educator claims → Edit.)
@@ -159,7 +167,7 @@ function resolveAccess(method, rawPath) {
   const path = normalisePath(rawPath);
   const verb = method.toUpperCase();
   const override = ACTION_OVERRIDES.find((o) => o.method === verb && o.pattern.test(path));
-  if (override) return { module: override.module, action: override.action };
+  if (override) return { module: override.module, action: override.action, ...(override.orActions ? { orActions: override.orActions } : {}) };
   const module = resolveModuleForPath(path);
   if (!module) return null;
   if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") {

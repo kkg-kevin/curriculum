@@ -6,6 +6,7 @@ const AssessmentPathwayLinkModel = require("./assessment-pathway-link.model");
 const PathwayModel = require("../settings/pathways/pathway-template.model");
 const AssessmentInventoryLinkModel = require("./assessment-inventory-link.model");
 const InventoryModel = require("../settings/items/items.model");
+const DraftModel = require("../drafts/draft.model");
 
 async function requireAssessment(id) {
   const assessment = await AssessmentModel.findById(id);
@@ -63,6 +64,8 @@ const AssessmentService = {
     await AssessmentCompetencyLinkModel.deleteByAssessmentId(id);
     await AssessmentPathwayLinkModel.deleteByAssessmentId(id);
     await AssessmentInventoryLinkModel.deleteByAssessmentId(id);
+    // Unsaved changes to an assessment that no longer exists have nothing to be saved into.
+    await DraftModel.deleteByRecord("assessment", id);
     return { message: "Assessment deleted successfully" };
   },
 

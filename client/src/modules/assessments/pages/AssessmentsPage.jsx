@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
+import { useDraftsQuery, useDeleteDraft, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import DraftCard from "../../../components/ui/DraftCard";
 import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -281,6 +283,25 @@ function AssessmentCard({ assessment }) {
   );
 }
 
+/* ── Unsaved drafts (kept by the builder until Save — see hooks/useWorkspaceDraft.js) ── */
+
+function AssessmentDraftCard({ draft, onDelete }) {
+  const navigate = useNavigate();
+  const title = draft.name || `Untitled ${(TYPE_LABELS[draft.type] || "assessment").toLowerCase()}`;
+  return (
+    <DraftCard
+      draft={draft}
+      title={title}
+      untitled={!draft.name}
+      subtitle={draft.recordId ? `Changes to “${draft.recordName || "an assessment"}”, not saved yet` : "New assessment, not saved yet"}
+      Icon={TYPE_ICONS[draft.type] || FiClipboard}
+      badges={<TypeBadge type={draft.type} />}
+      onOpen={() => navigate(draft.recordId ? `/assessments/${draft.recordId}/edit?draft=${draft.id}` : `/assessments/new/${draft.type}?draft=${draft.id}`)}
+      onDelete={() => onDelete(draft.id)}
+    />
+  );
+}
+
 function EmptyState({ onCreateNew }) {
   return (
     <div style={{ textAlign: "center", padding: "64px 24px", backgroundColor: "#ffffff", borderRadius: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -300,8 +321,22 @@ export default function AssessmentsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const assessments = data?.data || [];
+  // Unsaved work from the builder, shown as cards ahead of the assessments.
+  const { data: drafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.assessments);
+  const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.assessments);
+  const onlyDrafts = typeFilter === "unsaved";
+
+  const visibleDrafts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return drafts.filter((d) => {
+      const matchesSearch = !query || [d.name, d.recordName].some((text) => (text || "").toLowerCase().includes(query));
+      const matchesType = !typeFilter || onlyDrafts || d.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [drafts, search, typeFilter, onlyDrafts]);
 
   const visibleAssessments = useMemo(() => {
+    if (onlyDrafts) return [];
     const query = search.trim().toLowerCase();
     return assessments.filter((a) => {
       const matchesSearch = !query
@@ -310,7 +345,7 @@ export default function AssessmentsPage() {
       const matchesType = !typeFilter || a.type === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [assessments, search, typeFilter]);
+  }, [assessments, search, typeFilter, onlyDrafts]);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -351,6 +386,7 @@ export default function AssessmentsPage() {
           {ASSESSMENT_TYPES.map((t) => (
             <option key={t} value={t}>{TYPE_LABELS[t]}</option>
           ))}
+          <option value="unsaved">Unsaved drafts</option>
         </select>
 
         {(search || typeFilter) && (
@@ -366,11 +402,12 @@ export default function AssessmentsPage() {
           </>
         )}
 
-        {assessments.length > 0 && (
+        {(assessments.length > 0 || drafts.length > 0) && (
           <>
             <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB", flexShrink: 0 }} />
             <div style={{ fontSize: "12px", color: "#9CA3AF", whiteSpace: "nowrap", padding: "10px 0" }}>
-              {visibleAssessments.length} of {assessments.length}
+              {onlyDrafts ? `${visibleDrafts.length} unsaved draft${visibleDrafts.length !== 1 ? "s" : ""}` : `${visibleAssessments.length} of ${assessments.length}`}
+              {!onlyDrafts && drafts.length > 0 && <span style={{ color: "#9A6700" }}>{` · ${drafts.length} unsaved draft${drafts.length !== 1 ? "s" : ""}`}</span>}
             </div>
           </>
         )}
@@ -397,14 +434,19 @@ export default function AssessmentsPage() {
         <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
           <FiAlertTriangle size={15} /> Failed to load assessments: {error?.message}
         </div>
-      ) : assessments.length === 0 ? (
+      ) : assessments.length === 0 && drafts.length === 0 ? (
         <EmptyState onCreateNew={(t) => navigate(`/assessments/new/${t}`)} />
-      ) : visibleAssessments.length === 0 ? (
+      ) : visibleAssessments.length === 0 && visibleDrafts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB", color: "#9CA3AF", fontSize: "14px" }}>
-          No assessments match your search{search ? ` "${search}"` : ""}{typeFilter ? ` in ${TYPE_LABELS[typeFilter]}` : ""}.
+          {onlyDrafts && !search
+            ? "No unsaved drafts."
+            : <>No {onlyDrafts ? "unsaved drafts" : "assessments"} match your search{search ? ` "${search}"` : ""}{typeFilter && !onlyDrafts ? ` in ${TYPE_LABELS[typeFilter]}` : ""}.</>}
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+          {visibleDrafts.map((draft) => (
+            <AssessmentDraftCard key={draft.id} draft={draft} onDelete={deleteDraft} />
+          ))}
           {visibleAssessments.map((assessment) => (
             <AssessmentCard key={assessment.id} assessment={assessment} />
           ))}

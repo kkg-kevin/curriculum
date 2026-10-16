@@ -102,6 +102,7 @@ const SKIP = [
   /\/(preview|search|validate|check|export)$/, // work things out, save nothing
   /^\/api\/assessment-submissions\/submissions$/, // a learner opening an assessment
   /^\/api\/assessment-submissions\/submissions\/[^/]+\/draft$/, // autosave while answering
+  /^\/api\/(assessments|courses)\/drafts(\/|$)/, // autosave while building; the Save that follows is what's logged
   /^\/api\/assessment-submissions\/issues\/course-progress$/, // automatic, on finishing a session
   /^\/api\/public\/diagnostics\//, // anonymous website diagnostic attempts
 ];

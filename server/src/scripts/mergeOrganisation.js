@@ -48,7 +48,7 @@ const OWNER_COLUMNS = [
   ["access_roles", "ownerAdminId"], ["assessments", "ownerAdminId"], ["audit_log", "ownerAdminId"],
   ["bootcamp_hubs", "ownerAdminId"], ["bootcamps", "ownerAdminId"], ["certificates", "ownerAdminId"],
   ["competencies", "ownerAdminId"], ["competition_hubs", "ownerAdminId"], ["competitions", "ownerAdminId"],
-  ["courses", "ownerAdminId"], ["curricula", "ownerAdminId"], ["event_games", "ownerAdminId"],
+  ["courses", "ownerAdminId"], ["curricula", "ownerAdminId"], ["drafts", "ownerAdminId"], ["event_games", "ownerAdminId"],
   ["home_learning_enrollments", "ownerAdminId"], ["home_learning_households", "ownerAdminId"],
   ["home_learning_packages", "ownerAdminId"], ["hub_visits", "ownerAdminId"], ["items", "ownerAdminId"],
   ["learning_hubs", "ownerAdminId"], ["pathway_templates", "ownerAdminId"], ["shared_imports", "ownerAdminId"],
