@@ -102,6 +102,105 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (16 Oct 2026) — Unsaved assessments, courses and sessions kept in the workspace and shown as draft cards; bootcamp images, hub photo limit, crop on upload, exact map pins
+
+**Backend and portal**, from `curriculum` (branch `modules`) at `4d01f50`. Upload them together.
+The website is unchanged — the 15 Oct website zip in this folder stays as it is.
+
+### What changed
+
+- **Unsaved work is kept in the workspace, not in one browser.** Many people work under one
+  account, so the assessment builder, Add Course, Edit Course and the course session editor now
+  save what is being typed as a **draft** on the server, a few seconds after typing stops (at most
+  every 10 seconds) and straight away when the tab is switched, closed or left. A line beside
+  Save shows "Draft saved · 10:42". Each new assessment or course, and each editing visit, gets a
+  draft of its own, so people building at the same time never overwrite each other; if two people
+  carry on the same draft at once, the second person's work is kept as a separate draft and they
+  are told so.
+- **Drafts show as cards.** On the Assessments and Courses pages each draft is a card at the front
+  of the grid — dashed amber border, an **UNSAVED DRAFT** label, the name typed so far, what it is
+  ("New course, not saved yet", "Changes to …", "Session changes in …") and who last edited it
+  and when. **Continue** opens the form with the draft in it; the bin deletes it (for everyone).
+  Search covers drafts, and both filter menus have **Unsaved drafts**. On a course's page, a
+  session with a draft has a dashed amber row with the label (click it to carry on), and the label
+  sits beside the course's status when its details have unsaved changes.
+- **Opening something with a draft waiting** (editing an assessment, a course or a session) asks
+  "Pick up where you left off?" — **Restore**, **Discard** (deletes it for everyone) or **Not now**
+  (opens the saved version and leaves the draft).
+- **Saving** deletes the draft. Deleting an assessment, a course or a session deletes its drafts.
+  Draft saves are not written to the Activity log (the Save that follows is). Staff need Add or
+  Edit on Assessments (or Courses) to keep drafts.
+- **Bootcamp images:** up to 3 more images after the cover, shown on the website's bootcamp page.
+- **Hub photos are limited to 3** (the website shows them as the club's gallery).
+- **Crop on upload** for bootcamp and hub images.
+- **Exact map pins on the website:** a club's page pins the spot its Google Maps link points to
+  (short `maps.app.goo.gl` links included) instead of searching for the typed address. The
+  backend follows the link to Google itself — it needs outbound HTTPS, which it already uses for
+  email.
+
+The 15 Oct website already asks for the bootcamp images and the map pin; with this backend they
+appear.
+
+**Three new migrations**, applied on Restart:
+
+- `20261015100000_add_images_to_bootcamps.js` — `bootcamps.images` (JSON, nullable). Additive.
+- `20261016090000_create_assessment_drafts.js` — a table for assessment drafts.
+- `20261016100000_create_drafts.js` — the `drafts` table for all three kinds; moves any rows from
+  `assessment_drafts` into it, then drops `assessment_drafts`.
+
+No new environment variable; no new npm package. The old browser-only drafts (never released) are
+gone; nothing to clean up.
+
+**Hubs with more than 3 photos can't be saved until some are removed.** Check before uploading:
+`SELECT name, JSON_LENGTH(photos) AS photos FROM learning_hubs WHERE JSON_LENGTH(photos) > 3;`
+— for any listed, remove photos down to 3 when next editing the hub.
+
+### Backend (`backend-deploy.zip`)
+
+From `4d01f50`, byte-identical in Dev, Live and Capable; 487 entries, 119 migrations, the newest
+`20261016100000_create_drafts.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-Oq2jfLOc.js` |
+| Live | `npm run build:live` | `index-B9Tl3z56.js` |
+| Capable | `npm run build:capable` | `index-qtbSkMdV.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`.
+
+### Checked so far
+
+The drafts API was checked against a local database for all three kinds (start, update, a stale
+write refused, one workspace never seeing another's drafts, delete, drafts of deleted records
+removed, nothing in the Activity log), and the portal builds. **Not yet tried in a browser or on
+the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup** (tables are added and one is dropped).
+2. Run the hub photo check above.
+3. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'drafts';` returns one row, `SHOW TABLES LIKE 'assessment_drafts';` none, and
+   `SHOW COLUMNS FROM bootcamps LIKE 'images';` one row. If not, Run JS script → `db:migrate`.
+4. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+5. **Verify:**
+   - Start a new quiz, type a name, wait about 10 seconds: "Draft saved" shows by Save. Go back
+     to Assessments: an amber **UNSAVED DRAFT** card is first. Continue opens it; Save removes the
+     card.
+   - Do the same with Add Course, and with a session (type, then Next): the course page shows the
+     session's amber row until the save goes through.
+   - Signed in to the same account on another computer, the draft cards show there too.
+   - Add an extra image to a bootcamp: it shows on the website's bootcamp page
+     (https://africa.digifunzi.com/bootcamps/…). A club with a Google Maps link shows its exact pin.
+
+**Rolling back:** restore the backup, then upload the 15 Oct backend and portal zips (from commit
+`5436597`). Restore the backup first — the older backend stops on start-up if the database lists
+migrations it doesn't have.
+
+---
+
 ## This release (15 Oct 2026, website) — Estate Tech Clubs, new header and footer, bootcamp and club pages redesigned
 
 **Website only in this folder's zip**, from `curriculum-web` (branch `new`) at `1550c04`. The
@@ -148,7 +247,7 @@ noindex header in `.htaccess`.
    the clubs and each opens with its map; a bootcamp page shows its image on the right.
 3. Search Console (Live): URL Inspection → Request indexing on `/estate-tech-clubs/`.
 
-### Backend and portal, not yet bundled
+### Backend and portal, not yet bundled (bundled in the 16 Oct release above)
 
 Committed at `583653e` (curriculum, `modules`), for a later release: unsaved assessments,
 courses and sessions kept as drafts and offered back; up to 3 extra images per bootcamp

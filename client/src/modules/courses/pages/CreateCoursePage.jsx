@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateCourse } from "../hooks/useCourse";
@@ -9,8 +10,9 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
 import { Editor as RichTextEditor } from "../components/RichTextEditor";
 import { isEmptyHtml } from "../components/RichContent";
-import { useDraft, isSameContent } from "../../../hooks/useDraft";
-import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
+import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
+import { useDraftQuery, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
 
 const DEFAULT_VALUES = {
   name: "",
@@ -31,6 +33,10 @@ function genRowId() {
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
+  // ?draft=<id> — carrying on a draft of unsaved work (from the Courses page, or this page's own
+  // once it has started one, so a reload picks it back up).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const draftParam = searchParams.get("draft");
   const { mutate: createCourse, isPending } = useCreateCourse();
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [creatingContent, setCreatingContent] = useState(false);
@@ -48,20 +54,36 @@ export default function CreateCoursePage() {
   const { handleSubmit, reset, control, formState: { isDirty } } = methods;
   const isBusy = isPending || creatingContent;
 
-  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
+  // Unsaved work is written to the workspace as it's typed (useWorkspaceDraft) — several people
+  // share one account, so each new course being built gets a draft of its own, listed on the
+  // Courses page.
   const values = useWatch({ control });
   const draftValue = { values, moduleRows };
-  const draft = useDraft("course:new", {
-    value: draftValue,
+  // Opening a draft: nothing is kept until it has been loaded into the form.
+  const [draftLoaded, setDraftLoaded] = useState(!draftParam);
+  const autosave = useWorkspaceDraft({
+    endpoint: DRAFT_ENDPOINTS.courses,
+    kind: "course",
+    value: draftLoaded ? draftValue : null,
     dirty: !isSameContent(draftValue, { values: DEFAULT_VALUES, moduleRows: [] }),
-    saved: { values: DEFAULT_VALUES, moduleRows: [] },
+    onCreated: (draftId) => setSearchParams({ draft: draftId }, { replace: true }),
   });
-  const restoreDraft = () => {
-    const restored = draft.restore();
-    if (!restored) return;
-    reset({ ...DEFAULT_VALUES, ...restored.values }, { keepDefaultValues: true });
-    setModuleRows(restored.moduleRows || []);
-  };
+  const { data: openedDraft, isError: openedDraftMissing } = useDraftQuery(DRAFT_ENDPOINTS.courses, draftParam, { enabled: !draftLoaded });
+
+  useEffect(() => {
+    if (draftLoaded || (!openedDraft && !openedDraftMissing)) return;
+    setDraftLoaded(true);
+    if (openedDraft?.kind === "course" && !openedDraft.recordId) {
+      const restoredValues = { ...DEFAULT_VALUES, ...(openedDraft.content?.values || {}) };
+      const restoredRows = openedDraft.content?.moduleRows || [];
+      reset(restoredValues, { keepDefaultValues: true });
+      setModuleRows(restoredRows);
+      autosave.adopt({ id: openedDraft.id, revision: openedDraft.revision, content: { values: restoredValues, moduleRows: restoredRows } });
+    } else {
+      toast("That draft is no longer there — it may have been saved or deleted by someone else.", { duration: 6000 });
+      setSearchParams({}, { replace: true });
+    }
+  }, [draftLoaded, openedDraft, openedDraftMissing, reset, autosave, setSearchParams]);
 
   const addModuleRow = () => {
     setModuleRows((rows) => [...rows, {
@@ -82,7 +104,7 @@ export default function CreateCoursePage() {
   const onSubmit = ({ pathwayIds, competencyIds, ...data }) => {
     createCourse(data, {
       onSuccess: async (course) => {
-        draft.clear();
+        autosave.clear();
         setCreatingContent(true);
         if (pathwayIds.length > 0) {
           await Promise.all(pathwayIds.map((aid) => courseApi.linkPathway(course.id, aid)));
@@ -138,7 +160,7 @@ export default function CreateCoursePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <DraftSavedNote savedAt={draft.savedAt} />
+          <WorkspaceDraftNote status={autosave.status} />
           <button
             type="button"
             onClick={handleCancel}
@@ -249,10 +271,9 @@ export default function CreateCoursePage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => { draft.clear(); navigate("/courses"); }}
+        onConfirm={() => { autosave.clear(); navigate("/courses"); }}
         onCancel={() => setConfirmLeave(false)}
       />
-      <DraftRestoreDialog draft={draft.found} what="new course" onRestore={restoreDraft} onDiscard={draft.discard} />
     </div>
   );
 }

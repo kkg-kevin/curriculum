@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,13 +10,20 @@ import { courseSchema } from "../schemas/course.schema";
 import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
-import { useDraft, isSameContent } from "../../../hooks/useDraft";
-import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
+import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
+
+const DRAFT_GONE = "That draft is no longer there — it may have been saved or deleted by someone else.";
 
 export default function EditCoursePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // ?draft=<id> — carrying on a draft of unsaved work (from the Courses page, or this page's own
+  // once it has started one, so a reload picks it back up).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const draftParam = searchParams.get("draft");
   const { data: course, isLoading, isError } = useCourseQuery(id);
   const { data: linkedPathways, isLoading: pathwaysLoading } = useCoursePathways(id);
   const { data: linkedCompetencies, isLoading: competenciesLoading } = useCourseCompetencies(id);
@@ -31,9 +39,29 @@ export default function EditCoursePage() {
   // The course as loaded into the form. Filled once per course: a background refetch (coming back
   // to the tab after a while) must not reload the form over unsaved edits.
   const loaded = useRef(null);
+  const isLoaded = loaded.current?.id === id;
+  const [draftOfferDone, setDraftOfferDone] = useState(false);
+
+  // Unsaved work is written to the workspace as it's typed (useWorkspaceDraft) — several people
+  // share one account, so it's kept per visit to this form, not per browser or per login.
+  const values = useWatch({ control });
+  const autosave = useWorkspaceDraft({
+    endpoint: DRAFT_ENDPOINTS.courses,
+    kind: "course",
+    value: isLoaded ? values : null,
+    dirty: isLoaded && !isSameContent(values, loaded.current.values),
+    recordId: id,
+    onCreated: (draftId) => setSearchParams({ draft: draftId }, { replace: true }),
+  });
+  // The draft named in the address, read once to open the form from it.
+  const { data: openedDraft, isError: openedDraftMissing } = useDraftQuery(DRAFT_ENDPOINTS.courses, draftParam, { enabled: !isLoaded });
+  // Opening without one: drafts other visits left of this course, offered back below.
+  const { data: courseDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses, { kind: "course", recordId: id }, { enabled: !draftParam });
+  const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.courses);
 
   useEffect(() => {
     if (course && linkedPathways && linkedCompetencies && loaded.current?.id !== id) {
+      if (draftParam && !openedDraft && !openedDraftMissing) return;
       const values = {
         name: course.name || "",
         code: course.code || "",
@@ -48,26 +76,42 @@ export default function EditCoursePage() {
       };
       loaded.current = { id, values };
       reset(values);
+      const fromDraft = draftParam && openedDraft?.kind === "course" && openedDraft.recordId === id ? openedDraft : null;
+      if (fromDraft) {
+        const restored = { ...values, ...fromDraft.content };
+        reset(restored, { keepDefaultValues: true });
+        autosave.adopt({ id: fromDraft.id, revision: fromDraft.revision, content: restored });
+      } else if (draftParam) {
+        toast(DRAFT_GONE, { duration: 6000 });
+        setSearchParams({}, { replace: true });
+      }
     }
-  }, [id, course, linkedPathways, linkedCompetencies, reset]);
+  }, [id, course, linkedPathways, linkedCompetencies, reset, draftParam, openedDraft, openedDraftMissing, autosave, setSearchParams]);
 
-  // Unsaved work is kept in this browser as it's typed and offered back next time (useDraft).
-  const values = useWatch({ control });
-  const draft = useDraft(loaded.current?.id === id ? `course:edit:${id}` : null, {
-    value: values,
-    dirty: loaded.current?.id === id && !isSameContent(values, loaded.current.values),
-    baseUpdatedAt: course?.updatedAt ?? null,
-    saved: loaded.current?.values,
-  });
-  const restoreDraft = () => {
-    const restored = draft.restore();
-    if (restored) reset({ ...loaded.current.values, ...restored }, { keepDefaultValues: true });
-  };
+  // Drafts of this course left from before: offer the newest back — only while the form is still
+  // as it opened, so it never lands on top of new typing.
+  const offeredDraft = isLoaded && !draftParam && !draftOfferDone && isSameContent(values, loaded.current.values)
+    ? courseDrafts.find((d) => d.id !== autosave.currentDraftId()) || null
+    : null;
+
+  async function restoreOfferedDraft() {
+    const offered = offeredDraft;
+    setDraftOfferDone(true);
+    try {
+      const full = await draftsApi.get(DRAFT_ENDPOINTS.courses, offered.id);
+      const restored = { ...loaded.current.values, ...full.content };
+      reset(restored, { keepDefaultValues: true });
+      autosave.adopt({ id: full.id, revision: full.revision, content: restored });
+      setSearchParams({ draft: full.id }, { replace: true });
+    } catch (err) {
+      toast.error(err.statusCode === 404 ? DRAFT_GONE : err.message || "Couldn't open the draft");
+    }
+  }
 
   const onSubmit = ({ pathwayIds, competencyIds, ...data }) => {
     updateCourse({ id, data }, {
       onSuccess: async () => {
-        draft.clear();
+        autosave.clear();
         const originalAreaIds = (linkedPathways || []).map((a) => a.id);
         const areasToAdd = pathwayIds.filter((aid) => !originalAreaIds.includes(aid));
         const areasToRemove = originalAreaIds.filter((aid) => !pathwayIds.includes(aid));
@@ -130,7 +174,7 @@ export default function EditCoursePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <DraftSavedNote savedAt={draft.savedAt} />
+          <WorkspaceDraftNote status={autosave.status} />
           <button
             type="button"
             onClick={handleCancel}
@@ -168,15 +212,18 @@ export default function EditCoursePage() {
         message="You have unsaved changes that will be lost if you leave."
         confirmLabel="Leave"
         cancelLabel="Stay"
-        onConfirm={() => { draft.clear(); navigate(`/courses/${id}/view`); }}
+        onConfirm={() => { autosave.clear(); navigate(`/courses/${id}/view`); }}
         onCancel={() => setConfirmLeave(false)}
       />
       <DraftRestoreDialog
-        draft={draft.found}
+        draft={offeredDraft}
         recordUpdatedAt={course?.updatedAt ?? null}
+        otherCount={Math.max(0, courseDrafts.length - 1)}
+        listedOn="the Courses page"
         what="course"
-        onRestore={restoreDraft}
-        onDiscard={draft.discard}
+        onRestore={restoreOfferedDraft}
+        onDiscard={() => { setDraftOfferDone(true); deleteDraft(offeredDraft.id); }}
+        onDismiss={() => setDraftOfferDone(true)}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FiAlertTriangle, FiBookOpen, FiFileText, FiList } from "react-icons/fi";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useForm, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,9 +27,10 @@ import CourseInventoryPanel from "../components/CourseInventoryPanel";
 import RichContent, { isEmptyHtml } from "../components/RichContent";
 import { Editor as RichTextEditorControlled } from "../components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { useAuth } from "../../../context/AuthContext";
-import { useDraft, removeDraft, isSameContent } from "../../../hooks/useDraft";
-import DraftRestoreDialog, { DraftSavedNote } from "../../../components/ui/DraftRestoreDialog";
+import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
+import { UnsavedDraftBadge } from "../../../components/ui/DraftCard";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 import { normalizeActivityItems } from "../utils/sessionActivity";
@@ -108,7 +110,10 @@ function NavArrow({ direction }) {
   );
 }
 
-function SessionModal({ courseId, sessions, modules, sessionPosition, startSessionId, onClose }) {
+const DRAFT_GONE = "That draft is no longer there — it may have been saved or deleted by someone else.";
+
+// startDraftId — a draft of the start session to open it from (Continue on a drafts list).
+function SessionModal({ courseId, sessions, modules, sessionPosition, startSessionId, startDraftId = null, onClose }) {
   const { mutateAsync: updateSession, isPending: saving } = useUpdateSession(courseId);
   const [currentId, setCurrentId] = useState(startSessionId);
 
@@ -127,7 +132,6 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
   });
 
   const { reset, getValues, control } = methods;
-  const { user } = useAuth();
   // The session as loaded into the form ({ id, values }) — what "unsaved" is measured against.
   const [loaded, setLoaded] = useState(null);
 
@@ -158,30 +162,70 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId, Boolean(current)]);
 
-  // Unsaved work in the open session is kept in this browser as it's typed (useDraft), so a closed
-  // tab or a power cut between Prev/Next/Done saves doesn't lose it; it's offered back the next
-  // time that session is opened.
+  // Unsaved work in the open session is written to the workspace as it's typed
+  // (useWorkspaceDraft), so a closed tab or a power cut between Prev/Next/Done saves doesn't lose
+  // it — kept per visit, since several people share one account. It's offered back the next time
+  // that session is opened, and listed on the course and Courses pages.
   const isLoaded = Boolean(current) && loaded?.id === current.id;
   const values = useWatch({ control });
-  const draft = useDraft(isLoaded ? `course-session:${current.id}` : null, {
-    value: values,
+  const autosave = useWorkspaceDraft({
+    endpoint: DRAFT_ENDPOINTS.courses,
+    kind: "course-session",
+    value: isLoaded ? values : null,
     dirty: isLoaded && !isSameContent(values, loaded.values),
-    baseUpdatedAt: current?.updatedAt ?? null,
-    saved: loaded?.values,
+    recordId: current?.id ?? null,
   });
-  const restoreDraft = () => {
-    const restored = draft.restore();
-    if (restored) reset({ ...loaded.values, ...restored }, { keepDefaultValues: true });
+  // Sessions whose drafts have been dealt with in this visit (restored, discarded, "Not now", or
+  // opened straight from startDraftId) — none is offered twice.
+  const [draftsHandled, setDraftsHandled] = useState(() => new Set());
+  const markHandled = (sessionId) => setDraftsHandled((prev) => new Set(prev).add(sessionId));
+  const { data: openedDraft, isError: openedDraftMissing } = useDraftQuery(DRAFT_ENDPOINTS.courses, startDraftId, { enabled: !draftsHandled.has(startSessionId) });
+  const { data: sessionDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses, { kind: "course-session", parentId: courseId });
+  const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.courses);
+
+  const restoreInto = (draft) => {
+    const restored = { ...loaded.values, ...draft.content };
+    reset(restored, { keepDefaultValues: true });
+    autosave.adopt({ id: draft.id, revision: draft.revision, content: restored });
+  };
+
+  // Opened from a drafts list: once the start session is in the form, put the draft over it.
+  useEffect(() => {
+    if (!startDraftId || !isLoaded || current.id !== startSessionId || draftsHandled.has(startSessionId)) return;
+    if (!openedDraft && !openedDraftMissing) return;
+    markHandled(startSessionId);
+    if (openedDraft?.kind === "course-session" && openedDraft.recordId === startSessionId) restoreInto(openedDraft);
+    else toast(DRAFT_GONE, { duration: 6000 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDraftId, isLoaded, openedDraft, openedDraftMissing]);
+
+  // Drafts of the open session left from before: offer the newest back — only while the form is
+  // still as it opened, so it never lands on top of new typing.
+  const offeredDraft = isLoaded && !draftsHandled.has(current.id) && !(startDraftId && current.id === startSessionId) && isSameContent(values, loaded.values)
+    ? sessionDrafts.find((d) => d.recordId === current.id && d.id !== autosave.currentDraftId()) || null
+    : null;
+
+  const restoreOfferedDraft = async () => {
+    const offered = offeredDraft;
+    markHandled(offered.recordId);
+    try {
+      const full = await draftsApi.get(DRAFT_ENDPOINTS.courses, offered.id);
+      if (full.recordId === current?.id) restoreInto(full);
+    } catch (err) {
+      toast.error(err.statusCode === 404 ? DRAFT_GONE : err.message || "Couldn't open the draft");
+    }
   };
 
   const saveCurrent = () => {
     if (!current) return;
-    const draftKey = `course-session:${current.id}`;
+    // Stop writing this session's draft (what's left of it goes out first) — it's deleted once the
+    // save has gone through, and kept if the save fails.
+    const discardDraft = autosave.release();
     // mutateAsync, not mutate's onSuccess: Done closes the modal before the save returns, and
     // mutate's own callbacks don't run once the component has gone. A failed save keeps the draft
     // (the hook's onError already says it failed).
     updateSession({ id: current.id, data: getValues() })
-      .then(() => removeDraft(user?.id, draftKey))
+      .then(discardDraft)
       .catch(() => {});
   };
 
@@ -245,17 +289,20 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
           )}
         </div>
         <DraftRestoreDialog
-          draft={draft.found}
+          draft={offeredDraft}
           recordUpdatedAt={current?.updatedAt ?? null}
+          otherCount={offeredDraft ? Math.max(0, sessionDrafts.filter((d) => d.recordId === current.id).length - 1) : 0}
+          listedOn="this course's page"
           what="session"
-          onRestore={restoreDraft}
-          onDiscard={draft.discard}
+          onRestore={restoreOfferedDraft}
+          onDiscard={() => { markHandled(current.id); deleteDraft(offeredDraft.id); }}
+          onDismiss={() => markHandled(current.id)}
         />
 
         <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: "0 0 16px 16px", borderTop: "1px solid #E5E7EB" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>Changes save automatically as you move between sessions.</p>
-            <DraftSavedNote savedAt={draft.savedAt} />
+            <WorkspaceDraftNote status={autosave.status} />
           </div>
           <button
             type="button"
@@ -272,19 +319,40 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
 
 /* ── Session row ──────────────────────────────────────────────────────── */
 
-function SessionRow({ courseId, session, index, expanded, onToggle, onEdit }) {
+function formatDraftWhen(iso) {
+  return new Date(iso).toLocaleString("en-KE", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+// The "Unsaved draft" label on something that has a draft of unsaved changes waiting
+// (hooks/useWorkspaceDraft.js) — clicking it carries the draft on.
+function DraftMarker({ draft, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onOpen(draft); }}
+      title={`Unsaved changes from ${formatDraftWhen(draft.updatedAt)}${draft.lastEditedByName ? ` by ${draft.lastEditedByName}` : ""} — click to carry on`}
+      style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "inline-flex" }}
+    >
+      <UnsavedDraftBadge />
+    </button>
+  );
+}
+
+// draft — the newest draft of unsaved changes to this session, if any; onOpenDraft carries it on.
+function SessionRow({ courseId, session, index, expanded, onToggle, onEdit, draft = null, onOpenDraft }) {
   const { mutate: deleteSession, isPending: deleting } = useDeleteSession(courseId);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
-    <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #E5E7EB", overflow: "hidden" }}>
+    <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", border: draft ? "1.5px dashed #F5C451" : "1px solid #E5E7EB", overflow: "hidden" }}>
       <div
-        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 16px", cursor: "pointer", backgroundColor: expanded ? "#F0F6FB" : "#fff" }}
+        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 16px", cursor: "pointer", backgroundColor: expanded ? "#F0F6FB" : draft ? "#FFFDF7" : "#fff" }}
         onClick={onToggle}
       >
         <ChevronDown open={expanded} />
-        <span style={{ flex: 1, fontSize: "14px", fontWeight: "700", color: "#111827" }}>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", fontSize: "14px", fontWeight: "700", color: "#111827" }}>
           {sessionLabel(session, index)}
+          {draft && <DraftMarker draft={draft} onOpen={onOpenDraft} />}
         </span>
         <span style={{ fontSize: "12px", color: "#38aae1", fontWeight: "600" }}>{SECTIONS.length} Sections</span>
         <button
@@ -392,7 +460,7 @@ function AddSessionControl({ onAdd, adding }) {
 
 function ModuleGroup({
   courseId, courseModule, sessions, sessionPosition, expandedIds, onToggleSession, onEditSession,
-  onAddSession, addingSession, expanded, onToggleExpand,
+  onAddSession, addingSession, expanded, onToggleExpand, sessionDrafts, onOpenDraft,
 }) {
   const { mutate: updateModule } = useUpdateModule(courseId);
   const { mutate: deleteModule, isPending: deleting } = useDeleteModule(courseId);
@@ -503,6 +571,8 @@ function ModuleGroup({
                 expanded={expandedIds.has(session.id)}
                 onToggle={() => onToggleSession(session.id)}
                 onEdit={onEditSession}
+                draft={sessionDrafts.get(session.id)}
+                onOpenDraft={onOpenDraft}
               />
             ))}
           </div>
@@ -547,6 +617,34 @@ export default function CourseViewPage() {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [collapsedModuleIds, setCollapsedModuleIds] = useState(new Set());
   const [modalSessionId, setModalSessionId] = useState(null);
+  // A draft to open the session editor from (Continue on a drafts list).
+  const [modalDraftId, setModalDraftId] = useState(null);
+  // ?session=<id>&draft=<id> — the Courses page's Continue on a session's draft.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sessionParam = searchParams.get("session");
+  const draftParam = searchParams.get("draft");
+  useEffect(() => {
+    if (!sessionParam || sessionsLoading) return;
+    if (sessions.some((s) => s.id === sessionParam)) {
+      setModalSessionId(sessionParam);
+      setModalDraftId(draftParam);
+    } else {
+      toast("That session is no longer in this course.", { duration: 6000 });
+    }
+    setSearchParams({}, { replace: true });
+  }, [sessionParam, draftParam, sessionsLoading, sessions, setSearchParams]);
+  // Unsaved changes to this course and its sessions, kept by Edit Course and the session editor —
+  // marked on the course title and on each session's row (newest draft first).
+  const { data: courseDraftRows = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses);
+  const courseEditDraft = courseDraftRows.find((d) => d.kind === "course" && d.recordId === id) || null;
+  const sessionDrafts = new Map();
+  courseDraftRows.forEach((d) => {
+    if (d.kind === "course-session" && d.parentId === id && !sessionDrafts.has(d.recordId)) sessionDrafts.set(d.recordId, d);
+  });
+  const openSessionDraft = (d) => {
+    setModalSessionId(d.recordId);
+    setModalDraftId(d.id);
+  };
   const [addingSession, setAddingSession] = useState(false);
   const { mutateAsync: createSessionAsync } = useCreateSession(id);
   const { mutateAsync: createSessionsBulkAsync } = useCreateSessionsBulk();
@@ -660,6 +758,7 @@ export default function CourseViewPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", color: "#111827" }}>{course.name}</h1>
                 <StatusBadge status={course.status} />
+                {courseEditDraft && <DraftMarker draft={courseEditDraft} onOpen={(d) => navigate(`/courses/${id}/edit?draft=${d.id}`)} />}
                 {course.code && (
                   <span style={{ fontSize: "12px", fontWeight: "600", color: "#9CA3AF" }}>{course.code}</span>
                 )}
@@ -720,6 +819,8 @@ export default function CourseViewPage() {
                   expanded={expandedIds.has(session.id)}
                   onToggle={() => toggleSession(session.id)}
                   onEdit={(s) => setModalSessionId(s.id)}
+                  draft={sessionDrafts.get(session.id)}
+                  onOpenDraft={openSessionDraft}
                 />
               ))}
             </div>
@@ -739,6 +840,8 @@ export default function CourseViewPage() {
                   addingSession={addingSession}
                   expanded={!collapsedModuleIds.has(courseModule.id)}
                   onToggleExpand={() => toggleModule(courseModule.id)}
+                  sessionDrafts={sessionDrafts}
+                  onOpenDraft={openSessionDraft}
                 />
               ))}
               {ungroupedSessions.length > 0 && (
@@ -753,6 +856,8 @@ export default function CourseViewPage() {
                       expanded={expandedIds.has(session.id)}
                       onToggle={() => toggleSession(session.id)}
                       onEdit={(s) => setModalSessionId(s.id)}
+                      draft={sessionDrafts.get(session.id)}
+                      onOpenDraft={openSessionDraft}
                     />
                   ))}
                 </div>
@@ -921,7 +1026,8 @@ export default function CourseViewPage() {
           modules={modules}
           sessionPosition={sessionPosition}
           startSessionId={modalSessionId}
-          onClose={() => setModalSessionId(null)}
+          startDraftId={modalDraftId}
+          onClose={() => { setModalSessionId(null); setModalDraftId(null); }}
         />
       )}
 

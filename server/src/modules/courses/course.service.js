@@ -12,6 +12,7 @@ const InventoryModel = require("../settings/items/items.model");
 const CurriculumModel = require("../curriculum/curriculum.model");
 const CurriculumService = require("../curriculum/curriculum.service");
 const AssessmentModel = require("../assessments/assessment.model");
+const DraftModel = require("../drafts/draft.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
@@ -203,6 +204,9 @@ const CourseService = {
     await CoursePathwayLinkModel.deleteByCourseId(id);
     await CourseCurriculumLinkModel.deleteByCourseId(id);
     await CourseInventoryLinkModel.deleteByCourseId(id);
+    // Unsaved changes to the course or its sessions have nothing left to be saved into.
+    await DraftModel.deleteByRecord("course", id);
+    await DraftModel.deleteByParent(id);
     return { message: "Course deleted successfully" };
   },
 
@@ -592,6 +596,7 @@ const CourseService = {
       throw err;
     }
     await SessionModel.delete(sessionId);
+    await DraftModel.deleteByRecord("course-session", sessionId);
   },
 
   /* ── Modules (group this course's Sessions under a named bucket) ───────── */

@@ -127,7 +127,11 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
       const access = resolveAccess(req.method, path);
       const permissions = await AccessService.permissionsFor(req.user);
       req.user.permissions = permissions;
-      const allowed = access && (can(permissions, access.module, access.action) || (access.orView || []).some((m) => can(permissions, m, "view")));
+      const allowed = access && (
+        can(permissions, access.module, access.action)
+        || (access.orActions || []).some((action) => can(permissions, access.module, action))
+        || (access.orView || []).some((m) => can(permissions, m, "view"))
+      );
       if (!allowed) {
         const err = new Error(access ? `Your role doesn't allow you to ${describeAccess(access)}.` : "You don't have access to this part of the workspace.");
         err.statusCode = 403;

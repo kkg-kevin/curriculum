@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiMoreVertical, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiList, FiMoreVertical, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useCoursesQuery, useDeleteCourse, useDuplicateCourse } from "../hooks/useCourse";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { useDraftsQuery, useDeleteDraft, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import DraftCard from "../../../components/ui/DraftCard";
 
 const STATUS_BADGE = {
   draft:    { bg: "#fff8e6", color: "#b8860b", border: "#fcd97a", label: "Draft" },
@@ -216,7 +218,42 @@ const STATUS_FILTERS = [
   { value: "draft", label: "Draft" },
   { value: "active", label: "Active" },
   { value: "archived", label: "Archived" },
+  { value: "unsaved", label: "Unsaved drafts" },
 ];
+
+/* ── Unsaved drafts (kept by Add/Edit Course and the session editor until saved — see
+   hooks/useWorkspaceDraft.js) ── */
+
+function describeCourseDraft(d) {
+  if (d.kind === "course-session") {
+    const title = d.name || d.recordName;
+    return { title: title || "Untitled session", untitled: !title, subtitle: `Session changes in “${d.parentName || "a course"}”, not saved yet`, Icon: FiList };
+  }
+  if (d.recordId) return { title: d.name || d.recordName || "Untitled course", untitled: !(d.name || d.recordName), subtitle: `Changes to “${d.recordName || "a course"}”, not saved yet`, Icon: FiEdit2 };
+  return { title: d.name || "Untitled course", untitled: !d.name, subtitle: "New course, not saved yet", Icon: FiBookOpen };
+}
+
+function courseDraftPath(d) {
+  if (d.kind === "course-session") return `/courses/${d.parentId}/view?session=${d.recordId}&draft=${d.id}`;
+  return d.recordId ? `/courses/${d.recordId}/edit?draft=${d.id}` : `/courses/create?draft=${d.id}`;
+}
+
+function CourseDraftCard({ draft, onDelete }) {
+  const navigate = useNavigate();
+  const { title, untitled, subtitle, Icon } = describeCourseDraft(draft);
+  return (
+    <DraftCard
+      cover
+      draft={draft}
+      title={title}
+      untitled={untitled}
+      subtitle={subtitle}
+      Icon={Icon}
+      onOpen={() => navigate(courseDraftPath(draft))}
+      onDelete={() => onDelete(draft.id)}
+    />
+  );
+}
 
 export default function CoursesPage() {
   const navigate = useNavigate();
@@ -227,6 +264,9 @@ export default function CoursesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const searchInputRef = useRef(null);
   const courses = data?.data || [];
+  // Unsaved work from Add/Edit Course and the session editor, shown as cards ahead of the courses.
+  const { data: drafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses);
+  const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.courses);
 
   // "/" jumps into the search box from anywhere on the page (skipped while already typing
   // somewhere); Escape clears it — both common, low-friction catalog-search conventions.
@@ -250,9 +290,19 @@ export default function CoursesPage() {
           stripHtml(c.description).toLowerCase().includes(query)
         )
       : courses;
-    if (statusFilter) filtered = filtered.filter((c) => (c.status || "active") === statusFilter);
+    if (statusFilter === "unsaved") filtered = [];
+    else if (statusFilter) filtered = filtered.filter((c) => (c.status || "active") === statusFilter);
     return sortCourses(filtered, sortBy);
   }, [courses, search, sortBy, statusFilter]);
+
+  // Drafts have no status of their own: they show under "All Courses" and "Unsaved drafts".
+  const visibleDrafts = useMemo(() => {
+    if (statusFilter && statusFilter !== "unsaved") return [];
+    const query = search.trim().toLowerCase();
+    if (!query) return drafts;
+    return drafts.filter((d) => [d.name, d.recordName, d.parentName].some((text) => (text || "").toLowerCase().includes(query)));
+  }, [drafts, search, statusFilter]);
+  const draftCount = `${drafts.length} unsaved draft${drafts.length !== 1 ? "s" : ""}`;
 
   const clearSearch = () => { setSearch(""); searchInputRef.current?.focus(); };
 
@@ -329,11 +379,14 @@ export default function CoursesPage() {
         </select>
       </div>
 
-      {!isLoading && !isError && courses.length > 0 && (
+      {!isLoading && !isError && (courses.length > 0 || drafts.length > 0) && (
         <p style={{ margin: "-6px 0 14px 2px", fontSize: "12px", color: "#9CA3AF" }}>
-          {visibleCourses.length === courses.length
-            ? `${courses.length} course${courses.length !== 1 ? "s" : ""}`
-            : `Showing ${visibleCourses.length} of ${courses.length} course${courses.length !== 1 ? "s" : ""}`}
+          {statusFilter === "unsaved"
+            ? draftCount
+            : visibleCourses.length === courses.length
+              ? `${courses.length} course${courses.length !== 1 ? "s" : ""}`
+              : `Showing ${visibleCourses.length} of ${courses.length} course${courses.length !== 1 ? "s" : ""}`}
+          {statusFilter !== "unsaved" && drafts.length > 0 && <span style={{ color: "#9A6700" }}>{` · ${draftCount}`}</span>}
         </p>
       )}
 
@@ -354,12 +407,12 @@ export default function CoursesPage() {
         <div style={{ padding: "20px 24px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "12px", color: "#EF4444", fontSize: "14px", display: "flex", alignItems: "center", gap: 8 }}>
           <FiAlertTriangle size={15} /> Failed to load courses: {error?.message}
         </div>
-      ) : courses.length === 0 ? (
+      ) : courses.length === 0 && drafts.length === 0 ? (
         <EmptyState onCreateNew={() => navigate("/courses/create")} />
-      ) : visibleCourses.length === 0 ? (
+      ) : visibleCourses.length === 0 && visibleDrafts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB" }}>
           <p style={{ margin: "0 0 16px", color: "#9CA3AF", fontSize: "14px" }}>
-            {search.trim() ? `No courses match "${search}".` : "No courses match this filter."}
+            {search.trim() ? `No courses match "${search}".` : statusFilter === "unsaved" ? "No unsaved drafts." : "No courses match this filter."}
           </p>
           <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
             {search.trim() && (
@@ -376,6 +429,9 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
+          {visibleDrafts.map((draft) => (
+            <CourseDraftCard key={draft.id} draft={draft} onDelete={deleteDraft} />
+          ))}
           {visibleCourses.map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
