@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { FiChevronRight, FiInbox, FiSearch, FiSliders, FiUsers } from "react-icons/fi";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { FiChevronRight, FiFileText, FiInbox, FiSearch, FiSliders, FiUsers } from "react-icons/fi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useWorkspaceClaims } from "../hooks/useClaims";
 import { ClaimStatusPill, T, TYPE_LABEL, cardStyle, formatDate, formatMoney } from "../shared";
-import ClaimReviewDialog from "../components/ClaimReviewDialog";
 import SupervisorsDialog from "../components/SupervisorsDialog";
 
 // Educator claims, for the workspace: the admin app's Billing → "Educator Claims" tab
@@ -26,7 +25,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const { can } = usePermissions();
   const canSupervise = can("claims", "edit");
   const canApprove = can("claims-approval", "edit");
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { data, isLoading, isError, error } = useWorkspaceClaims();
   const [picked, setStage] = useState(null);
   const [search, setSearch] = useState("");
@@ -36,10 +35,9 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const claims = useMemo(() => data?.claims || [], [data]);
   const counts = data?.counts || {};
   const amounts = data?.amounts || {};
-  // Opened from a notification with ?claim=<id>.
+  // A claim opens on its own page (AdminClaimPage); a notification's ?claim=<id> goes there too.
   const openId = searchParams.get("claim");
-  // Only ?claim= is touched — the rest of the URL (Billing's ?tab=) stays as it is.
-  const open = (id) => setSearchParams((prev) => { const next = new URLSearchParams(prev); if (id) next.set("claim", id); else next.delete("claim"); return next; }, { replace: true });
+  const open = (id) => navigate(`/billing/claims/${id}`);
 
   // Until the viewer picks a stage, show the first one that has something for them to do.
   const mine = [canApprove && "pending_admin", canApprove && "approved", canSupervise && "pending_supervisor"].filter(Boolean);
@@ -65,13 +63,17 @@ export default function ClaimsReviewPage({ embedded = false }) {
             Payment requests from educators — approved by their supervisor, then paid by the admin. With no supervisor, the admin approves.
           </p>
         </div>
-        {canApprove && (
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setShowSupervisors(true)} style={headerButton}><FiUsers size={15} /> Supervisors</button>
-            {/* The rates live in Settings → Educator pay, for the whole workspace. */}
-            <button type="button" onClick={() => navigate("/settings?tab=educator-pay")} style={headerButton}><FiSliders size={15} /> Educator pay</button>
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {/* Every invoice generated from a claim, pending payment or paid (ClaimInvoicesPage). */}
+          <button type="button" onClick={() => navigate("/billing/claim-invoices")} style={headerButton}><FiFileText size={15} /> Claim invoices</button>
+          {canApprove && (
+            <>
+              <button type="button" onClick={() => setShowSupervisors(true)} style={headerButton}><FiUsers size={15} /> Supervisors</button>
+              {/* The rates live in Settings → Educator pay, for the whole workspace. */}
+              <button type="button" onClick={() => navigate("/settings?tab=educator-pay")} style={headerButton}><FiSliders size={15} /> Educator pay</button>
+            </>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
@@ -126,7 +128,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
         )}
       </div>
 
-      {openId && <ClaimReviewDialog claimId={openId} canSupervise={canSupervise} canApprove={canApprove} onClose={() => open(null)} />}
+      {openId && <Navigate to={`/billing/claims/${openId}`} replace />}
       {showSupervisors && <SupervisorsDialog onClose={() => setShowSupervisors(false)} />}
 
       <style>{`

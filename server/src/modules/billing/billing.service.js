@@ -79,7 +79,57 @@ async function resolveDocumentLearner(learnerId) {
   return { id: learner.id, firstName: learner.firstName, lastName: learner.lastName, photo: learner.photo || null };
 }
 
-async function decorate(invoice, items, payments) {
+// Where an invoice came from, in plain words, with a pointer to the thing that made it. Worked out
+// from what's already recorded — the invoice's own ids and its lines' metadata (a hub visit's id,
+// a household's id, a bootcamp's id) — so nothing extra is stored and old invoices get it too.
+// `ref` is { type, id } for the client to turn into a link in the viewer's own portal.
+function itemMeta(item) {
+  const m = item?.metadata;
+  if (!m) return {};
+  if (typeof m === "string") { try { return JSON.parse(m) || {}; } catch { return {}; } }
+  return m;
+}
+// `cache` (one per list request) keeps a long list from looking the same hub or learner up again
+// for every invoice.
+async function resolveSource(invoice, items, cache = { hubs: new Map(), learners: new Map() }) {
+  const remember = (map, id, load) => {
+    if (!map.has(id)) map.set(id, load());
+    return map.get(id);
+  };
+  const hubName = (id) => (id ? remember(cache.hubs, id, async () => (await LearningHubService.getLearningHubById(id).catch(() => null))?.name || null) : null);
+  const learnerName = (id) => (id ? remember(cache.learners, id, async () => {
+    const learner = await LearnerModel.findById(id);
+    return learner ? `${learner.firstName || ""} ${learner.lastName || ""}`.trim() || null : null;
+  }) : null);
+  const metas = items.map(itemMeta);
+  const school = await hubName(invoice.hubId || invoice.payerHubId);
+  const join = (parts) => parts.filter(Boolean).join(" · ");
+  switch (invoice.invoiceType) {
+    case "bootcamp": {
+      const bootcampId = metas.find((m) => m.bootcampId)?.bootcampId;
+      const bootcamp = bootcampId ? await db("bootcamps").where({ id: bootcampId }).first() : null;
+      return { kind: "bootcamp", automatic: true, hubName: school, from: join([bootcamp?.name || "Bootcamp", await learnerName(invoice.learnerId)]), ref: bootcamp ? { type: "bootcamp", id: bootcamp.id } : null };
+    }
+    case "home_learning": {
+      const household = invoice.householdId ? await db("home_learning_households").where({ id: invoice.householdId }).first() : null;
+      // The period reads "Home Learning · October 2026"; the tab already says Home Learning.
+      const month = String(invoice.periodLabel || "").replace(/^Home Learning\s*·\s*/i, "") || null;
+      return { kind: "home_learning", automatic: true, hubName: school, from: join([household ? `${household.guardianName} household` : "Home Learning household", month]), ref: household ? { type: "household", id: household.id } : null };
+    }
+    case "hub_usage": {
+      const visits = metas.filter((m) => m.hubVisitId).length;
+      return { kind: "hub_usage", automatic: true, hubName: school, from: join([school, await learnerName(invoice.learnerId), visits ? `${visits} ${visits === 1 ? "visit" : "visits"}` : null, invoice.periodLabel]), ref: invoice.hubId ? { type: "hub", id: invoice.hubId } : null };
+    }
+    case "hub_subscription": {
+      const hubId = invoice.payerHubId || invoice.hubId;
+      return { kind: "hub_subscription", automatic: false, hubName: school, from: join([await hubName(hubId), invoice.periodLabel]), ref: hubId ? { type: "customer", id: hubId } : null };
+    }
+    default: // learner_term, course_module — made by hand, singly or in a bulk run
+      return { kind: invoice.invoiceType, automatic: false, hubName: school, from: join([await learnerName(invoice.learnerId), invoice.periodLabel, invoice.batchId ? "bulk run" : null]), ref: invoice.learnerId ? { type: "learner", id: invoice.learnerId } : null };
+  }
+}
+
+async function decorate(invoice, items, payments, cache) {
   const amountPaid = money(payments.filter((p) => p.status === "successful").reduce((sum, p) => sum + Number(p.amount), 0));
   return {
     ...invoice,
@@ -89,6 +139,8 @@ async function decorate(invoice, items, payments) {
     billTo: await resolvePayerIdentity(invoice),
     issuedBy: await resolveIssuerIdentity(invoice),
     learner: await resolveDocumentLearner(invoice.learnerId),
+    // Never lets a lookup that fails stop the invoice itself from loading.
+    source: await resolveSource(invoice, items, cache).catch(() => null),
     auditEvents: await BillingModel.findAuditEvents(invoice.id),
   };
 }
@@ -303,7 +355,8 @@ const BillingService = {
       const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
       invoices = invoices.filter((invoice) => ownHubIds.has(invoice.hubId));
     }
-    return Promise.all(invoices.map(async (invoice) => decorate(invoice, await BillingModel.findItems(invoice.id), await BillingModel.findPayments(invoice.id))));
+    const cache = { hubs: new Map(), learners: new Map() };
+    return Promise.all(invoices.map(async (invoice) => decorate(invoice, await BillingModel.findItems(invoice.id), await BillingModel.findPayments(invoice.id), cache)));
   },
 
   async getInvoice(id, req) {

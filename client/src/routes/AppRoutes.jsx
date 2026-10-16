@@ -96,6 +96,8 @@ import ActivityPage from "../modules/activity/pages/ActivityPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
 import SupervisorDashboardPage from "../modules/claims/pages/SupervisorDashboardPage";
 import SupervisorClaimsPage from "../modules/claims/pages/SupervisorClaimsPage";
+import SupervisorClaimPage, { AdminClaimPage } from "../modules/claims/pages/SupervisorClaimPage";
+import ClaimInvoicesPage from "../modules/claims/pages/ClaimInvoicesPage";
 import SupervisorEducatorsPage from "../modules/claims/pages/SupervisorEducatorsPage";
 import SupervisorProfilePage from "../modules/claims/pages/SupervisorProfilePage";
 import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
@@ -183,6 +185,8 @@ export default function AppRoutes() {
         <Route path="billing/receipts" element={<ReceiptsListPage />} />
         <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
         <Route path="billing/statements" element={<StatementOfAccountPage />} />
+        <Route path="billing/claims/:claimId" element={<AdminClaimPage />} />
+        <Route path="billing/claim-invoices" element={<ClaimInvoicesPage />} />
         <Route path="billing/:id" element={<InvoiceDetailPage />} />
         {/* The activity log — who did what, when. The owner, and staff whose role grants it. */}
         <Route path="activity" element={<ActivityPage />} />
@@ -289,6 +293,7 @@ export default function AppRoutes() {
         <Route path="/supervisor-portal" element={<SupervisorPortalLayout />}>
           <Route index element={<SupervisorDashboardPage />} />
           <Route path="claims" element={<SupervisorClaimsPage />} />
+          <Route path="claims/:claimId" element={<SupervisorClaimPage />} />
           <Route path="educators" element={<SupervisorEducatorsPage />} />
           <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>

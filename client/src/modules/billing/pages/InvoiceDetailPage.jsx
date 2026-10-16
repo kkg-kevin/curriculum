@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowBack as ArrowBackIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EmailOutlined as EmailOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, Send as SendIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useCancelInvoice, useEmailInvoice, useInvoiceQuery, useIssueInvoice, usePayInvoice } from "../hooks/useBilling";
 import { cardStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import StatusPill, { TYPE_LABELS } from "../components/StatusPill";
+import { sourcePath } from "../components/invoiceSource";
 import BillToCard from "../components/BillToCard";
 import BrandMark from "../components/BrandMark";
 import DocumentActions from "../components/DocumentActions";
@@ -48,6 +49,16 @@ export default function InvoiceDetailPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 14 }}><DescriptionOutlinedIcon sx={{ fontSize: 16 }} /> Invoice details</div>
           <h1 style={{ margin: "8px 0 5px", fontSize: 24, fontWeight: 900 }}>{invoice.invoiceNumber}</h1>
           <p style={{ margin: 0, color: "rgba(255,255,255,.74)", fontSize: 13 }}>{TYPE_LABELS[invoice.invoiceType]} · Issued {formatDate(invoice.issuedAt, "not yet")}</p>
+          {/* Where this invoice came from, and the way back to it. */}
+          {invoice.source?.from && user?.role !== "learner" && (() => {
+            const to = sourcePath(invoice.source.ref, user?.role);
+            return (
+              <p className="no-print" style={{ margin: "6px 0 0", color: "rgba(255,255,255,.9)", fontSize: 13 }}>
+                Created from {to ? <Link to={to} style={{ color: "#9BD7F2", fontWeight: 700, textDecoration: "none" }}>{invoice.source.from} ↗</Link> : <strong>{invoice.source.from}</strong>}
+                {invoice.source.automatic ? <span style={{ color: "rgba(255,255,255,.6)" }}> · made automatically</span> : null}
+              </p>
+            );
+          })()}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <StatusPill status={invoice.status} />

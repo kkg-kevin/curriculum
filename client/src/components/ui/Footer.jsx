@@ -17,7 +17,7 @@ function Footer() {
         fontWeight: "500",
       }}
     >
-      © 2025 {BRAND_NAME}. All rights reserved.
+      © {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.
     </footer>
   );
 }

@@ -54,7 +54,7 @@ export function ClaimCard({ claim, onOpen }) {
   const percent = claim.sessionsTotal > 0 ? Math.round((claim.sessionsDelivered / claim.sessionsTotal) * 100) : 0;
   const evidence = claim.evidence || {};
   return (
-    <button type="button" onClick={onOpen} className="supervisor-claim" style={{ ...cardStyle, width: "100%", padding: 18, textAlign: "left", cursor: "pointer", fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 14, borderLeft: `4px solid ${waiting ? T.gold : "#E5E7EB"}` }}>
+    <button type="button" onClick={onOpen} className="supervisor-claim" style={{ ...cardStyle, width: "100%", padding: 18, textAlign: "left", cursor: "pointer", fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <Avatar name={claim.teacherName} size={44} />
         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
