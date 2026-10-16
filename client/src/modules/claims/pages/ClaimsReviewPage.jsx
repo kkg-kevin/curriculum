@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiChevronRight, FiInbox, FiSearch, FiSliders, FiUsers } from "react-icons/fi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useWorkspaceClaims } from "../hooks/useClaims";
 import { ClaimStatusPill, T, TYPE_LABEL, cardStyle, formatDate, formatMoney } from "../shared";
 import ClaimReviewDialog from "../components/ClaimReviewDialog";
-import ClaimRatesDialog from "../components/ClaimRatesDialog";
 import SupervisorsDialog from "../components/SupervisorsDialog";
 
 // Educator claims, for the workspace: the admin app's Billing → "Educator Claims" tab
@@ -31,7 +30,7 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const { data, isLoading, isError, error } = useWorkspaceClaims();
   const [picked, setStage] = useState(null);
   const [search, setSearch] = useState("");
-  const [showRates, setShowRates] = useState(false);
+  const navigate = useNavigate();
   const [showSupervisors, setShowSupervisors] = useState(false);
 
   const claims = useMemo(() => data?.claims || [], [data]);
@@ -69,7 +68,8 @@ export default function ClaimsReviewPage({ embedded = false }) {
         {canApprove && (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setShowSupervisors(true)} style={headerButton}><FiUsers size={15} /> Supervisors</button>
-            <button type="button" onClick={() => setShowRates(true)} style={headerButton}><FiSliders size={15} /> Session rates</button>
+            {/* The rates live in Settings → Educator pay, for the whole workspace. */}
+            <button type="button" onClick={() => navigate("/settings?tab=educator-pay")} style={headerButton}><FiSliders size={15} /> Educator pay</button>
           </div>
         )}
       </div>
@@ -127,7 +127,6 @@ export default function ClaimsReviewPage({ embedded = false }) {
       </div>
 
       {openId && <ClaimReviewDialog claimId={openId} canSupervise={canSupervise} canApprove={canApprove} onClose={() => open(null)} />}
-      {showRates && <ClaimRatesDialog onClose={() => setShowRates(false)} />}
       {showSupervisors && <SupervisorsDialog onClose={() => setShowSupervisors(false)} />}
 
       <style>{`

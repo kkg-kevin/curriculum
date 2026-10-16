@@ -19,9 +19,19 @@ const ReportService = require("../reports/report.service");
 
 // Educator claims — how an educator gets paid for a course they teach.
 //
-// An educator is paid per session. A course's value is its sessions × the session rate (the
-// educator's own rate if they have one, otherwise the workspace's — see claim-settings.model.js),
-// rounded to a whole shilling. From that:
+// Only part-time educators claim (teachers.employmentType; full time is a tag only). A part-time
+// educator is tagged with one or more ways of being paid (teachers.payRateTypes): per session,
+// per hour or per day, each at the workspace's one rate for it (Settings → Educator pay —
+// claim-settings.model.js). On each course they choose one; once a claim on that course is live,
+// the course stays on that choice so an advance and the full payment add up.
+//
+//   session  a course's sessions
+//   hourly   the hours taught — each delivered session's timetable slot on the day it ran; the
+//            sessions still to come count at the course's usual slot length
+//   daily    the days taught — the dates with a delivered session; the sessions still to come
+//            count as days at the course's usual sessions per day
+//
+// A course's value is those units × the rate, rounded to a whole shilling. From that:
 //   advance  a fixed share of the whole course's value (30% unless the workspace changed it),
 //            requestable once per course while it is still running;
 //   full     the course's value less any advance already requested, requestable once every
@@ -85,15 +95,36 @@ async function occurrencesFor(classId) {
   }
 }
 
-// What a session of this course pays this educator.
-function rateFor(teacher, settings) {
-  const own = teacher?.sessionRate == null ? null : Number(teacher.sessionRate);
-  return own && own > 0 ? own : settings.sessionRate;
+const RATE_TYPES = ["session", "hourly", "daily"];
+const RATE_KEY = { session: "sessionRate", hourly: "hourlyRate", daily: "dailyRate" };
+const RATE_NAME = { session: "session", hourly: "hourly", daily: "daily" };
+const roundUnits = (value) => Math.round(value * 100) / 100;
+
+function parseList(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
-// Everything money-related about one (educator, class, course): what the course is worth, what
-// has been earned and requested so far, and what can be requested now.
-function buildFigures({ teacher, course, sessions, occurrences, slots, settings, claims }) {
+const isFullTime = (teacher) => teacher?.employmentType === "full_time";
+
+// The ways this educator may be paid — their tags, in the usual order. An educator from before
+// pay types existed has none stored and was paid per session.
+function rateTypesOf(teacher) {
+  const tagged = parseList(teacher?.payRateTypes).filter((t) => RATE_TYPES.includes(t));
+  return tagged.length ? RATE_TYPES.filter((t) => tagged.includes(t)) : ["session"];
+}
+
+// Everything money-related about one (educator, class, course) on one way of paying: what the
+// course is worth, what has been earned and requested so far, and what can be requested now.
+function buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType = "session" }) {
   const today = todayStr();
   const sessionIds = new Set(sessions.map((s) => s.id));
   const past = occurrences.filter((o) => o.courseId === course.id && sessionIds.has(o.sessionId) && o.date <= today);
@@ -104,9 +135,29 @@ function buildFigures({ teacher, course, sessions, occurrences, slots, settings,
 
   const sessionsTotal = sessions.length - cancelledIds.size;
   const sessionsDelivered = deliveredIds.size;
-  const sessionRate = rateFor(teacher, settings);
-  const courseAmount = wholeShillings(sessionsTotal * sessionRate);
-  const earnedAmount = wholeShillings(sessionsDelivered * sessionRate);
+  const remainingSessions = Math.max(0, sessionsTotal - sessionsDelivered);
+
+  // Time actually spent teaching: each delivered session's slot length on the day it ran.
+  const courseSlots = slots.filter((s) => s.courseId === course.id);
+  const hours = delivered.reduce((total, o) => {
+    const slot = courseSlots.find((s) => s.dayOfWeek === weekdayOf(o.date)) || courseSlots[0];
+    return total + (slot ? hoursBetween(slot.startTime, slot.endTime) : 0);
+  }, 0);
+  const slotHours = courseSlots.map((s) => hoursBetween(s.startTime, s.endTime)).filter((h) => h > 0);
+  const hoursPerSession = slotHours.length ? slotHours.reduce((a, b) => a + b, 0) / slotHours.length : 0;
+  // Days: one per date a session ran; sessions still to come at the course's usual number a day.
+  const daysDelivered = new Set(delivered.map((o) => o.date)).size;
+  const perWeekday = courseSlots.reduce((acc, s) => acc.set(s.dayOfWeek, (acc.get(s.dayOfWeek) || 0) + 1), new Map());
+  const sessionsPerDay = Math.max(1, ...perWeekday.values());
+
+  const units = {
+    session: { total: sessionsTotal, delivered: sessionsDelivered },
+    hourly: { total: roundUnits(hours + remainingSessions * hoursPerSession), delivered: roundUnits(hours) },
+    daily: { total: daysDelivered + Math.ceil(remainingSessions / sessionsPerDay), delivered: daysDelivered },
+  }[rateType];
+  const rate = settings[RATE_KEY[rateType]] || null;
+  const courseAmount = rate ? wholeShillings(units.total * rate) : 0;
+  const earnedAmount = rate ? wholeShillings(units.delivered * rate) : 0;
   const advanceAmount = wholeShillings((courseAmount * settings.advancePercent) / 100);
 
   const live = claims.filter((c) => c.status !== "rejected");
@@ -118,25 +169,26 @@ function buildFigures({ teacher, course, sessions, occurrences, slots, settings,
   const balance = Math.max(0, courseAmount - advanceRequested);
   const remaining = Math.max(0, sessionsTotal - sessionsDelivered);
 
+  // Nothing can be claimed on a way of paying the workspace hasn't put a rate on, or on hours
+  // when the timetable gives this course no times to count.
+  let unpayable = null;
+  if (!rate) unpayable = `The ${RATE_NAME[rateType]} rate isn't set yet — ask the admin to set it in Settings → Educator pay.`;
+  else if (rateType === "hourly" && sessionsTotal > 0 && units.total <= 0) unpayable = "The timetable has no start and end times for this course, so its hours can't be counted.";
+
   let advanceBlocked = null;
-  if (sessionsTotal === 0) advanceBlocked = "This course has no sessions yet.";
+  if (unpayable) advanceBlocked = unpayable;
+  else if (sessionsTotal === 0) advanceBlocked = "This course has no sessions yet.";
   else if (fullClaim) advanceBlocked = "The full payment has already been requested for this course.";
   else if (advances.length) advanceBlocked = "An advance has already been requested for this course.";
   else if (remaining === 0) advanceBlocked = "Every session is delivered — request the full payment instead.";
 
   let fullBlocked = null;
-  if (sessionsTotal === 0) fullBlocked = "This course has no sessions yet.";
+  if (unpayable) fullBlocked = unpayable;
+  else if (sessionsTotal === 0) fullBlocked = "This course has no sessions yet.";
   else if (fullClaim) fullBlocked = "The full payment has already been requested for this course.";
   else if (advances.some((c) => PENDING.includes(c.status))) fullBlocked = "Your advance request is still being reviewed.";
   else if (remaining > 0) fullBlocked = `${remaining} ${remaining === 1 ? "session is" : "sessions are"} still to be delivered.`;
   else if (balance <= 0) fullBlocked = "Nothing is left to claim for this course.";
-
-  // Time actually spent teaching: each delivered session's slot length on the day it ran.
-  const courseSlots = slots.filter((s) => s.courseId === course.id);
-  const hours = delivered.reduce((total, o) => {
-    const slot = courseSlots.find((s) => s.dayOfWeek === weekdayOf(o.date)) || courseSlots[0];
-    return total + (slot ? hoursBetween(slot.startTime, slot.endTime) : 0);
-  }, 0);
 
   let stage = "not_started";
   if (fullClaim?.status === "paid") stage = "paid";
@@ -147,7 +199,12 @@ function buildFigures({ teacher, course, sessions, occurrences, slots, settings,
 
   return {
     currency: settings.currency,
-    sessionRate,
+    rateType,
+    rate,
+    unitsTotal: units.total,
+    unitsDelivered: units.delivered,
+    // Kept for screens that still read the session-only names.
+    sessionRate: rate,
     advancePercent: settings.advancePercent,
     sessionsTotal,
     sessionsDelivered,
@@ -165,6 +222,17 @@ function buildFigures({ teacher, course, sessions, occurrences, slots, settings,
     canRequestFull: !fullBlocked,
     fullBlocked,
   };
+}
+
+// The figures for every way this educator may be paid on this course, and the one to show first.
+// A course with a live claim stays on that claim's way of paying.
+function buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims }) {
+  const locked = claims.find((c) => c.status !== "rejected")?.rateType || null;
+  const types = locked ? [locked] : rateTypesOf(teacher);
+  const options = types.map((rateType) => buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType }));
+  // Show first the one that can be claimed on now, else the first.
+  const primary = options.find((o) => o.canRequestFull || o.canRequestAdvance) || options[0];
+  return { ...primary, rateLocked: Boolean(locked), rateOptions: options };
 }
 
 function describeCourse({ link, cls, course, hub }) {
@@ -191,8 +259,13 @@ const ClaimService = {
   // --- The educator's side ------------------------------------------------------------------
 
   // Every course the educator teaches, with what each is worth and where its claim stands, plus
-  // the totals across all of them.
-  async listMyCourses(teacher) {
+  // the totals across all of them. With `hubId`, only that hub's courses and claims (the portal's
+  // hub picker — Home Learning is a hub too).
+  async listMyCourses(teacher, { hubId } = {}) {
+    // Full-time educators don't claim — the portal says so instead of listing courses.
+    if (isFullTime(teacher)) {
+      return { fullTime: true, currency: ClaimSettingsModel.DEFAULTS.currency, summary: null, courses: [] };
+    }
     const links = await ClassCourseTeacherLinkModel.findByTeacherId(teacher.id);
     const claims = await ClaimModel.findAll({ teacherId: teacher.id });
 
@@ -226,7 +299,7 @@ const ClaimService = {
       const hub = hubById.get(cls.schoolId) || null;
       const settings = settingsByAdmin.get(hub?.ownerAdminId) || { ...ClaimSettingsModel.DEFAULTS };
       const courseClaims = claims.filter((c) => c.classId === cls.id && c.courseId === course.id);
-      const figures = buildFigures({
+      const figures = buildOptions({
         teacher,
         course,
         sessions: allSessions.filter((s) => s.courseId === course.id),
@@ -242,15 +315,20 @@ const ClaimService = {
       });
     }
 
-    const live = claims.filter((c) => c.status !== "rejected");
+    // A claim names its hub; one that doesn't goes by its class's.
+    const claimHubId = (c) => c.hubId || classById.get(c.classId)?.schoolId || null;
+    const shownRows = hubId ? rows.filter((r) => r.hub?.id === hubId) : rows;
+    const shownClaims = hubId ? claims.filter((c) => claimHubId(c) === hubId) : claims;
+
+    const live = shownClaims.filter((c) => c.status !== "rejected");
     const sum = (list) => list.reduce((total, c) => total + c.amount, 0);
     const paid = live.filter((c) => c.status === "paid");
     return {
-      currency: rows[0]?.currency || ClaimSettingsModel.DEFAULTS.currency,
+      currency: shownRows[0]?.currency || rows[0]?.currency || ClaimSettingsModel.DEFAULTS.currency,
       summary: {
-        courses: rows.length,
-        totalValue: rows.reduce((total, r) => total + r.courseAmount, 0),
-        earned: rows.reduce((total, r) => total + r.earnedAmount, 0),
+        courses: shownRows.length,
+        totalValue: shownRows.reduce((total, r) => total + r.courseAmount, 0),
+        earned: shownRows.reduce((total, r) => total + r.earnedAmount, 0),
         inReview: sum(live.filter((c) => PENDING.includes(c.status))),
         inReviewCount: live.filter((c) => PENDING.includes(c.status)).length,
         awaitingPayment: sum(live.filter((c) => c.status === "approved")),
@@ -258,10 +336,10 @@ const ClaimService = {
         paid: sum(paid),
         paidCount: paid.length,
         advancePaid: sum(paid.filter((c) => c.type === "advance")),
-        hours: Math.round(rows.reduce((total, r) => total + r.hours, 0) * 10) / 10,
-        sessionsDelivered: rows.reduce((total, r) => total + r.sessionsDelivered, 0),
+        hours: Math.round(shownRows.reduce((total, r) => total + r.hours, 0) * 10) / 10,
+        sessionsDelivered: shownRows.reduce((total, r) => total + r.sessionsDelivered, 0),
       },
-      courses: rows,
+      courses: shownRows,
     };
   },
 
@@ -290,7 +368,7 @@ const ClaimService = {
       CourseScheduleModel.findByClassId(classId),
     ]);
 
-    const figures = buildFigures({ teacher, course, sessions, occurrences, slots, settings, claims });
+    const figures = buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims });
     const today = todayStr();
 
     // Where each session that hasn't happened yet is due to fall.
@@ -386,7 +464,9 @@ const ClaimService = {
       ...describeCourse({ link, cls, course, hub }),
       ...figures,
       ownerAdminId: hub?.ownerAdminId || null,
-      teacher: teacher ? { id: teacher.id, name: teacherName(teacher), photo: teacher.photo || null } : null,
+      teacher: teacher
+        ? { id: teacher.id, name: teacherName(teacher), photo: teacher.photo || null, email: teacher.email || null, phone: teacher.phone || null, fullTime: isFullTime(teacher) }
+        : null,
       // Who a claim submitted now would go to; null = straight to the admin.
       supervisor: await supervisorOf(teacher),
       coEducators,
@@ -406,13 +486,22 @@ const ClaimService = {
     };
   },
 
-  async submitClaim(teacher, { classId, courseId, type, invoiceUrl, invoiceFilename, note }) {
+  async submitClaim(teacher, { classId, courseId, type, rateType = "session", invoiceUrl, invoiceFilename, note }) {
+    if (isFullTime(teacher)) fail("Full-time educators don't claim payment for courses", 403);
     const detail = await ClaimService.getCourseDetail({ teacherId: teacher.id, classId, courseId });
     if (!detail.ownerAdminId) fail("This class isn't attached to a workspace that can pay claims", 409);
 
-    const blocked = type === "advance" ? detail.advanceBlocked : detail.fullBlocked;
+    // The way of paying they picked, as long as it's one of theirs (and the course's, once it
+    // has a live claim).
+    const figures = detail.rateOptions.find((o) => o.rateType === rateType);
+    if (!figures) {
+      fail(detail.rateLocked
+        ? `This course is already being claimed ${detail.rateType === "session" ? "per session" : detail.rateType === "hourly" ? "by the hour" : "by the day"}.`
+        : "You can't claim this way — ask the admin which ways of paying apply to you.", 409);
+    }
+    const blocked = type === "advance" ? figures.advanceBlocked : figures.fullBlocked;
     if (blocked) fail(blocked, 409);
-    const amount = type === "advance" ? detail.advanceAmount : detail.balance;
+    const amount = type === "advance" ? figures.advanceAmount : figures.balance;
     if (amount <= 0) fail("There is nothing to claim for this course yet", 409);
 
     const claim = await ClaimModel.create({
@@ -423,6 +512,8 @@ const ClaimService = {
       hubId: detail.hub?.id || null,
       claimNumber: `CLM-${todayStr().replace(/-/g, "")}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
       teacherName: teacherName(teacher),
+      teacherEmail: teacher.email || null,
+      teacherPhone: teacher.phone || null,
       courseName: detail.courseName,
       className: detail.className,
       hubName: detail.hub?.name || null,
@@ -430,12 +521,16 @@ const ClaimService = {
       status: detail.supervisor ? "pending_supervisor" : "pending_admin",
       supervisorId: detail.supervisor?.id || null,
       supervisorName: detail.supervisor?.name || null,
-      currency: detail.currency,
-      sessionRate: detail.sessionRate,
-      sessionsTotal: detail.sessionsTotal,
-      sessionsDelivered: detail.sessionsDelivered,
-      courseAmount: detail.courseAmount,
-      advanceDeducted: type === "full" ? detail.advanceRequested : 0,
+      currency: figures.currency,
+      rateType: figures.rateType,
+      rate: figures.rate,
+      unitsTotal: figures.unitsTotal,
+      unitsDelivered: figures.unitsDelivered,
+      sessionRate: figures.rate,
+      sessionsTotal: figures.sessionsTotal,
+      sessionsDelivered: figures.sessionsDelivered,
+      courseAmount: figures.courseAmount,
+      advanceDeducted: type === "full" ? figures.advanceRequested : 0,
       amount,
       invoiceUrl,
       invoiceFilename: invoiceFilename || null,

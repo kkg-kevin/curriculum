@@ -17,7 +17,8 @@ function ownTeacher(req) {
 // --- Educator ---------------------------------------------------------------------------------
 
 const getMyCourses = asyncHandler(async (req, res) => {
-  res.json({ success: true, data: await ClaimService.listMyCourses(ownTeacher(req)) });
+  const hubId = typeof req.query.hubId === "string" && req.query.hubId ? req.query.hubId : undefined;
+  res.json({ success: true, data: await ClaimService.listMyCourses(ownTeacher(req), { hubId }) });
 });
 
 const getMyCourse = asyncHandler(async (req, res) => {

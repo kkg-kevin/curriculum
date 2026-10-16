@@ -8,6 +8,7 @@ const TeacherAvailabilityModel = require("./teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const ClassModel = require("../classes/class.model");
 const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
@@ -64,8 +65,8 @@ async function isMyClassTeacher(teacherId, learnerId) {
 const createTeacher = asyncHandler(async (req, res) => {
   const { hubId } = req.body;
   const { password, ...data } = createTeacherSchema.parse(req.body);
-  // The workspace sets what an educator is paid and who reviews their claims — not a hub login.
-  if (req.user.role !== "admin") { data.sessionRate = null; data.supervisorId = null; }
+  // The workspace sets how an educator is paid and who reviews their claims — not a hub login.
+  if (req.user.role !== "admin") { data.employmentType = "part_time"; data.payRateTypes = ["session"]; data.supervisorId = null; }
   else if (data.supervisorId) await SupervisorService.getOwned(data.supervisorId, req.ownerAdminId);
   let linkHubId = hubId || undefined;
   if (req.user.role === "school") {
@@ -139,9 +140,9 @@ const updateTeacher = asyncHandler(async (req, res) => {
   // learner.controller.js/learning-hub.controller.js. Only keys the caller actually sent survive.
   const present = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   const { password, ...data } = present;
-  // What an educator is paid per session, and who reviews their claims, is the workspace's call
-  // (see modules/claims/) — never a hub login's, and never the educator's own.
-  if (req.user.role !== "admin") { delete data.sessionRate; delete data.supervisorId; }
+  // How an educator is paid, and who reviews their claims, is the workspace's call (see
+  // modules/claims/) — never a hub login's, and never the educator's own.
+  if (req.user.role !== "admin") { delete data.employmentType; delete data.payRateTypes; delete data.paymentTerms; delete data.supervisorId; }
   else if (data.supervisorId) await SupervisorService.getOwned(data.supervisorId, req.ownerAdminId);
   if (req.user.role === "school" || req.user.role === "admin") {
     const existing = await TeacherService.getTeacherById(req.params.id);
@@ -196,6 +197,17 @@ const deleteTeacher = asyncHandler(async (req, res) => {
 const getTeacherHubs = asyncHandler(async (req, res) => {
   if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
   let hubs = await TeacherService.getTeacherHubs(req.params.id);
+  if (req.user.role === "teacher") {
+    // The educator's own list — the portal's hub picker — also has every hub where they teach a
+    // class, linked or not, so none of their classes or claims is out of reach. (Admins and
+    // schools still see only the real links, which is what they manage.)
+    const known = new Set(hubs.map((h) => h.id));
+    const classIds = [...new Set((await ClassCourseTeacherLinkModel.findByTeacherId(req.params.id)).map((l) => l.classId))];
+    const classes = await Promise.all(classIds.map((id) => ClassModel.findById(id)));
+    const extraIds = [...new Set(classes.map((c) => c?.schoolId).filter((id) => id && !known.has(id)))];
+    const extra = (await Promise.all(extraIds.map((id) => LearningHubModel.findById(id)))).filter(Boolean);
+    hubs = [...hubs, ...extra];
+  }
   if (req.user.role === "school") {
     assertOwn(await isLinkedToOwnHub(req, req.params.id));
     // A school only ever gets to see its own hub(s) in the list — not the names of any other

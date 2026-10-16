@@ -8,6 +8,8 @@ import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import TeamPanel, { TEAM_SECTIONS } from "../team/components/TeamPanel";
 import EmailsPanel from "../emails/components/EmailsPanel";
 import CertificateSettingsPanel from "../certificates/components/CertificateSettingsPanel";
+import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
+import { can } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
 
 /* ── CSS ────────────────────────────────────────────────────────────────── */
@@ -264,6 +266,8 @@ const ALL_TABS = [
   { key: "emails", label: "Emails" },
   // Who signs the workspace's certificates of completion — see CertificateSettingsPanel.
   { key: "certificates", label: "Certificates" },
+  // The rates educators are paid at, for the whole workspace — see EducatorPayPanel.
+  { key: "educator-pay", label: "Educator pay" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
@@ -279,7 +283,9 @@ export default function SettingsPage() {
   // every other settings tab — those are content the invited admin lets them edit — but Admins
   // and Collaborators are tenant management, refused server-side (blockIfCollaboratorRestricted)
   // regardless of the role alias, so they're hidden here rather than shown and broken.
-  const TABS = user?.role === "collaborator" ? ALL_TABS.filter((t) => !OWNER_ONLY_TABS.includes(t.key)) : ALL_TABS;
+  // Educator pay: staff only with Claim approvals → Edit, the permission the server asks for.
+  const TABS = (user?.role === "collaborator" ? ALL_TABS.filter((t) => !OWNER_ONLY_TABS.includes(t.key)) : ALL_TABS)
+    .filter((t) => t.key !== "educator-pay" || can(user, "claims-approval", "edit"));
   const [searchParams] = useSearchParams();
   // The old Inventory tab is now Items → Goods, so ?tab=inventory links still land in the right place.
   const rawTab = searchParams.get("tab");
@@ -338,6 +344,7 @@ export default function SettingsPage() {
         {activeTab === "people" && <TeamPanel section={teamSection} onSectionChange={setTeamSection} />}
         {activeTab === "emails" && <EmailsPanel />}
         {activeTab === "certificates" && <CertificateSettingsPanel />}
+        {activeTab === "educator-pay" && <EducatorPayPanel />}
       </div>
     </div>
   );

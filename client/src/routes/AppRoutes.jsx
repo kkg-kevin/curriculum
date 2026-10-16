@@ -21,8 +21,8 @@ import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
 import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
 import TeacherTimetablePage from "../modules/teacher-portal/pages/TimetablePage";
-import TeacherClaimsPage from "../modules/teacher-portal/pages/ClaimsPage";
 import TeacherClaimCoursePage from "../modules/teacher-portal/pages/ClaimCoursePage";
+import TeacherPaymentsPage from "../modules/teacher-portal/pages/PaymentsPage";
 import TeacherProfilePage from "../modules/teacher-portal/pages/ProfilePage";
 import SchoolPortalDashboardPage from "../modules/school-portal/pages/DashboardPage";
 import SchoolCurriculumPage from "../modules/school-portal/pages/CurriculumPage";
@@ -276,8 +276,9 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="timetable" element={<TeacherTimetablePage />} />
-          <Route path="claims" element={<TeacherClaimsPage />} />
+          <Route path="claims" element={<TeacherPaymentsPage tab="claims" />} />
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
+          <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
           <Route path="profile" element={<TeacherProfilePage />} />
         </Route>
       </Route>

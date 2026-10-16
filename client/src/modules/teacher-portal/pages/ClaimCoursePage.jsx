@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiDollarSign, FiFileText, FiInfo, FiUsers } from "react-icons/fi";
 import { useMyClaimCourse, useWithdrawClaim } from "../../claims/hooks/useClaims";
-import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, formatRate, primaryButton } from "../../claims/shared";
+import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, formatRate, primaryButton, rateLabel, unitsLabel } from "../../claims/shared";
 import SessionEvidence from "../../claims/components/SessionEvidence";
 import ClaimCard from "../../claims/components/ClaimCard";
 import RequestPaymentModal from "../../claims/components/RequestPaymentModal";
@@ -25,12 +25,20 @@ export default function ClaimCoursePage() {
   const { classId, courseId } = useParams();
   const navigate = useNavigate();
   const { data: course, isLoading, isError, error } = useMyClaimCourse(classId, courseId);
+  const { hubs = [], selectedHubId, setSelectedHubId } = useOutletContext() || {};
+  // Opened from a link (a notification, say) for a course at another hub: the hub picker moves to
+  // this course's hub, so it always names where you are. (Picking a hub here goes to that hub's
+  // claims — TeacherPortalLayout.)
+  const courseHubId = course?.hub?.id;
+  useEffect(() => {
+    if (courseHubId && courseHubId !== selectedHubId && hubs.some((h) => h.id === courseHubId)) setSelectedHubId?.(courseHubId);
+  }, [courseHubId, selectedHubId, hubs, setSelectedHubId]);
   const withdraw = useWithdrawClaim();
   const [requesting, setRequesting] = useState(false);
 
   const back = (
     <button type="button" onClick={() => navigate("/teacher-portal/claims")} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: 0, border: "none", background: "none", color: T.inkMuted, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-      <FiArrowLeft size={15} /> My Claims
+      <FiArrowLeft size={15} /> Payments
     </button>
   );
 
@@ -93,7 +101,8 @@ export default function ClaimCoursePage() {
         <div style={{ padding: 20, background: "#fff" }}>
           <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: T.inkMuted }}>Amount payable</p>
           <p style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 900, color: T.accent, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>{money(course.courseAmount)}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{course.sessionsTotal} sessions × {formatRate(course.sessionRate, course.currency)} · {money(course.earnedAmount)} earned so far</p>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{unitsLabel(course.unitsTotal ?? course.sessionsTotal, course.rateType)} × {rateLabel(course.rate ?? course.sessionRate, course.rateType, course.currency)} · {money(course.earnedAmount)} earned so far
+            {course.rateOptions?.length > 1 && " · you can claim another way when you request payment"}</p>
           <div style={{ display: "flex", gap: 18, marginTop: 12 }}>
             <div>
               <p style={{ margin: 0, fontSize: 11, color: T.inkMuted }}>Advance ({course.advancePercent}%)</p>

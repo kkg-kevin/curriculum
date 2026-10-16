@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import TeacherSidebar from "../modules/teacher-portal/components/TeacherSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
-import { useTeacherPortalScope } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
+import { useTeacherPortalScope, HUB_STORAGE_KEY } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
 import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 
 const MOBILE_BREAKPOINT = 900;
@@ -12,6 +12,18 @@ const MOBILE_BREAKPOINT = 900;
 function TeacherPortalLayout() {
   const scope = useTeacherPortalScope();
   const { teacher, hubs, selectedHubId, setSelectedHubId, hasNoHubs } = scope;
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  // On one course's claim page, picking another hub goes to that hub's claims — the course
+  // belongs to the hub you were on. Everywhere else the page stays and shows the new hub.
+  const switchHub = (hubId) => {
+    if (pathname.startsWith("/teacher-portal/claims/")) {
+      try { window.localStorage.setItem(HUB_STORAGE_KEY, hubId); } catch { /* the address carries it */ }
+      navigate(`/teacher-portal/claims?hub=${encodeURIComponent(hubId)}`);
+    } else {
+      setSelectedHubId(hubId);
+    }
+  };
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).
@@ -50,7 +62,7 @@ function TeacherPortalLayout() {
               </div>
             ) : (
               <>
-                <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
+                <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={switchHub} />
                 <Outlet context={scope} />
               </>
             )}

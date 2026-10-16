@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiArrowDown, FiArrowRight, FiArrowUp, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiDownload, FiGrid, FiInbox, FiList, FiSearch, FiX, FiXCircle } from "react-icons/fi";
 import { useSupervisorClaims } from "../hooks/useClaims";
-import { CLAIM_STATUS, T, TYPE_LABEL, cardStyle, formatDate, formatMoney } from "../shared";
+import { CLAIM_STATUS, T, TYPE_LABEL, cardStyle, formatDate, formatMoney, RATE_TYPE_LABEL } from "../shared";
 import ClaimReviewDialog from "../components/ClaimReviewDialog";
 import { Avatar, ClaimCard, OVERDUE_DAYS, RecordChip, ago, daysSince } from "../components/supervisorParts";
 
@@ -67,8 +67,8 @@ const COMPARE = {
 function downloadCsv(claims, label) {
   const cell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
   const day = (value) => (value ? new Date(value).toISOString().slice(0, 10) : "");
-  const header = ["Claim no.", "Educator", "Course", "Class", "Hub", "Type", "Status", "Sessions delivered", "Sessions total", "Amount", "Currency", "Submitted", "Decided", "Paid", "Payment reference", "Decline reason"];
-  const rows = claims.map((c) => [c.claimNumber, c.teacherName, c.courseName, c.className, c.hubName, TYPE_LABEL[c.type], CLAIM_STATUS[c.status]?.label || c.status, c.sessionsDelivered, c.sessionsTotal, Math.round(c.amount), c.currency, day(c.createdAt), day(c.supervisorDecidedAt), day(c.paidAt), c.paymentReference, c.rejectionReason]);
+  const header = ["Claim no.", "Educator", "Course", "Class", "Hub", "Type", "Status", "Worked out", "Units delivered", "Units total", "Rate", "Sessions delivered", "Sessions total", "Amount", "Currency", "Submitted", "Decided", "Paid", "Payment reference", "Decline reason"];
+  const rows = claims.map((c) => [c.claimNumber, c.teacherName, c.courseName, c.className, c.hubName, TYPE_LABEL[c.type], CLAIM_STATUS[c.status]?.label || c.status, RATE_TYPE_LABEL[c.rateType || "session"], c.unitsDelivered ?? c.sessionsDelivered, c.unitsTotal ?? c.sessionsTotal, c.rate ?? c.sessionRate, c.sessionsDelivered, c.sessionsTotal, Math.round(c.amount), c.currency, day(c.createdAt), day(c.supervisorDecidedAt), day(c.paidAt), c.paymentReference, c.rejectionReason]);
   const csv = [header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");
   const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");

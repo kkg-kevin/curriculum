@@ -7,7 +7,7 @@ const BASE = "/api/claims";
 // no supervisor it goes straight to the admin.
 export const claimsApi = {
   // Educator: { currency, summary, courses } — every course they teach and what each is worth.
-  getMyCourses: () => api.get(`${BASE}/courses`).then((r) => r.data.data),
+  getMyCourses: (params) => api.get(`${BASE}/courses`, { params }).then((r) => r.data.data),
   // Educator: one course in full — figures, per-session student records, and its claims.
   // Reads every student's work for every session, so it gets a longer timeout than usual.
   getMyCourse: (classId, courseId) => api.get(`${BASE}/courses/${classId}/${courseId}`, { timeout: 45000 }).then((r) => r.data.data),

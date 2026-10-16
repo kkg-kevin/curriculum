@@ -6,15 +6,23 @@ export const TEACHER_STATUSES = [
   { value: "on_leave", label: "On Leave" },
 ];
 
-// Employment classification — placeholders only for now. Captured and stored ahead of the full
-// employment/payroll feature (rate amounts, computed pay, etc.), which isn't built yet.
+// How an educator is employed, and so paid (see modules/claims/ and Settings → Educator pay):
+// full time is a tag only — full-time educators don't claim; part time claims on one or more of
+// PAY_RATE_TYPES, at the workspace's rate for each.
 export const EMPLOYMENT_TYPES = [
   { value: "part_time", label: "Part-Time" },
   { value: "full_time", label: "Full-Time" },
 ];
 
+export const PAY_RATE_TYPES = [
+  { value: "hourly", label: "Hourly", hint: "Paid for the hours taught" },
+  { value: "session", label: "Per session", hint: "Paid for each session delivered" },
+  { value: "daily", label: "Daily", hint: "Paid for each day taught" },
+];
+
 export const TEACHER_LEVELS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `Level ${n}` }));
 
+// The old single hourly/daily placeholder — superseded by payRateTypes, kept for older records.
 export const PAYMENT_TERMS = [
   { value: "hourly", label: "Hourly Rate" },
   { value: "daily",  label: "Daily Rate" },
@@ -30,7 +38,8 @@ export const teacherSchema = z
     password:  z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
     phone:     z.string().max(20).default(""),
     status:    z.enum(["active", "inactive", "on_leave"]).default("active"),
-    employmentType: z.enum(["part_time", "full_time"]).nullable().default(null),
+    employmentType: z.enum(["part_time", "full_time"]).nullable().default("part_time"),
+    payRateTypes: z.array(z.enum(["session", "hourly", "daily"])).default(["session"]),
     teacherLevel:   z.number().int().min(1).max(5).nullable().default(null),
     paymentTerms:   z.enum(["hourly", "daily"]).nullable().default(null),
     // The supervisor account this educator's claims go to — optional (see modules/claims/).
@@ -43,5 +52,8 @@ export const teacherSchema = z
   .superRefine((data, ctx) => {
     if (data.password && !data.email) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
+    }
+    if (data.employmentType !== "full_time" && data.payRateTypes.length === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["payRateTypes"], message: "Choose at least one way this educator is paid" });
     }
   });

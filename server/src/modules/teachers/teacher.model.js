@@ -8,7 +8,7 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "teachers";
-const JSON_FIELDS = ["qualifiedCourseIds"];
+const JSON_FIELDS = ["qualifiedCourseIds", "payRateTypes"];
 
 const TeacherModel = {
   create(data) {

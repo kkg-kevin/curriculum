@@ -5,7 +5,8 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { useTeacherHubsQuery } from "../../teachers/hooks/useTeacher";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 
-const STORAGE_KEY = "teacherPortal.selectedHubId";
+export const HUB_STORAGE_KEY = "teacherPortal.selectedHubId";
+const STORAGE_KEY = HUB_STORAGE_KEY;
 
 // Resolves the logged-in teacher, every hub they're assigned to, and which one the portal is
 // currently scoped to — called once by TeacherPortalLayout and threaded to every page via

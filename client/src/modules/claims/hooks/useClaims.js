@@ -5,8 +5,9 @@ import { claimsApi } from "../services/claimsApi";
 // educator is looking), so claims are never served stale from the cache.
 const FRESH = { staleTime: 0 };
 
-export function useMyClaimCourses() {
-  return useQuery({ queryKey: ["claims", "my-courses"], queryFn: claimsApi.getMyCourses, ...FRESH });
+// `hubId`: only that hub's courses and totals (the portal's hub picker); without it, every hub.
+export function useMyClaimCourses(hubId, { enabled = true } = {}) {
+  return useQuery({ queryKey: ["claims", "my-courses", hubId || "all"], queryFn: () => claimsApi.getMyCourses(hubId ? { hubId } : undefined), enabled, ...FRESH });
 }
 
 export function useMyClaimCourse(classId, courseId) {
@@ -16,6 +17,11 @@ export function useMyClaimCourse(classId, courseId) {
     enabled: !!classId && !!courseId,
     ...FRESH,
   });
+}
+
+// The educator's own claims — each one an invoice (My Invoices).
+export function useMyClaims() {
+  return useQuery({ queryKey: ["claims", "mine"], queryFn: () => claimsApi.list(), ...FRESH });
 }
 
 // The same endpoint answers a supervisor with their own claims and educators; a separate cache
