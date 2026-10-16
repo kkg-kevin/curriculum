@@ -189,7 +189,7 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
               color: "rgba(255,255,255,0.8)",
             }}
           >
-            © 2025 {BRAND_NAME}
+            © {new Date().getFullYear()} {BRAND_NAME}
           </div>
         )}
       </aside>

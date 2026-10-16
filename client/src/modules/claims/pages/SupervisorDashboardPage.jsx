@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiArrowRight, FiCheckCircle, FiClock, FiDollarSign, FiInbox, FiUsers } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { T, cardStyle, formatDate, formatMoney, TYPE_LABEL, ClaimStatusPill } from "../shared";
-import ClaimReviewDialog from "../components/ClaimReviewDialog";
 import { Avatar, ClaimCard, HeroStat, OVERDUE_DAYS, daysSince, greeting } from "../components/supervisorParts";
 
 // The supervisor's dashboard: what needs them now. The claims that have waited longest are here
@@ -15,7 +14,7 @@ const SHOWN = 4;
 export default function SupervisorDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { data, isLoading, isError, error } = useSupervisorClaims();
 
   const claims = useMemo(() => data?.claims || [], [data]);
@@ -25,9 +24,9 @@ export default function SupervisorDashboardPage() {
   const currency = claims[0]?.currency || "KES";
   const money = (value) => formatMoney(value, currency);
 
-  // Opened from a notification with ?claim=<id>.
+  // A claim opens on its own page; a notification's ?claim=<id> goes there too.
   const openId = searchParams.get("claim");
-  const open = (id) => setSearchParams(id ? { claim: id } : {}, { replace: true });
+  const open = (id) => navigate(`/supervisor-portal/claims/${id}`);
 
   // Longest-waiting first.
   const waiting = useMemo(() => claims.filter((c) => c.status === "pending_supervisor").sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)), [claims]);
@@ -177,7 +176,7 @@ export default function SupervisorDashboardPage() {
         </aside>
       </div>
 
-      {openId && <ClaimReviewDialog claimId={openId} canSupervise canApprove={false} onClose={() => open(null)} />}
+      {openId && <Navigate to={`/supervisor-portal/claims/${openId}`} replace />}
 
       <style>{`
         .supervisor-dash { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 26vw, 400px); gap: 20px; align-items: start; }

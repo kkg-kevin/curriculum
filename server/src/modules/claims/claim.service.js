@@ -8,6 +8,7 @@ const CourseModel = require("../courses/course.model");
 const SessionModel = require("../courses/session.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const TeacherModel = require("../teachers/teacher.model");
+const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const UserModel = require("../auth/user.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const TimetableModel = require("../timetable/timetable.model");
@@ -579,16 +580,37 @@ const ClaimService = {
   async listForSupervisor(supervisorId) {
     const claims = await ClaimModel.findAll({ supervisorId });
     const teachers = (await TeacherModel.findAll()).filter((t) => t.supervisorId === supervisorId);
+
+    // The schools (hubs) each educator works at — linked to, or teaching a class at — so a
+    // supervisor looking after many schools can narrow down to one and its educators.
+    const schoolIdsByTeacher = new Map();
+    await Promise.all(teachers.map(async (t) => {
+      const [hubLinks, classLinks] = await Promise.all([TeacherHubLinkModel.findByTeacherId(t.id), ClassCourseTeacherLinkModel.findByTeacherId(t.id)]);
+      const classes = await Promise.all([...new Set(classLinks.map((l) => l.classId))].map((id) => ClassModel.findById(id)));
+      schoolIdsByTeacher.set(t.id, new Set([...hubLinks.map((l) => l.hubId), ...classes.map((c) => c?.schoolId)].filter(Boolean)));
+    }));
+    const schoolIds = [...new Set([...schoolIdsByTeacher.values()].flatMap((ids) => [...ids]))];
+    const hubs = (await Promise.all(schoolIds.map((id) => LearningHubModel.findById(id)))).filter(Boolean);
+    const schoolById = new Map(hubs.map((h) => [h.id, { id: h.id, name: h.name, isHomeLearning: Boolean(h.isHomeLearning) }]));
+    // Home learning after the named schools.
+    const bySchool = (a, b) => Number(a.isHomeLearning) - Number(b.isHomeLearning) || a.name.localeCompare(b.name);
+
     const educators = teachers
-      .map((t) => ({ id: t.id, name: teacherName(t), email: t.email || null, photo: t.photo || null, status: t.status || "active" }))
+      .map((t) => ({
+        id: t.id, name: teacherName(t), email: t.email || null, photo: t.photo || null, status: t.status || "active",
+        schools: [...(schoolIdsByTeacher.get(t.id) || [])].map((id) => schoolById.get(id)).filter(Boolean).sort(bySchool),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
+    const schools = [...schoolById.values()]
+      .map((school) => ({ ...school, educators: educators.filter((e) => e.schools.some((s) => s.id === school.id)).length }))
+      .sort(bySchool);
     const counts = { pending_supervisor: 0, pending_admin: 0, approved: 0, paid: 0, rejected: 0 };
     const amounts = { ...counts };
     for (const claim of claims) {
       counts[claim.status] += 1;
       amounts[claim.status] += claim.amount;
     }
-    return { claims, counts, amounts, educators };
+    return { claims, counts, amounts, educators, schools };
   },
 
   async getAssigned(id, supervisorId) {

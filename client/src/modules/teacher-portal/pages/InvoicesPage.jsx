@@ -1,23 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiArrowLeft, FiFileText, FiSearch } from "react-icons/fi";
 import { useMyClaims } from "../../claims/hooks/useClaims";
 import { ClaimStatusPill, T, TYPE_LABEL, cardStyle, claimBasis, formatDate, formatMoney } from "../../claims/shared";
 import { ClaimInvoiceLinks } from "../../claims/components/ClaimCard";
-import { InvoicePanel } from "../../claims/components/ClaimInvoiceViewer";
-
-// Wide enough for the list and the invoice side by side; narrower, the invoice takes the page.
-const SPLIT_QUERY = "(min-width: 1100px)";
-function useWide() {
-  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia(SPLIT_QUERY).matches);
-  useEffect(() => {
-    const mq = window.matchMedia(SPLIT_QUERY);
-    const on = () => setWide(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return wide;
-}
+import { InvoicePanel, useSideBySide } from "../../claims/components/ClaimInvoiceViewer";
 
 // Every invoice the educator has sent — one per claim, each with its two documents: the claim
 // invoice the system generated, and the eTIMS invoice they uploaded. Newest first; filter by where
@@ -46,7 +33,7 @@ export default function InvoicesPage({ embedded = false }) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState(null); // { id, kind: "claim" | "etims" }
-  const wide = useWide();
+  const wide = useSideBySide();
   // The hub picked at the top of the portal — its invoices only.
   const claims = useMemo(() => (data?.claims || []).filter((c) => !selectedHubId || c.hubId === selectedHubId), [data, selectedHubId]);
 

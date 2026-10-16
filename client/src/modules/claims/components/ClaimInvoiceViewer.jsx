@@ -98,7 +98,21 @@ export function ClaimInvoicePreview({ claim, height = 460 }) {
   );
 }
 
-// One claim's invoices shown beside a list (My Invoices): the claim invoice or the eTIMS invoice,
+// Wide enough to show a list (or a claim) and its invoice side by side; narrower, the invoice
+// takes the space on its own, with a way back.
+const SPLIT_QUERY = "(min-width: 1100px)";
+export function useSideBySide() {
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia(SPLIT_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(SPLIT_QUERY);
+    const on = () => setWide(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
+
+// One claim's invoices shown beside a list (My Invoices) or a claim (the review dialog): the claim invoice or the eTIMS invoice,
 // a switch between the two, Open in new tab and Download. `kind` is "claim" or "etims".
 export function InvoicePanel({ claim, kind, onKind, onClose }) {
   const generated = useInvoiceFile(claim);

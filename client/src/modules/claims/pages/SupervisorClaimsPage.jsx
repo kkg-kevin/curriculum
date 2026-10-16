@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiArrowDown, FiArrowRight, FiArrowUp, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiDownload, FiGrid, FiInbox, FiList, FiSearch, FiX, FiXCircle } from "react-icons/fi";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { CLAIM_STATUS, T, TYPE_LABEL, cardStyle, formatDate, formatMoney, RATE_TYPE_LABEL } from "../shared";
-import ClaimReviewDialog from "../components/ClaimReviewDialog";
 import { Avatar, ClaimCard, OVERDUE_DAYS, RecordChip, ago, daysSince } from "../components/supervisorParts";
 
 // The supervisor's Claims page: every claim their educators have sent them, built to stay usable
@@ -205,12 +204,13 @@ function MonthlyTotals({ claims, currency }) {
 }
 
 export default function SupervisorClaimsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { data, isLoading, isError, error } = useSupervisorClaims();
   const [picked, setTab] = useState(() => (TABS.some((t) => t.key === searchParams.get("tab")) ? searchParams.get("tab") : null));
   const [educatorId, setEducatorId] = useState(() => searchParams.get("educator") || null);
   const [search, setSearch] = useState("");
-  const [hubId, setHubId] = useState("all");
+  const [hubId, setHubIdState] = useState(() => searchParams.get("school") || "all");
   const [type, setType] = useState("all");
   const [period, setPeriod] = useState("all");
   const [range, setRange] = useState({ from: "", to: "" });
@@ -225,19 +225,20 @@ export default function SupervisorClaimsPage() {
   const currency = claims[0]?.currency || "KES";
   const money = (value) => formatMoney(value, currency);
 
-  // Opened from a notification with ?claim=<id>.
+  // A claim opens on its own page; a notification's ?claim=<id> goes there too.
   const openId = searchParams.get("claim");
-  const open = (id) => setSearchParams(id ? { claim: id } : {}, { replace: true });
+  const open = (id) => navigate(`/supervisor-portal/claims/${id}`);
 
   const tab = picked || "pending_supervisor";
   const current = TABS.find((t) => t.key === tab);
 
   const overdueCount = useMemo(() => claims.filter((c) => c.status === "pending_supervisor" && daysSince(c.createdAt) >= OVERDUE_DAYS).length, [claims]);
+  // Every school the supervisor's educators work at, and any other a claim came from.
   const hubs = useMemo(() => {
-    const byId = new Map();
-    for (const claim of claims) if (claim.hubId && !byId.has(claim.hubId)) byId.set(claim.hubId, claim.hubName || "Hub");
+    const byId = new Map((data?.schools || []).map((s) => [s.id, s.name]));
+    for (const claim of claims) if (claim.hubId && !byId.has(claim.hubId)) byId.set(claim.hubId, claim.hubName || "School");
     return [...byId.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [claims]);
+  }, [data, claims]);
 
   // Everything but the status: the tabs count within this, so each tab's number is what opening
   // it will show.
@@ -283,12 +284,23 @@ export default function SupervisorClaimsPage() {
   const clearFilters = () => { setEducatorId(null); setSearch(""); setHubId("all"); setType("all"); setPeriod("all"); setRange({ from: "", to: "" }); setOverdueOnly(false); };
   const onSort = (key) => setSortPick(sort.key === key ? { key, dir: sort.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "amount" ? "desc" : "asc" });
 
-  // Past educators still have claims here, so the picker lists everyone a claim came from.
+  // Past educators still have claims here, so the picker lists everyone a claim came from — and,
+  // with a school picked, only that school's educators.
   const educatorOptions = useMemo(() => {
-    const byId = new Map(educators.map((e) => [e.id, e.name]));
-    for (const claim of claims) if (!byId.has(claim.teacherId)) byId.set(claim.teacherId, claim.teacherName);
+    const atSchool = (e) => hubId === "all" || (e.schools || []).some((s) => s.id === hubId);
+    const byId = new Map(educators.filter(atSchool).map((e) => [e.id, e.name]));
+    for (const claim of claims) if (!byId.has(claim.teacherId) && (hubId === "all" || claim.hubId === hubId)) byId.set(claim.teacherId, claim.teacherName);
     return [...byId.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [educators, claims]);
+  }, [educators, claims, hubId]);
+  // Picking a school lets go of an educator who doesn't work there.
+  const setHubId = (next) => {
+    setHubIdState(next);
+    if (next !== "all" && educatorId) {
+      const educator = educators.find((e) => e.id === educatorId);
+      const there = (educator?.schools || []).some((s) => s.id === next) || claims.some((c) => c.teacherId === educatorId && c.hubId === next);
+      if (!there) setEducatorId(null);
+    }
+  };
 
   if (isLoading) return <p style={{ fontFamily: "Inter, sans-serif", color: T.inkMuted, fontSize: 14, padding: "60px 0", textAlign: "center" }}>Loading your claims…</p>;
   if (isError) {
@@ -341,16 +353,17 @@ export default function SupervisorClaimsPage() {
               <FiSearch size={15} color={T.inkFaint} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search educator, course or claim no." aria-label="Search claims" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", borderRadius: 11, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" }} />
             </div>
-            {educatorOptions.length > 1 && (
-              <select value={educatorId || ""} onChange={(e) => setEducatorId(e.target.value || null)} aria-label="Filter by educator" style={active(Boolean(educatorId))}>
-                <option value="">All educators</option>
-                {educatorOptions.map((educator) => <option key={educator.id} value={educator.id}>{educator.name}</option>)}
+            {/* School first, then its educators. */}
+            {hubs.length > 1 && (
+              <select value={hubId} onChange={(e) => setHubId(e.target.value)} aria-label="Filter by school" style={active(hubId !== "all")}>
+                <option value="all">All schools</option>
+                {hubs.map((hub) => <option key={hub.id} value={hub.id}>{hub.name}</option>)}
               </select>
             )}
-            {hubs.length > 1 && (
-              <select value={hubId} onChange={(e) => setHubId(e.target.value)} aria-label="Filter by hub" style={active(hubId !== "all")}>
-                <option value="all">All hubs</option>
-                {hubs.map((hub) => <option key={hub.id} value={hub.id}>{hub.name}</option>)}
+            {(educatorOptions.length > 1 || educatorId) && (
+              <select value={educatorId || ""} onChange={(e) => setEducatorId(e.target.value || null)} aria-label="Filter by educator" style={active(Boolean(educatorId))}>
+                <option value="">{hubId === "all" ? "All educators" : "All educators here"}</option>
+                {educatorOptions.map((educator) => <option key={educator.id} value={educator.id}>{educator.name}</option>)}
               </select>
             )}
             <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Filter by claim type" style={active(type !== "all")}>
@@ -409,7 +422,7 @@ export default function SupervisorClaimsPage() {
 
       </div>
 
-      {openId && <ClaimReviewDialog claimId={openId} canSupervise canApprove={false} onClose={() => open(null)} />}
+      {openId && <Navigate to={`/supervisor-portal/claims/${openId}`} replace />}
 
       <style>{`
         .supervisor-grid { display: grid; grid-template-columns: minmax(0, 1fr); }

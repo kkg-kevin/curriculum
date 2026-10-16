@@ -115,7 +115,7 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
 
         {!isCollapsed && (
           <div style={{ padding: "18px", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
-            © 2025 {BRAND_NAME}
+            © {new Date().getFullYear()} {BRAND_NAME}
           </div>
         )}
       </aside>

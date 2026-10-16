@@ -191,6 +191,12 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Curriculum View";
     if (pathname.startsWith("/teacher-portal/classes/"))
       return "My Class";
+    if (pathname === "/billing/claim-invoices")
+      return "Claim invoices";
+    if (pathname.startsWith("/billing/claims/"))
+      return "Educator Claim";
+    if (pathname.startsWith("/supervisor-portal/claims/"))
+      return "Claim";
     if (pathname.startsWith("/teacher-portal/claims/"))
       return "Payments";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))
