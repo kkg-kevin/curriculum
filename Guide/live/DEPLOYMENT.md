@@ -102,6 +102,140 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (16 Oct 2026, afternoon) — Educator pay types and two invoices per claim; Payments in the educator portal; claims as pages; supervisors by school; where each billing invoice came from; clearer website images
+
+**Backend, portal and website**, from `curriculum` (branch `modules`) at `d412a41` and
+`curriculum-web` (branch `new`) at `cbf5dd6`. Upload the backend and portal together; the website
+can go up at the same time.
+
+### What changed — educator pay and claims
+
+- **Rates are set once for everyone**, in **Settings → Educator pay**: part-time rates per
+  session, per hour and per day, and the advance %. Leave a rate empty and that way of paying isn't
+  offered. Billing → Educator Claims → "Session rates" and each educator's own rate are gone.
+- **Each educator is tagged Full time or Part time** on the educator form. Full-time educators are
+  paid outside the portal and **can't claim** (their claims page says so). Part-time educators get
+  one or more ways of being paid (per session, hourly, daily) and **pick one per claim**; once a
+  course has a claim, it stays on that way.
+- **Every claim carries two invoices, both required:** the claim invoice the system generates from
+  the claim's figures, and the educator's eTIMS PDF.
+- **Request payment is one screen**: how the educator is paid (each choice shows what it comes to),
+  the amount and how it's worked out, advance or full payment only when both are open, the two
+  invoices as a checklist (the claim invoice previews inside the pop-up), and Send naming what's
+  still missing.
+- **Changing a rate only affects claims sent afterwards.** A claim keeps the figures it was sent
+  with, and so does its invoice.
+- **Educator portal:** one **Payments** item in the menu with **Claims | Invoices** tabs. Payments
+  follows the hub picked at the top (Home Learning counts as a hub): the list and its totals are
+  that hub's, Invoices shows that hub's claims, and picking a hub on a course's claim page goes to
+  that hub's claims. An invoice opens **beside the list**, with Download and Open in new tab. The
+  educator's hub picker now also lists hubs where they teach a class without being linked to them.
+- **Supervisor portal:** a claim opens as **a page of its own** (not a pop-up), its claim invoice and
+  eTIMS invoice opening beside it. **My Educators** has a **School** picker and, for all schools,
+  groups educators under each school; **Claims** has School first, then that school's educators.
+  The coloured strip on claim and educator cards is gone.
+- **Admin:** a claim from Billing → Educator Claims opens as a page too (`/billing/claims/…`), and
+  **Claim invoices** (a button on that tab) lists every invoice generated from a claim as **Pending
+  payment** or **Paid**, with totals that filter, a school filter, search, and the invoice beside
+  the list. Declined claims aren't listed (their invoices are void). Links in older notifications
+  and emails open the new pages.
+
+### What changed — billing
+
+- **Every invoice says where it came from.** Billing → Invoices has tabs per source — All,
+  Subscriptions, Hub usage, Home Learning, Bootcamps (and Learner fees when there are any) — each
+  with how many and what's still owed, a **school** filter, and a **From** line on every row that
+  links to the bootcamp, household, hub, customer or learner behind it ("From Workplace Bootcamp ·
+  Bobby · made automatically ↗"). The invoice page shows **Created from**. Worked out from what each
+  invoice already records, so older invoices show it too. Invoice numbers are unchanged.
+- The © year in footers and sidebars is the current year.
+
+### What changed — website
+
+- **Clearer images:** the browser tab and phone home-screen icon are the "d" mark; the home page's
+  hero is the same picture, now sharp; the "Ready to get started?" banner shows the boy at the left
+  and the girl at the right (large screens); link previews on WhatsApp, Facebook and LinkedIn show
+  the brand banner with both children and the wordmark (`og-default.png`, 1200×630).
+- **Page polish** from `235f9bf`: detail pages (bootcamp, competition, pathway, project, store item,
+  hub, Estate Tech Club) share one header, section and button layout; each item in the home hero's
+  list opens its page; the "No club near you yet?" banner is gone from Estate Tech Clubs.
+
+### One new migration, applied on Restart
+
+`20261016110000_add_educator_pay_types.js`:
+- `claim_settings`: adds `hourlyRate` and `dailyRate` (both empty — **only per-session claims are
+  possible until those rates are set** in Settings → Educator pay); `sessionRate` may now be empty.
+- `teachers`: adds `payRateTypes`; every educator starts on "session" (plus hourly or daily if
+  their old payment-terms field said so). `teachers.sessionRate` is kept but no longer read.
+- `teacher_claims`: adds `rateType`, `rate`, `unitsTotal`, `unitsDelivered`, `teacherEmail`,
+  `teacherPhone`; existing claims are filled in as per-session.
+
+No new environment variable; no new npm package.
+
+**Check who is tagged full time before uploading** — after this release they can no longer claim:
+`SELECT firstName, lastName, email FROM teachers WHERE employmentType = 'full_time';`
+For anyone listed who should claim, switch them to Part time on their educator form after uploading.
+
+### Backend (`backend-deploy.zip`)
+
+From `d412a41`, byte-identical in Dev, Live and Capable; 488 entries, 120 migrations, the newest
+`20261016110000_add_educator_pay_types.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-bR3WOfVW.js` |
+| Live | `npm run build:live` | `index-Bten5EwK.js` |
+| Capable | `npm run build:capable` | `index-BumvquxU.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (4621 KB) | 39 of 39 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (4485 KB) | 24 of 24 pre-rendered with content |
+
+Both checked to load the built site, call their own API and carry the new icons and preview image.
+
+### Checked so far
+
+Locally, in a browser against a local database: the educator's Payments (switching hubs, the
+course claim page, invoices beside the list), the one-screen Request payment, a claim sent,
+approved by the supervisor and paid, the supervisor's claim page and school pickers, the admin's
+claim page and Claim invoices, and Billing's source tabs, school filter and links. The server tests
+pass and all builds succeed. **Not yet tried on the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup** (columns are added and `claim_settings.sessionRate` is altered).
+2. Run the full-time check above.
+3. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check
+   `SHOW COLUMNS FROM teachers LIKE 'payRateTypes';` returns one row. If not, Run JS script →
+   `db:migrate`.
+4. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+5. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+6. **Settings → Educator pay:** check the per-session rate and the advance %, and add hourly or daily
+   rates if any educator is paid that way.
+7. **Verify:**
+   - As an educator: Payments shows Claims | Invoices; switching the hub at the top changes the
+     list; Request payment shows the amount and the two invoices; View opens the claim invoice
+     inside the pop-up.
+   - As a supervisor: a claim opens as a page; Claim invoice and eTIMS invoice open beside it;
+     My Educators' School picker groups educators.
+   - As the admin: Billing → Invoices shows the source tabs and From lines; Billing → Educator
+     Claims → Claim invoices lists the claim invoices.
+   - The website (https://digifunzi.co.ke): the tab shows the "d" icon; the closing banner shows both children.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `e11b1fe`). Restore the backup first — the older backend stops on start-up if the
+database lists migrations it doesn't have.
+
+---
+
 ## This release (16 Oct 2026) — Unsaved assessments, courses and sessions kept in the workspace and shown as draft cards; bootcamp images, hub photo limit, crop on upload, exact map pins
 
 **Backend and portal**, from `curriculum` (branch `modules`) at `4d01f50`. Upload them together.
