@@ -7,7 +7,7 @@ import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
-import { EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS } from "../schemas/teacher.schema";
+import { EMPLOYMENT_TYPES, TEACHER_LEVELS, PAY_RATE_TYPES } from "../schemas/teacher.schema";
 import { classApi } from "../../classes/services/classApi";
 import { useClassQuery, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useTeacherCourseAssignments } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
@@ -136,7 +136,7 @@ function AssignCourseControl({ teacherId, hubs, qualifiedCourseIds }) {
 const HUB_TYPE_LABELS = Object.fromEntries(LEARNING_HUB_TYPES.map((t) => [t.value, t.label]));
 const EMPLOYMENT_TYPE_LABELS = Object.fromEntries(EMPLOYMENT_TYPES.map((t) => [t.value, t.label]));
 const TEACHER_LEVEL_LABELS = Object.fromEntries(TEACHER_LEVELS.map((t) => [t.value, t.label]));
-const PAYMENT_TERMS_LABELS = Object.fromEntries(PAYMENT_TERMS.map((t) => [t.value, t.label]));
+const PAY_RATE_LABELS = Object.fromEntries(PAY_RATE_TYPES.map((t) => [t.value, t.label]));
 
 const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -427,17 +427,19 @@ export default function TeacherViewPage() {
             </div>
           </Section>
 
-          {/* Employment — placeholder classification fields; full employment/payroll feature
-              (rates, computed pay, etc.) isn't built yet, this just surfaces what's captured. */}
-          {(teacher.employmentType || teacher.teacherLevel || teacher.paymentTerms) && (
-            <Section title="Employment">
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <DetailRow label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType]} />
-                <DetailRow label="Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />
-                <DetailRow label="Payment Terms" value={PAYMENT_TERMS_LABELS[teacher.paymentTerms]} />
-              </div>
-            </Section>
-          )}
+          {/* Employment — full time (doesn't claim) or part time, and the ways a part-timer is paid
+              (see Settings → Educator pay). An educator from before this was part time, per session. */}
+          <Section title="Employment">
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <DetailRow label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType || "part_time"]} />
+              {teacher.employmentType === "full_time" ? (
+                <DetailRow label="Payment" value="Paid outside the portal — no claims" />
+              ) : (
+                <DetailRow label="Paid on" value={(teacher.payRateTypes?.length ? teacher.payRateTypes : ["session"]).map((t) => PAY_RATE_LABELS[t] || t).join(", ")} />
+              )}
+              {teacher.teacherLevel && <DetailRow label="Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />}
+            </div>
+          </Section>
 
           {/* Record info */}
           <Section title="Record Info">

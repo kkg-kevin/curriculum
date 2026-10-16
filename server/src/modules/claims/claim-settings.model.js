@@ -3,12 +3,21 @@ const { createRecord, updateRecord, firstOrNull } = require("../../shared/utils/
 
 const TABLE = "claim_settings";
 
-// What a workspace pays when it has never changed anything: KSh 904.666 a session, and an
-// advance of 30% of the whole course.
-const DEFAULTS = { sessionRate: 904.666, advancePercent: 30, currency: "KES" };
+// What a workspace pays when it has never changed anything: KSh 904.666 a session, no hourly or
+// daily rate (not offered until set), and an advance of 30% of the whole course. These are the
+// part-time rates — full-time educators don't claim (see claim.service.js).
+const DEFAULTS = { sessionRate: 904.666, hourlyRate: null, dailyRate: null, advancePercent: 30, currency: "KES" };
+
+const rateOrNull = (value) => (value == null || Number(value) <= 0 ? null : Number(value));
 
 function shape(row) {
-  return { sessionRate: Number(row.sessionRate), advancePercent: Number(row.advancePercent), currency: row.currency || DEFAULTS.currency };
+  return {
+    sessionRate: rateOrNull(row.sessionRate),
+    hourlyRate: rateOrNull(row.hourlyRate),
+    dailyRate: rateOrNull(row.dailyRate),
+    advancePercent: Number(row.advancePercent),
+    currency: row.currency || DEFAULTS.currency,
+  };
 }
 
 // One row per workspace (admin). A workspace with no row yet simply runs on DEFAULTS — the row is

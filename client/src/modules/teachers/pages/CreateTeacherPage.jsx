@@ -29,7 +29,7 @@ export default function CreateTeacherPage() {
       firstName: "", lastName: "",
       email: "", password: "", phone: "",
       status: "active",
-      employmentType: null, teacherLevel: null, paymentTerms: null,
+      employmentType: "part_time", payRateTypes: ["session"], teacherLevel: null, paymentTerms: null,
       supervisorId: null,
       photo: null,
       qualifiedCourseIds: [],

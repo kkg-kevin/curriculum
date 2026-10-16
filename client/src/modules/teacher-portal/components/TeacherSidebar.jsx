@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiFileText, FiUser, FiHome } from "react-icons/fi";
+import { NavLink, useLocation } from "react-router-dom";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -12,13 +12,15 @@ const menuItems = [
   { name: "Reports",         path: "/teacher-portal/reports", icon: FiBarChart2 },
   { name: "Attendance",      path: "/teacher-portal/attendance", icon: FiCheckSquare },
   { name: "Timetable",       path: "/teacher-portal/timetable", icon: FiCalendar },
-  { name: "Claims",          path: "/teacher-portal/claims", icon: FiFileText },
+  // Claims and Invoices — two tabs of one page (PaymentsPage), so either address lights it up.
+  { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices"] },
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
 ];
 
 function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { expanded, handlers } = useSidebarHover(!isMobile);
   const isCollapsed = !isMobile && !expanded;
+  const { pathname } = useLocation();
 
   return (
     <>
@@ -70,6 +72,7 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
         <nav style={{ flex: 1, padding: isCollapsed ? "20px 8px" : "20px 12px" }}>
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const alsoActive = (item.also || []).some((p) => pathname === p || pathname.startsWith(`${p}/`));
             return (
               <NavLink
                 key={item.name}
@@ -77,7 +80,9 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
                 end={item.path === "/teacher-portal"}
                 onClick={isMobile ? onClose : undefined}
                 title={isCollapsed ? item.name : undefined}
-                style={({ isActive }) => ({
+                style={({ isActive: routeActive }) => {
+                  const isActive = routeActive || alsoActive;
+                  return {
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
@@ -91,7 +96,8 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
                   fontWeight: isActive ? "700" : "500",
                   backgroundColor: isActive ? "#feb139" : "transparent",
                   transition: "all 0.2s ease",
-                })}
+                  };
+                }}
               >
                 {Icon && <Icon size={18} style={{ flexShrink: 0 }} />}
                 {!isCollapsed && <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>}

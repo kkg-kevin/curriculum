@@ -1,5 +1,5 @@
 import { useFormContext, Controller } from "react-hook-form";
-import { TEACHER_STATUSES } from "../schemas/teacher.schema";
+import { TEACHER_STATUSES, EMPLOYMENT_TYPES, PAY_RATE_TYPES } from "../schemas/teacher.schema";
 import ImageUploadField from "../../../components/ImageUploadField";
 import CoursePickerField from "../../courses/components/CoursePickerField";
 import PortalPasswordField from "../../../components/PortalPasswordField";
@@ -65,7 +65,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
 /* ── Main form ────────────────────────────────────────────────────────── */
 
 export default function TeacherForm() {
-  const { register, control, formState: { errors } } = useFormContext();
+  const { register, control, watch, formState: { errors } } = useFormContext();
   // Who reviews this educator's claims is the workspace's call — offered to the admin and staff
   // only (a hub login filling in this same form doesn't get it), and only if they can see the
   // supervisors.
@@ -125,6 +125,65 @@ export default function TeacherForm() {
           </Field>
         </div>
       </div>
+
+      {/* Employment & pay — how this educator is paid (see Settings → Educator pay). The workspace
+          decides this, so a hub login doesn't see it (the server ignores it from them too). */}
+      {inWorkspace && (
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Employment &amp; pay</h3>
+          <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>
+            Full-time educators don&apos;t claim through the portal. A part-time educator claims for each course, on one of the ways of paying ticked here, at the rates in Settings → Educator pay.
+          </p>
+          <Controller
+            name="employmentType"
+            control={control}
+            render={({ field }) => (
+              <div role="radiogroup" aria-label="Employment type" style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
+                {EMPLOYMENT_TYPES.map((t) => {
+                  const selected = (field.value || "part_time") === t.value;
+                  return (
+                    <label key={t.value} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 600, color: "#111827", background: selected ? "#EFF6FF" : "#fff", border: `1.5px solid ${selected ? "#2E7DB5" : "#E5E7EB"}` }}>
+                      <input type="radio" name="employmentType" value={t.value} checked={selected} onChange={() => field.onChange(t.value)} style={{ accentColor: "#2E7DB5" }} />
+                      {t.label.replace("-", " ")}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          />
+          {(watch("employmentType") || "part_time") === "part_time" && (
+            <Controller
+              name="payRateTypes"
+              control={control}
+              render={({ field }) => {
+                const value = field.value || [];
+                const toggle = (type) => field.onChange(value.includes(type) ? value.filter((v) => v !== type) : [...value, type]);
+                return (
+                  <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
+                    <legend style={{ fontSize: "12.5px", fontWeight: 700, color: "#374151", marginBottom: "8px", padding: 0 }}>Paid on <span style={{ color: "#EF4444" }}>*</span></legend>
+                    <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", maxWidth: "620px" }}>
+                      {PAY_RATE_TYPES.map((t) => {
+                        const checked = value.includes(t.value);
+                        return (
+                          <label key={t.value} style={{ display: "flex", alignItems: "flex-start", gap: "8px", padding: "10px 12px", borderRadius: "10px", cursor: "pointer", background: checked ? "#EFF6FF" : "#fff", border: `1.5px solid ${checked ? "#2E7DB5" : "#E5E7EB"}` }}>
+                            <input type="checkbox" checked={checked} onChange={() => toggle(t.value)} style={{ marginTop: "2px", accentColor: "#2E7DB5" }} />
+                            <span>
+                              <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "#111827" }}>{t.label}</span>
+                              <span style={{ display: "block", fontSize: "11.5px", color: "#6B7280" }}>{t.hint}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errors?.payRateTypes?.message && <p role="alert" style={{ margin: "6px 0 0", fontSize: "12px", color: "#EF4444" }}>{errors.payRateTypes.message}</p>}
+                    <p style={{ margin: "6px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>More than one is fine — the educator chooses which one each time they claim for a course.</p>
+                  </fieldset>
+                );
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {inWorkspace && supervisorsLoaded && (
         <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>

@@ -31,6 +31,33 @@ export function formatDate(value) {
 
 export const TYPE_LABEL = { advance: "Advance", full: "Full payment" };
 
+// How a claim (or a course's figures) is worked out — per session, by the hour or by the day, at
+// the workspace's rate for it (Settings → Educator pay). Older claims are all per session.
+export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily" };
+const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"] };
+
+export function unitsLabel(count, rateType = "session") {
+  const n = Number(count) || 0;
+  const [one, many] = UNIT[rateType] || UNIT.session;
+  const shown = Number.isInteger(n) ? n : n.toLocaleString("en-KE", { maximumFractionDigits: 2 });
+  return `${shown} ${n === 1 ? one : many}`;
+}
+
+// "KSh 904.67 a session" / "KSh 500 an hour" / "KSh 3,000 a day"
+export function rateLabel(rate, rateType = "session", currency = "KES") {
+  const per = { session: "a session", hourly: "an hour", daily: "a day" }[rateType] || "a session";
+  return `${formatRate(rate, currency)} ${per}`;
+}
+
+// A claim's basis in one line: "12 sessions × KSh 904.67 a session". Units are the course's
+// total for an advance (a share of the whole course) and what was delivered for the full payment.
+export function claimBasis(claim) {
+  const rateType = claim.rateType || "session";
+  const rate = claim.rate ?? claim.sessionRate;
+  const units = claim.type === "advance" ? claim.unitsTotal ?? claim.sessionsTotal : claim.unitsDelivered ?? claim.sessionsDelivered;
+  return `${unitsLabel(units, rateType)} × ${rateLabel(rate, rateType, claim.currency)}`;
+}
+
 export const CLAIM_STATUS = {
   pending_supervisor: { label: "With supervisor", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
   pending_admin: { label: "With admin", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },

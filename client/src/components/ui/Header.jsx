@@ -162,7 +162,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/teacher-portal/course-content": "Course Content",
     "/teacher-portal/assessments": "Assessments",
     "/teacher-portal/attendance": "Attendance",
-    "/teacher-portal/claims": "Claims",
+    "/teacher-portal/claims": "Payments",
+    "/teacher-portal/invoices": "Payments",
     "/teacher-portal/profile": "My Profile",
     "/supervisor-portal": "My Dashboard",
     "/supervisor-portal/claims": "Claims",
@@ -191,7 +192,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     if (pathname.startsWith("/teacher-portal/classes/"))
       return "My Class";
     if (pathname.startsWith("/teacher-portal/claims/"))
-      return "Claims";
+      return "Payments";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))
       return "Course Content";
     if (pathname.startsWith("/school-portal/classes/"))

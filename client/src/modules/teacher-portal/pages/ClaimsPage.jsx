@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiCheckCircle, FiChevronRight, FiClock, FiLayers, FiSearch, FiTrendingUp, FiX } from "react-icons/fi";
 import { useMyClaimCourses } from "../../claims/hooks/useClaims";
 import { CourseStagePill, LocationChip, ProgressBar, T, cardStyle, formatMoney } from "../../claims/shared";
 
 // My Claims — every course the educator teaches, what each is worth, and where its payment
 // stands. A course opens onto its sessions and the payment request itself (ClaimCoursePage).
-// Spans every hub the educator teaches at, Home Learning included: pay is per course, not per hub.
+// Shows the hub picked at the top of the portal (Home Learning is a hub too) — its courses and its
+// totals; switching hub switches the list.
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -89,43 +90,28 @@ function CourseCard({ course, onOpen }) {
   );
 }
 
-export default function ClaimsPage() {
+export default function ClaimsPage({ embedded = false }) {
   const navigate = useNavigate();
-  const { data, isLoading, isError, error } = useMyClaimCourses();
+  const { selectedHubId, selectedHub, hubsLoading } = useOutletContext() || {};
+  const { data, isLoading: coursesLoading, isError, error } = useMyClaimCourses(selectedHubId, { enabled: !hubsLoading });
+  const isLoading = hubsLoading || coursesLoading;
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [hubId, setHubId] = useState("all");
-  const [place, setPlace] = useState("all"); // all | home | hub
   const [sort, setSort] = useState("action");
 
   const courses = useMemo(() => data?.courses || [], [data]);
-  // The hubs these courses are taught at, for the hub filter — offered only when there's a choice.
-  const hubs = useMemo(() => {
-    const byId = new Map();
-    for (const course of courses) {
-      if (!course.hub) continue;
-      const entry = byId.get(course.hub.id) || { id: course.hub.id, name: course.hub.name, count: 0 };
-      entry.count += 1;
-      byId.set(course.hub.id, entry);
-    }
-    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [courses]);
-  const homeCount = useMemo(() => courses.filter((c) => c.hub?.isHomeLearning).length, [courses]);
-  const hasBothPlaces = homeCount > 0 && homeCount < courses.length;
 
   // Everything but the status: the status pills count within this, so each pill's number is
   // what choosing it would actually show.
   const scoped = useMemo(() => {
     const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return courses
-      .filter((c) => hubId === "all" || c.hub?.id === hubId)
-      .filter((c) => place === "all" || (place === "home") === Boolean(c.hub?.isHomeLearning))
       .filter((c) => {
         if (!words.length) return true;
         const text = [c.courseName, c.className, c.hub?.name, c.academicYear].filter(Boolean).join(" ").toLowerCase();
         return words.every((word) => text.includes(word));
       });
-  }, [courses, hubId, place, search]);
+  }, [courses, search]);
   const counts = useMemo(() => {
     const result = { all: scoped.length };
     for (const course of scoped) result[course.stage] = (result[course.stage] || 0) + 1;
@@ -135,8 +121,8 @@ export default function ClaimsPage() {
     () => scoped.filter((c) => filter === "all" || c.stage === filter).sort(SORTERS[sort]),
     [scoped, filter, sort]
   );
-  const filtering = filter !== "all" || hubId !== "all" || place !== "all" || search.trim() !== "";
-  const clearFilters = () => { setFilter("all"); setHubId("all"); setPlace("all"); setSearch(""); };
+  const filtering = filter !== "all" || search.trim() !== "";
+  const clearFilters = () => { setFilter("all"); setSearch(""); };
 
   if (isLoading) return <p style={{ fontFamily: "Inter, sans-serif", color: T.inkMuted, fontSize: 14, padding: "40px 0", textAlign: "center" }}>Loading your claims…</p>;
   if (isError) {
@@ -148,14 +134,26 @@ export default function ClaimsPage() {
     );
   }
 
+  // Full-time educators are paid outside the portal (Settings → Educator pay).
+  if (data.fullTime) {
+    return (
+      <div style={{ fontFamily: "Inter, sans-serif", maxWidth: 560, margin: "40px auto", padding: "28px 24px", textAlign: "center", background: "#fff", borderRadius: 16, border: `1px solid ${T.border}` }}>
+        <h1 style={{ margin: "0 0 8px", fontSize: 19, fontWeight: 800, color: T.ink }}>Payment claims</h1>
+        <p style={{ margin: 0, fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>
+          You&apos;re set up as a full-time educator, so you&apos;re paid outside the portal and there&apos;s nothing to claim here. If that isn&apos;t right, ask your admin to change it on your educator profile.
+        </p>
+      </div>
+    );
+  }
+
   const { summary, currency } = data;
   const money = (value) => formatMoney(value, currency);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: T.ink, letterSpacing: "-0.5px" }}>My Claims</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>Track payments for your teaching sessions, and request an advance or full payment for a course.</p>
+        {!embedded && <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: T.ink, letterSpacing: "-0.5px" }}>My Claims</h1>}
+        <p style={{ margin: embedded ? 0 : "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>Track payments for your teaching sessions, and request an advance or full payment for a course.</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
@@ -183,19 +181,6 @@ export default function ClaimsPage() {
           <FiSearch size={15} color={T.inkFaint} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by course, class or hub…" aria-label="Search courses" style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 34px", borderRadius: 10, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" }} />
         </div>
-        {hubs.length > 1 && (
-          <select value={hubId} onChange={(e) => setHubId(e.target.value)} aria-label="Filter by hub" style={{ ...selectStyle, borderColor: hubId !== "all" ? T.accent : T.border }}>
-            <option value="all">All hubs ({courses.length})</option>
-            {hubs.map((hub) => <option key={hub.id} value={hub.id}>{hub.name} ({hub.count})</option>)}
-          </select>
-        )}
-        {hasBothPlaces && (
-          <select value={place} onChange={(e) => setPlace(e.target.value)} aria-label="Filter by where the course is taught" style={{ ...selectStyle, borderColor: place !== "all" ? T.accent : T.border }}>
-            <option value="all">Home and hub</option>
-            <option value="home">Home learning ({homeCount})</option>
-            <option value="hub">At a hub ({courses.length - homeCount})</option>
-          </select>
-        )}
         <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort courses" style={selectStyle}>
           {SORTS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
         </select>
@@ -217,8 +202,10 @@ export default function ClaimsPage() {
       {courses.length === 0 ? (
         <div style={{ ...cardStyle, padding: "56px 24px", textAlign: "center" }}>
           <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: 16, background: T.tintBg, color: T.accent, display: "grid", placeItems: "center" }}><FiLayers size={24} /></div>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>You aren't teaching any courses yet</p>
-          <p style={{ margin: "6px auto 0", maxWidth: 420, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>Once you're assigned to a course in a class, it shows here with what it pays and where its claim stands.</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.ink }}>{selectedHub ? `No courses at ${selectedHub.name}` : "You aren't teaching any courses yet"}</p>
+          <p style={{ margin: "6px auto 0", maxWidth: 420, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>
+            {selectedHub ? "You aren't on a course here yet. Pick another hub at the top to see its claims." : "Once you're assigned to a course in a class, it shows here with what it pays and where its claim stands."}
+          </p>
         </div>
       ) : visible.length === 0 ? (
         <div style={{ ...cardStyle, padding: "40px 24px", textAlign: "center" }}>

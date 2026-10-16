@@ -3,10 +3,12 @@ const { DAYS_OF_WEEK } = require("../timetable/timetable.validation");
 
 const TEACHER_STATUSES = ["active", "inactive", "on_leave"];
 
-// Employment classification fields — placeholders only for now. Captured and stored so the
-// data exists once the full employment/payroll feature (rate amounts, computed pay, etc.) is
-// built; nothing here computes or uses these values yet.
+// How an educator is employed, and so how they're paid (see modules/claims/): full time is a tag
+// only — full-time educators don't claim; part time claims on one or more of PAY_RATE_TYPES, each
+// at the workspace's rate for it (Settings → Educator pay). `paymentTerms` is the old single
+// hourly/daily placeholder — still accepted, no longer used (payRateTypes replaced it).
 const EMPLOYMENT_TYPES = ["part_time", "full_time"];
+const PAY_RATE_TYPES = ["session", "hourly", "daily"];
 const TEACHER_LEVELS = [1, 2, 3, 4, 5];
 const PAYMENT_TERMS = ["hourly", "daily"];
 
@@ -20,12 +22,10 @@ const baseTeacherSchema = z.object({
   password:   z.string().min(8, "Password must be at least 8 characters").or(z.literal("")).default(""),
   phone:      z.string().max(20).default(""),
   status:     z.enum(TEACHER_STATUSES).default("active"),
-  employmentType: z.enum(EMPLOYMENT_TYPES).optional().nullable().default(null),
+  employmentType: z.enum(EMPLOYMENT_TYPES).optional().nullable().default("part_time"),
+  payRateTypes:   z.array(z.enum(PAY_RATE_TYPES)).max(3).optional().default(["session"]),
   teacherLevel:   z.number().int().min(1).max(5).optional().nullable().default(null),
   paymentTerms:   z.enum(PAYMENT_TERMS).optional().nullable().default(null),
-  // What one session pays this educator, when it differs from the workspace's own rate (see
-  // modules/claims/). Empty = the workspace rate.
-  sessionRate:    z.coerce.number().positive("Session rate must be more than 0").max(1000000).optional().nullable().default(null),
   // The supervisor (a users.id with role "supervisor") this educator's claims go to — optional;
   // without one they go straight to the admin. See modules/claims/supervisor.service.js.
   supervisorId:   z.string().optional().nullable().default(null),
@@ -38,13 +38,21 @@ const baseTeacherSchema = z.object({
   qualifiedCourseIds: z.array(z.string()).default([]),
 });
 
+// A part-time educator needs at least one way of being paid.
+function checkPayRateTypes(data, ctx) {
+  if (data.employmentType !== "full_time" && Array.isArray(data.payRateTypes) && data.payRateTypes.length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["payRateTypes"], message: "Choose at least one way a part-time educator is paid" });
+  }
+}
+
 const createTeacherSchema = baseTeacherSchema.superRefine((data, ctx) => {
   if (data.password && !data.email) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required to set a password" });
   }
+  checkPayRateTypes(data, ctx);
 });
 
-const updateTeacherSchema = baseTeacherSchema.partial();
+const updateTeacherSchema = baseTeacherSchema.partial().superRefine(checkPayRateTypes);
 
 // Dedicated status toggle — separate from the general update so a plain "deactivate" action
 // doesn't have to round-trip the whole record, and so the route can be authorized on its own.
