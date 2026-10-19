@@ -80,6 +80,7 @@ const COLLECTIONS = {
   },
   curricula: { pathways: { table: "pathways", noun: "pathway" } },
   bootcamps: { hubs: { table: "bootcamp_hubs", noun: "hub run" } },
+  courses: { folders: { table: "course_folders", noun: "course folder" } },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },
 };
