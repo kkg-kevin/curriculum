@@ -102,6 +102,103 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (19 Oct 2026, afternoon) — Estate Tech Club pages rebuilt for parents; club details in the hub form; a skeleton screen while the website starts
+
+**Backend, portal and website**, from `curriculum` (branch `modules`) at `694c6e3` and
+`curriculum-web` (branch `new`) at `0049c06`. Includes everything in "This release (19 Oct 2026)"
+below — if that one isn't up yet, this replaces it (follow its notes too: database backup, three
+more migrations, setting up a club package). **Upload the backend first**, then the portal, then the
+website.
+
+### What changed — portal
+
+- **Learning Hubs → a non-school hub's form** has a new **Club details for parents** section:
+  youngest and oldest age, children per class, **session times** (day, start, end — when the club
+  meets, separate from the venue's opening hours), an "About the club, for parents" description,
+  and **FAQs**. All optional; whatever is left blank is simply not shown on the website. School
+  hubs don't have the section.
+
+### What changed — website
+
+- **Estate Tech Club pages** are rebuilt around what a parent needs to decide:
+  - the header shows the location and **"From KSh … / month"**, with four tiles under the name —
+    ages, club sessions (or opening hours when no sessions are set), class size, in person / online;
+  - the card beside the photos stays in view and shows the price, the session times and **Join
+    this club** above the contact details;
+  - **Membership & prices** comes straight after the photos (two cards a row; the "add more
+    children" line only on the biggest package that allows it; "Save … per child" only on family
+    packages), then **How joining works** (four steps), **About the club** (the parent description
+    when set), amenities — **desk pricing is no longer shown** on club pages — a shorter map, and
+    **Questions parents ask** (the club's FAQs plus payment / start / adding a child);
+  - one closing banner (Join now · See all clubs).
+  The bootcamp hub page and Home Schooling look exactly as before.
+- **Skeleton screen while the site starts.** Pages used to show raw, unstyled HTML for a moment
+  (the pre-rendered pages carry their text but not their styles). Now grey placeholder shapes of
+  the header, title and cards show until the page is ready (6 seconds at most; the page shows
+  after 15 seconds even if the scripts never load). Search engines still read the full page.
+
+### One new migration, applied on Restart
+
+`20261019120000_add_club_details_to_learning_hubs.js` — `learning_hubs.clubDetails` (JSON, empty
+until a club's details are filled in). Additive. No new environment variable; no new npm package.
+
+### Backend (`backend-deploy.zip`)
+
+From `694c6e3`, byte-identical in Dev, Live and Capable; 501 entries, 124 migrations, the newest
+`20261019120000_add_club_details_to_learning_hubs.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-CtT1p5TE.js` |
+| Live | `npm run build:live` | `index-00CrxKSq.js` |
+| Capable | `npm run build:capable` | `index-Cizzw49C.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2895 KB) | 39 of 39 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2735 KB) | 24 of 24 pre-rendered with content |
+
+Both checked: built site (no dev-server files), the skeleton in every page, every page saved
+visible, each calling its own API.
+
+### Checked so far
+
+Locally against a local database: the club page at desktop and phone widths with sample club
+details and packages (since removed); the skeleton on a throttled connection (skeleton first, then
+the page), with JavaScript off (the page, no skeleton) and in dark mode. The hub form's new section
+was checked by building, not yet clicked through in a browser. Server tests and website tests pass;
+all builds succeed. **Not yet tried on the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check
+   `SHOW COLUMNS FROM learning_hubs LIKE 'clubDetails';` returns one row (and, if the morning
+   release wasn't up yet, `SHOW TABLES LIKE 'club_memberships';`). If not, Run JS script →
+   `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+5. **Fill in each club's details:** Learning Hubs → the club → Edit → Club details for parents
+   (ages, session times, class size, parent description, FAQs). Check each club package's
+   "Children included" in Billing → Packages → Tech Club packages.
+6. **Verify:**
+   - Open the website on a phone: grey shapes appear first, then the page (no unstyled flash).
+   - A club page shows the price in the header and side card, the quick-fact tiles, prices before
+     About, no desk pricing, and the FAQs you entered.
+   - The bootcamp hub page (from a bootcamp's "Running at" list) still shows its spaces and hours.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `c990e68`, or `efac4a8` if the morning release wasn't up either).
+
+---
+
 ## This release (19 Oct 2026) — Estate Tech Clubs sign-up from the website; course folders; assessment marks to one decimal place
 
 **Backend, portal and website**, from `curriculum` (branch `modules`) at `ed08bc8` and
