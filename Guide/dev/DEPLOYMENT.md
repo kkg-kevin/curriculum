@@ -102,6 +102,128 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (19 Oct 2026) — Estate Tech Clubs sign-up from the website; course folders; assessment marks to one decimal place
+
+**Backend, portal and website**, from `curriculum` (branch `modules`) at `ed08bc8` and
+`curriculum-web` (branch `new`) at `dd6c254`. **Upload the backend first**, then the portal, then
+the website — the website's club pages read new API addresses.
+
+### What changed — Estate Tech Clubs
+
+Parents can now join a club themselves, the same way families sign up for Home Schooling.
+
+- **Website:** each club page has a **Membership & prices** section and a **Join this club**
+  button (it replaces "Enquire about this club"; a club with no package on the website still shows
+  the enquiry button). Joining is four steps at `/estate-tech-clubs/<club>/join` — package, parent,
+  children, review — and creates the parent's login, a login per child and the first month's
+  invoice. Club cards on `/estate-tech-clubs` show "From KSh … / month".
+- **Until the payment is approved** both logins show "payment pending" with the amount.
+- **Admin → Tech Clubs** (new in the sidebar): the families who joined, filtered by club and status.
+  **Approve payment** (records the cash payment and unlocks the logins) or **Decline** (cancels the
+  invoice and removes the accounts); **Place child** in one of the club's classes — from then on
+  attendance, assessments and reports work as usual; pause or cancel a membership (children leave
+  their class); remove or add back a child; **Invoice month** per family or for everyone.
+- **Billing → Packages** has a second panel, **Tech Club packages**: price, children included,
+  which clubs it's offered at (none ticked = every club), "Show on the website".
+- **Parents** see the club under **My Family** (and can add children into paid places) and its
+  invoices in their portal. Each sign-up also arrives in **Enquiries** ("Open membership") and as a
+  notification.
+- **Staff roles** get a new **Tech Clubs** permission (off for existing roles until ticked);
+  approving needs Billing → Edit, invoicing Billing → Add.
+
+### What changed — courses and assessments
+
+- **Course folders.** Courses → **New Folder** (name, description, image, colour). Folder cards
+  sit above the courses, the same size as a course card, and show the folder's colour on hover.
+  Inside a folder: **Add courses**, **Edit folder**, **Delete folder** (its courses stay, outside
+  any folder). Each course's ⋮ menu has **Add to / Move to folder**. Search looks through every
+  course wherever it's filed. A course shared with another admin arrives outside any folder.
+- **Assessment marks to one decimal place.** Points and indicator marks round to one decimal as
+  they're typed (30.123 → 30.1) and on save, so totals no longer show long decimals. Even splits
+  across indicators add up exactly (10 across 3 → 3.3 + 3.3 + 3.4). An existing assessment is
+  rounded the next time it's saved, keeping each question's total.
+
+### What changed — website
+
+- Six unused images removed from the site (about 2 MB smaller).
+
+### Three new migrations, applied on Restart
+
+- `20261019090000_create_tech_club_memberships.js` — new tables `club_packages`,
+  `club_memberships`, `club_membership_children`; `billing_invoices.clubMembershipId`;
+  `leads.clubMembershipId`; and **`billing_invoices.invoiceType` gains `tech_club`** (the column's
+  list of values is altered — hence the backup).
+- `20261019100000_create_course_folders.js` — new table `course_folders`; `courses.folderId`.
+- `20261019110000_add_description_and_image_to_course_folders.js` — `course_folders.description`,
+  `course_folders.coverImage`.
+
+All additive: no existing row changes. No new environment variable (club sign-ups use the existing
+`PUBLIC_CONTENT_ADMIN_ID` — the admin whose clubs the website shows); no new npm package.
+
+### Backend (`backend-deploy.zip`)
+
+From `ed08bc8`, byte-identical in Dev, Live and Capable; 500 entries, 123 migrations, the newest
+`20261019110000_add_description_and_image_to_course_folders.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-BrwzlmDt.js` |
+| Live | `npm run build:live` | `index-BHOWISmR.js` |
+| Capable | `npm run build:capable` | `index-CRMt_1rI.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2836 KB) | 39 of 39 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2700 KB) | 24 of 24 pre-rendered with content |
+
+Both checked to load the built site (no dev-server files). The club pages' packages are fetched in
+the browser, so they appear once the backend is up and a package is on the website.
+
+### Checked so far
+
+Locally, against a local database with email switched off: the whole Tech Club flow (sign-up,
+payment pending, placing a child, approval, the parent's invoices and My Family, monthly invoices,
+pause and reactivate, remove and add back, decline, a refused sign-up leaving nothing behind) — 47
+checks; course folders (create, duplicate name refused, add, another workspace's course refused,
+remove, edit, delete keeping the courses, description and image); marks rounding on save. Server
+tests and website tests pass; all builds succeed. **Not yet clicked through in a browser or tried on
+the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup** (tables are added and `billing_invoices.invoiceType` is altered).
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'club_memberships';` and `SHOW COLUMNS FROM course_folders LIKE 'coverImage';`
+   each return one row. If not, Run JS script → `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `africa-digifunzi-com-dist.zip` to the `https://africa.digifunzi.com` document root and Extract.
+5. **Set up a club for sign-ups:** Billing → Packages → Tech Club packages → New package, tick "Show
+   on the website"; make sure the club has at least one class (Classes) to place children in.
+6. **Verify:**
+   - The website: a club page shows its packages and "Join this club"; joining with a test family
+     shows the confirmation with the amount and logins; signing in as that parent shows "payment
+     pending".
+   - As the admin: Tech Clubs shows the sign-up; Place child, then Approve payment; the child's
+     login opens the learner portal; Decline a second test sign-up to remove it.
+   - Courses: create a folder with an image, add courses, hover it, open it, delete it.
+   - An assessment: type 30.123 in a points box → it becomes 30.1.
+   - **Email:** sign-up and invoice emails go through Brevo; until the three Brevo DNS records for
+     digifunzi.com are back (TXT `brevo-code:…`, CNAMEs `brevo1._domainkey`, `brevo2._domainkey`),
+     they may land in spam.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `efac4a8`). Restore the backup first — the older backend stops on start-up if the
+database lists migrations it doesn't have.
+
+---
+
 ## This release (16 Oct 2026, afternoon) — Educator pay types and two invoices per claim; Payments in the educator portal; claims as pages; supervisors by school; where each billing invoice came from; clearer website images
 
 **Backend, portal and website**, from `curriculum` (branch `modules`) at `d412a41` and
