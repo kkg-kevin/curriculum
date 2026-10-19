@@ -337,6 +337,7 @@ function BillingPage() {
       )}
 
       {isAdmin && activeTab === "packages" && <PackagesPanel />}
+      {isAdmin && activeTab === "packages" && <PackagesPanel programme="tech_club" />}
       {isAdmin && activeTab === "claims" && <ClaimsReviewPage embedded />}
 
       {isNonSchoolHub ? (

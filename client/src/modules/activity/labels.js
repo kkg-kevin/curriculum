@@ -14,6 +14,7 @@ export const AREA_LABELS = {
   attendance: "Attendance",
   timetable: "Timetable",
   "home-learning": "Home Learning",
+  "tech-clubs": "Tech Clubs",
   competitions: "Competitions",
   bootcamps: "Bootcamps",
   reports: "Reports",

@@ -10,6 +10,8 @@ const asyncHandler = require("express-async-handler");
 const rateLimit = require("express-rate-limit");
 const HomeLearningSignupService = require("../home-learning/home-learning-signup.service");
 const { visitSourceFrom } = require("../leads/visit-source");
+const ClubService = require("../tech-clubs/club.service");
+const ClubSignupService = require("../tech-clubs/club-signup.service");
 
 // Unauthenticated by design — digifunzi-landing's Pathways, Projects, Store and Bootcamps pages
 // (see the integration contract). Mounted at /api/public, same shape as public-lead.routes.js.
@@ -76,6 +78,26 @@ const homeLearningSignupLimiter = rateLimit({
 });
 router.post("/home-learning/signups", homeLearningSignupLimiter, asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: await HomeLearningSignupService.signup(req.body, visitSourceFrom(req)) });
+}));
+
+// Estate Tech Club packages = the designated admin's club packages marked "Show on website" in the
+// portal's Billing → Packages → Tech Clubs (see tech-clubs/club.service.js). Each carries the clubs
+// it's offered at (hubIds, matching /api/public/hubs ids; allClubs when it's offered everywhere).
+router.get("/clubs/packages", asyncHandler(async (req, res) => {
+  res.json(await ClubService.listPublicPackages());
+}));
+
+// Tech Club sign-up — same shape and limits as the Home Learning sign-up above, for a club: the
+// family's logins are locked until an admin approves their payment (tech-clubs/club-signup.service.js).
+const clubSignupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many sign-ups from here. Please try again later." },
+});
+router.post("/clubs/signups", clubSignupLimiter, asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await ClubSignupService.signup(req.body, visitSourceFrom(req)) });
 }));
 
 module.exports = router;

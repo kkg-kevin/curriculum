@@ -29,6 +29,7 @@ const ROOTS = {
   rooms: { table: "rooms", noun: "room", module: "classes" },
   learners: { table: "learners", noun: "learner", module: "learners" },
   "home-learning": { table: "home_learning_households", noun: "household", module: "home-learning" },
+  "tech-clubs": { table: "club_memberships", noun: "club membership", module: "tech-clubs" },
   courses: { table: "courses", noun: "course", module: "courses" },
   attendance: { table: "attendance", noun: "attendance record", module: "attendance" },
   timetable: { table: "timetable_slots", noun: "timetable slot", module: "timetable" },
@@ -69,6 +70,7 @@ const COLLECTIONS = {
     users: { table: "users", noun: "user account" },
     connections: { table: "admin_connections", noun: "sharing connection" },
     packages: { table: "home_learning_packages", noun: "package" },
+    "club-packages": { table: "club_packages", noun: "club package" },
     batches: { table: "billing_invoice_batches", noun: "invoice batch" },
     issues: { table: "assessment_issues", noun: "issued assessment" },
     submissions: { table: "assessment_submissions", noun: "submission" },
@@ -78,6 +80,7 @@ const COLLECTIONS = {
   },
   curricula: { pathways: { table: "pathways", noun: "pathway" } },
   bootcamps: { hubs: { table: "bootcamp_hubs", noun: "hub run" } },
+  "tech-clubs": { children: { table: "learners", noun: "child" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },
 };
 

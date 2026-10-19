@@ -10,7 +10,7 @@ const phone = z
   .max(20, "Enter a valid phone number")
   .regex(/^[+0-9()\-\s]+$/, "Enter a valid phone number");
 
-const INTEREST_VALUES = ["bootcamp", "project", "quarky", "home_schooling", "general"];
+const INTEREST_VALUES = ["bootcamp", "project", "quarky", "home_schooling", "tech_club", "general"];
 
 // POST /api/public/leads body — EnrollForm.jsx's payload shape (parentName/parentEmail/... +
 // referenceId/note), with interestedIn defaulted to "general" since ContactForm.jsx reuses this

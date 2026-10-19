@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiEdit2, FiGlobe, FiPackage, FiPlus } from "react-icons/fi";
 import { billingApi } from "../services/billingApi";
+import { techClubApi } from "../../tech-clubs/services/techClubApi";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
@@ -11,7 +12,37 @@ const smallButton = { border: "1px solid #D1D5DB", borderRadius: 7, color: "#4B5
 const formatMoney = (amount) => `KSh ${Number(amount || 0).toLocaleString("en-KE")}`;
 const errorMessage = (error, fallback) => error.response?.data?.message || error.message || fallback;
 
-const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", monthlyAmount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0" };
+const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", monthlyAmount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [] };
+
+// The two kinds of package managed here. Home Learning is the original panel, unchanged; Tech Club
+// packages add which clubs a package is offered at (none ticked = every club).
+const PROGRAMMES = {
+  home_learning: {
+    title: "Home Learning packages",
+    intro: <>What Home Learning families sign up for and are billed monthly. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
+    queryKey: ["billing", "packages"],
+    refreshKeys: [["home-learning"]],
+    list: billingApi.listPackages, create: billingApi.createPackage, update: billingApi.updatePackage, remove: billingApi.deletePackage,
+    count: (pkg) => pkg.householdCount, noun: ["household", "households"],
+    featuresPlaceholder: "Weekly home visits by a Digifunzi educator\nAll learning materials\nTermly progress report",
+    namePlaceholder: "e.g. Three children",
+    empty: "No packages yet — create one so households can be added and the website has something to show.",
+    editNote: "Price changes apply to new households. Existing households keep their price until you change their package.",
+  },
+  tech_club: {
+    title: "Tech Club packages",
+    intro: <>What families pay each month to join an Estate Tech Club. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
+    queryKey: ["billing", "club-packages"],
+    refreshKeys: [["tech-clubs"]],
+    list: billingApi.listClubPackages, create: billingApi.createClubPackage, update: billingApi.updateClubPackage, remove: billingApi.deleteClubPackage,
+    count: (pkg) => pkg.membershipCount, noun: ["family", "families"],
+    featuresPlaceholder: "Coding, robotics and AI sessions\nAll club materials\nTermly progress report",
+    namePlaceholder: "e.g. One child",
+    empty: "No club packages yet — create one so families can sign up for a club on the website.",
+    editNote: "Price changes apply to new sign-ups. Existing families keep their price until you change their package.",
+    withClubs: true,
+  },
+};
 
 const toForm = (pkg) => ({
   name: pkg.name, slug: pkg.slug, summary: pkg.summary || "", description: pkg.description || "",
@@ -19,9 +50,12 @@ const toForm = (pkg) => ({
   allowExtraChildren: !!pkg.allowExtraChildren, extraChildAmount: pkg.extraChildAmount != null ? String(pkg.extraChildAmount) : "",
   maxChildren: pkg.allowExtraChildren ? String(pkg.maxChildren) : "", features: (pkg.features || []).join("\n"),
   badge: pkg.badge || "", isPublished: !!pkg.isPublished, status: pkg.status, sortOrder: String(pkg.sortOrder ?? 0),
+  hubIds: Array.isArray(pkg.hubIds) ? pkg.hubIds : [],
 });
 
-const toPayload = (form) => ({
+// `withClubs` adds the club list — only Tech Club packages have one.
+const toPayload = (form, withClubs = false) => ({
+  ...(withClubs ? { hubIds: form.hubIds } : {}),
   name: form.name,
   slug: form.slug,
   summary: form.summary,
@@ -38,17 +72,33 @@ const toPayload = (form) => ({
   sortOrder: Number(form.sortOrder || 0),
 });
 
-function PackageForm({ initial, isEdit, onSubmit, onCancel, saving }) {
+// Which clubs a Tech Club package is offered at. None ticked = every club.
+function ClubPicker({ clubs, value, onChange }) {
+  const toggle = (id) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+  return <fieldset style={{ gridColumn: "1/-1", border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", margin: 0 }}>
+    <legend style={{ ...labelStyle, padding: "0 4px" }}>Offered at</legend>
+    <label style={{ ...checkLabel, marginBottom: 6 }}><input type="checkbox" checked={value.length === 0} onChange={() => onChange([])} /> Every club</label>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+      {clubs.map((club) => <label key={club.id} style={{ ...checkLabel, fontWeight: 500 }}>
+        <input type="checkbox" checked={value.includes(club.id)} onChange={() => toggle(club.id)} /> {club.name}{club.status !== "active" ? " (not live)" : ""}
+      </label>)}
+      {clubs.length === 0 && <span style={{ fontSize: 12, color: "#6B7280" }}>No clubs yet — clubs are your non-school learning hubs.</span>}
+    </div>
+  </fieldset>;
+}
+
+function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, clubs }) {
   const [form, setForm] = useState(initial);
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.type === "checkbox" ? event.target.checked : event.target.value }));
-  return <form onSubmit={(event) => { event.preventDefault(); onSubmit(toPayload(form)); }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginTop: 14, padding: 16, background: "#F8FAFC", borderRadius: 12 }}>
-    <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder="e.g. Three children" /></label>
+  return <form onSubmit={(event) => { event.preventDefault(); onSubmit(toPayload(form, config.withClubs)); }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginTop: 14, padding: 16, background: "#F8FAFC", borderRadius: 12 }}>
+    <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder={config.namePlaceholder} /></label>
     <label style={labelStyle}>Children included<input style={inputStyle} required type="number" min={1} max={50} value={form.childrenIncluded} onChange={set("childrenIncluded")} /></label>
     <label style={labelStyle}>Monthly price (KSh)<input style={inputStyle} required type="number" min={0} step={1} value={form.monthlyAmount} onChange={set("monthlyAmount")} /></label>
     <label style={labelStyle}>Badge (optional)<input style={inputStyle} maxLength={40} value={form.badge} onChange={set("badge")} placeholder="e.g. Most popular" /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Short summary (shown on the card)<input style={inputStyle} maxLength={300} value={form.summary} onChange={set("summary")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Description (optional)<textarea style={{ ...inputStyle, minHeight: 64, resize: "vertical" }} maxLength={5000} value={form.description} onChange={set("description")} /></label>
-    <label style={{ ...labelStyle, gridColumn: "1/-1" }}>What's included — one per line<textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={form.features} onChange={set("features")} placeholder={"Weekly home visits by a Digifunzi educator\nAll learning materials\nTermly progress report"} /></label>
+    <label style={{ ...labelStyle, gridColumn: "1/-1" }}>What's included — one per line<textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={form.features} onChange={set("features")} placeholder={config.featuresPlaceholder} /></label>
+    {config.withClubs && <ClubPicker clubs={clubs} value={form.hubIds} onChange={(hubIds) => setForm((current) => ({ ...current, hubIds }))} />}
     <label style={{ ...checkLabel, gridColumn: "1/-1" }}><input type="checkbox" checked={form.allowExtraChildren} onChange={set("allowExtraChildren")} /> Families can add more children to this package</label>
     {form.allowExtraChildren && <>
       <label style={labelStyle}>Price per extra child (KSh / month)<input style={inputStyle} required type="number" min={0} step={1} value={form.extraChildAmount} onChange={set("extraChildAmount")} /></label>
@@ -61,36 +111,43 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving }) {
     <div style={{ gridColumn: "1/-1", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
       <button disabled={saving} style={{ border: 0, borderRadius: 9, padding: "10px 16px", color: "#fff", background: "#25476a", fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : isEdit ? "Save package" : "Create package"}</button>
       <button type="button" onClick={onCancel} style={smallButton}>Cancel</button>
-      {isEdit && <span style={{ fontSize: 12, color: "#6B7280" }}>Price changes apply to new households. Existing households keep their price until you change their package.</span>}
+      {isEdit && <span style={{ fontSize: 12, color: "#6B7280" }}>{config.editNote}</span>}
     </div>
   </form>;
 }
 
 // Billing → Packages: the Home Learning packages households are billed on (moved here from the
-// Home Learning page, which now only picks from them). Ticking "Show on the website" publishes a
-// package to the website's Home Schooling page (GET /api/public/home-learning/packages).
-export default function PackagesPanel() {
+// Home Learning page, which now only picks from them), and — with programme="tech_club" — the
+// Estate Tech Club packages. Ticking "Show on the website" publishes a package to the website's
+// Home Schooling page (GET /api/public/home-learning/packages) or its club pages
+// (GET /api/public/clubs/packages).
+export default function PackagesPanel({ programme = "home_learning" }) {
+  const config = PROGRAMMES[programme];
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null); // package id, "new", or null
-  const { data: packageRows, isLoading } = useQuery({ queryKey: ["billing", "packages"], queryFn: billingApi.listPackages });
+  const { data: packageRows, isLoading } = useQuery({ queryKey: config.queryKey, queryFn: config.list });
   const packages = Array.isArray(packageRows) ? packageRows : [];
-  // Households show their package's name and price, so their list refreshes too.
+  // The clubs a Tech Club package can be limited to (shares the Tech Clubs page's cache).
+  const { data: clubRows } = useQuery({ queryKey: ["tech-clubs", "clubs"], queryFn: techClubApi.getClubs, enabled: !!config.withClubs });
+  const clubs = Array.isArray(clubRows) ? clubRows : [];
+  const clubNames = new Map(clubs.map((club) => [club.id, club.name]));
+  // Households / memberships show their package's name and price, so their list refreshes too.
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["billing", "packages"] });
-    queryClient.invalidateQueries({ queryKey: ["home-learning"] });
+    queryClient.invalidateQueries({ queryKey: config.queryKey });
+    config.refreshKeys.forEach((queryKey) => queryClient.invalidateQueries({ queryKey }));
   };
   const saveMutation = useMutation({
-    mutationFn: ({ id, data }) => (id ? billingApi.updatePackage(id, data) : billingApi.createPackage(data)),
+    mutationFn: ({ id, data }) => (id ? config.update(id, data) : config.create(data)),
     onSuccess: (_, { id }) => { refresh(); setEditingId(null); toast.success(id ? "Package saved" : "Package created"); },
     onError: (error) => toast.error(errorMessage(error, "Could not save package")),
   });
   const quickMutation = useMutation({
-    mutationFn: ({ pkg, changes }) => billingApi.updatePackage(pkg.id, { ...toPayload(toForm(pkg)), ...changes }),
+    mutationFn: ({ pkg, changes }) => config.update(pkg.id, { ...toPayload(toForm(pkg), config.withClubs), ...changes }),
     onSuccess: refresh,
     onError: (error) => toast.error(errorMessage(error, "Could not update package")),
   });
   const deleteMutation = useMutation({
-    mutationFn: billingApi.deletePackage,
+    mutationFn: config.remove,
     onSuccess: () => { refresh(); toast.success("Package deleted"); },
     onError: (error) => toast.error(errorMessage(error, "Could not delete package")),
   });
@@ -98,19 +155,19 @@ export default function PackagesPanel() {
   return <section style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, padding: 22, boxShadow: "0 2px 8px rgba(15,23,42,.04)", marginBottom: 22 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
       <div>
-        <h2 style={{ fontSize: 17, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}><FiPackage /> Home Learning packages</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>What Home Learning families sign up for and are billed monthly. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</p>
+        <h2 style={{ fontSize: 17, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}><FiPackage /> {config.title}</h2>
+        <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>{config.intro}</p>
       </div>
       {editingId !== "new" && <button type="button" onClick={() => setEditingId("new")} style={{ ...smallButton, borderColor: "#25476a", color: "#25476a", padding: "8px 12px" }}><FiPlus /> New package</button>}
     </div>
 
-    {editingId === "new" && <PackageForm initial={EMPTY} onSubmit={(data) => saveMutation.mutate({ id: null, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />}
+    {editingId === "new" && <PackageForm initial={EMPTY} config={config} clubs={clubs} onSubmit={(data) => saveMutation.mutate({ id: null, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />}
 
     {isLoading ? <p style={{ color: "#6B7280", fontSize: 13 }}>Loading packages…</p> : packages.length === 0 && editingId !== "new"
-      ? <p style={{ color: "#6B7280", fontSize: 13, marginTop: 14 }}>No packages yet — create one so households can be added and the website has something to show.</p>
+      ? <p style={{ color: "#6B7280", fontSize: 13, marginTop: 14 }}>{config.empty}</p>
       : <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
         {packages.map((pkg) => editingId === pkg.id
-          ? <PackageForm key={pkg.id} initial={toForm(pkg)} isEdit onSubmit={(data) => saveMutation.mutate({ id: pkg.id, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />
+          ? <PackageForm key={pkg.id} initial={toForm(pkg)} isEdit config={config} clubs={clubs} onSubmit={(data) => saveMutation.mutate({ id: pkg.id, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />
           : <div key={pkg.id} style={{ border: "1px solid #EEF1F5", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", opacity: pkg.status === "archived" ? 0.65 : 1 }}>
             <div style={{ minWidth: 220 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -125,14 +182,17 @@ export default function PackagesPanel() {
               <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
                 {pkg.childrenIncluded} {pkg.childrenIncluded === 1 ? "child" : "children"} · <strong style={{ color: "#25476a" }}>{formatMoney(pkg.monthlyAmount)}/month</strong>
                 {pkg.allowExtraChildren && <> · +{formatMoney(pkg.extraChildAmount)} per extra child (up to {pkg.maxChildren})</>}
-                {" · "}{pkg.householdCount} household{pkg.householdCount === 1 ? "" : "s"}
+                {" · "}{config.count(pkg)} {config.noun[config.count(pkg) === 1 ? 0 : 1]}
               </div>
+              {config.withClubs && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+                {pkg.hubIds?.length ? `At ${pkg.hubIds.map((id) => clubNames.get(id) || "a removed club").join(", ")}` : "At every club"}
+              </div>}
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {pkg.status === "active" && <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: { isPublished: !pkg.isPublished } })} style={smallButton}><FiGlobe /> {pkg.isPublished ? "Hide from website" : "Show on website"}</button>}
               <button type="button" onClick={() => setEditingId(pkg.id)} style={smallButton}><FiEdit2 /> Edit</button>
               <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: pkg.status === "active" ? { status: "archived", isPublished: false } : { status: "active" } })} style={smallButton}>{pkg.status === "active" ? "Archive" : "Restore"}</button>
-              {pkg.householdCount === 0 && <button type="button" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete the "${pkg.name}" package?`)) deleteMutation.mutate(pkg.id); }} style={{ ...smallButton, color: "#B91C1C" }}>Delete</button>}
+              {config.count(pkg) === 0 && <button type="button" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete the "${pkg.name}" package?`)) deleteMutation.mutate(pkg.id); }} style={{ ...smallButton, color: "#B91C1C" }}>Delete</button>}
             </div>
           </div>)}
       </div>}

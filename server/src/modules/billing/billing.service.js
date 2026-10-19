@@ -36,6 +36,11 @@ async function resolvePayerIdentity(invoice) {
       return { name: household.guardianName, email: household.guardianEmail || null, phone: household.guardianPhone || null, address };
     }
   }
+  // A Tech Club membership invoice is billed to the membership's parent.
+  if (invoice.clubMembershipId) {
+    const membership = await db("club_memberships").where({ id: invoice.clubMembershipId }).first();
+    if (membership) return { name: membership.guardianName, email: membership.guardianEmail || null, phone: membership.guardianPhone || null, address: null };
+  }
   if (invoice.payerHubId) {
     const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
     if (!hub) return null;
@@ -116,6 +121,11 @@ async function resolveSource(invoice, items, cache = { hubs: new Map(), learners
       const month = String(invoice.periodLabel || "").replace(/^Home Learning\s*·\s*/i, "") || null;
       return { kind: "home_learning", automatic: true, hubName: school, from: join([household ? `${household.guardianName} household` : "Home Learning household", month]), ref: household ? { type: "household", id: household.id } : null };
     }
+    case "tech_club": {
+      const membership = invoice.clubMembershipId ? await db("club_memberships").where({ id: invoice.clubMembershipId }).first() : null;
+      const month = String(invoice.periodLabel || "").replace(/^Tech Club\s*·\s*/i, "") || null;
+      return { kind: "tech_club", automatic: true, hubName: school, from: join([school, membership ? `${membership.guardianName} family` : "Club membership", month]), ref: membership ? { type: "club_membership", id: membership.id } : null };
+    }
     case "hub_usage": {
       const visits = metas.filter((m) => m.hubVisitId).length;
       return { kind: "hub_usage", automatic: true, hubName: school, from: join([school, await learnerName(invoice.learnerId), visits ? `${visits} ${visits === 1 ? "visit" : "visits"}` : null, invoice.periodLabel]), ref: invoice.hubId ? { type: "hub", id: invoice.hubId } : null };
@@ -158,6 +168,29 @@ async function guardianHouseholdIds(req) {
   return (await db("home_learning_households").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((h) => h.id);
 }
 
+// Same for a parent's Tech Club memberships (matched on the email they signed up with).
+async function guardianClubMembershipIds(req) {
+  if (req.user.role !== "learner" || req.user.username || !req.user.email) return [];
+  return (await db("club_memberships").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((m) => m.id);
+}
+
+// A parent login's household and club-membership invoices, added to the ones found by learner.
+async function withGuardianInvoices(req, invoices) {
+  const [householdIds, membershipIds] = await Promise.all([guardianHouseholdIds(req), guardianClubMembershipIds(req)]);
+  const seen = new Set(invoices.map((inv) => inv.id));
+  let all = invoices;
+  if (householdIds.length) {
+    const householdInvoices = await db("billing_invoices").whereIn("householdId", householdIds).orderBy("createdAt", "desc");
+    all = all.concat(householdInvoices.filter((inv) => !seen.has(inv.id)));
+    householdInvoices.forEach((inv) => seen.add(inv.id));
+  }
+  if (membershipIds.length) {
+    const clubInvoices = await db("billing_invoices").whereIn("clubMembershipId", membershipIds).orderBy("createdAt", "desc");
+    all = all.concat(clubInvoices.filter((inv) => !seen.has(inv.id)));
+  }
+  return all;
+}
+
 async function assertAccess(req, invoice) {
   if (req.user.role === "admin") {
     // hubId inherits ownerAdminId transitively through the hub it belongs to — billing_invoices
@@ -178,6 +211,8 @@ async function assertAccess(req, invoice) {
   // A guardian login sees its own Home Learning household's package invoices (matched on the
   // guardian email the household was registered with).
   if (req.user.role === "learner" && invoice.householdId && (await guardianHouseholdIds(req)).includes(invoice.householdId)) return;
+  // …and its own Tech Club membership invoices.
+  if (req.user.role === "learner" && invoice.clubMembershipId && (await guardianClubMembershipIds(req)).includes(invoice.clubMembershipId)) return;
   throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
 }
 
@@ -266,6 +301,7 @@ const BillingService = {
     // Same for Home Learning package invoices — raised from the Home Learning page, one per
     // household per month, so the household link and duplicate-month guard can't be bypassed.
     if (data.invoiceType === "home_learning") throw badRequest("Home Learning invoices are raised from the Home Learning page");
+    if (data.invoiceType === "tech_club") throw badRequest("Tech Club invoices are raised from the Tech Clubs page");
     const hub = await LearningHubService.getLearningHubById(data.hubId);
     let issuerType = "platform";
     let issuerHubId = null;
@@ -339,14 +375,7 @@ const BillingService = {
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
     let invoices = await BillingModel.findInvoices(filters);
-    if (req.user.role === "learner") {
-      const householdIds = await guardianHouseholdIds(req);
-      if (householdIds.length) {
-        const householdInvoices = await db("billing_invoices").whereIn("householdId", householdIds).orderBy("createdAt", "desc");
-        const seen = new Set(invoices.map((inv) => inv.id));
-        invoices = invoices.concat(householdInvoices.filter((inv) => !seen.has(inv.id)));
-      }
-    }
+    if (req.user.role === "learner") invoices = await withGuardianInvoices(req, invoices);
     // hubId inherits ownerAdminId transitively — findInvoices' filter object only takes a single
     // exact value per column (no whereIn), and an admin can own more than one hub, so this
     // resolves the admin's own hub ids first and filters in JS, same as learning-hub.model.js's
@@ -510,14 +539,7 @@ const BillingService = {
       filters.learnerId = req.ownLearner?.id || "__none__";
     }
     let invoices = await BillingModel.findInvoices(filters);
-    if (req.user.role === "learner") {
-      const householdIds = await guardianHouseholdIds(req);
-      if (householdIds.length) {
-        const householdInvoices = await db("billing_invoices").whereIn("householdId", householdIds).orderBy("createdAt", "desc");
-        const seen = new Set(invoices.map((inv) => inv.id));
-        invoices = invoices.concat(householdInvoices.filter((inv) => !seen.has(inv.id)));
-      }
-    }
+    if (req.user.role === "learner") invoices = await withGuardianInvoices(req, invoices);
     // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
     // transitively, and an admin can own more than one hub, so filter in JS after the fact.
     if (req.user.role === "admin") {

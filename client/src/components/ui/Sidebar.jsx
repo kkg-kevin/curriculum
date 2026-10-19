@@ -1,7 +1,7 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu,
 } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
@@ -21,6 +21,7 @@ const ADMIN_MENU_ITEMS = [
   { name: "Curriculum", path: "/curriculum", icon: FiBookOpen, module: "curriculum" },
   { name: "Learners", path: "/learners", icon: FiUsers, module: "learners" },
   { name: "Home Learning", path: "/home-learning", icon: FiHeart, module: "home-learning" },
+  { name: "Tech Clubs", path: "/tech-clubs", icon: FiCpu, module: "tech-clubs" },
   { name: "Educators", path: "/teachers", icon: FiUserCheck, module: "teachers" },
   { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
   { name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"] },
