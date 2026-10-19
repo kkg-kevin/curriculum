@@ -105,6 +105,57 @@ const spaceSchema = z.object({
   notes: z.string().max(500).default(""),
 });
 
+// A club's details for parents (non-school hubs) — shown on the website's Estate Tech Club page:
+// ages, when the club meets (session times, not the venue's opening hours), class size, a
+// description written for parents, and FAQs. Held as text in the form; clubDetailsToPayload turns
+// it into the shape the server stores (learning_hubs.clubDetails).
+const wholeOrBlank = z.union([z.string(), z.number()]).optional();
+const clubDetailsFormSchema = z.object({
+  ageMin: wholeOrBlank,
+  ageMax: wholeOrBlank,
+  classSize: wholeOrBlank,
+  sessions: z.array(z.object({ day: z.string(), startsAt: z.string(), endsAt: z.string() })).default([]),
+  parentDescription: z.string().max(5000, "Max 5000 characters").default(""),
+  faqs: z.array(z.object({ question: z.string().max(200, "Max 200 characters"), answer: z.string().max(2000, "Max 2000 characters") })).default([]),
+});
+
+export const EMPTY_CLUB_DETAILS = { ageMin: "", ageMax: "", classSize: "", sessions: [], parentDescription: "", faqs: [] };
+
+/** The stored clubDetails (or null) as form values. */
+export function clubDetailsToForm(details) {
+  const d = details && typeof details === "object" ? details : {};
+  const text = (v) => (v == null ? "" : String(v));
+  return {
+    ageMin: text(d.ageMin),
+    ageMax: text(d.ageMax),
+    classSize: text(d.classSize),
+    sessions: Array.isArray(d.sessions) ? d.sessions.map((x) => ({ day: x.day || "", startsAt: x.startsAt || "", endsAt: x.endsAt || "" })) : [],
+    parentDescription: d.parentDescription || "",
+    faqs: Array.isArray(d.faqs) ? d.faqs.map((f) => ({ question: f.question || "", answer: f.answer || "" })) : [],
+  };
+}
+
+/** Form values → what the server stores; null when nothing is filled in. Half-filled session
+ *  and FAQ rows are left out. */
+export function clubDetailsToPayload(form) {
+  const f = form || EMPTY_CLUB_DETAILS;
+  const whole = (v) => {
+    const n = Number(String(v ?? "").trim());
+    return String(v ?? "").trim() !== "" && Number.isInteger(n) ? n : null;
+  };
+  const payload = {
+    ageMin: whole(f.ageMin),
+    ageMax: whole(f.ageMax),
+    classSize: whole(f.classSize),
+    sessions: (f.sessions || []).filter((x) => x.day && x.startsAt && x.endsAt),
+    parentDescription: (f.parentDescription || "").trim(),
+    faqs: (f.faqs || []).map((x) => ({ question: (x.question || "").trim(), answer: (x.answer || "").trim() })).filter((x) => x.question && x.answer),
+  };
+  const empty = payload.ageMin == null && payload.ageMax == null && payload.classSize == null
+    && !payload.sessions.length && !payload.parentDescription && !payload.faqs.length;
+  return empty ? null : payload;
+}
+
 // Code stays required only for hubType "school" — this is what keeps the school-creation
 // flow behaving exactly as it did before Learning Hub absorbed School, without forcing every
 // other hub type to carry a code too.
@@ -143,6 +194,7 @@ export const learningHubSchema = z
     amenities: z.array(z.string()).default([]),
     operatingHours: operatingHoursSchema.default({}),
     spaces: z.array(spaceSchema).default([]),
+    clubDetails: clubDetailsFormSchema.optional(),
   })
   .superRefine((data, ctx) => {
     if (data.hubType === "school" && !data.code) {

@@ -43,6 +43,28 @@ const operatingHoursSchema = z.object({
   days: z.array(z.string()).default([]),
 });
 
+// A club's details for parents (non-school hubs; shown on the website's Estate Tech Club page):
+// the ages it's for, when the club meets — session times, distinct from the venue's opening hours
+// above — class size, a description written for parents, and FAQs. All optional.
+const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a time like 09:00");
+const optionalWhole = (min, max) => z.number().int().min(min).max(max).nullable().optional();
+const clubDetailsSchema = z.object({
+  ageMin: optionalWhole(2, 25),
+  ageMax: optionalWhole(2, 25),
+  classSize: optionalWhole(1, 500),
+  sessions: z.array(z.object({
+    day: z.enum(WEEK_DAYS, { message: "Choose a day for each session" }),
+    startsAt: clockTime,
+    endsAt: clockTime,
+  }).refine((s) => s.endsAt > s.startsAt, { message: "A session must end after it starts", path: ["endsAt"] })).max(21).default([]),
+  parentDescription: z.string().trim().max(5000).default(""),
+  faqs: z.array(z.object({
+    question: z.string().trim().min(1, "Write the question").max(200),
+    answer: z.string().trim().min(1, "Write the answer").max(2000),
+  })).max(15).default([]),
+}).refine((d) => d.ageMin == null || d.ageMax == null || d.ageMin <= d.ageMax, { message: "The youngest age must be below the oldest", path: ["ageMax"] });
+
 // Bookable seating/space configuration — data capture only. There is no reservation/booking
 // flow anywhere in the app yet; this just records what a hub offers and at what price so
 // that feature can be built against real data later.
@@ -110,6 +132,7 @@ const baseLearningHubSchema = z.object({
   amenities: z.array(z.string()).default([]),
   operatingHours: operatingHoursSchema.default({}),
   spaces: z.array(spaceSchema).default([]),
+  clubDetails: clubDetailsSchema.nullable().default(null),
 });
 
 // Code stays required only for hubType "school"; county stays required for a physical presence

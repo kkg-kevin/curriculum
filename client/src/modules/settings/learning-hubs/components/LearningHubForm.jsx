@@ -595,6 +595,69 @@ function SpaceConfigCard({ index, onRemove }) {
   );
 }
 
+// "Club details for parents" (non-school hubs): what the website's Estate Tech Club page tells a
+// parent — ages, when the club meets (separate from the venue's opening hours above), class size,
+// a description written for parents, and FAQs. Everything optional; stored as clubDetails.
+const smallButton = { padding: "8px 14px", borderRadius: "10px", border: "1.5px dashed #a8d5ee", backgroundColor: "#F8FBFE", color: ACCENT, fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", alignSelf: "flex-start" };
+const removeButton = { width: "34px", height: "38px", flexShrink: 0, borderRadius: "10px", border: "1.5px solid #FECACA", backgroundColor: "#fff", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
+
+function ClubDetailsSection() {
+  const { register, control, formState: { errors } } = useFormContext();
+  const sessions = useFieldArray({ control, name: "clubDetails.sessions" });
+  const faqs = useFieldArray({ control, name: "clubDetails.faqs" });
+  const errorOf = (path) => path.split(".").reduce((obj, k) => obj?.[k], errors)?.message;
+  const plain = (name, props = {}) => <input {...register(name)} {...props} style={inputBaseStyle(errorOf(name))} />;
+
+  return (
+    <SectionCard icon={<MenuBookIcon fontSize="small" />} title="Club details for parents" subtitle="Shown on this club's page on the website, so parents know who it's for and when it meets. All optional." badge="Non-school types">
+      <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+          <Field label="Youngest age" hint="e.g. 6">{plain("clubDetails.ageMin", { type: "number", min: 2, max: 25, placeholder: "6" })}</Field>
+          <Field label="Oldest age" hint="e.g. 14">{plain("clubDetails.ageMax", { type: "number", min: 2, max: 25, placeholder: "14" })}</Field>
+          <Field label="Children per class" hint="The usual class size">{plain("clubDetails.classSize", { type: "number", min: 1, max: 500, placeholder: "15" })}</Field>
+        </div>
+
+        <Field label="When the club meets" hint="The club's sessions — what parents plan around, rather than the opening hours above.">
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {sessions.fields.map((field, index) => (
+              <div key={field.id} style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                <select {...register(`clubDetails.sessions.${index}.day`)} style={{ ...selectStyle, flex: "1 1 150px", width: "auto" }}>
+                  <option value="">Day…</option>
+                  {DAYS_OF_WEEK.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <input type="time" aria-label="Starts at" {...register(`clubDetails.sessions.${index}.startsAt`)} style={{ ...inputBaseStyle(), flex: "1 1 120px", width: "auto" }} />
+                <span style={{ color: "#9CA3AF", fontSize: "13px" }}>to</span>
+                <input type="time" aria-label="Ends at" {...register(`clubDetails.sessions.${index}.endsAt`)} style={{ ...inputBaseStyle(), flex: "1 1 120px", width: "auto" }} />
+                <button type="button" onClick={() => sessions.remove(index)} aria-label="Remove session" style={removeButton}><CloseIcon fontSize="small" /></button>
+              </div>
+            ))}
+            <button type="button" onClick={() => sessions.append({ day: "Saturday", startsAt: "09:00", endsAt: "11:00" })} style={smallButton}>+ Add a session</button>
+          </div>
+        </Field>
+
+        <Field label="About the club, for parents" error={errorOf("clubDetails.parentDescription")} hint="What children do here and who teaches them. Shown instead of the venue description on the club page.">
+          <textarea {...register("clubDetails.parentDescription")} rows={4} maxLength={5000} placeholder="e.g. Every Saturday, children build and code their own robots and games with a Digifunzi educator…" style={{ ...inputBaseStyle(errorOf("clubDetails.parentDescription")), resize: "vertical" }} />
+        </Field>
+
+        <Field label="Questions parents ask" hint="Shown as FAQs on the club page — e.g. what to bring, how pick-up works, whether there's a trial session.">
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {faqs.fields.map((field, index) => (
+              <div key={field.id} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", padding: "10px", borderRadius: "12px", border: "1.5px solid #EEF0F2", backgroundColor: "#FBFCFE" }}>
+                  <input {...register(`clubDetails.faqs.${index}.question`)} maxLength={200} placeholder="Question" style={{ ...inputBaseStyle(), fontWeight: 600 }} />
+                  <textarea {...register(`clubDetails.faqs.${index}.answer`)} rows={2} maxLength={2000} placeholder="Answer" style={{ ...inputBaseStyle(), resize: "vertical" }} />
+                </div>
+                <button type="button" onClick={() => faqs.remove(index)} aria-label="Remove question" style={removeButton}><CloseIcon fontSize="small" /></button>
+              </div>
+            ))}
+            <button type="button" onClick={() => faqs.append({ question: "", answer: "" })} style={smallButton}>+ Add a question</button>
+          </div>
+        </Field>
+      </div>
+    </SectionCard>
+  );
+}
+
 export default function LearningHubForm({ autoGenerateCode = false, id }) {
   const { register, watch, control, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
@@ -822,6 +885,8 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
           </div>
         </SectionCard>
       )}
+
+      {!isSchool && <ClubDetailsSection />}
 
       {/* Spaces, Capacity & Pricing — physical bookable seating. Not applicable to a "School"
           (enrols learners rather than renting seats) or a purely virtual hub (no physical space). */}
