@@ -8,7 +8,7 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "learning_hubs";
-const JSON_FIELDS = ["address", "photos", "amenities", "operatingHours", "spaces"];
+const JSON_FIELDS = ["address", "photos", "amenities", "operatingHours", "spaces", "clubDetails"];
 
 const LearningHubModel = {
   create(data) {

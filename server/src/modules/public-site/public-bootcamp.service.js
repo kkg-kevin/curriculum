@@ -174,6 +174,26 @@ function projectHub(hub) {
   };
 }
 
+// A club's details for parents (learning_hubs.clubDetails, set in the hub form) — ages, when the
+// club meets, class size, a description for parents, FAQs. Empty values come back empty so the
+// website can simply leave out what isn't set.
+const WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+function projectClubDetails(details) {
+  const d = details && typeof details === "object" ? details : {};
+  const num = (v) => (Number.isInteger(v) ? v : null);
+  return {
+    ageMin: num(d.ageMin),
+    ageMax: num(d.ageMax),
+    classSize: num(d.classSize),
+    sessions: (Array.isArray(d.sessions) ? d.sessions : [])
+      .filter((x) => WEEK.includes(x?.day) && x.startsAt && x.endsAt)
+      .map((x) => ({ day: x.day, startsAt: x.startsAt, endsAt: x.endsAt }))
+      .sort((a, b) => WEEK.indexOf(a.day) - WEEK.indexOf(b.day) || a.startsAt.localeCompare(b.startsAt)),
+    description: String(d.parentDescription || "").trim(),
+    faqs: (Array.isArray(d.faqs) ? d.faqs : []).filter((f) => f?.question && f?.answer).map((f) => ({ question: f.question, answer: f.answer })),
+  };
+}
+
 // The still-relevant runs of a bootcamp — every hub it currently runs at, with the hub itself
 // resolved into the richer projectHub() shape above. Purely informational on the detail page
 // ("this bootcamp runs at Nairobi, 14–25 Apr"); a bootcamp with no hub-offerings yet (or dates
@@ -340,7 +360,9 @@ const PublicBootcampService = {
     // mapPin — where the hub's map link points ({ lat, lng }, or { query } with a place name, or
     // null), so the website's map pins the exact spot rather than geocoding the typed address.
     // Only on this one-hub profile; remembered per link for a day (shared/utils/map-pin.js).
-    return { ...projectHub(hub), mapPin: await resolveMapPin(hub.mapLink) };
+    // clubDetails — what the Estate Tech Club page tells parents (ages, session times, FAQs); a
+    // bootcamp's hub page simply doesn't use it.
+    return { ...projectHub(hub), mapPin: await resolveMapPin(hub.mapLink), clubDetails: projectClubDetails(hub.clubDetails) };
   },
 };
 

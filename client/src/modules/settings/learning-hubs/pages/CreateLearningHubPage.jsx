@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
-import { learningHubSchema } from "../../../learning-hubs/schemas/learningHub.schema";
+import { learningHubSchema, EMPTY_CLUB_DETAILS, clubDetailsToPayload } from "../../../learning-hubs/schemas/learningHub.schema";
 import LearningHubForm from "../components/LearningHubForm";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../../components/ui/PasswordRevealDialog";
@@ -28,6 +28,7 @@ export default function CreateLearningHubPage() {
       description: "", photo: null, photos: [], amenities: [],
       operatingHours: { opensAt: "", closesAt: "", days: [] },
       spaces: [],
+      clubDetails: EMPTY_CLUB_DETAILS,
     },
     mode: "onTouched",
   });
@@ -35,7 +36,10 @@ export default function CreateLearningHubPage() {
   const { handleSubmit, formState: { isDirty } } = methods;
 
   const onSubmit = (data) => {
-    const payload = { ...data, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    const { clubDetails, ...rest } = data;
+    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    // A club's details for parents — only a non-school hub has them.
+    if (data.hubType !== "school") payload.clubDetails = clubDetailsToPayload(clubDetails);
     createLearningHub(payload, {
       onSuccess: () => {
         if (data.password) {

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLearningHubQuery, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
-import { learningHubSchema } from "../../../learning-hubs/schemas/learningHub.schema";
+import { learningHubSchema, clubDetailsToForm, clubDetailsToPayload } from "../../../learning-hubs/schemas/learningHub.schema";
 import LearningHubForm from "../components/LearningHubForm";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../../components/ui/PasswordRevealDialog";
@@ -55,12 +55,16 @@ export default function EditLearningHubPage() {
           days: hub.operatingHours?.days || [],
         },
         spaces: hub.spaces || [],
+        clubDetails: clubDetailsToForm(hub.clubDetails),
       });
     }
   }, [hub, reset]);
 
   const onSubmit = (data) => {
-    const payload = { ...data, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    const { clubDetails, ...rest } = data;
+    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    // A club's details for parents — only a non-school hub has them.
+    if (data.hubType !== "school") payload.clubDetails = clubDetailsToPayload(clubDetails);
     const viewPath = `/learning-hubs/${id}/view`;
     updateLearningHub({ id, data: payload }, {
       onSuccess: () => {
