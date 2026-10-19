@@ -25,4 +25,9 @@ export const billingApi = {
   createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),
   updatePackage: (id, data) => api.put(`${BASE}/packages/${id}`, data).then((r) => r.data.data),
   deletePackage: (id) => api.delete(`${BASE}/packages/${id}`).then((r) => r.data.data),
+  // Estate Tech Club packages — Billing → Packages, beside the Home Learning ones.
+  listClubPackages: () => api.get(`${BASE}/club-packages`).then((r) => r.data.data),
+  createClubPackage: (data) => api.post(`${BASE}/club-packages`, data).then((r) => r.data.data),
+  updateClubPackage: (id, data) => api.put(`${BASE}/club-packages/${id}`, data).then((r) => r.data.data),
+  deleteClubPackage: (id) => api.delete(`${BASE}/club-packages/${id}`).then((r) => r.data.data),
 };

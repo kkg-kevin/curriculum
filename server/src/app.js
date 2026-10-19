@@ -43,6 +43,7 @@ const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
 const { workspaceRouter: emailSettingsRoutes, publicRouter: publicEmailPreferenceRoutes } = require("./modules/notifications/email-settings.routes");
 const homeLearningRoutes = require("./modules/home-learning/home-learning.routes");
+const techClubRoutes = require("./modules/tech-clubs/club.routes");
 const accessRoutes = require("./modules/access/access.routes");
 const sharingRoutes = require("./modules/sharing/sharing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
@@ -206,6 +207,8 @@ app.use("/api/class-groups", protect, attachOwnRecords, classGroupRoutes);
 app.use("/api/rooms", protect, attachOwnRecords, roomRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
 app.use("/api/home-learning", protect, attachOwnRecords, homeLearningRoutes);
+// Estate Tech Club memberships (website sign-ups, placement, monthly invoices) — see modules/tech-clubs/.
+app.use("/api/tech-clubs", protect, attachOwnRecords, techClubRoutes);
 // Add/Edit Course's and the session editor's unsaved work (see draft.routes.js) — mounted first, so
 // "drafts" never reaches the courses router below as a course id.
 app.use("/api/courses/drafts", protect, attachOwnRecords, authorize("admin"), draftRouter(["course", "course-session"]));

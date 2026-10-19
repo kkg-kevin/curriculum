@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiCheckCircle, FiClock, FiPlus, FiUsers } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
+import { techClubApi } from "../../tech-clubs/services/techClubApi";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", tintBg: "#e8f5fb", tintBorder: "#a8d5ee",
@@ -18,16 +19,32 @@ const EMPTY_CHILD = { firstName: "", lastName: "", gender: "", dateOfBirth: "", 
 const USERNAME_RE = /^[a-zA-Z0-9._-]{3,30}$/;
 const formatMoney = (amount, currency = "KES") => `${currency} ${Number(amount || 0).toLocaleString("en-KE")}`;
 
-function AddChildForm({ household, onDone, onCancel }) {
+// A Home Learning household or an Estate Tech Club membership — the same card, worded for each.
+const KINDS = {
+  home_learning: {
+    queryKey: ["home-learning", "family"],
+    addChild: homeLearningApi.addFamilyChild,
+    eyebrow: () => "Home Learning package",
+    placing: "Our team will choose their curriculum, grade and educator shortly.",
+  },
+  tech_club: {
+    queryKey: ["tech-clubs", "family"],
+    addChild: techClubApi.addFamilyChild,
+    eyebrow: (m) => `Tech Club · ${m.clubName}`,
+    placing: "Our team will place them in a class at the club shortly.",
+  },
+};
+
+function AddChildForm({ household, kind, onDone, onCancel }) {
   const queryClient = useQueryClient();
   const [child, setChild] = useState(EMPTY_CHILD);
   const set = (key) => (event) => setChild((current) => ({ ...current, [key]: event.target.value }));
   const mutation = useMutation({
-    mutationFn: (data) => homeLearningApi.addFamilyChild(household.id, data),
+    mutationFn: (data) => kind.addChild(household.id, data),
     onSuccess: (created) => {
       // The new child joins this parent's "Viewing:" switcher and the family list.
       queryClient.invalidateQueries({ queryKey: ["learners"] });
-      queryClient.invalidateQueries({ queryKey: ["home-learning", "family"] });
+      queryClient.invalidateQueries({ queryKey: kind.queryKey });
       onDone({ ...created, password: child.password });
     },
     onError: (error) => toast.error(error.message || "Could not add the child"),
@@ -73,7 +90,7 @@ function AddChildForm({ household, onDone, onCancel }) {
   );
 }
 
-function HouseholdCard({ household }) {
+function HouseholdCard({ household, kind = KINDS.home_learning }) {
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(null);
   const pendingPayment = household.status === "pending";
@@ -82,7 +99,7 @@ function HouseholdCard({ household }) {
     <section style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: T.inkFaint }}>Home Learning package</p>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: T.inkFaint }}>{kind.eyebrow(household)}</p>
           <h2 style={{ margin: "4px 0 2px", fontSize: 19, fontWeight: 800, color: T.ink }}>{household.packageName || "Your package"}</h2>
           <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{formatMoney(household.monthlyAmount, household.currency)} per month · {household.places} {household.places === 1 ? "child" : "children"}</p>
         </div>
@@ -114,7 +131,7 @@ function HouseholdCard({ household }) {
       {justAdded && (
         <div role="status" style={{ marginTop: 16, padding: "13px 16px", borderRadius: 12, background: T.tintBg, border: `1px solid ${T.tintBorder}`, fontSize: 13, color: T.accentDeep, lineHeight: 1.55 }}>
           <strong>{justAdded.name}</strong> has been added. They can sign in with username <strong>{justAdded.username}</strong> and the password you chose.
-          Our team will choose their curriculum, grade and educator shortly.
+          {kind.placing}
         </div>
       )}
 
@@ -122,6 +139,7 @@ function HouseholdCard({ household }) {
         adding ? (
           <AddChildForm
             household={household}
+            kind={kind}
             onCancel={() => setAdding(false)}
             onDone={(created) => { setAdding(false); setJustAdded(created); toast.success(`${created.name} added`); }}
           />
@@ -144,9 +162,15 @@ function HouseholdCard({ household }) {
 // Parent portal → My Family. A parent whose package covers more children than they've registered
 // (e.g. three places, one child so far) adds the others here: each gets their own login and is
 // placed by the school (curriculum, grade, educator) — see home-learning-signup.service.js's
-// addChildFromParent. Only the parent's own login reaches this page (a child's login can't).
+// addChildFromParent. Estate Tech Club memberships are listed the same way (club-signup.service.js).
+// Only the parent's own login reaches this page (a child's login can't).
 export default function FamilyPage() {
-  const { data: households = [], isLoading, isError } = useQuery({ queryKey: ["home-learning", "family"], queryFn: homeLearningApi.getFamily });
+  const homeQuery = useQuery({ queryKey: KINDS.home_learning.queryKey, queryFn: homeLearningApi.getFamily });
+  const clubQuery = useQuery({ queryKey: KINDS.tech_club.queryKey, queryFn: techClubApi.getFamily });
+  const households = homeQuery.data || [];
+  const memberships = clubQuery.data || [];
+  const isLoading = homeQuery.isLoading || clubQuery.isLoading;
+  const isError = homeQuery.isError && clubQuery.isError;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "grid", gap: 20, maxWidth: 980 }}>
@@ -154,7 +178,7 @@ export default function FamilyPage() {
         <div style={{ width: 46, height: 46, borderRadius: 14, background: T.tintBg, color: T.accent, display: "grid", placeItems: "center" }}><FiUsers size={22} /></div>
         <div>
           <h1 style={{ margin: 0, fontSize: 23, fontWeight: 800, color: T.ink }}>My Family</h1>
-          <p style={{ margin: "3px 0 0", fontSize: 14, color: T.inkMuted }}>Your Home Learning package and children. Add a child to any free place in your package.</p>
+          <p style={{ margin: "3px 0 0", fontSize: 14, color: T.inkMuted }}>{memberships.length && !households.length ? "Your Tech Club membership and children." : memberships.length ? "Your packages and children." : "Your Home Learning package and children."} Add a child to any free place in your package.</p>
         </div>
       </header>
 
@@ -162,10 +186,13 @@ export default function FamilyPage() {
         <div style={{ ...cardStyle, color: T.inkMuted }}>Loading your family…</div>
       ) : isError ? (
         <div style={{ ...cardStyle, color: "#B91C1C" }}>Couldn&rsquo;t load your family. Please refresh the page.</div>
-      ) : households.length === 0 ? (
+      ) : households.length === 0 && memberships.length === 0 ? (
         <div style={{ ...cardStyle, color: T.inkMuted }}>You don&rsquo;t have a Home Learning package with us yet.</div>
       ) : (
-        households.map((household) => <HouseholdCard key={household.id} household={household} />)
+        <>
+          {households.map((household) => <HouseholdCard key={household.id} household={household} />)}
+          {memberships.map((membership) => <HouseholdCard key={membership.id} household={membership} kind={KINDS.tech_club} />)}
+        </>
       )}
     </div>
   );

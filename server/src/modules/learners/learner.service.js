@@ -469,6 +469,8 @@ const LearnerService = {
     // Their Home Learning enrollment row and personal Home Learning class go with them. Required
     // lazily — home-learning.service.js requires this module.
     await require("../home-learning/home-learning.service").onLearnerDeleted(id);
+    // Same for their Tech Club membership rows (tech-clubs/club.service.js requires this module).
+    await require("../tech-clubs/club.service").onLearnerDeleted(id);
     return { message: "Learner deleted successfully" };
   },
 

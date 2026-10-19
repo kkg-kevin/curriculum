@@ -7,6 +7,8 @@ const { authorize } = require("../../shared/middleware/auth.middleware");
 // page shows) are managed from Billing → Packages, so they live here and are gated by Billing
 // permissions. Same controller and rules as before — only the address and the owning module moved.
 const { listPackages, createPackage, updatePackage, deletePackage } = require("../home-learning/home-learning.controller");
+// Estate Tech Club packages sit beside them (Billing → Packages → Tech Clubs), same gating.
+const ClubController = require("../tech-clubs/club.controller");
 
 const router = express.Router();
 
@@ -15,6 +17,10 @@ router.get("/packages", authorize("admin"), listPackages);
 router.post("/packages", authorize("admin"), createPackage);
 router.put("/packages/:packageId", authorize("admin"), updatePackage);
 router.delete("/packages/:packageId", authorize("admin"), deletePackage);
+router.get("/club-packages", authorize("admin"), ClubController.listPackages);
+router.post("/club-packages", authorize("admin"), ClubController.createPackage);
+router.put("/club-packages/:packageId", authorize("admin"), ClubController.updatePackage);
+router.delete("/club-packages/:packageId", authorize("admin"), ClubController.deletePackage);
 
 router.get("/", authorize("admin", "school", "learner"), listInvoices);
 router.post("/", authorize("admin", "school"), createInvoice);

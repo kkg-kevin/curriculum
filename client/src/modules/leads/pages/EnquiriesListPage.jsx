@@ -51,6 +51,7 @@ const INTEREST_LABELS = {
   project: "A project / course",
   quarky: "The Quarky robot",
   home_schooling: "Home Learning",
+  tech_club: "An Estate Tech Club",
   general: "Not sure yet",
 };
 
@@ -351,6 +352,9 @@ function LeadRow({ lead, highlighted, rowRef }) {
           <option value="closed">Closed</option>
         </select>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          {lead.clubMembershipId && (
+            <Link to={`/tech-clubs?membership=${lead.clubMembershipId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open membership</Link>
+          )}
           {lead.interestedIn === "home_schooling" && (lead.homeLearningHouseholdId ? (
             <Link to={`/home-learning?household=${lead.homeLearningHouseholdId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open household</Link>
           ) : (

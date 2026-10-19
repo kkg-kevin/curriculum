@@ -13,6 +13,7 @@ const PATH_MODULES = [
   ["/curriculum", "curriculum"],
   ["/learners", "learners"],
   ["/home-learning", "home-learning"],
+  ["/tech-clubs", "tech-clubs"],
   ["/teachers", "teachers"],
   ["/classes", "classes"],
   ["/events", ["competitions", "bootcamps"]],

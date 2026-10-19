@@ -4,6 +4,7 @@ import {
   FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers,
 } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
+import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useAuth } from "../../../context/AuthContext";
@@ -27,16 +28,22 @@ const PARENT_ONLY = ["Invoices", "My Family"];
 function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { user } = useAuth();
   const isParentLogin = !!user?.email && !user?.username;
-  // My Family only matters to a parent with a Home Learning package.
+  // My Family only matters to a parent with a Home Learning package or a Tech Club membership.
   const { data: family = [] } = useQuery({
     queryKey: ["home-learning", "family"],
     queryFn: homeLearningApi.getFamily,
     enabled: isParentLogin,
     staleTime: 5 * 60 * 1000,
   });
+  const { data: clubFamily = [] } = useQuery({
+    queryKey: ["tech-clubs", "family"],
+    queryFn: techClubApi.getFamily,
+    enabled: isParentLogin,
+    staleTime: 5 * 60 * 1000,
+  });
   const visibleMenuItems = menuItems.filter((item) => {
     if (!isParentLogin && PARENT_ONLY.includes(item.name)) return false;
-    if (item.name === "My Family" && family.length === 0) return false;
+    if (item.name === "My Family" && family.length === 0 && clubFamily.length === 0) return false;
     return true;
   });
   const { expanded, handlers } = useSidebarHover(!isMobile);

@@ -116,9 +116,9 @@ function PendingPaymentPanel({ pendingPayment }) {
           <p style={{ margin: "1px 0 3px", fontSize: 15.5, fontWeight: 800, color: "#111827" }}>
             {formatMoney(pendingPayment.amount, pendingPayment.currency)}
           </p>
-          {/* A Home Learning website sign-up (kind "home_learning") is paid to the team, not at a hub,
-              and the admin approves it — so its copy says so. */}
-          {pendingPayment.kind === "home_learning" ? (
+          {/* A Home Learning or Tech Club website sign-up (kind "home_learning" / "tech_club") is paid
+              to the team, not at a hub, and the admin approves it — so its copy says so. */}
+          {pendingPayment.kind === "home_learning" || pendingPayment.kind === "tech_club" ? (
             <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
               First month for {pendingPayment.itemName}{pendingPayment.invoiceNumber ? ` (invoice ${pendingPayment.invoiceNumber})` : ""}.
               Pay in cash to our team — your family's logins unlock as soon as we approve the payment.

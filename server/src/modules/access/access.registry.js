@@ -24,6 +24,7 @@ const MODULES = [
   { key: "attendance", label: "Attendance", group: "Teaching", legacy: true },
   { key: "timetable", label: "Timetable", group: "Teaching", legacy: true },
   { key: "home-learning", label: "Home Learning", group: "Programmes", legacy: true },
+  { key: "tech-clubs", label: "Tech Clubs", group: "Programmes" },
   { key: "competitions", label: "Competitions", group: "Programmes", legacy: true },
   { key: "bootcamps", label: "Bootcamps", group: "Programmes", legacy: true },
   { key: "reports", label: "Reports", group: "Teaching", legacy: true },
@@ -71,6 +72,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/bootcamps": "bootcamps",
   "/api/notifications": "notifications",
   "/api/home-learning": "home-learning",
+  "/api/tech-clubs": "tech-clubs",
   "/api/billing": "billing",
   "/api/hub-visits": "hub-visits",
   "/api/audit": "activity",
@@ -107,6 +109,10 @@ const ACTION_OVERRIDES = [
   // Approving a website sign-up records its payment; declining one removes its accounts.
   { method: "POST", pattern: /^\/api\/home-learning\/[^/]+\/approve-payment$/, module: "billing", action: "edit" },
   { method: "POST", pattern: /^\/api\/home-learning\/[^/]+\/decline-signup$/, module: "home-learning", action: "delete" },
+  // The same three for Tech Club memberships.
+  { method: "POST", pattern: /^\/api\/tech-clubs(\/[^/]+)?\/invoices$/, module: "billing", action: "create" },
+  { method: "POST", pattern: /^\/api\/tech-clubs\/[^/]+\/approve-payment$/, module: "billing", action: "edit" },
+  { method: "POST", pattern: /^\/api\/tech-clubs\/[^/]+\/decline-signup$/, module: "tech-clubs", action: "delete" },
   // Issuing, cancelling and recording a payment change an existing invoice.
   { method: "POST", pattern: /^\/api\/billing\/[^/]+\/(issue|cancel|payments)$/, module: "billing", action: "edit" },
   // Detaching a competency, pathway or material from a course or assessment edits that course or

@@ -74,6 +74,13 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "home", eyebrow: "Home Learning" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/home-learning"),
   },
+  tech_club_signup: {
+    label: "A family signs up for a Tech Club",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "success", icon: "star", eyebrow: "Tech Club" },
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/tech-clubs"),
+  },
   // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
   // each decision on theirs.
   claim_submitted: {

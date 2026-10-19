@@ -158,4 +158,8 @@ const approveSignupSchema = z.object({
 });
 
 // signupChildSchema is also what a parent fills in to add a child from their own account.
-module.exports = { signupSchema, signupChildSchema, approveSignupSchema, householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema };
+// phone / loginPassword / requiredText are reused by the Tech Club sign-up (tech-clubs/club.validation.js).
+module.exports = {
+  signupSchema, signupChildSchema, approveSignupSchema, householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema,
+  phone, loginPassword, requiredText,
+};

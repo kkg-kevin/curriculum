@@ -109,6 +109,7 @@ import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
 import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
 import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
+import TechClubsPage from "../modules/tech-clubs/pages/TechClubsPage";
 
 // Educator claims sit inside Billing. Links to the old /claims address — notifications and
 // emails carry /claims?claim=<id> — land on that tab, with the claim still opened.
@@ -248,6 +249,7 @@ export default function AppRoutes() {
           <Route path=":id/view" element={<LearnerViewPage />} />
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
+        <Route path="tech-clubs" element={<TechClubsPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />

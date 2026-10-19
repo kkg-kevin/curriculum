@@ -51,6 +51,10 @@ function resolveNotificationPath(n) {
     case "share_accepted":
       // Another admin asking to share content, or accepting — Settings → Sharing.
       return p.route || "/settings?tab=sharing";
+    case "tech_club_signup":
+    case "tech_club_child_added":
+      // A family joined a club on the website, or a parent added a child — the Tech Clubs page.
+      return p.route || "/tech-clubs";
     case "claim_submitted":
     case "claim_awaiting_approval":
       // A claim to review — the admin app's Educator Claims page, opened on that claim.

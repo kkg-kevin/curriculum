@@ -9,6 +9,7 @@ export const SOURCES = [
   { key: "hub_subscription", label: "Subscriptions", types: ["hub_subscription"] },
   { key: "hub_usage", label: "Hub usage", types: ["hub_usage"] },
   { key: "home_learning", label: "Home Learning", types: ["home_learning"] },
+  { key: "tech_club", label: "Tech Clubs", types: ["tech_club"] },
   { key: "bootcamp", label: "Bootcamps", types: ["bootcamp"] },
   { key: "learner", label: "Learner fees", types: ["learner_term", "course_module"] },
 ];
@@ -23,6 +24,7 @@ export function sourcePath(ref, role) {
     return {
       bootcamp: `/events/bootcamps/${ref.id}/view`,
       household: `/home-learning?household=${ref.id}`,
+      club_membership: `/tech-clubs?membership=${ref.id}`,
       hub: `/learning-hubs/${ref.id}/view`,
       customer: `/billing/customers/${ref.id}`,
       learner: `/learners/${ref.id}/view`,
