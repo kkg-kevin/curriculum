@@ -31,6 +31,7 @@ const {
   deleteModule,
 } = require("./course.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
+const CourseFolderService = require("./course-folder.service");
 
 const router = express.Router();
 
@@ -44,6 +45,18 @@ const router = express.Router();
 // enough; it traces back through the caller's own hub/class to confirm the course is actually
 // reachable from a curriculum they belong to.
 router.route("/").get(authorize("admin", "school"), getAllCourses).post(authorize("admin"), createCourse);
+
+// Course folders (Courses page) — registered before "/:id" so "folders" is never read as a course id.
+const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
+router.route("/folders")
+  .get(authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.list(req.ownerAdminId))))
+  .post(authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.create(req.ownerAdminId, req.body), 201)));
+router.route("/folders/:folderId")
+  .put(authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.update(req.ownerAdminId, req.params.folderId, req.body))))
+  .delete(authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.remove(req.ownerAdminId, req.params.folderId))));
+router.put("/folders/:folderId/courses", authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.addCourses(req.ownerAdminId, req.params.folderId, req.body))));
+router.delete("/folders/:folderId/courses/:courseId", authorize("admin"), asyncHandler(async (req, res) => ok(res, await CourseFolderService.removeCourse(req.ownerAdminId, req.params.folderId, req.params.courseId))));
+
 router.route("/:id")
   .get(authorize("admin", "teacher", "learner", "school"), getCourseById)
   .put(authorize("admin"), updateCourse)

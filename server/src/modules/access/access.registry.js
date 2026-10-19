@@ -119,6 +119,8 @@ const ACTION_OVERRIDES = [
   // assessment — nothing is deleted (attaching one is already an edit).
   { method: "DELETE", pattern: /^\/api\/courses\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "courses", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/assessments\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "assessments", action: "edit" },
+  // Taking a course out of a folder (Courses page) files it differently — nothing is deleted.
+  { method: "DELETE", pattern: /^\/api\/courses\/folders\/[^/]+\/courses\/[^/]+$/, module: "courses", action: "edit" },
   // A form's draft of unsaved work is kept, changed and thrown away as the form is used — anyone
   // who can add or edit assessments (or courses) uses it, whichever they're doing.
   { method: "POST", pattern: /^\/api\/assessments\/drafts$/, module: "assessments", action: "create", orActions: ["edit"] },

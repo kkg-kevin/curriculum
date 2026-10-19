@@ -5,7 +5,7 @@ import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, 
 import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
 import { useDraftsQuery, useDeleteDraft, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftCard from "../../../components/ui/DraftCard";
-import { ASSESSMENT_TYPES, entryMarks } from "../schemas/assessment.schema";
+import { ASSESSMENT_TYPES, entryMarks, roundMarks } from "../schemas/assessment.schema";
 import { stripHtml } from "../components/RichContent";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
@@ -42,12 +42,12 @@ function assessmentTotalPoints(assessment) {
   // same "null" contract as any other type this function doesn't recognize.
   if (assessment.type === "survey") return null;
   if (assessment.type === "quiz" || assessment.type === "exam") {
-    return assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) ?? 0;
+    return roundMarks(assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) ?? 0);
   }
   if (assessment.type === "assignment" || assessment.type === "project" || assessment.type === "observation") {
     const itemsPoints = assessment.items?.reduce((sum, i) => sum + entryMarks(i), 0) || 0;
     const rubricPoints = assessment.rubric?.reduce((sum, c) => sum + entryMarks(c), 0) || 0;
-    return itemsPoints + rubricPoints;
+    return roundMarks(itemsPoints + rubricPoints);
   }
   return null;
 }

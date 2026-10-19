@@ -10,6 +10,14 @@ export const courseApi = {
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
   duplicate: (id) => api.post(`${ENDPOINT}/${id}/duplicate`).then((r) => r.data.data),
 
+  // Course folders (Courses page) — a course sits in at most one; deleting a folder keeps its courses.
+  getFolders: () => api.get(`${ENDPOINT}/folders`).then((r) => r.data.data),
+  createFolder: (data) => api.post(`${ENDPOINT}/folders`, data).then((r) => r.data.data),
+  updateFolder: (id, data) => api.put(`${ENDPOINT}/folders/${id}`, data).then((r) => r.data.data),
+  deleteFolder: (id) => api.delete(`${ENDPOINT}/folders/${id}`).then((r) => r.data.data),
+  addCoursesToFolder: (id, courseIds) => api.put(`${ENDPOINT}/folders/${id}/courses`, { courseIds }).then((r) => r.data.data),
+  removeCourseFromFolder: (id, courseId) => api.delete(`${ENDPOINT}/folders/${id}/courses/${courseId}`).then((r) => r.data.data),
+
   /* Competencies — this course's tagged competencies (authored globally in Settings) */
   getCourseCompetencies: (courseId) =>
     api.get(`${ENDPOINT}/${courseId}/competencies/links`).then((r) => r.data.data),

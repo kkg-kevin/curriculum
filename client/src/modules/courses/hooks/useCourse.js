@@ -86,6 +86,29 @@ export function useDuplicateCourse() {
   });
 }
 
+/* ── Course folders (Courses page) ── */
+
+// Under COURSE_KEYS.all, so anything that refreshes the course list refreshes folder counts too.
+export const COURSE_FOLDER_KEY = ["courses", "folders"];
+
+export function useCourseFoldersQuery() {
+  return useQuery({ queryKey: COURSE_FOLDER_KEY, queryFn: courseApi.getFolders });
+}
+
+// One mutation per folder action; each refreshes the courses and folders and shows its own toast.
+export function useCourseFolderMutation(mutationFn, successMessage, failureMessage) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: COURSE_KEYS.all });
+      const message = typeof successMessage === "function" ? successMessage(data, variables) : successMessage;
+      if (message) toast.success(message);
+    },
+    onError: (err) => toast.error(err.message || failureMessage),
+  });
+}
+
 /* ── Competencies (authored globally in Settings, tagged onto a course here) ── */
 
 export function useCourseCompetencies(courseId) {

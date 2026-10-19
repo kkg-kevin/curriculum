@@ -72,12 +72,34 @@ export function normalizeLegacyItem(item) {
   return { kind, sectionId: null, ...rest };
 }
 
+// Marks are kept to one decimal place (30.123 → 30.1) — the server rounds the same way on save
+// (assessment.utils.js's roundMarks). Rounding sums too keeps floating-point noise
+// (3.3 + 3.3 + 3.4 = 9.999…) out of every total shown.
+export function roundMarks(value) {
+  return Math.round((Number(value) || 0) * 10) / 10;
+}
+
+// What a marks/points input holds after typing: a non-negative number to one decimal place.
+export function marksInput(value) {
+  return Math.max(0, roundMarks(value));
+}
+
+// Splits `total` into `count` shares of one decimal place that add up to exactly `total` — the
+// last share takes the rounding difference (10 across 3 → 3.3, 3.3, 3.4).
+export function splitMarks(total, count) {
+  if (!count) return [];
+  const share = Math.floor((roundMarks(total) / count) * 10) / 10;
+  const shares = Array.from({ length: count }, () => share);
+  shares[count - 1] = roundMarks(roundMarks(total) - share * (count - 1));
+  return shares;
+}
+
 // A question/rubric-criterion's total is the sum of its per-indicator marks once any are
 // tagged; otherwise it falls back to the plain `points` field (untagged entries). Mirrors
 // server/src/modules/assessments/assessment.utils.js#computeEntryMarks.
 export function entryMarks(entry) {
   if (entry?.indicatorMarks?.length) {
-    return entry.indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+    return roundMarks(entry.indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0));
   }
-  return Number(entry?.points) || 0;
+  return roundMarks(entry?.points);
 }

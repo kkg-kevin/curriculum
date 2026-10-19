@@ -1,4 +1,4 @@
-const { computeEntryMarks } = require("../assessment.utils");
+const { computeEntryMarks, roundMarks } = require("../assessment.utils");
 
 // Item kinds with a single, unambiguous correct answer stored on the item itself — everything
 // else (free text, uploads, observation indicators, rubric-graded work) needs a human to score it.
@@ -115,7 +115,7 @@ function computeMaxScore(assessment) {
   // independently of items/rubric — included here so a project's maxScore reflects its full
   // possible total from the moment the submission is created, not just once milestones exist.
   const milestoneMax = (assessment.milestones || []).reduce((sum, m) => sum + computeEntryMarks(m), 0);
-  return itemMax + rubricMax + milestoneMax;
+  return roundMarks(itemMax + rubricMax + milestoneMax);
 }
 
 // Resolves each item's/rubric criterion's indicatorMarks (marks tagged per competency
