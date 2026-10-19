@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { roundMarks, roundIndicatorMarks } = require("./assessment.utils");
 const {
   STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, SUBMISSION_ITEM_KINDS,
 } = require("./builder.constants");
@@ -20,6 +21,10 @@ function hasRichContent(html) {
   return html.replace(/<[^>]*>/g, "").trim().length > 0;
 }
 
+// Every mark/point value an author types is kept to one decimal place (30.123 → 30.1), so totals
+// never show long decimals. Rounded on the way in rather than refused, so an older client still saves.
+const markValue = z.number().min(0).transform(roundMarks);
+
 const sectionSchema = z.object({
   id:    z.string().min(1),
   name:  z.string().min(1, "Section name is required").max(150),
@@ -30,8 +35,10 @@ const sectionSchema = z.object({
 // total is the sum of these once any are present (see computeEntryMarks in assessment.utils.js).
 const indicatorMarkSchema = z.object({
   indicatorId: z.string().min(1),
+  // Raw here — the list as a whole is rounded by indicatorMarksList, which keeps its total.
   marks:       z.number().min(0),
 });
+const indicatorMarksList = z.array(indicatorMarkSchema).transform(roundIndicatorMarks);
 
 // One checklist line in a question's grading rubric — e.g. "Did the student answer" (1pt).
 // Only meaningful when the parent entry is tagged to exactly one indicatorMark: the Builder
@@ -41,7 +48,7 @@ const indicatorMarkSchema = z.object({
 const scoringCriterionSchema = z.object({
   id:     z.string().optional(),
   label:  z.string().min(1, "Criterion is required").max(300),
-  points: z.number().min(0).optional().default(0),
+  points: markValue.optional().default(0),
 });
 
 // `id` is optional — the Builder assigns a client-side id while editing; the server
@@ -52,7 +59,7 @@ const itemSchema = z.object({
   question:      z.string().max(20000),
   kind:          z.enum(ITEM_KINDS, { errorMap: () => ({ message: "Select a valid item kind" }) }),
   sectionId:     z.string().optional().nullable().default(null),
-  points:        z.number().min(0).optional().default(1),
+  points:        markValue.optional().default(1),
   options:       z.array(z.string().min(1)).optional().default([]),
   correctAnswer: z.string().optional().default(""),
   pairs:         z.array(z.object({ left: z.string().min(1), right: z.string().min(1) })).optional().default([]),
@@ -67,7 +74,7 @@ const itemSchema = z.object({
   // points into a linked competency's nested `indicators` array (see
   // assessment-competency-link.model.js). Empty when the question isn't tagged to any
   // indicator, in which case `points` above is the question's total instead.
-  indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  indicatorMarks: indicatorMarksList.optional().default([]),
   // Grading rubric for this question — see scoringCriterionSchema above.
   scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 })
@@ -82,9 +89,9 @@ const rubricCriterionSchema = z.object({
   id:          z.string().optional(),
   criterion:   z.string().min(1, "Criterion name is required").max(200),
   description: z.string().max(5000).optional().default(""),
-  points:      z.number().min(0).optional().default(0),
+  points:      markValue.optional().default(0),
   sectionId:   z.string().optional().nullable().default(null),
-  indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  indicatorMarks: indicatorMarksList.optional().default([]),
   // Grading rubric for this criterion — see scoringCriterionSchema above.
   scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 });
@@ -102,8 +109,8 @@ const indicatorSchema = z.object({
   ratingScale: z.array(z.string().min(1)).min(2).optional().default(DEFAULT_RATING_SCALE),
   sectionId:   z.string().optional().nullable().default(null),
   competencyIndicatorIds: z.array(z.string()).optional().default([]),
-  points:      z.number().min(0).optional().default(1),
-  indicatorMarks: z.array(indicatorMarkSchema).optional().default([]),
+  points:      markValue.optional().default(1),
+  indicatorMarks: indicatorMarksList.optional().default([]),
   // Grading rubric for this observation indicator — see scoringCriterionSchema above.
   scoringCriteria: z.array(scoringCriterionSchema).optional().default([]),
 }).refine((d) => hasRichContent(d.text), { message: "Indicator text is required", path: ["text"] });
@@ -124,7 +131,7 @@ const milestoneSchema = z.object({
   // How many marks this checkpoint is worth — milestones had no scoring dimension at all before
   // (pure checklist), so grading one meant nothing beyond a description. Defaults to 0 so
   // existing authored milestones don't suddenly carry marks nobody intended.
-  points:      z.number().min(0).optional().default(0),
+  points:      markValue.optional().default(0),
 });
 
 // Sellable-Project fields. Only meaningful when `type === "project"` and `saleStatus ===

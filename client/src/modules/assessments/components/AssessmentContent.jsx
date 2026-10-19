@@ -3,7 +3,7 @@ import { FiCheck, FiAlertTriangle, FiPackage, FiFlag } from "react-icons/fi";
 import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
-  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks,
+  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks, roundMarks,
 } from "../schemas/assessment.schema";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
@@ -229,8 +229,8 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
   // A "note"-kind observation indicator is a freeform comment, not a judgment — excluded from the
   // total the same way grading.utils.js's computeMaxScore excludes it. Non-observation entries
   // never carry kind "note", so the filter is a no-op for every other assessment type.
-  const totalItemPoints = entries.filter((e) => e.kind !== "note").reduce((sum, e) => sum + entryMarks(e), 0);
-  const totalRubricPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
+  const totalItemPoints = roundMarks(entries.filter((e) => e.kind !== "note").reduce((sum, e) => sum + entryMarks(e), 0));
+  const totalRubricPoints = roundMarks(rubric.reduce((sum, c) => sum + entryMarks(c), 0));
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>

@@ -24,7 +24,7 @@ import ImageUploadField from "../../../components/ImageUploadField";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, DEFAULT_SURVEY_SCALE,
+  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation", survey: "Survey" };
@@ -495,8 +495,8 @@ function IndicatorPicker({ options, selectedIds, onChange }) {
 // entry's own points value (not 0), so tagging a competency onto a question never silently zeroes
 // out its score before the author gets a chance to fine-tune the per-indicator split.
 function syncIndicatorMarks(indicatorMarks, newIds, totalPoints = 0) {
-  const evenShare = newIds.length > 0 ? Math.round((totalPoints / newIds.length) * 100) / 100 : 0;
-  return newIds.map((id) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: evenShare });
+  const shares = splitMarks(totalPoints, newIds.length);
+  return newIds.map((id, i) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: shares[i] });
 }
 
 // Reconciles the IndicatorPicker's selected-id list the same way syncIndicatorMarks does, except
@@ -511,8 +511,8 @@ function syncIndicatorMarksForEntry(entry, newIds) {
   const criteria = entry.scoringCriteria || [];
   if (criteria.length > 0) {
     const total = criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    const evenShare = newIds.length > 0 ? Math.round((total / newIds.length) * 100) / 100 : 0;
-    return newIds.map((id) => ({ indicatorId: id, marks: evenShare }));
+    const shares = splitMarks(total, newIds.length);
+    return newIds.map((id, i) => ({ indicatorId: id, marks: shares[i] }));
   }
   return syncIndicatorMarks(entry.indicatorMarks || [], newIds, entry.points);
 }
@@ -530,22 +530,22 @@ const linkBtnStyle = { background: "none", border: "none", padding: 0, fontSize:
 
 function startScoringCriteria(entry) {
   const indicatorMarks = entry.indicatorMarks || [];
-  const current = indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+  const current = roundMarks(indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0));
   return [{ id: genId(), label: "", points: current || 1 }];
 }
 
 function ScoringCriteriaEditor({ entry, onChange }) {
   const criteria = entry.scoringCriteria || [];
-  const total = criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
+  const total = roundMarks(criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0));
 
   const commit = (nextCriteria) => {
     const indicatorMarks = entry.indicatorMarks || [];
     const nextTotal = nextCriteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    const evenShare = indicatorMarks.length > 0 ? Math.round((nextTotal / indicatorMarks.length) * 100) / 100 : 0;
+    const shares = splitMarks(nextTotal, indicatorMarks.length);
     onChange({
       ...entry,
       scoringCriteria: nextCriteria,
-      indicatorMarks: indicatorMarks.map((m) => ({ ...m, marks: evenShare })),
+      indicatorMarks: indicatorMarks.map((m, i) => ({ ...m, marks: shares[i] })),
     });
   };
 
@@ -560,7 +560,7 @@ function ScoringCriteriaEditor({ entry, onChange }) {
         {criteria.map((c) => (
           <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input className="tb-input" placeholder="Criterion (e.g. Did the student answer)" value={c.label} onChange={(e) => update(c.id, { label: e.target.value })} style={{ flex: 1 }} />
-            <input type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }} value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
+            <input type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }} value={c.points} onChange={(e) => update(c.id, { points: marksInput(e.target.value) })} />
             <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
           </div>
         ))}
@@ -856,7 +856,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         indicatorMarks.length === 0 ? (
           <div>
             <Label>Marks</Label>
-            <input type="number" min="0" className="tb-input" value={entry.points} onChange={(e) => set("points", Number(e.target.value) || 0)} />
+            <input type="number" min="0" step="0.1" className="tb-input" value={entry.points} onChange={(e) => set("points", marksInput(e.target.value))} />
           </div>
         ) : BUILDER_REGISTRY[type]?.supportsQuestionRubric ? (
           <div>
@@ -873,9 +873,9 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
               <>
                 <Label>Marks</Label>
                 <input
-                  type="number" min="0" className="tb-input"
+                  type="number" min="0" step="0.1" className="tb-input"
                   value={indicatorMarks[0].marks}
-                  onChange={(e) => set("indicatorMarks", [{ ...indicatorMarks[0], marks: Number(e.target.value) || 0 }])}
+                  onChange={(e) => set("indicatorMarks", [{ ...indicatorMarks[0], marks: marksInput(e.target.value) }])}
                 />
                 <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => set("scoringCriteria", startScoringCriteria(entry))}>+ Build a rubric</button>
               </>
@@ -888,9 +888,9 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
                       <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
                         <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
                         <input
-                          type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                          type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
                           value={m.marks}
-                          onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)))}
+                          onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)))}
                         />
                       </div>
                     );
@@ -910,9 +910,9 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
                   <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
                     <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
                     <input
-                      type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                      type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
                       value={m.marks}
-                      onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)))}
+                      onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)))}
                     />
                   </div>
                 );
@@ -1094,7 +1094,7 @@ function IndicatorStatsPanel({ stats }) {
     );
   }
 
-  const totalIndicatorMarks = stats.reduce((sum, s) => sum + s.marks, 0);
+  const totalIndicatorMarks = roundMarks(stats.reduce((sum, s) => sum + s.marks, 0));
   const byCompetency = new Map();
   stats.forEach((s) => {
     if (!byCompetency.has(s.competencyName)) byCompetency.set(s.competencyName, []);
@@ -1167,7 +1167,7 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
   const add = () => onChange([...rubric, { id: genId(), criterion: "", description: "", points: 10, indicatorMarks: [], scoringCriteria: [] }]);
   const update = (id, patch) => onChange(rubric.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id) => onChange(rubric.filter((c) => c.id !== id));
-  const totalPoints = rubric.reduce((sum, c) => sum + entryMarks(c), 0);
+  const totalPoints = roundMarks(rubric.reduce((sum, c) => sum + entryMarks(c), 0));
 
   return (
     <div className="tb-card">
@@ -1181,7 +1181,7 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
               <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
                 <input className="tb-input" placeholder="Criterion" value={c.criterion} onChange={(e) => update(c.id, { criterion: e.target.value })} />
                 {indicatorMarks.length === 0 && (
-                  <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: Number(e.target.value) || 0 })} />
+                  <input type="number" min="0" step="0.1" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={c.points} onChange={(e) => update(c.id, { points: marksInput(e.target.value) })} />
                 )}
                 <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
               </div>
@@ -1208,9 +1208,9 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
                     <>
                       <Label>Marks</Label>
                       <input
-                        type="number" min="0" className="tb-input"
+                        type="number" min="0" step="0.1" className="tb-input"
                         value={indicatorMarks[0].marks}
-                        onChange={(e) => update(c.id, { indicatorMarks: [{ ...indicatorMarks[0], marks: Number(e.target.value) || 0 }] })}
+                        onChange={(e) => update(c.id, { indicatorMarks: [{ ...indicatorMarks[0], marks: marksInput(e.target.value) }] })}
                       />
                       <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => update(c.id, { scoringCriteria: startScoringCriteria(c) })}>+ Build a rubric</button>
                     </>
@@ -1223,9 +1223,9 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
                             <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#fff", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
                               <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
                               <input
-                                type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                                type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
                                 value={m.marks}
-                                onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)) })}
+                                onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)) })}
                               />
                             </div>
                           );
@@ -1245,9 +1245,9 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
                         <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#fff", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
                           <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
                           <input
-                            type="number" min="0" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+                            type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
                             value={m.marks}
-                            onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: Number(e.target.value) || 0 } : x)) })}
+                            onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)) })}
                           />
                         </div>
                       );
@@ -1308,7 +1308,7 @@ function DeliverablesMilestonesTab({ deliverables, milestones, onChangeDeliverab
             <div key={m.id} style={{ padding: "10px 12px", border: "1px solid #EEF0F2", borderRadius: "10px", background: "#FAFBFF" }}>
               <div style={{ display: "flex", gap: "8px", marginBottom: "6px" }}>
                 <input className="tb-input" placeholder="Milestone name" value={m.name} onChange={(e) => updateMilestone(m.id, { name: e.target.value })} />
-                <input type="number" min="0" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={m.points ?? 0} onChange={(e) => updateMilestone(m.id, { points: Number(e.target.value) || 0 })} />
+                <input type="number" min="0" step="0.1" className="tb-input" style={{ width: "90px", flexShrink: 0 }} placeholder="Points" value={m.points ?? 0} onChange={(e) => updateMilestone(m.id, { points: marksInput(e.target.value) })} />
                 <button type="button" className="tb-icon-btn danger" onClick={() => removeMilestone(m.id)}><FiX size={13} /></button>
               </div>
               <textarea className="tb-textarea" rows={2} placeholder="Description (optional)" value={m.description} onChange={(e) => updateMilestone(m.id, { description: e.target.value })} />
@@ -1643,7 +1643,7 @@ export default function AssessmentBuilderPage() {
         name: ind.name,
         competencyName: comp.name,
         color: TAG_PALETTE[ci % TAG_PALETTE.length],
-        marks: byIndicator.get(ind.id)?.marks || 0,
+        marks: roundMarks(byIndicator.get(ind.id)?.marks || 0),
         questionCount: byIndicator.get(ind.id)?.questionCount || 0,
       }))
     );
