@@ -1,7 +1,7 @@
 ﻿import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare,
 } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
@@ -32,6 +32,8 @@ const ADMIN_MENU_ITEMS = [
   // Educator claims live inside Billing (its "Educator Claims" tab), so a staff member who only
   // reviews claims still needs this item to get there.
   { name: "Billing", path: "/billing", icon: FiDollarSign, module: ["billing", "claims", "claims-approval"] },
+  // Hub check-ins: taking part (Account Managers, Training Leads) or overseeing them.
+  { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: ["checkins", "checkins-manage"] },
   { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
   { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
 ];

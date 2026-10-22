@@ -42,6 +42,11 @@ const MODULES = [
   // payments, the session rate, and managing the supervisor accounts.
   { key: "claims", label: "Educator claims (review for a supervisor)", group: "Finance" },
   { key: "claims-approval", label: "Claim approvals & payment", group: "Finance" },
+  // Hub check-ins. "checkins" is taking part — an Account Manager or Training Lead sees the
+  // check-ins they're assigned to (and those hubs' history), writes reports and works on actions.
+  // "checkins-manage" is oversight — scheduling, every hub, the overview, cancelling and reopening.
+  { key: "checkins", label: "Hub check-ins (Account Managers & Training Leads)", group: "Workspace" },
+  { key: "checkins-manage", label: "Hub check-ins: schedules & oversight", group: "Workspace" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -77,6 +82,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/hub-visits": "hub-visits",
   "/api/audit": "activity",
   "/api/claims": "claims",
+  "/api/checkins": "checkins",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
@@ -92,6 +98,8 @@ const CATALOG_READERS = {
   // Not a catalog, but the same rule: someone who only does final approvals still has to be able
   // to read the claims they are approving.
   "/api/claims": ["claims-approval"],
+  // A check-in manager can read everything in the module.
+  "/api/checkins": ["checkins-manage"],
 };
 // The educator form offers a supervisor to pick — so the list of supervisors can also be read by
 // anyone who can view Educators.
@@ -140,6 +148,15 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
+  // Hub check-ins: scheduling, the overview, cancelling and reopening are oversight.
+  { method: "GET", pattern: /^\/api\/checkins\/(schedules|overview)$/, module: "checkins-manage", action: "view" },
+  { method: "POST", pattern: /^\/api\/checkins\/schedules$/, module: "checkins-manage", action: "create" },
+  { method: "PUT", pattern: /^\/api\/checkins\/schedules\/[^/]+$/, module: "checkins-manage", action: "edit" },
+  { method: "POST", pattern: /^\/api\/checkins\/schedules\/[^/]+\/end$/, module: "checkins-manage", action: "edit" },
+  { method: "POST", pattern: /^\/api\/checkins\/sessions\/[^/]+\/(cancel|reopen)$/, module: "checkins-manage", action: "edit" },
+  // Writing the report, adding and working on actions, and taking back an action added by mistake
+  // are all part of taking part (a manager's role carries "checkins" too).
+  { method: "DELETE", pattern: /^\/api\/checkins\/actions\/[^/]+$/, module: "checkins", action: "edit" },
 ];
 
 // A POST that only works something out without saving it.

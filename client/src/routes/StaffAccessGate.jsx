@@ -28,6 +28,7 @@ const PATH_MODULES = [
   ["/billing/claim-invoices", ["claims", "claims-approval"]],
   ["/billing", ["billing", "claims", "claims-approval"]],
   ["/claims", ["claims", "claims-approval"]],
+  ["/checkins", ["checkins", "checkins-manage"]],
   ["/activity", "activity"],
   ["/settings", "settings"],
   ["/enquiries", null],

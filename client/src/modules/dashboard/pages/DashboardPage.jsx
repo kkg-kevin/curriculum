@@ -18,6 +18,7 @@ import {
   TableChart as TableChartIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import CheckinsReminder from "../../checkins/components/CheckinsReminder";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useAllLearnersQuery } from "../../learners/hooks/useLearners";
@@ -559,6 +560,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Today's hub check-ins and overdue reports, for whoever takes part in them. */}
+      <CheckinsReminder />
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
