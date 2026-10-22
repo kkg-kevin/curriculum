@@ -125,7 +125,21 @@ MAIL_LOGO_URL=        # optional — the email header logo is served by this API
 MAIL_WEBSITE_URL=     # optional — footer link; default is the first https PUBLIC_SITE_URL
 MAIL_SOCIAL_LINKS=    # optional — footer links, e.g. Facebook=https://…,Instagram=https://…
 PASSWORD_RESET_MINUTES=   # default 60
+# M-Pesa (Daraja, one Paybill per installation) — all optional. Unset, every M-Pesa button is hidden.
+MPESA_ENV=sandbox         # or production
+MPESA_CONSUMER_KEY=
+MPESA_CONSUMER_SECRET=
+MPESA_SHORTCODE=          # the Paybill number
+MPESA_PASSKEY=            # Lipa na M-Pesa Online (M-Pesa Express) passkey
+MPESA_CALLBACK_TOKEN=     # long random string (24+ chars) — part of the callback URLs
+MPESA_CALLBACK_BASE_URL=  # optional — default API_PUBLIC_URL; must be public https (a tunnel locally)
+MPESA_ACCOUNT_LABEL=      # optional — the name payers see
+MPESA_OWNER_ADMIN_ID=     # optional — workspace for Paybill payments matching no invoice (default PUBLIC_CONTENT_ADMIN_ID)
 ```
+
+### M-Pesa
+
+`server/src/modules/payments/mpesa/`. Money reaches an invoice only through `BillingService.applyPayment` (staff "Record payment" goes through it too); an invoice becoming fully paid runs `billing.paid-hooks.js`, which switches on Home Learning / Tech Club / Bootcamp website sign-ups. Safaricom calls `/api/public/pay-hooks/<MPESA_CALLBACK_TOKEN>/…`. Every payment received is one `mpesa_transactions` row (UNIQUE M-Pesa receipt), so repeated callbacks can't pay twice; ones that match no invoice wait in Billing → M-Pesa. An invoice's Paybill account number is its number without prefix/dashes (`INV-2026-000123` → `2026000123`). Cron: `npm run mpesa:reconcile` every 5 minutes; once per Paybill: `npm run mpesa:register-urls -- --yes`. Plan and status: `Guide/MPESA_INTEGRATION_PLAN.md`.
 
 ### Email
 

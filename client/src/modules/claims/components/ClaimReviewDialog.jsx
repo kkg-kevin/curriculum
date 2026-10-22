@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiInfo, FiX } from "react-icons/fi";
-import { useAdminDecision, useClaim, useMarkClaimPaid, useSupervisorDecision } from "../hooks/useClaims";
+import { useAdminDecision, useClaim, useClaimPayouts, useMarkClaimPaid, usePayClaimByMpesa, useSupervisorDecision } from "../hooks/useClaims";
 import { ClaimStatusPill, ClaimTimeline, Dialog, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateLabel, unitsLabel } from "../shared";
 import { InvoicePanel, useSideBySide } from "./ClaimInvoiceViewer";
 import SessionEvidence from "./SessionEvidence";
@@ -32,6 +32,83 @@ function Record({ label, then, now, empty }) {
       <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: T.inkMuted }}>{label}</p>
       <p style={{ margin: "5px 0 0", fontSize: 17, fontWeight: 800, color: complete ? "#047857" : T.ink, fontVariantNumeric: "tabular-nums" }}>{text(now || then)}</p>
       {now && then && text(now) !== text(then) && <p style={{ margin: "2px 0 0", fontSize: 11, color: T.inkFaint }}>{text(then)} when submitted</p>}
+    </div>
+  );
+}
+
+const PAYOUT_STATUS = {
+  pending: "Sent to M-Pesa — waiting for its answer…",
+  successful: "Paid by M-Pesa",
+  failed: "M-Pesa didn't pay it",
+  error: "M-Pesa didn't take the request",
+  timeout: "M-Pesa never said whether it went through",
+};
+
+// Pay an approved claim straight to the educator's phone (M-Pesa B2C, when the workspace has a
+// disbursement shortcode — Settings → Payments). The claim becomes paid when M-Pesa confirms the
+// money went; until then it stays approved. Paying asks to confirm the amount and number, and a
+// payout M-Pesa never answered must be checked before paying again.
+function MpesaPayout({ claim }) {
+  const { data } = useClaimPayouts(claim.id);
+  const pay = usePayClaimByMpesa();
+  const [open, setOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  if (!data?.canPayOut && !data?.payouts?.length) return null;
+  const latest = data.payouts[0];
+  const waiting = latest?.status === "pending";
+  const unknown = latest?.status === "timeout";
+  const amount = Number(claim.amount);
+  const whole = Number.isInteger(amount);
+
+  const send = async () => {
+    try {
+      await pay.mutateAsync({ id: claim.id, phone: phone.trim() || null, amount, confirmUnknown: unknown });
+      toast.success("Sent to M-Pesa — the claim is marked paid once M-Pesa confirms");
+      setOpen(false);
+      setConfirmed(false);
+    } catch (err) {
+      toast.error(err.message || "M-Pesa didn't take the payment");
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 12, background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+      {latest && (
+        <p style={{ margin: "0 0 8px", fontSize: 12.5, color: latest.status === "successful" ? "#047857" : latest.status === "pending" ? T.inkMuted : "#B45309" }}>
+          <strong>{PAYOUT_STATUS[latest.status] || latest.status}</strong>
+          {latest.receiptNumber ? ` · M-Pesa ${latest.receiptNumber}` : ""}{latest.receiverName ? ` · to ${latest.receiverName}` : ""}
+          {latest.resultDesc && latest.status !== "successful" ? ` — ${latest.resultDesc}` : ""}
+        </p>
+      )}
+      {data.canPayOut && !waiting && latest?.status !== "successful" && !open && (
+        <button type="button" onClick={() => { setOpen(true); setPhone(data.phone || ""); }} disabled={!whole} style={{ ...ghostButton, borderColor: "#86EFAC", color: "#15803D" }}>
+          {unknown ? "Pay by M-Pesa again…" : "Pay by M-Pesa…"}
+        </button>
+      )}
+      {!whole && data.canPayOut && <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>M-Pesa pays whole shillings, and this claim has cents — pay it another way and mark it as paid.</p>}
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: "1 1 200px" }}>
+              <label htmlFor="payout-phone" style={{ display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink }}>Educator's M-Pesa number</label>
+              <input id="payout-phone" value={phone} onChange={(e) => { setPhone(e.target.value); setConfirmed(false); }} maxLength={20} placeholder="0712 345 678" style={inputStyle} />
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: T.ink, paddingBottom: 9 }}>{formatMoney(amount, claim.currency)}</div>
+          </div>
+          {unknown && <p style={{ margin: 0, fontSize: 12.5, color: "#B45309" }}>Check the B2C account's statement first: if the last payment went through, mark the claim as paid instead.</p>}
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: T.ink }}>
+            <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} style={{ marginTop: 2 }} />
+            <span>Send {formatMoney(amount, claim.currency)} to {phone || "this number"} for {claim.teacherName}. Money sent by M-Pesa can't be pulled back from here.</span>
+          </label>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button type="button" onClick={() => { setOpen(false); setConfirmed(false); }} disabled={pay.isPending} style={ghostButton}>Cancel</button>
+            <button type="button" onClick={send} disabled={!confirmed || pay.isPending || phone.trim().length < 9} style={primaryButton(!confirmed || pay.isPending || phone.trim().length < 9)}>
+              {pay.isPending ? "Sending…" : "Send payment"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -191,6 +268,8 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
             </div>
           </div>
         )}
+
+        {claim.status === "approved" && canApprove && <MpesaPayout claim={claim} />}
 
         {claim.status === "approved" && canApprove && (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>

@@ -55,6 +55,13 @@ function resolveNotificationPath(n) {
     case "tech_club_child_added":
       // A family joined a club on the website, or a parent added a child — the Tech Clubs page.
       return p.route || "/tech-clubs";
+    case "home_learning_signup_paid":
+    case "tech_club_signup_paid":
+    case "bootcamp_enrollment_paid":
+    case "mpesa_payment_unmatched":
+      // A website sign-up paid by M-Pesa (open it to place the children), or an M-Pesa payment
+      // waiting to be matched in Billing → M-Pesa.
+      return p.route || "/billing?tab=mpesa";
     case "claim_submitted":
     case "claim_awaiting_approval":
       // A claim to review — the admin app's Educator Claims page, opened on that claim.

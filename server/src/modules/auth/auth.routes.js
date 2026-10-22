@@ -2,6 +2,7 @@ const express = require("express");
 const rateLimit = require("express-rate-limit");
 const { signup, login, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin } = require("./auth.controller");
 const { protect, authorize } = require("../../shared/middleware/auth.middleware");
+const { initiateForPendingSignup } = require("../payments/mpesa/mpesa.controller");
 
 const router = express.Router();
 
@@ -52,5 +53,9 @@ router.patch("/change-password", protect, loginLimiter, changePassword);
 // Creates another tenant admin — only an existing admin can do this (there is otherwise no way
 // to create a second admin at all; ADMIN_EMAIL/ADMIN_PASSWORD only ever bootstraps the first).
 router.post("/admins", protect, authorize("admin"), createAdmin);
+// "Pay now" on the payment-pending screen. Here rather than under /api/billing because an account
+// waiting on its first payment is refused every other change (blockIfSuspended) — paying is the
+// one thing it must be able to do. It can only pay its own sign-up invoice.
+router.post("/pending-payment/mpesa", protect, initiateForPendingSignup);
 
 module.exports = router;

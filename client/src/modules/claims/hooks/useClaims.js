@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { claimsApi } from "../services/claimsApi";
 
@@ -69,3 +70,25 @@ export function useRemoveSupervisor() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["claims"] }); queryClient.invalidateQueries({ queryKey: ["teachers"] }); },
   });
 }
+
+// M-Pesa payouts of one claim. While one waits for M-Pesa's answer it's asked about every few
+// seconds; when it settles, the claim and every total are refreshed (it may now be paid).
+export function useClaimPayouts(id, { enabled = true } = {}) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ["claims", "payouts", id],
+    queryFn: () => claimsApi.mpesaPayouts(id),
+    enabled: !!id && enabled,
+    retry: false,
+    refetchInterval: (q) => (q.state.data?.payouts?.[0]?.status === "pending" ? 4000 : false),
+  });
+  const latest = query.data?.payouts?.[0]?.status;
+  const previous = useRef(latest);
+  useEffect(() => {
+    if (previous.current === "pending" && latest && latest !== "pending") queryClient.invalidateQueries({ queryKey: ["claims"] });
+    previous.current = latest;
+  }, [latest, queryClient]);
+  return query;
+}
+
+export const usePayClaimByMpesa = () => useClaimMutation(({ id, ...data }) => claimsApi.payByMpesa(id, data));

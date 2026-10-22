@@ -109,3 +109,51 @@ export function useCustomerQuery(hubId) {
     enabled: !!hubId,
   });
 }
+
+// Whether M-Pesa is set up on this server (its Paybill number, for "pay by hand" instructions).
+// Rarely changes, so it's cached for the session.
+export function useMpesaStatus({ enabled = true } = {}) {
+  return useQuery({ queryKey: ["billing", "mpesa", "status"], queryFn: billingApi.mpesaStatus, enabled, staleTime: 30 * 60 * 1000, retry: false });
+}
+
+export function useMpesaTransactions(params = {}) {
+  return useQuery({
+    queryKey: ["billing", "mpesa", "transactions", params],
+    queryFn: () => billingApi.mpesaTransactions(params),
+    // While a status check or reversal waits for Safaricom's answer, look again every few seconds.
+    refetchInterval: (query) => (query.state.data?.transactions?.some((tx) => tx.operations?.some((op) => op.status === "pending")) ? 5000 : false),
+  });
+}
+
+export function useMpesaFailedRequests() {
+  return useQuery({ queryKey: ["billing", "mpesa", "failed"], queryFn: billingApi.mpesaFailedRequests });
+}
+
+function mpesaAction(mutationFn, successMessage) {
+  return () => {
+    const qc = useQueryClient();
+    return useMutation({
+      mutationFn,
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["billing", "mpesa"] });
+        qc.invalidateQueries({ queryKey: BILLING_KEYS.all });
+        qc.invalidateQueries({ queryKey: ["billing", "receipts"] });
+        toast.success(successMessage);
+      },
+      onError: (err) => toast.error(err.response?.data?.message || err.message || "Something went wrong"),
+    });
+  };
+}
+
+export const useMpesaAllocate = mpesaAction(({ id, invoice }) => billingApi.mpesaAllocate(id, invoice), "Payment put on the invoice");
+export const useMpesaIgnore = mpesaAction(({ id, note }) => billingApi.mpesaIgnore(id, note), "Payment set aside");
+export const useMpesaCheck = mpesaAction((id) => billingApi.mpesaCheck(id), "Asked M-Pesa — the answer appears here in a moment");
+export const useMpesaReverse = mpesaAction(({ id, note }) => billingApi.mpesaReverse(id, note), "Reversal sent to M-Pesa");
+export const useMpesaStatementImport = mpesaAction((csv) => billingApi.mpesaStatementImport(csv), "Statement imported");
+
+export function useMpesaStatementPreview() {
+  return useMutation({
+    mutationFn: (csv) => billingApi.mpesaStatementPreview(csv),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "The statement couldn't be read"),
+  });
+}

@@ -37,6 +37,11 @@ const LeadModel = {
     return firstOrNull(db(TABLE).where({ learnerId }).orderBy("createdAt", "desc"));
   },
 
+  // The bootcamp enrolment an invoice was raised for (leads.invoiceId).
+  findByInvoiceId(invoiceId) {
+    return firstOrNull(db(TABLE).where({ invoiceId }));
+  },
+
   update(id, data) {
     return updateRecord(db, TABLE, id, data);
   },

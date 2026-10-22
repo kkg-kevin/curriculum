@@ -100,7 +100,7 @@ const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, sharing with other admins, and the cross-workspace platform
 // analytics.
-const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", "/api/email-settings", "/api/certificate-settings", "/api/reports/platform-analytics"];
+const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", "/api/email-settings", "/api/certificate-settings", "/api/payment-settings", "/api/reports/platform-analytics"];
 
 // Requests whose meaning isn't what their HTTP method suggests. Checked before the default rules.
 const ACTION_OVERRIDES = [
@@ -132,7 +132,7 @@ const ACTION_OVERRIDES = [
   // A claim's second stage — final approval and recording the payment — and the session rate
   // belong to "Claim approvals", not to the supervisor's review. (The supervisor's own decision,
   // POST /api/claims/:id/supervisor-decision, falls under the default rule: Educator claims → Edit.)
-  { method: "POST", pattern: /^\/api\/claims\/[^/]+\/(admin-decision|mark-paid)$/, module: "claims-approval", action: "edit" },
+  { method: "POST", pattern: /^\/api\/claims\/[^/]+\/(admin-decision|mark-paid|mpesa-payout)$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/settings$/, module: "claims-approval", action: "edit" },
   // Creating, changing and removing supervisor accounts is the admin's side too.
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },

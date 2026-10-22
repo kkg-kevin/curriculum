@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowBack as ArrowBackIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EmailOutlined as EmailOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, Send as SendIcon } from "@mui/icons-material";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowBack as ArrowBackIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EmailOutlined as EmailOutlinedIcon, EventNote as EventNoteIcon, Paid as PaidIcon, PhoneIphone as PhoneIphoneIcon, Send as SendIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useCancelInvoice, useEmailInvoice, useInvoiceQuery, useIssueInvoice, usePayInvoice } from "../hooks/useBilling";
 import { cardStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
@@ -10,6 +11,8 @@ import BillToCard from "../components/BillToCard";
 import BrandMark from "../components/BrandMark";
 import DocumentActions from "../components/DocumentActions";
 import { LoadingState, ErrorState } from "../components/PageStates";
+import MpesaPayDialog, { PaybillInstructions } from "../components/MpesaPayDialog";
+import { billingApi } from "../services/billingApi";
 
 function Detail({ label, value }) { return <div><div style={{ color: "#9CA3AF", fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>{label}</div><div style={{ marginTop: 4, color: "#374151", fontSize: 13 }}>{value || "Not provided"}</div></div>; }
 
@@ -27,6 +30,8 @@ export default function InvoiceDetailPage() {
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [mpesaOpen, setMpesaOpen] = useState(false);
+  const queryClient = useQueryClient();
   const basePath = user?.role === "learner" ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
   const receiptsBasePath = user?.role === "learner" ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
 
@@ -77,11 +82,41 @@ export default function InvoiceDetailPage() {
 
       <section style={{ ...cardStyle, overflow: "hidden" }}><div style={{ padding: "17px 22px", borderBottom: "1px solid #EEF1F5" }}><h2 style={{ margin: 0, fontSize: 15 }}>Invoice items</h2></div><div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}><thead><tr>{["Description", "Quantity", "Unit amount", "Total"].map((heading) => <th key={heading} style={{ padding: "11px 22px", textAlign: heading === "Description" ? "left" : "right", color: "#9CA3AF", fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid #EEF1F5" }}>{heading}</th>)}</tr></thead><tbody>{invoice.items?.map((item) => <tr key={item.id}><td style={{ padding: "14px 22px", fontSize: 13, color: "#374151" }}>{item.description}</td><td style={{ padding: "14px 22px", textAlign: "right", fontSize: 13, color: "#6B7280" }}>{item.quantity}</td><td style={{ padding: "14px 22px", textAlign: "right", fontSize: 13, color: "#6B7280" }}>{formatMoney(item.unitAmount, invoice.currency)}</td><td style={{ padding: "14px 22px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#25476a" }}>{formatMoney(item.totalAmount, invoice.currency)}</td></tr>)}</tbody></table></div><div style={{ borderTop: "1px solid #EEF1F5", padding: "16px 22px", marginLeft: "auto", maxWidth: 300, display: "flex", flexDirection: "column", gap: 8 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280" }}><span>Subtotal</span><span>{formatMoney(invoice.subtotal, invoice.currency)}</span></div><div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7280" }}><span>Discount</span><span>- {formatMoney(invoice.discount, invoice.currency)}</span></div><div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid #E5E7EB", fontSize: 15, fontWeight: 850, color: "#25476a" }}><span>Total</span><span>{formatMoney(invoice.total, invoice.currency)}</span></div><div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: invoice.amountDue > 0 ? "#C2410C" : "#047857" }}><span>Amount due</span><span>{formatMoney(invoice.amountDue, invoice.currency)}</span></div></div></section>
 
+      {/* M-Pesa: the Paybill details to pay by hand (also printed on the PDF), and the phone prompt —
+          "Pay with M-Pesa" for the family, "Request payment" for staff. payBy is only set while
+          something is owed and M-Pesa is set up on the server. */}
+      {invoice.payBy && (
+        <section style={{ ...cardStyle, padding: "18px 22px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap", borderColor: "#BBF7D0", background: "#F7FDF9" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <h2 style={{ margin: 0, fontSize: 15, display: "flex", alignItems: "center", gap: 7 }}><PhoneIphoneIcon sx={{ color: "#15803D", fontSize: 20 }} /> Pay by M-Pesa</h2>
+            <PaybillInstructions payBy={invoice.payBy} />
+            <p style={{ margin: 0, fontSize: 12, color: "#4B5563" }}>Lipa na M-Pesa → Pay Bill. Payments with this account number go onto this invoice automatically.</p>
+          </div>
+          <button type="button" className="no-print" onClick={() => setMpesaOpen(true)} style={{ ...buttonStyle, background: "#15803D", padding: "11px 18px" }}>
+            <PhoneIphoneIcon sx={{ fontSize: 17 }} />{canManage ? "Request payment" : "Pay with M-Pesa"}
+          </button>
+          <MpesaPayDialog
+            open={mpesaOpen}
+            onClose={() => setMpesaOpen(false)}
+            amountDue={invoice.amountDue}
+            currency={invoice.currency}
+            defaultPhone={invoice.billTo?.phone || ""}
+            requestMode={canManage}
+            start={(data) => billingApi.mpesaPay(invoice.id, data)}
+            onPaid={() => {
+              queryClient.invalidateQueries({ queryKey: ["billing", "invoice", invoice.id] });
+              queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] });
+              queryClient.invalidateQueries({ queryKey: ["billing", "receipts"] });
+            }}
+          />
+        </section>
+      )}
+
       <section style={{ ...cardStyle, padding: "20px 22px" }}>
         <h2 style={{ margin: "0 0 14px", fontSize: 15, display: "flex", alignItems: "center", gap: 7 }}><PaidIcon sx={{ color: "#38aae1", fontSize: 20 }} /> Payment history</h2>
         {invoice.payments?.length ? <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{invoice.payments.map((payment) => (
           <div key={payment.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${receiptsBasePath}/${invoice.id}/${payment.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${receiptsBasePath}/${invoice.id}/${payment.id}`); } }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "11px 12px", borderRadius: 9, cursor: "pointer", transition: "background .12s" }}>
-            <div><div style={{ fontSize: 13, fontWeight: 700 }}>{payment.receiptNumber || payment.paymentMethod || payment.provider}</div><div style={{ marginTop: 3, fontSize: 11, color: "#6B7280" }}>{formatDate(payment.paidAt)} · {(payment.paymentMethod || payment.provider || "").replaceAll("_", " ")} · {payment.status}</div></div>
+            <div><div style={{ fontSize: 13, fontWeight: 700 }}>{payment.receiptNumber || payment.paymentMethod || payment.provider}</div><div style={{ marginTop: 3, fontSize: 11, color: "#6B7280" }}>{formatDate(payment.paidAt)} · {payment.provider === "mpesa" ? `M-Pesa${payment.providerReference ? ` ${payment.providerReference}` : ""}` : (payment.paymentMethod || payment.provider || "").replaceAll("_", " ")} · {payment.status}</div></div>
             <strong style={{ color: "#047857", fontSize: 13 }}>{formatMoney(payment.amount, invoice.currency)}</strong>
           </div>
         ))}</div> : <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9CA3AF", fontSize: 13 }}><EventNoteIcon sx={{ fontSize: 18 }} /> No payments recorded yet.</div>}

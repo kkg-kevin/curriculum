@@ -32,6 +32,10 @@ const BillingModel = {
   createBatch(data, connection = db) { return createRecord(connection, BATCHES, data); },
   createItem(data, connection = db) { return createRecord(connection, ITEMS, stringifyJsonFields(data, ["metadata"]), { updatedAt: false }); },
   createPayment(data, connection = db) { return createRecord(connection, PAYMENTS, stringifyJsonFields(data, ["metadata"])); },
+  // An M-Pesa payment credited before its receipt number was known gets it once it arrives.
+  async updatePaymentReference(id, providerReference, connection = db) {
+    await connection(PAYMENTS).where({ id }).whereNull("providerReference").update({ providerReference, updatedAt: new Date() });
+  },
   findPaymentByIdempotencyKey(idempotencyKey, connection = db) { return idempotencyKey ? firstOrNull(connection(PAYMENTS).where({ idempotencyKey })) : null; },
   createAuditEvent(data, connection = db) { return createRecord(connection, AUDIT, stringifyJsonFields(data, ["metadata"]), { updatedAt: false }); },
   findInvoiceById(id, connection = db, forUpdate = false) {

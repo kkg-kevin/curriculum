@@ -46,9 +46,9 @@ async function toEducator(claim, event) {
   await NotificationService._notify(await educatorUserId(claim), { ...event, ownerAdminId: claim.ownerAdminId, payload });
 }
 
-const guarded = (fn) => async (claim) => {
+const guarded = (fn) => async (...args) => {
   try {
-    await fn(claim);
+    await fn(...args);
   } catch (err) {
     console.error("[claims] could not send a notification:", err.message);
   }
@@ -99,5 +99,21 @@ module.exports = {
       type: "claim_paid",
       title: "Claim paid",
       message: `${money(claim)} has been paid for ${claim.courseName || "your course"}${claim.paymentReference ? ` (ref ${claim.paymentReference})` : ""}.`,
+    })),
+
+  // Paying a claim by M-Pesa (payments/mpesa/mpesa.operations.js): Safaricom's answer, to the
+  // people who approve and pay claims. (The educator hears through `paid` above.)
+  payoutSent: guarded((claim, { receipt, receiverName, note } = {}) =>
+    toReviewers(claim, "claims-approval", {
+      type: "claim_payout_sent",
+      title: "Claim paid by M-Pesa",
+      message: `${money(claim)} reached ${receiverName || claim.teacherName || "the educator"} for ${claim.courseName || "their course"}${receipt ? ` (M-Pesa ${receipt})` : ""}.${note ? ` ${note}` : ""}`,
+    })),
+
+  payoutFailed: guarded((claim, reason) =>
+    toReviewers(claim, "claims-approval", {
+      type: "claim_payout_failed",
+      title: "M-Pesa payment of a claim didn't go through",
+      message: `Paying ${money(claim)} to ${claim.teacherName || "the educator"} for ${claim.courseName || "their course"}: ${reason || "M-Pesa didn't complete it"}. The claim is still approved.`,
     })),
 };

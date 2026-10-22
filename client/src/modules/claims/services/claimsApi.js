@@ -23,6 +23,10 @@ export const claimsApi = {
   supervisorDecision: (id, data) => api.post(`${BASE}/${id}/supervisor-decision`, data).then((r) => r.data.data),
   adminDecision: (id, data) => api.post(`${BASE}/${id}/admin-decision`, data).then((r) => r.data.data),
   markPaid: (id, data) => api.post(`${BASE}/${id}/mark-paid`, data).then((r) => r.data.data),
+  // Paying an approved claim by M-Pesa (B2C): { canPayOut, phone, payouts } and sending one.
+  // The claim becomes paid when M-Pesa confirms the money went.
+  mpesaPayouts: (id) => api.get(`${BASE}/${id}/mpesa-payouts`).then((r) => r.data.data),
+  payByMpesa: (id, data) => api.post(`${BASE}/${id}/mpesa-payout`, data).then((r) => r.data.data),
 
   // Supervisor accounts — logins that only review claims. [{ id, name, email, educators }]
   listSupervisors: () => api.get(`${BASE}/supervisors`).then((r) => r.data.data),

@@ -8,6 +8,7 @@ import LearningHubsPanel from "../learning-hubs/components/LearningHubsPanel";
 import TeamPanel, { TEAM_SECTIONS } from "../team/components/TeamPanel";
 import EmailsPanel from "../emails/components/EmailsPanel";
 import CertificateSettingsPanel from "../certificates/components/CertificateSettingsPanel";
+import PaymentsPanel from "../payments/PaymentsPanel";
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
 import { can } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
@@ -266,12 +267,14 @@ const ALL_TABS = [
   { key: "emails", label: "Emails" },
   // Who signs the workspace's certificates of completion — see CertificateSettingsPanel.
   { key: "certificates", label: "Certificates" },
+  // The workspace's own M-Pesa Paybill — see PaymentsPanel.
+  { key: "payments", label: "Payments" },
   // The rates educators are paid at, for the whole workspace — see EducatorPayPanel.
   { key: "educator-pay", label: "Educator pay" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
-const OWNER_ONLY_TABS = ["people", "emails", "certificates"];
+const OWNER_ONLY_TABS = ["people", "emails", "certificates", "payments"];
 
 // Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
 // sharing notifications, bookmarks) open the matching section of People & sharing.
@@ -344,6 +347,7 @@ export default function SettingsPage() {
         {activeTab === "people" && <TeamPanel section={teamSection} onSectionChange={setTeamSection} />}
         {activeTab === "emails" && <EmailsPanel />}
         {activeTab === "certificates" && <CertificateSettingsPanel />}
+        {activeTab === "payments" && <PaymentsPanel />}
         {activeTab === "educator-pay" && <EducatorPayPanel />}
       </div>
     </div>

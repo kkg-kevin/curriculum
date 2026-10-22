@@ -314,6 +314,27 @@ export async function buildInvoicePdf(invoice, { output = "save" } = {}) {
   // Totals box, right-aligned
   let ty = pdf.lastAutoTable.finalY + 16;
   const boxX = PAGE_W - MARGIN - 200;
+
+  // How to pay by M-Pesa, beside the totals — only while something is owed (see billing.service.js).
+  if (invoice.payBy) {
+    const px = MARGIN;
+    const pw = boxX - MARGIN - 24;
+    pdf.setDrawColor(187, 247, 208);
+    pdf.setFillColor(247, 253, 249);
+    pdf.roundedRect(px, ty - 12, pw, 62, 6, 6, "FD");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(...FAINT);
+    pdf.text("PAY BY M-PESA", px + 12, ty + 2);
+    pdf.setFontSize(11);
+    pdf.setTextColor(...INK);
+    pdf.text(`Paybill ${invoice.payBy.paybill}`, px + 12, ty + 18);
+    pdf.text(`Account ${invoice.payBy.account}`, px + 12 + Math.min(150, pw / 2), ty + 18);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(...MUTED);
+    pdf.text("Lipa na M-Pesa > Pay Bill. Payments with this account number are matched to this invoice.", px + 12, ty + 34, { maxWidth: pw - 24 });
+  }
   const rows = [
     ["Subtotal", money(invoice.subtotal, currency), MUTED],
     ["Discount", `- ${money(invoice.discount, currency)}`, MUTED],
@@ -387,7 +408,7 @@ export async function buildReceiptPdf(receipt) {
   y += 18;
 
   y = drawMeta(pdf, y, [
-    { label: "Payment method", value: (receipt.paymentMethod || receipt.provider || "").replace(/_/g, " ") },
+    { label: "Payment method", value: receipt.paymentMethod === "mpesa" ? "M-Pesa" : (receipt.paymentMethod || receipt.provider || "").replace(/_/g, " ") },
     { label: "Date received", value: fmtDate(receipt.paidAt) },
     { label: "Reference", value: receipt.providerReference || "Not provided" },
     { label: "Applied to invoice", value: receipt.invoice?.invoiceNumber || "—" },

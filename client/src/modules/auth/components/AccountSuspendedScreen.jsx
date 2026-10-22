@@ -4,6 +4,8 @@ import { FiLogOut, FiShield, FiClock, FiLifeBuoy, FiRefreshCw, FiKey, FiChevronD
 import { useAuth } from "../../../context/AuthContext";
 import { BRAND_NAME, BRAND_LOGO } from "../../../branding";
 import ChangePasswordCard from "./ChangePasswordCard";
+import MpesaPayDialog from "../../billing/components/MpesaPayDialog";
+import { billingApi } from "../../billing/services/billingApi";
 
 // Shown IN-APP (behind a real, logged-in session) when the account is suspended. Rendered by
 // ProtectedRoute in place of the whole authenticated app, so it's the only route a suspended
@@ -93,6 +95,41 @@ function formatMoney(amount, currency) {
 // auth.service.js's getPendingPayment) — shown right above the generic "complete your
 // payment" panel so it's visible on every login/reload, not just the one-time website
 // confirmation screen the visitor may have already closed.
+// Pay now by M-Pesa: the phone prompt for this account's own sign-up invoice. Once it's paid the
+// account unlocks, so the page reloads into the app. `payBy` (the Paybill and account number of
+// the invoice's workspace) is only there while M-Pesa is on for it.
+function MpesaPayNow({ pendingPayment }) {
+  const [open, setOpen] = useState(false);
+  const payBy = pendingPayment?.payBy;
+  if (!pendingPayment?.invoiceId || !payBy) return null;
+  return (
+    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #d7ecf7" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%",
+          padding: "12px 18px", borderRadius: 999, border: "none", background: "#15803D", color: "#fff",
+          fontSize: 14, fontWeight: 800, fontFamily: "Inter, sans-serif", cursor: "pointer",
+        }}
+      >
+        Pay now with M-Pesa
+      </button>
+      <p style={{ margin: "10px 0 0", fontSize: 12, color: "#4B5563", lineHeight: 1.55, textAlign: "center" }}>
+        Or from the M-Pesa menu: Pay Bill <strong>{payBy.paybill}</strong>, account <strong>{payBy.account}</strong>.
+      </p>
+      <MpesaPayDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        amountDue={pendingPayment.amount}
+        currency={pendingPayment.currency || "KES"}
+        start={(data) => billingApi.mpesaPayPending(data)}
+        onPaid={() => setTimeout(() => window.location.reload(), 2500)}
+      />
+    </div>
+  );
+}
+
 function PendingPaymentPanel({ pendingPayment }) {
   if (!pendingPayment || pendingPayment.amount == null) return null;
   return (
@@ -121,12 +158,16 @@ function PendingPaymentPanel({ pendingPayment }) {
           {pendingPayment.kind === "home_learning" || pendingPayment.kind === "tech_club" ? (
             <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
               First month for {pendingPayment.itemName}{pendingPayment.invoiceNumber ? ` (invoice ${pendingPayment.invoiceNumber})` : ""}.
-              Pay in cash to our team — your family's logins unlock as soon as we approve the payment.
+              {pendingPayment.invoiceId
+                ? " Pay by M-Pesa below and your family's logins unlock straight away — or pay in cash to our team and we'll approve it."
+                : " Pay in cash to our team — your family's logins unlock as soon as we approve the payment."}
             </p>
           ) : (
             <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
               {pendingPayment.bootcampName ? `Amount owed for ${pendingPayment.bootcampName}. ` : ""}
-              Pay by cash at {pendingPayment.hubName || "your hub"} to activate full access.
+              {pendingPayment.invoiceId
+                ? `Pay by M-Pesa below to activate full access straight away, or pay in cash at ${pendingPayment.hubName || "your hub"}.`
+                : `Pay by cash at ${pendingPayment.hubName || "your hub"} to activate full access.`}
             </p>
           )}
           {/* This bootcamp is priced by course/module rather than as a whole — see
@@ -139,6 +180,7 @@ function PendingPaymentPanel({ pendingPayment }) {
           )}
         </div>
       </div>
+      <MpesaPayNow pendingPayment={pendingPayment} />
     </div>
   );
 }

@@ -43,6 +43,8 @@ const errorHandler = (err, req, res, next) => {
     // every other error, so nothing existing changes shape.
     ...(err.code ? { code: err.code } : {}),
     ...(err.reason ? { reason: err.reason } : {}),
+    // An M-Pesa prompt already waiting for this invoice — the client follows it instead.
+    ...(err.requestId ? { requestId: err.requestId } : {}),
   });
 };
 

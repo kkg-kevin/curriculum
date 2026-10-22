@@ -7,8 +7,11 @@ const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
 const ClassModel = require("../classes/class.model");
 const { sendInvoiceEmail, sendPaymentReceiptEmail } = require("./billing.emails");
+const { runInvoicePaidHooks } = require("./billing.paid-hooks");
+const { paymentInstructions } = require("../payments/mpesa/mpesa.instructions");
 
 const RECEIVABLE_STATUSES = ["issued", "partially_paid", "paid", "overdue"];
+const PAYABLE_STATUSES = ["issued", "partially_paid", "overdue"];
 
 function money(value) { return Number(Number(value || 0).toFixed(2)); }
 function notFound(message) { const err = new Error(message); err.statusCode = 404; return err; }
@@ -53,6 +56,12 @@ async function resolvePayerIdentity(invoice) {
     }
     const payer = await UserModel.findById(invoice.payerUserId);
     if (payer) return { name: payer.name || null, email: payer.email || null, phone: null, address: null };
+  }
+  // A bootcamp enrolment's invoice is raised at sign-up, before the family has a parent login —
+  // it bills the parent named on the learner's profile.
+  if (invoice.invoiceType === "bootcamp" && invoice.learnerId) {
+    const learner = await LearnerModel.findById(invoice.learnerId);
+    if (learner?.guardianName || learner?.guardianEmail) return { name: learner.guardianName || null, email: learner.guardianEmail || null, phone: learner.guardianPhone || null, address: null };
   }
   return null;
 }
@@ -146,6 +155,8 @@ async function decorate(invoice, items, payments, cache) {
     subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total),
     amountPaid, amountDue: money(Number(invoice.total) - amountPaid),
     items, payments,
+    // "Pay via M-Pesa: Paybill …, Account …" while something is still owed (null when M-Pesa is off).
+    payBy: PAYABLE_STATUSES.includes(invoice.status) && Number(invoice.total) - amountPaid > 0 ? await paymentInstructions(invoice).catch(() => null) : null,
     billTo: await resolvePayerIdentity(invoice),
     issuedBy: await resolveIssuerIdentity(invoice),
     learner: await resolveDocumentLearner(invoice.learnerId),
@@ -480,39 +491,76 @@ const BillingService = {
     return await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
   },
 
+  // Staff recording money received by hand (cash, a bank transfer, an M-Pesa code typed in).
   async recordPayment(id, data, req) {
     const invoice = await BillingModel.findInvoiceById(id);
     if (!invoice) throw notFound("Invoice not found");
     await assertAccess(req, invoice);
     const existingPayment = await BillingModel.findPaymentByIdempotencyKey(data.idempotencyKey);
     if (existingPayment) return decorate(invoice, await BillingModel.findItems(id), await BillingModel.findPayments(id));
-    if (!["issued", "partially_paid", "overdue"].includes(invoice.status)) throw badRequest("This invoice is not payable");
     const paymentDate = data.paymentDate ? new Date(data.paymentDate) : new Date();
     if (Number.isNaN(paymentDate.getTime())) throw badRequest("Payment date is invalid");
+    const { invoice: full } = await this.applyPayment(id, {
+      amount: data.amount, provider: "manual", paymentMethod: data.paymentMethod, providerReference: data.providerReference || null,
+      paymentDate, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, idempotencyKey: data.idempotencyKey || null,
+      notes: data.notes || null,
+    });
+    return full;
+  },
+
+  // Puts money on an invoice: the one place a payment row is written, for staff entries
+  // (recordPayment above) and for money that arrived by itself (M-Pesa callbacks, the reconcile
+  // job). No `req` and no access check — callers do their own. Locks the invoice row, so two
+  // payments at once can't both read the old balance.
+  //
+  // A hand-typed amount above what's due is refused. Money that has already arrived (allowExcess)
+  // can't be refused: it pays what's due and the rest comes back as `excess` for the caller to
+  // keep track of. An idempotencyKey seen before returns that earlier payment with
+  // `duplicate: true` and changes nothing. When the payment settles the invoice, the "invoice
+  // paid" hooks run afterwards (a website sign-up is switched on, and so on).
+  async applyPayment(invoiceId, { amount, provider = "manual", paymentMethod, providerReference = null, paymentDate = null, payerUserId = null, recordedBy = null, idempotencyKey = null, notes = null, metadata = null, allowExcess = false }) {
+    const paidAt = paymentDate ? new Date(paymentDate) : new Date();
     let payment;
     let updated;
+    let previousStatus;
+    let duplicate = false;
+    let excess = 0;
     await BillingModel.transaction(async (trx) => {
-      const lockedInvoice = await BillingModel.findInvoiceById(id, trx, true);
+      const lockedInvoice = await BillingModel.findInvoiceById(invoiceId, trx, true);
       if (!lockedInvoice) throw notFound("Invoice not found");
-      const retriedPayment = await BillingModel.findPaymentByIdempotencyKey(data.idempotencyKey, trx);
+      previousStatus = lockedInvoice.status;
+      const retriedPayment = await BillingModel.findPaymentByIdempotencyKey(idempotencyKey, trx);
       if (retriedPayment) {
         payment = retriedPayment;
         updated = lockedInvoice;
+        duplicate = true;
         return;
       }
-      if (!["issued", "partially_paid", "overdue"].includes(lockedInvoice.status)) throw badRequest("This invoice is not payable");
-      const currentPaid = money((await BillingModel.sumSuccessfulPayments(id, trx))?.total);
-      if (money(currentPaid + data.amount) > money(lockedInvoice.total)) throw badRequest("Payment exceeds the amount due");
-      const newPaid = money(currentPaid + data.amount);
+      if (!PAYABLE_STATUSES.includes(lockedInvoice.status)) throw badRequest("This invoice is not payable");
+      const currentPaid = money((await BillingModel.sumSuccessfulPayments(invoiceId, trx))?.total);
+      const due = money(Number(lockedInvoice.total) - currentPaid);
+      let credit = money(amount);
+      if (credit > due) {
+        if (!allowExcess) throw badRequest("Payment exceeds the amount due");
+        excess = money(credit - due);
+        credit = due;
+      }
+      if (credit <= 0) throw badRequest("This invoice has nothing left to pay");
+      const newPaid = money(currentPaid + credit);
       const newStatus = newPaid >= money(lockedInvoice.total) ? "paid" : "partially_paid";
-      payment = await BillingModel.createPayment({ invoiceId: id, payerUserId: invoice.payerUserId || req.user.id, recordedBy: req.user.id, idempotencyKey: data.idempotencyKey || null, provider: "manual", providerReference: data.providerReference || null, receiptNumber: await nextReceiptNumber(trx), amount: money(data.amount), currency: invoice.currency, status: "successful", paymentMethod: data.paymentMethod, paymentDate, paidAt: paymentDate, notes: data.notes || null }, trx);
-      updated = await BillingModel.updateInvoice(id, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
-      await BillingModel.createAuditEvent({ invoiceId: id, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: req.user.id, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: data.amount, metadata: { paymentMethod: data.paymentMethod, receiptNumber: payment.receiptNumber } }, trx);
+      payment = await BillingModel.createPayment({ invoiceId, payerUserId: payerUserId || lockedInvoice.payerUserId || null, recordedBy, idempotencyKey, provider, providerReference, receiptNumber: await nextReceiptNumber(trx), amount: credit, currency: lockedInvoice.currency, status: "successful", paymentMethod, paymentDate: paidAt, paidAt, notes, metadata }, trx);
+      updated = await BillingModel.updateInvoice(invoiceId, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
+      await BillingModel.createAuditEvent({ invoiceId, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: recordedBy, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: credit, metadata: { paymentMethod, provider, receiptNumber: payment.receiptNumber, ...(providerReference ? { providerReference } : {}), ...(excess ? { excess } : {}) } }, trx);
     });
-    const full = await decorate(updated, await BillingModel.findItems(id), await BillingModel.findPayments(id));
-    // Sent once per payment (see its dedupeKey), so an idempotent retry of this request is harmless.
-    sendPaymentReceiptEmail(full, payment).catch(() => {});
-    return full;
+    const full = await decorate(updated, await BillingModel.findItems(invoiceId), await BillingModel.findPayments(invoiceId));
+    if (!duplicate) {
+      // Sent once per payment (see its dedupeKey), so an idempotent retry is harmless.
+      sendPaymentReceiptEmail(full, payment).catch(() => {});
+      if (full.status === "paid" && previousStatus !== "paid") {
+        await runInvoicePaidHooks(full, { amount: money(amount), paidByUserId: recordedBy });
+      }
+    }
+    return { invoice: full, payment, excess, duplicate };
   },
 
   async getReceipt(invoiceId, paymentId, req) {
