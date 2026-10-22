@@ -241,7 +241,7 @@ router.route("/:id/assessments/evidence/:etId").put(updateEvidenceType).delete(d
 router.route("/:id/competencies/bands").get(getPerformanceBands).post(createPerformanceBand);
 router.route("/:id/competencies/bands/reorder").put(reorderPerformanceBands);
 // A Pathway's own course ladder — scoped by pathwayId instead of ageCategoryId, see
-// PerformanceBandModel.reorderByPathway.
+// CompetencyService.reorderPathwayCourses.
 router.route("/:id/competencies/pathways/:pathwayId/courses/reorder").put(reorderPathwayCourses);
 // Progress Arc — indicator-driven band completion (must come before the /:bandId wildcard below)
 router.route("/:id/competencies/bands/progress/calculate").post(calculateIndicatorProgress);

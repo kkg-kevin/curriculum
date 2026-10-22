@@ -19,10 +19,24 @@ const {
   unlinkInventoryItem,
 } = require("./assessment.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
+const AssessmentFolderService = require("./assessment-folder.service");
 
 const router = express.Router();
 
 router.route("/").get(authorize("admin"), getAllAssessments).post(authorize("admin"), createAssessment);
+
+// Assessment folders (Assessments page) — registered before "/:id" so "folders" is never read as an
+// assessment id (or reaches the ownership check below).
+const ok = (res, data, status = 200) => res.status(status).json({ success: true, data });
+router.route("/folders")
+  .get(authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.list(req.ownerAdminId))))
+  .post(authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.create(req.ownerAdminId, req.body), 201)));
+router.route("/folders/:folderId")
+  .put(authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.update(req.ownerAdminId, req.params.folderId, req.body))))
+  .delete(authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.remove(req.ownerAdminId, req.params.folderId))));
+router.put("/folders/:folderId/assessments", authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.addAssessments(req.ownerAdminId, req.params.folderId, req.body))));
+router.delete("/folders/:folderId/assessments/:assessmentId", authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.removeAssessment(req.ownerAdminId, req.params.folderId, req.params.assessmentId))));
+
 router.route("/:id").get(authorize("admin"), getAssessmentById).put(authorize("admin"), updateAssessment).delete(authorize("admin"), deleteAssessment);
 
 // Everything under "/:id/..." below is assessment-authoring content (competency/pathway/

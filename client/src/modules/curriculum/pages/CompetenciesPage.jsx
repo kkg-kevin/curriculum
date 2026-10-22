@@ -917,14 +917,12 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
     saveRow({ diagnosticAssessmentId: null, publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null });
   }
 
-  // The stage's own authored course order — Performance Bands with pathwayId+courseId set,
-  // ordered by `order` (see PerformanceBandModel.findByPathway server-side) — then any courses[]
-  // entries with no band configured yet, appended at the end.
-  const stageBands = row
-    ? allBands.filter((b) => b.pathwayId === row.id).sort((a, b) => a.order - b.order)
-    : [];
-  const sequencedIds = stageBands.map((b) => b.courseId).filter((cid) => courses.includes(cid));
-  const orderedIds = [...sequencedIds, ...courses.filter((cid) => !sequencedIds.includes(cid))];
+  // The stage's course order is its courses list, as saved. The server keeps each course's band
+  // (what it takes to advance — Performance Bands with pathwayId+courseId set) numbered in the
+  // same order, so the ladder learners advance along is the one shown here (see
+  // CompetencyService.reorderPathwayCourses).
+  const stageBands = row ? allBands.filter((b) => b.pathwayId === row.id) : [];
+  const orderedIds = courses;
   const bandByCourseId = new Map(stageBands.map((b) => [b.courseId, b]));
 
   function moveCourse(idx, delta) {
@@ -1391,14 +1389,12 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
                     }
                     const percentageByIndicator = {};
                     (band.indicatorContributions || []).forEach((p) => { if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage; });
-                    const populated = populatedByCompetencyId.get(cId);
-                    const blockIndicators = populated && populated.length > 0 ? populated : (comp.indicators || []);
                     return (
                       <BandCompetencyBlock
                         key={cId}
                         comp={comp}
                         color={color}
-                        populatedIndicators={blockIndicators}
+                        indicators={bandIndicatorsFor(comp, populatedByCompetencyId.get(cId))}
                         percentageByIndicator={percentageByIndicator}
                         onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
                       />
@@ -3120,23 +3116,32 @@ function BandIndicatorContributionRow({ ind, percentage, color, onSave }) {
   );
 }
 
-// One competency imported into a band — its indicators are whichever ones are actually
-// tagged on a question/rubric criterion/observation item somewhere in this curriculum's
-// attached assessments (see CompetencyService.getPopulatedIndicators), listed automatically
-// as soon as they're populated — no manual add step. Each gets a % contribution scoped to
-// this band only — a share of the BAND's 100% (not this competency's own 100%) — when a
-// band draws on more than one competency, all of their indicators' percentages share that
-// same 100% budget between them.
-function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByIndicator, onSaveContribution }) {
+// A competency's indicators as a band lists them: always its FULL list from Settings →
+// Competencies, in that order, so a competency shows the same indicators on every band, in every
+// Developmental Stage and pathway, and everywhere else it's used. (Bands used to list only the
+// indicators this curriculum's assessments had tagged, so one competency showed 10 indicators in
+// Settings but 6 or 7 here.) The ones tagged on an assessment attached to this curriculum carry
+// their marks possible (CompetencyService.getPopulatedIndicators); the rest are listed the same
+// way — they can still be weighted, and score 0% until an assessment tags them.
+function bandIndicatorsFor(comp, populated) {
+  const tagged = new Map((populated || []).map((ind) => [ind.id, ind]));
+  return (comp.indicators || []).map((ind) => (tagged.has(ind.id) ? { ...ind, ...tagged.get(ind.id) } : ind));
+}
+
+// One competency imported into a band, with every one of its indicators (see bandIndicatorsFor).
+// Each gets a % contribution scoped to this band only — a share of the BAND's 100% (not this
+// competency's own 100%) — when a band draws on more than one competency, all of their
+// indicators' percentages share that same 100% budget between them.
+function BandCompetencyBlock({ comp, color, indicators, percentageByIndicator, onSaveContribution }) {
   const [open, setOpen] = useState(false);
 
   // How much of this BAND's 100% budget this one competency currently accounts for — the sum of
   // every one of its indicator % contributions. A band can draw on several competencies that all
   // share the same 100%, so this per-competency subtotal shows how that 100% is split between
   // them (the band card's own "Indicators: X%" chip is the sum of these across every competency).
-  // Only the indicators actually listed here count — a stale contribution for an indicator no
-  // longer populated is ignored, same as Engine 4 does.
-  const competencyTotal = populatedIndicators.reduce(
+  // Only the indicators listed here count — a stale contribution for an indicator since deleted
+  // from the competency is ignored.
+  const competencyTotal = indicators.reduce(
     (s, ind) => s + (Number(percentageByIndicator[ind.id]) || 0),
     0
   );
@@ -3164,12 +3169,12 @@ function BandCompetencyBlock({ comp, color, populatedIndicators, percentageByInd
       </button>
       {open && (
         <div className="cp-indicators-body">
-          {populatedIndicators.length === 0 ? (
+          {indicators.length === 0 ? (
             <p style={{ margin: 0, fontSize: "11.5px", color: "#D1D5DB", fontStyle: "italic" }}>
               This competency has no indicators defined at all yet — add some in Settings → Competencies first.
             </p>
           ) : (
-            populatedIndicators.map((ind) => (
+            indicators.map((ind) => (
               <BandIndicatorContributionRow
                 key={ind.id}
                 ind={ind}
@@ -3939,21 +3944,14 @@ function PerformanceBandsPanel({ curriculumId }) {
                         (band.indicatorContributions || []).forEach((p) => {
                           if (p.competencyId === cId) percentageByIndicator[p.indicatorId] = p.percentage;
                         });
-                        // Real tagged-on-assessment indicators first; if none exist yet (a
-                        // competency added via "browse all competencies" ahead of real usage),
-                        // fall back to the competency's own global indicator list so there's
-                        // still something to weight/track — it just scores 0% for every learner
-                        // until a real assessment actually tags these indicators. No visual
-                        // distinction is made either way — it's shown exactly like any other
-                        // competency on this band.
-                        const populated = populatedByCompetencyId.get(cId);
-                        const blockIndicators = populated && populated.length > 0 ? populated : (comp.indicators || []);
+                        // Every indicator the competency has in Settings, the same list on every
+                        // band and stage — see bandIndicatorsFor.
                         return (
                           <BandCompetencyBlock
                             key={cId}
                             comp={comp}
                             color={color}
-                            populatedIndicators={blockIndicators}
+                            indicators={bandIndicatorsFor(comp, populatedByCompetencyId.get(cId))}
                             percentageByIndicator={percentageByIndicator}
                             onSaveContribution={(indicatorId, percentage) => saveIndicatorContribution(band, cId, indicatorId, percentage)}
                           />

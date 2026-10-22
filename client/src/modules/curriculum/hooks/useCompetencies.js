@@ -193,7 +193,9 @@ export function useReorderPathwayCourses(curriculumId) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ pathwayId, orderedIds }) => competenciesApi.reorderPathwayCourses(curriculumId, pathwayId, orderedIds),
+    // The order lives on the pathway's courses list and its course bands — refresh both.
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
       qc.invalidateQueries({ queryKey: KEYS.performanceBands(curriculumId) });
     },
     onError: (err) => toast.error(err.response?.data?.message || "Failed to reorder courses"),

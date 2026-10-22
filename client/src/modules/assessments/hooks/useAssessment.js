@@ -37,6 +37,29 @@ export function useAssessmentsQuery(options = {}) {
   });
 }
 
+/* ── Assessment folders (Assessments page) ── */
+
+// Under ASSESSMENT_KEYS.all, so anything that refreshes the assessment list refreshes folder counts too.
+export const ASSESSMENT_FOLDER_KEY = ["assessments", "folders"];
+
+export function useAssessmentFoldersQuery() {
+  return useQuery({ queryKey: ASSESSMENT_FOLDER_KEY, queryFn: assessmentApi.getFolders });
+}
+
+// One mutation per folder action; each refreshes the assessments and folders and shows its own toast.
+export function useAssessmentFolderMutation(mutationFn, successMessage, failureMessage) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ASSESSMENT_KEYS.all });
+      const message = typeof successMessage === "function" ? successMessage(data, variables) : successMessage;
+      if (message) toast.success(message);
+    },
+    onError: (err) => toast.error(err.message || failureMessage),
+  });
+}
+
 export function useAssessmentQuery(id, options = {}) {
   return useQuery({
     queryKey: ASSESSMENT_KEYS.detail(id),

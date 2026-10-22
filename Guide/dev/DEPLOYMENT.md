@@ -102,6 +102,120 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (22 Oct 2026) — assessment folders; full indicator lists on Performance Bands; pathway course arrows fixed; bootcamp page without "Enquire to book"; M-Pesa code included, switched off
+
+**Backend, portal and website**, from `curriculum` (branch `modules`) at `c12fa9b` and
+`curriculum-web` (branch `new`) at `c1b5229`. Includes everything in "This release (19 Oct 2026,
+afternoon)" below — if that one isn't up yet, follow its notes too. **Upload the backend first**,
+then the portal, then the website.
+
+### What changed — portal
+
+- **Assessment folders.** The Assessments page groups assessments into folders, the same way the
+  Courses page does: **New Folder** (name, description, image, colour), folder cards with their
+  colour on hover, **Add assessments**, **Edit folder**, **Delete folder** (its assessments stay,
+  outside any folder), and **Add to / Move to folder** on each assessment's menu. Search looks
+  through every assessment wherever it's filed, and shows each result's folder. Staff need the
+  Assessments permission, as for any other change to assessments.
+- **Performance Bands list every indicator.** A competency on a band — Progress Arc bands in every
+  developmental stage, and a pathway's course ladder — now shows all the indicators it has in
+  Settings → Competencies. Before, it showed only the indicators the curriculum's assessments had
+  tagged (e.g. 6 of Computational Thinking's 10). Weights already set are unchanged; the newly
+  shown indicators start at 0%.
+- **Pathway course arrows work.** The up/down arrows on a pathway's courses (Curriculum →
+  Competency Framework → Pathways) now reorder them; before, they saved nothing. The order shown
+  is the order learners advance along.
+- **M-Pesa — included, but off.** The M-Pesa code (paused, not tested against Safaricom) is in
+  this release. With no `MPESA_*` keys in `.env` — none are needed — no Pay with M-Pesa
+  button, Paybill number or payment prompt appears anywhere. What does change:
+  - **Billing → M-Pesa** tab and **Settings → Payments** (owner only) appear; both say M-Pesa
+    isn't set up.
+  - **A bootcamp enrolment from the website now raises its invoice at sign-up** and emails it to
+    the parent. **Mark paid** on the enquiry records the cash against that invoice instead of
+    creating one.
+  - **Recording a full payment** in Billing on a Home Learning, Tech Club or bootcamp website
+    sign-up's first invoice now switches the sign-up on by itself, as Approve / Mark paid do.
+
+### What changed — website
+
+- **Bootcamp pages:** the two **Enquire to book** buttons and the price panel beside the details
+  are gone. The price still shows in the header; any notes on what it includes appear as an
+  "Included in the price" section; the details use the full width; a hub's preview opens under the
+  "Running at" list.
+- **Pay now with M-Pesa** after a sign-up is in the website too, but only shows when the API
+  offers it — never while M-Pesa is off.
+
+### Four new migrations, applied on Restart
+
+- `20261021090000_create_mpesa_tables.js` — `mpesa_stk_requests`, `mpesa_transactions`,
+  `leads.invoiceId`.
+- `20261022090000_mpesa_accounts_links_operations.js` — `mpesa_accounts`, `payment_links`,
+  `mpesa_operations`, `accountId` on the two M-Pesa tables.
+- `20261022100000_create_assessment_folders.js` — `assessment_folders`, `assessments.folderId`.
+- `20261022110000_align_pathway_course_order.js` — **data only**: lines each pathway's saved
+  course list up with the order the Pathways tab already showed, and renumbers its course bands
+  to match. Nothing visibly moves.
+
+All additive (the last one rewrites course order only). No new environment variable is needed
+(the `MPESA_*` ones are all optional); no new npm package.
+
+### Backend (`backend-deploy.zip`)
+
+From `c12fa9b`, byte-identical in Dev, Live and Capable; 528 entries, 128 migrations, the newest
+`20261022110000_align_pathway_course_order.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DczvbW6p.js` |
+| Live | `npm run build:live` | `index-DLEjIx3n.js` |
+| Capable | `npm run build:capable` | `index-CpageW8Y.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2895 KB) | 39 of 39 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2756 KB) | 24 of 24 pre-rendered with content |
+
+Both checked: built site (no dev-server files), each calling its own API, no "Enquire to book" on
+any bootcamp page.
+
+### Checked so far
+
+Against a local database: assessment folders created, filled, renamed, emptied and deleted (a
+duplicate name and another workspace's assessments refused); course folders unchanged; every local
+pathway's course list and band order agree after the migration, and a reorder moves both. Server
+tests, website tests and all builds pass. **Not yet clicked through in a browser, and not yet tried
+on the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'assessment_folders';` and `SHOW TABLES LIKE 'mpesa_accounts';` each return
+   one row. If not, Run JS script → `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `africa-digifunzi-com-dist.zip` to the `https://africa.digifunzi.com` document root and Extract.
+5. **Verify:**
+   - Assessments: New Folder, add two assessments, open it, move one out from its card menu,
+     delete the folder — both assessments are still listed.
+   - A curriculum's Progress Arc → Performance Bands: a competency lists as many indicators as in
+     Settings → Competencies.
+   - Pathways: the arrows move a course, and the order stays after a page reload.
+   - A bootcamp page on the website: no "Enquire to book", no price panel; the price is in the
+     header.
+   - Billing → M-Pesa says M-Pesa isn't set up, and no invoice shows a Paybill number.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `fa6121d`).
+
+---
+
 ## This release (19 Oct 2026, afternoon) — Estate Tech Club pages rebuilt for parents; club details in the hub form; a skeleton screen while the website starts
 
 **Backend, portal and website**, from `curriculum` (branch `modules`) at `694c6e3` and

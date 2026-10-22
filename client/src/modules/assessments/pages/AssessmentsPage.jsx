@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
-import { useAssessmentsQuery, useDeleteAssessment } from "../hooks/useAssessment";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiFolder, FiFolderPlus, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
+import { useAssessmentsQuery, useDeleteAssessment, useAssessmentFoldersQuery, useAssessmentFolderMutation } from "../hooks/useAssessment";
+import { assessmentApi } from "../services/assessmentApi";
+import { AddItemsDialog, FolderDialog, FolderTile, MoveToFolderDialog, NewFolderTile } from "../../../components/folders/Folders";
 import { useDraftsQuery, useDeleteDraft, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftCard from "../../../components/ui/DraftCard";
 import { ASSESSMENT_TYPES, entryMarks, roundMarks } from "../schemas/assessment.schema";
@@ -11,6 +13,8 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", project: "Project", assignment: "Assignment", observation: "Teacher Observation", survey: "Survey" };
 const TYPE_ICONS = { quiz: FiFileText, exam: FiBookOpen, project: FiClipboard, assignment: FiFileText, observation: FiEye, survey: FiBarChart2 };
+// What the shared folder pieces call the records filed on this page.
+const FOLDER_NOUN = { one: "assessment", many: "assessments", example: "e.g. End-of-term quizzes for Grade 5" };
 const TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", project: "#7C3AED", assignment: "#059669", observation: "#D97706", survey: "#0891B2" };
 
 /* ── content summary (shared shape with the Builder) ─────────────────────── */
@@ -149,7 +153,8 @@ function MenuButton({ icon, label, onClick, danger = false }) {
   );
 }
 
-function AssessmentCard({ assessment }) {
+// `onMove` opens "Move to folder"; `folderName` (search results only) names the folder it's in.
+function AssessmentCard({ assessment, onMove, folderName }) {
   const navigate = useNavigate();
   const { mutate: deleteAssessment, isPending: isDeleting } = useDeleteAssessment();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -221,6 +226,11 @@ function AssessmentCard({ assessment }) {
               {assessment.saleStatus === "for_sale" && <ForSaleBadge />}
               <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>{summary}{totalPoints ? ` · ${totalPoints} pts` : ""}</span>
             </div>
+            {folderName && (
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11.5px", color: "#6B7280", marginTop: "5px" }}>
+                <FiFolder size={12} /> {folderName}
+              </div>
+            )}
           </div>
         </div>
 
@@ -258,6 +268,13 @@ function AssessmentCard({ assessment }) {
             label="Edit"
             onClick={() => { setMenuOpen(false); navigate(`/assessments/${assessment.id}/edit`); }}
           />
+          {onMove && (
+            <MenuButton
+              icon={<FiFolder size={14} strokeWidth={2} />}
+              label={assessment.folderId ? "Move to folder" : "Add to folder"}
+              onClick={() => { setMenuOpen(false); onMove(assessment); }}
+            />
+          )}
           <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "4px 0" }} />
           <MenuButton
             icon={<FiTrash2 size={14} strokeWidth={2} />}
@@ -315,52 +332,102 @@ function EmptyState({ onCreateNew }) {
   );
 }
 
+// Assessments can be filed into folders (?folder=<id> opens one), like courses on the Courses page.
+// The top level shows the folders and the assessments that aren't in any; a search always looks
+// through every assessment, wherever it's filed.
 export default function AssessmentsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data, isLoading, isError, error } = useAssessmentsQuery();
+  const { data: folderRows } = useAssessmentFoldersQuery();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const assessments = data?.data || [];
+  const assessments = useMemo(() => data?.data || [], [data]);
+  const folders = useMemo(() => (Array.isArray(folderRows) ? folderRows : []), [folderRows]);
   // Unsaved work from the builder, shown as cards ahead of the assessments.
   const { data: drafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.assessments);
   const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.assessments);
   const onlyDrafts = typeFilter === "unsaved";
 
+  // Folder dialogs: { kind: "new" | "rename" | "add" | "move" | "delete", folder?, assessment? }.
+  const [dialog, setDialog] = useState(null);
+  const closeDialog = () => setDialog(null);
+  const folderById = useMemo(() => new Map(folders.map((f) => [f.id, f])), [folders]);
+  const openFolderId = searchParams.get("folder");
+  const openFolder = openFolderId ? folderById.get(openFolderId) || null : null;
+  const openFolderAt = (id) => {
+    const next = new URLSearchParams(searchParams);
+    if (id) next.set("folder", id); else next.delete("folder");
+    setSearchParams(next);
+  };
+
+  const createFolder = useAssessmentFolderMutation(assessmentApi.createFolder, (folder) => `Folder “${folder.name}” created`, "Could not create the folder");
+  const updateFolder = useAssessmentFolderMutation(({ id, data: changes }) => assessmentApi.updateFolder(id, changes), "Folder saved", "Could not save the folder");
+  const deleteFolder = useAssessmentFolderMutation(assessmentApi.deleteFolder, "Folder deleted — its assessments are still in Assessments", "Could not delete the folder");
+  const addToFolder = useAssessmentFolderMutation(({ id, assessmentIds }) => assessmentApi.addAssessmentsToFolder(id, assessmentIds), ({ moved }) => `${moved} assessment${moved === 1 ? "" : "s"} added`, "Could not add the assessments");
+  const moveAssessment = useAssessmentFolderMutation(
+    ({ assessment, folderId }) => (folderId ? assessmentApi.addAssessmentsToFolder(folderId, [assessment.id]) : assessmentApi.removeAssessmentFromFolder(assessment.folderId, assessment.id)),
+    (_, { folderId }) => (folderId ? `Moved to “${folderById.get(folderId)?.name || "the folder"}”` : "Taken out of the folder"),
+    "Could not move the assessment",
+  );
+
+  const query = search.trim().toLowerCase();
+  // Which assessments this view is about: everything while searching, else the open folder's, else
+  // the ones not in a folder (one whose folder has gone counts as not in one).
+  const scopeAssessments = useMemo(() => {
+    if (query) return assessments;
+    if (openFolder) return assessments.filter((a) => a.folderId === openFolder.id);
+    return assessments.filter((a) => !a.folderId || !folderById.has(a.folderId));
+  }, [assessments, query, openFolder, folderById]);
+  const showFolders = !openFolder && !query && !onlyDrafts;
+
+  // Drafts have no folder of their own: they show at the top level and in search results.
   const visibleDrafts = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    if (openFolder && !query) return [];
     return drafts.filter((d) => {
       const matchesSearch = !query || [d.name, d.recordName].some((text) => (text || "").toLowerCase().includes(query));
       const matchesType = !typeFilter || onlyDrafts || d.type === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [drafts, search, typeFilter, onlyDrafts]);
+  }, [drafts, query, typeFilter, onlyDrafts, openFolder]);
 
   const visibleAssessments = useMemo(() => {
     if (onlyDrafts) return [];
-    const query = search.trim().toLowerCase();
-    return assessments.filter((a) => {
+    return scopeAssessments.filter((a) => {
       const matchesSearch = !query
         || a.name.toLowerCase().includes(query)
         || (a.description || "").toLowerCase().includes(query);
       const matchesType = !typeFilter || a.type === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [assessments, search, typeFilter, onlyDrafts]);
+  }, [scopeAssessments, query, typeFilter, onlyDrafts]);
+
+  const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" };
+  const outlineBtn = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 14px", backgroundColor: "#fff", color: "#25476a", border: "1.5px solid #D6E4EF", borderRadius: "10px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" };
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", position: "relative", flexWrap: "wrap" }}>
           <div>
             <h1 style={{ margin: "0 0 6px 0", fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.4px", lineHeight: 1.2 }}>
               Assessments
             </h1>
             <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", lineHeight: "1.5", maxWidth: "480px" }}>
-              Create and manage assessments — quizzes, assignments, projects, and teacher observations.
+              Create and manage assessments — quizzes, assignments, projects, and teacher observations — and group them into folders.
             </p>
           </div>
-          <NewAssessmentMenu onPick={(t) => navigate(`/assessments/new/${t}`)} />
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setDialog({ kind: "new" })}
+              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 18px", backgroundColor: "rgba(255,255,255,0.14)", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              <FiFolderPlus size={16} /> New Folder
+            </button>
+            <NewAssessmentMenu onPick={(t) => navigate(`/assessments/new/${t}`)} />
+          </div>
         </div>
       </div>
 
@@ -370,7 +437,7 @@ export default function AssessmentsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search assessments..."
+            placeholder="Search all assessments..."
             style={{ border: "none", outline: "none", background: "transparent", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#374151", padding: "10px 0", width: "100%", boxSizing: "border-box" }}
           />
         </div>
@@ -406,15 +473,54 @@ export default function AssessmentsPage() {
           <>
             <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB", flexShrink: 0 }} />
             <div style={{ fontSize: "12px", color: "#9CA3AF", whiteSpace: "nowrap", padding: "10px 0" }}>
-              {onlyDrafts ? `${visibleDrafts.length} unsaved draft${visibleDrafts.length !== 1 ? "s" : ""}` : `${visibleAssessments.length} of ${assessments.length}`}
+              {onlyDrafts
+                ? `${visibleDrafts.length} unsaved draft${visibleDrafts.length !== 1 ? "s" : ""}`
+                : `${visibleAssessments.length} of ${scopeAssessments.length}${openFolder && !query ? " in this folder" : showFolders && folders.length ? " not in a folder" : ""}`}
+              {showFolders && folders.length > 0 && ` · ${folders.length} folder${folders.length !== 1 ? "s" : ""}`}
               {!onlyDrafts && drafts.length > 0 && <span style={{ color: "#9A6700" }}>{` · ${drafts.length} unsaved draft${drafts.length !== 1 ? "s" : ""}`}</span>}
             </div>
           </>
         )}
       </div>
 
+      {/* Inside a folder: where you are, and what you can do with the folder. */}
+      {openFolder && !query && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", minWidth: 0 }}>
+            <button type="button" onClick={() => openFolderAt(null)} style={{ border: "none", background: "none", padding: 0, color: "#2e7db5", fontWeight: "600", fontSize: "14px", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>All assessments</button>
+            <FiChevronRight size={14} style={{ color: "#9CA3AF" }} />
+            <FiFolder size={16} style={{ color: openFolder.color || "#25476a", flexShrink: 0 }} />
+            <strong style={{ color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{openFolder.name}</strong>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setDialog({ kind: "add", folder: openFolder })} style={{ ...outlineBtn, backgroundColor: "#25476a", color: "#fff", borderColor: "#25476a" }}><FiPlus size={14} /> Add assessments</button>
+            <button type="button" onClick={() => setDialog({ kind: "rename", folder: openFolder })} style={outlineBtn}><FiEdit2 size={13} /> Edit folder</button>
+            <button type="button" onClick={() => setDialog({ kind: "delete", folder: openFolder })} style={{ ...outlineBtn, color: "#EF4444", borderColor: "#FECACA" }}><FiTrash2 size={13} /> Delete folder</button>
+          </div>
+        </div>
+      )}
+
+      {openFolder && !query && openFolder.description && (
+        <p style={{ margin: "-6px 0 16px", fontSize: "13.5px", color: "#4B5563", lineHeight: 1.6, maxWidth: "760px", whiteSpace: "pre-wrap" }}>{openFolder.description}</p>
+      )}
+
+      {showFolders && !isLoading && !isError && (folders.length > 0 || assessments.length > 0) && (
+        <div style={{ ...gridStyle, marginBottom: "24px" }}>
+          {folders.map((folder) => (
+            <FolderTile
+              key={folder.id}
+              folder={folder}
+              noun={FOLDER_NOUN}
+              onOpen={() => openFolderAt(folder.id)}
+              onMenu={(action) => setDialog({ kind: action === "rename" ? "rename" : "delete", folder })}
+            />
+          ))}
+          <NewFolderTile onClick={() => setDialog({ kind: "new" })} />
+        </div>
+      )}
+
       {isLoading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+        <div style={gridStyle}>
           {[1, 2, 3].map((n) => (
             <div key={n} style={{ backgroundColor: "#ffffff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -436,6 +542,14 @@ export default function AssessmentsPage() {
         </div>
       ) : assessments.length === 0 && drafts.length === 0 ? (
         <EmptyState onCreateNew={(t) => navigate(`/assessments/new/${t}`)} />
+      ) : openFolder && !query && scopeAssessments.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px dashed #D6E4EF" }}>
+          <FiFolder size={30} style={{ color: openFolder.color || "#25476a", marginBottom: 10 }} />
+          <p style={{ margin: "0 0 16px", color: "#6B7280", fontSize: "14px" }}>This folder is empty.</p>
+          <button type="button" onClick={() => setDialog({ kind: "add", folder: openFolder })} style={{ ...outlineBtn, backgroundColor: "#25476a", color: "#fff", borderColor: "#25476a" }}><FiPlus size={14} /> Add assessments</button>
+        </div>
+      ) : visibleAssessments.length === 0 && visibleDrafts.length === 0 && showFolders && folders.length > 0 && !typeFilter ? (
+        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>Every assessment is in a folder — open one above.</p>
       ) : visibleAssessments.length === 0 && visibleDrafts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 24px", backgroundColor: "#fff", borderRadius: "16px", border: "1.5px solid #E5E7EB", color: "#9CA3AF", fontSize: "14px" }}>
           {onlyDrafts && !search
@@ -443,15 +557,84 @@ export default function AssessmentsPage() {
             : <>No {onlyDrafts ? "unsaved drafts" : "assessments"} match your search{search ? ` "${search}"` : ""}{typeFilter && !onlyDrafts ? ` in ${TYPE_LABELS[typeFilter]}` : ""}.</>}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-          {visibleDrafts.map((draft) => (
-            <AssessmentDraftCard key={draft.id} draft={draft} onDelete={deleteDraft} />
-          ))}
-          {visibleAssessments.map((assessment) => (
-            <AssessmentCard key={assessment.id} assessment={assessment} />
-          ))}
-        </div>
+        <>
+          {showFolders && folders.length > 0 && visibleAssessments.length > 0 && (
+            <h2 style={{ margin: "0 0 12px", fontSize: "14px", fontWeight: "700", color: "#374151" }}>Not in a folder</h2>
+          )}
+          <div style={gridStyle}>
+            {visibleDrafts.map((draft) => (
+              <AssessmentDraftCard key={draft.id} draft={draft} onDelete={deleteDraft} />
+            ))}
+            {visibleAssessments.map((assessment) => (
+              <AssessmentCard
+                key={assessment.id}
+                assessment={assessment}
+                onMove={(a) => setDialog({ kind: "move", assessment: a })}
+                folderName={query && assessment.folderId ? folderById.get(assessment.folderId)?.name : undefined}
+              />
+            ))}
+          </div>
+        </>
       )}
+
+      {(dialog?.kind === "new" || dialog?.kind === "rename") && (
+        <FolderDialog
+          folder={dialog.kind === "rename" ? dialog.folder : null}
+          noun={FOLDER_NOUN}
+          saving={createFolder.isPending || updateFolder.isPending}
+          onClose={closeDialog}
+          onSave={(values) => {
+            if (dialog.kind === "rename") {
+              updateFolder.mutate({ id: dialog.folder.id, data: values }, { onSuccess: closeDialog });
+            } else {
+              // Made from "Move to folder": the assessment goes straight into the new folder.
+              const assessment = dialog.assessment;
+              createFolder.mutate(values, {
+                onSuccess: (folder) => {
+                  closeDialog();
+                  if (assessment) moveAssessment.mutate({ assessment, folderId: folder.id });
+                },
+              });
+            }
+          }}
+        />
+      )}
+      {dialog?.kind === "add" && (
+        <AddItemsDialog
+          folder={dialog.folder}
+          items={assessments}
+          folders={folders}
+          noun={FOLDER_NOUN}
+          detail={(a) => TYPE_LABELS[a.type] || a.type}
+          saving={addToFolder.isPending}
+          onClose={closeDialog}
+          onAdd={(assessmentIds) => addToFolder.mutate({ id: dialog.folder.id, assessmentIds }, { onSuccess: closeDialog })}
+        />
+      )}
+      {dialog?.kind === "move" && (
+        <MoveToFolderDialog
+          item={dialog.assessment}
+          folders={folders}
+          saving={moveAssessment.isPending}
+          onClose={closeDialog}
+          onNewFolder={() => setDialog({ kind: "new", assessment: dialog.assessment })}
+          onMove={(folderId) => moveAssessment.mutate({ assessment: dialog.assessment, folderId }, { onSuccess: closeDialog })}
+        />
+      )}
+      <ConfirmDialog
+        isOpen={dialog?.kind === "delete"}
+        title="Delete folder"
+        message={dialog?.kind === "delete" ? `Delete the folder “${dialog.folder.name}”? Its ${dialog.folder.itemCount} assessment${dialog.folder.itemCount === 1 ? "" : "s"} won't be deleted — they'll show in Assessments outside any folder.` : ""}
+        confirmLabel="Delete folder"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          const folder = dialog.folder;
+          closeDialog();
+          deleteFolder.mutate(folder.id, { onSuccess: () => { if (openFolderId === folder.id) openFolderAt(null); } });
+        }}
+        onCancel={closeDialog}
+      />
     </div>
   );
 }

@@ -25,8 +25,8 @@ const PerformanceBandModel = {
   },
 
   // Bands that form one Pathway's course ladder (pathwayId + courseId both set),
-  // ordered by this pathway's own explicit `order` — the same authored sequence a course
-  // reorder (see reorderByPathway below) writes, not a score-range walk (course-to-course
+  // ordered by this pathway's own explicit `order` — kept in step with the pathway's courses list
+  // (see syncPathwayOrder below), not a score-range walk (course-to-course
   // advancement is decided by indicator-contribution/threshold, see runIndicatorProgressEngine —
   // minScore/maxScore are no longer read for pathway bands).
   findByPathway(curriculumId, pathwayId) {
@@ -110,13 +110,18 @@ const PerformanceBandModel = {
     return db(TABLE).where({ curriculumId, ageCategoryId }).orderBy("order", "asc");
   },
 
-  // Same shape as reorder() above, scoped to one Pathway's course ladder instead of one
-  // stage's — pathway bands all share ageCategoryId: null, so reusing reorder() as-is would let
-  // two different pathways' orderedIds collide against each other. The { id, curriculumId,
-  // pathwayId } guard on each update keeps this reorder from touching a band belonging to a
-  // different pathway.
-  async reorderByPathway(curriculumId, pathwayId, orderedIds) {
-    await Promise.all(orderedIds.map((id, i) => db(TABLE).where({ id, curriculumId, pathwayId }).update({ order: i + 1 })));
+  // Puts one Pathway's course bands in the order of `courseIds` (the pathway's own courses list):
+  // each band's `order` becomes its course's position, so the ladder learners advance along is
+  // the order shown on the Pathways tab. A band whose course is no longer in the list keeps its
+  // place after all of them. Matched by courseId, scoped to this pathway — pathway bands all
+  // share ageCategoryId: null, so one pathway's reorder can't touch another's.
+  async syncPathwayOrder(curriculumId, pathwayId, courseIds) {
+    const bands = await db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("order", "asc");
+    await Promise.all(bands.map((band, i) => {
+      const position = courseIds.indexOf(band.courseId);
+      const order = position >= 0 ? position + 1 : courseIds.length + i + 1;
+      return order === band.order ? null : db(TABLE).where({ id: band.id }).update({ order });
+    }));
     return db(TABLE).where({ curriculumId, pathwayId }).whereNotNull("courseId").orderBy("order", "asc");
   },
 

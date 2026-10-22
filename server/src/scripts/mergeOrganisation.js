@@ -45,7 +45,7 @@ const BASE_EMAIL = baseFlag > -1 ? process.argv[baseFlag + 1] : process.env.ORG_
 
 // Every column that says which admin a row belongs to.
 const OWNER_COLUMNS = [
-  ["access_roles", "ownerAdminId"], ["assessments", "ownerAdminId"], ["audit_log", "ownerAdminId"],
+  ["access_roles", "ownerAdminId"], ["assessment_folders", "ownerAdminId"], ["assessments", "ownerAdminId"], ["audit_log", "ownerAdminId"],
   ["bootcamp_hubs", "ownerAdminId"], ["bootcamps", "ownerAdminId"], ["certificates", "ownerAdminId"],
   ["club_membership_children", "ownerAdminId"], ["club_memberships", "ownerAdminId"], ["club_packages", "ownerAdminId"],
   ["competencies", "ownerAdminId"], ["competition_hubs", "ownerAdminId"], ["competitions", "ownerAdminId"],
@@ -75,6 +75,7 @@ const NAMED = [
   { table: "home_learning_packages", column: "slug", slug: true },
   { table: "club_packages", column: "slug", slug: true },
   { table: "course_folders" },
+  { table: "assessment_folders" },
 ];
 
 // Tables the id rewrite leaves alone: bookkeeping with no content ids in it.

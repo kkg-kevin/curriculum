@@ -291,6 +291,7 @@ const CompetencyService = {
     await assertStageExists(curriculumId, data.ageCategoryId);
     await this.assertPublicDiagnosticAllowed(data, pathway);
     const updated = await PathwayModel.update(id, data);
+    if (data.courses !== undefined) await PerformanceBandModel.syncPathwayOrder(curriculumId, id, data.courses || []);
     const shared = {};
     for (const key of ["name", "description", "color"]) {
       if (data[key] !== undefined) shared[key] = data[key];
@@ -707,6 +708,7 @@ const CompetencyService = {
   async createPerformanceBand(curriculumId, data) {
     const created = await PerformanceBandModel.create(curriculumId, data);
     if (!created.pathwayId) await this._syncBandAcrossStages(curriculumId, created, "create");
+    else await this._syncPathwayBandOrder(curriculumId, created.pathwayId);
     return created;
   },
 
@@ -732,18 +734,43 @@ const CompetencyService = {
     }
   },
 
+  // Renumbers a pathway's course bands to follow its courses list (see syncPathwayOrder).
+  async _syncPathwayBandOrder(curriculumId, pathwayId) {
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (pathway) await PerformanceBandModel.syncPathwayOrder(curriculumId, pathwayId, pathway.courses || []);
+  },
+
   async reorderPerformanceBands(curriculumId, ageCategoryId, orderedIds) {
     const reordered = await PerformanceBandModel.reorder(curriculumId, ageCategoryId, orderedIds);
     await this._syncReorderAcrossStages(curriculumId, ageCategoryId, reordered.map((b) => b.name));
     return reordered;
   },
 
-  // Pathway sibling of reorderPerformanceBands above — a Pathway's own course sequence,
-  // scoped by pathwayId instead of ageCategoryId (see PerformanceBandModel.reorderByPathway).
-  // No cross-stage sync: a Pathway's course ladder is unique to itself, unlike Progress-Arc bands
-  // which mirror the same named rungs across every stage.
-  async reorderPathwayCourses(curriculumId, pathwayId, orderedIds) {
-    return PerformanceBandModel.reorderByPathway(curriculumId, pathwayId, orderedIds);
+  // A Pathway's own course sequence (the up/down arrows on the Pathways tab). `orderedCourseIds`
+  // is the pathway's courses in their new order — every course, whether or not it has
+  // advancement settings (a band) yet. The order is saved on the pathway's courses list, and the
+  // bands are renumbered to match, since their order is what a learner advances along (see
+  // maybeAdvancePathwayCourse). No cross-stage sync: a Pathway's course ladder is unique to
+  // itself, unlike Progress-Arc bands which mirror the same named rungs across every stage.
+  async reorderPathwayCourses(curriculumId, pathwayId, orderedCourseIds) {
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway || pathway.curriculumId !== curriculumId) {
+      const err = new Error("Pathway not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const current = pathway.courses || [];
+    const sameCourses = orderedCourseIds.length === current.length
+      && new Set(orderedCourseIds).size === current.length
+      && orderedCourseIds.every((id) => current.includes(id));
+    if (!sameCourses) {
+      const err = new Error("This pathway's courses have changed since the page loaded — refresh and try again");
+      err.statusCode = 409;
+      throw err;
+    }
+    await PathwayModel.update(pathwayId, { courses: orderedCourseIds });
+    const bands = await PerformanceBandModel.syncPathwayOrder(curriculumId, pathwayId, orderedCourseIds);
+    return { courses: orderedCourseIds, bands };
   },
 
   // Copies a fully-configured band's setup onto the NEXT band in the same stage's ladder
