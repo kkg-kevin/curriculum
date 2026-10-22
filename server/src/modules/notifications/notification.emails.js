@@ -20,6 +20,9 @@ const LEARNER_ROLES = ["learner"];
 const ADMIN_ROLES = ["admin"];
 const EDUCATOR_ROLES = ["teacher"];
 const CLAIM_REVIEWER_ROLES = ["admin", "supervisor"];
+// Hub check-ins: the workspace's admins and staff (Account Managers, Training Leads, managers).
+const CHECKIN_ROLES = ["admin", "collaborator"];
+const checkinPath = (p) => (typeof p.route === "string" && p.route.startsWith("/checkins") ? p.route : "/checkins");
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
 // notification opens — so the email's button lands on the same page. `look` is how the email
@@ -83,6 +86,17 @@ const EMAIL_TYPES = {
   },
   // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
   // each decision on theirs.
+  // Hub check-ins (modules/checkins/checkin.notifications.js). "Check-in today" stays in-app only.
+  checkin_assigned: { label: "You're put on a hub check-in", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_upcoming: { label: "A hub check-in is tomorrow", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_report_overdue: { label: "A check-in report is still not submitted", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "document", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_missed: { label: "A hub check-in is missed", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_rescheduled: { label: "A hub check-in is moved", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "refresh", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_cancelled: { label: "A hub check-in is cancelled", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "cross", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_hub_flagged: { label: "A check-in marks a hub Needs attention or Critical", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_action_assigned: { label: "A check-in follow-up is assigned to you", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Follow-up" }, path: checkinPath },
+  checkin_action_overdue: { label: "A check-in follow-up of yours is overdue", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Follow-up" }, path: checkinPath },
+  checkin_action_escalated: { label: "A check-in issue is escalated", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Escalation" }, path: checkinPath },
   claim_submitted: {
     label: "An educator submits a claim for you to review",
     roles: CLAIM_REVIEWER_ROLES,
@@ -197,6 +211,7 @@ const groupFor = (roles) => {
   if (roles === LEARNER_ROLES) return "Parents and learners";
   if (roles === EDUCATOR_ROLES) return "Educators";
   if (roles === CLAIM_REVIEWER_ROLES) return "You and your supervisors";
+  if (roles === CHECKIN_ROLES) return "Hub check-ins (you and your staff)";
   return "You (the admin)";
 };
 

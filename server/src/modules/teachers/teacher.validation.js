@@ -8,7 +8,7 @@ const TEACHER_STATUSES = ["active", "inactive", "on_leave"];
 // at the workspace's rate for it (Settings → Educator pay). `paymentTerms` is the old single
 // hourly/daily placeholder — still accepted, no longer used (payRateTypes replaced it).
 const EMPLOYMENT_TYPES = ["part_time", "full_time"];
-const PAY_RATE_TYPES = ["session", "hourly", "daily"];
+const PAY_RATE_TYPES = ["session", "hourly", "daily", "base_plus"];
 const TEACHER_LEVELS = [1, 2, 3, 4, 5];
 const PAYMENT_TERMS = ["hourly", "daily"];
 
@@ -23,7 +23,7 @@ const baseTeacherSchema = z.object({
   phone:      z.string().max(20).default(""),
   status:     z.enum(TEACHER_STATUSES).default("active"),
   employmentType: z.enum(EMPLOYMENT_TYPES).optional().nullable().default("part_time"),
-  payRateTypes:   z.array(z.enum(PAY_RATE_TYPES)).max(3).optional().default(["session"]),
+  payRateTypes:   z.array(z.enum(PAY_RATE_TYPES)).max(PAY_RATE_TYPES.length).optional().default(["session"]),
   teacherLevel:   z.number().int().min(1).max(5).optional().nullable().default(null),
   paymentTerms:   z.enum(PAYMENT_TERMS).optional().nullable().default(null),
   // The supervisor (a users.id with role "supervisor") this educator's claims go to — optional;

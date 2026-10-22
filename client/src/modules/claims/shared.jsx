@@ -31,10 +31,11 @@ export function formatDate(value) {
 
 export const TYPE_LABEL = { advance: "Advance", full: "Full payment" };
 
-// How a claim (or a course's figures) is worked out — per session, by the hour or by the day, at
-// the workspace's rate for it (Settings → Educator pay). Older claims are all per session.
-export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily" };
-const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"] };
+// How a claim (or a course's figures) is worked out — per session, by the hour, by the day, or
+// Base plus (the session rate plus a commission per enrolled learner, each session), at the
+// workspace's rates (Settings → Educator pay). Older claims are all per session.
+export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily", base_plus: "Base plus" };
+const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"], base_plus: ["session", "sessions"] };
 
 export function unitsLabel(count, rateType = "session") {
   const n = Number(count) || 0;
@@ -45,8 +46,26 @@ export function unitsLabel(count, rateType = "session") {
 
 // "KSh 904.67 a session" / "KSh 500 an hour" / "KSh 3,000 a day"
 export function rateLabel(rate, rateType = "session", currency = "KES") {
-  const per = { session: "a session", hourly: "an hour", daily: "a day" }[rateType] || "a session";
+  const per = { session: "a session", hourly: "an hour", daily: "a day", base_plus: "a session" }[rateType] || "a session";
   return `${formatRate(rate, currency)} ${per}`;
+}
+
+// What a Base plus session is made of: "KSh 500 + 12 learners × KSh 50". `figures` is a claim
+// (its sessionRate is the base) or a course's figures (baseRate). Null for any other way of paying.
+export function basePlusBreakdown(figures, currency = figures?.currency || "KES") {
+  if (figures?.rateType !== "base_plus") return null;
+  const base = figures.baseRate ?? figures.sessionRate;
+  const learners = Number(figures.learnerCount) || 0;
+  return `${formatRate(base, currency)} + ${learners} learner${learners === 1 ? "" : "s"} × ${formatRate(figures.commissionRate, currency)}`;
+}
+
+// The rate in words, with a Base plus session's make-up: "KSh 1,100 a session (KSh 500 + 12
+// learners × KSh 50)".
+export function rateDetail(figures) {
+  const rateType = figures.rateType || "session";
+  const label = rateLabel(figures.rate ?? figures.sessionRate, rateType, figures.currency);
+  const breakdown = basePlusBreakdown(figures);
+  return breakdown ? `${label} (${breakdown})` : label;
 }
 
 // A claim's basis in one line: "12 sessions × KSh 904.67 a session". Units are the course's
@@ -55,7 +74,7 @@ export function claimBasis(claim) {
   const rateType = claim.rateType || "session";
   const rate = claim.rate ?? claim.sessionRate;
   const units = claim.type === "advance" ? claim.unitsTotal ?? claim.sessionsTotal : claim.unitsDelivered ?? claim.sessionsDelivered;
-  return `${unitsLabel(units, rateType)} × ${rateLabel(rate, rateType, claim.currency)}`;
+  return `${unitsLabel(units, rateType)} × ${rateDetail({ ...claim, rate, rateType })}`;
 }
 
 export const CLAIM_STATUS = {

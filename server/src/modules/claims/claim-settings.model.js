@@ -4,9 +4,10 @@ const { createRecord, updateRecord, firstOrNull } = require("../../shared/utils/
 const TABLE = "claim_settings";
 
 // What a workspace pays when it has never changed anything: KSh 904.666 a session, no hourly or
-// daily rate (not offered until set), and an advance of 30% of the whole course. These are the
-// part-time rates — full-time educators don't claim (see claim.service.js).
-const DEFAULTS = { sessionRate: 904.666, hourlyRate: null, dailyRate: null, advancePercent: 30, currency: "KES" };
+// daily rate and no Base plus commission (not offered until set), and an advance of 30% of the
+// whole course. These are the part-time rates — full-time educators don't claim (see
+// claim.service.js).
+const DEFAULTS = { sessionRate: 904.666, hourlyRate: null, dailyRate: null, commissionRate: null, advancePercent: 30, currency: "KES" };
 
 const rateOrNull = (value) => (value == null || Number(value) <= 0 ? null : Number(value));
 
@@ -15,6 +16,8 @@ function shape(row) {
     sessionRate: rateOrNull(row.sessionRate),
     hourlyRate: rateOrNull(row.hourlyRate),
     dailyRate: rateOrNull(row.dailyRate),
+    // Base plus: the commission per enrolled learner, on top of the session rate, each session.
+    commissionRate: rateOrNull(row.commissionRate),
     advancePercent: Number(row.advancePercent),
     currency: row.currency || DEFAULTS.currency,
   };

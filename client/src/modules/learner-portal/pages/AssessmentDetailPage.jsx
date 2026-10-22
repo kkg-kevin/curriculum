@@ -4,7 +4,7 @@ import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
-import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
+import { normalizeLegacyItem, entryMarks, canDoLevelFor } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker from "../../assessments/components/AssessmentTaker";
 import RichContent from "../../assessments/components/RichContent";
 import GroupPanel from "../../assessments/components/GroupPanel";
@@ -12,7 +12,8 @@ import { useGroupForLearner } from "../../classes/hooks/useClassGroups";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+// Marked automatically from the learner's answer — mirrors the server's grading.utils.js.
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
 
 function formatResponse(response) {
   if (response == null || response === "") return <em style={{ color: T.inkFaint }}>No answer given</em>;
@@ -91,6 +92,7 @@ function MilestonesCard({ milestones, progress }) {
 }
 
 function FeedbackRow({ index, item, response, autoResult, feedback }) {
+  if (item.kind === "canDo") return <CanDoFeedbackRow index={index} item={item} response={response} autoResult={autoResult} />;
   const isAuto = AUTO_GRADABLE_KINDS.includes(item.kind);
   const marks = isAuto ? (autoResult?.marksAwarded ?? 0) : (feedback?.marks ?? 0);
   const max = isAuto ? (autoResult?.maxMarks ?? entryMarks(item)) : entryMarks(item);
@@ -104,6 +106,24 @@ function FeedbackRow({ index, item, response, autoResult, feedback }) {
         <span style={{ fontSize: 11, fontWeight: 700, color: good ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>{marks}/{max}</span>
       </div>
       <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted }}>Your answer: {formatResponse(response)}</p>
+    </div>
+  );
+}
+
+// A can-do check in the learner's results: the level they picked, and its marks (none in a survey).
+function CanDoFeedbackRow({ index, item, response, autoResult }) {
+  const level = canDoLevelFor(item, response);
+  const look = level || { color: T.inkMuted, bg: "#F9FAFB", border: T.border };
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: look.bg, border: `1px solid ${look.border}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
+        {autoResult && <span style={{ fontSize: 11, fontWeight: 700, color: look.color, whiteSpace: "nowrap" }}>{autoResult.marksAwarded ?? 0}/{autoResult.maxMarks ?? entryMarks(item)}</span>}
+      </div>
+      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: look.color, fontWeight: 600 }}>
+        {level ? level.label : <em style={{ color: T.inkFaint, fontWeight: 400 }}>No answer given</em>}
+      </p>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export const PAY_RATE_TYPES = [
   { value: "hourly", label: "Hourly", hint: "Paid for the hours taught" },
   { value: "session", label: "Per session", hint: "Paid for each session delivered" },
   { value: "daily", label: "Daily", hint: "Paid for each day taught" },
+  { value: "base_plus", label: "Base plus", hint: "The session rate plus a commission for each learner in the class" },
 ];
 
 export const TEACHER_LEVELS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `Level ${n}` }));
@@ -39,7 +40,7 @@ export const teacherSchema = z
     phone:     z.string().max(20).default(""),
     status:    z.enum(["active", "inactive", "on_leave"]).default("active"),
     employmentType: z.enum(["part_time", "full_time"]).nullable().default("part_time"),
-    payRateTypes: z.array(z.enum(["session", "hourly", "daily"])).default(["session"]),
+    payRateTypes: z.array(z.enum(PAY_RATE_TYPES.map((t) => t.value))).default(["session"]),
     teacherLevel:   z.number().int().min(1).max(5).nullable().default(null),
     paymentTerms:   z.enum(["hourly", "daily"]).nullable().default(null),
     // The supervisor account this educator's claims go to — optional (see modules/claims/).

@@ -51,6 +51,7 @@ const accessRoutes = require("./modules/access/access.routes");
 const sharingRoutes = require("./modules/sharing/sharing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
 const claimRoutes = require("./modules/claims/claim.routes");
+const checkinRoutes = require("./modules/checkins/checkin.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -300,6 +301,10 @@ app.use("/api/audit", protect, attachOwnRecords, authorize("admin"), auditRoutes
 // supervisor and then the admin. Educators and the workspace's reviewers share this router; its
 // own routes file says who reaches what (see claim.routes.js).
 app.use("/api/claims", protect, attachOwnRecords, claimRoutes);
+// Hub check-ins — Account Managers and Training Leads checking in with each hub on a schedule,
+// reporting, and following up; the workspace owner and check-in managers oversee them. See
+// modules/checkins/ (checkin.access.js for who sees which hubs).
+app.use("/api/checkins", protect, attachOwnRecords, checkinRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

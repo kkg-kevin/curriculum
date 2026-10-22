@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiDollarSign, FiFileText, FiInfo, FiUsers } from "react-icons/fi";
 import { useMyClaimCourse, useWithdrawClaim } from "../../claims/hooks/useClaims";
-import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, formatRate, primaryButton, rateLabel, unitsLabel } from "../../claims/shared";
+import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, formatRate, primaryButton, rateDetail, unitsLabel } from "../../claims/shared";
 import SessionEvidence from "../../claims/components/SessionEvidence";
 import ClaimCard from "../../claims/components/ClaimCard";
 import RequestPaymentModal from "../../claims/components/RequestPaymentModal";
@@ -101,7 +101,7 @@ export default function ClaimCoursePage() {
         <div style={{ padding: 20, background: "#fff" }}>
           <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: T.inkMuted }}>Amount payable</p>
           <p style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 900, color: T.accent, letterSpacing: "-0.5px", fontVariantNumeric: "tabular-nums" }}>{money(course.courseAmount)}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{unitsLabel(course.unitsTotal ?? course.sessionsTotal, course.rateType)} × {rateLabel(course.rate ?? course.sessionRate, course.rateType, course.currency)} · {money(course.earnedAmount)} earned so far
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{unitsLabel(course.unitsTotal ?? course.sessionsTotal, course.rateType)} × {rateDetail(course)} · {money(course.earnedAmount)} earned so far
             {course.rateOptions?.length > 1 && " · you can claim another way when you request payment"}</p>
           <div style={{ display: "flex", gap: 18, marginTop: 12 }}>
             <div>

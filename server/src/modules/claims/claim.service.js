@@ -17,20 +17,25 @@ const TimetableService = require("../timetable/timetable.service");
 const SessionOccurrenceService = require("../timetable/session-occurrence.service");
 const SessionOccurrenceModel = require("../timetable/session-occurrence.model");
 const ReportService = require("../reports/report.service");
+const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 
 // Educator claims — how an educator gets paid for a course they teach.
 //
 // Only part-time educators claim (teachers.employmentType; full time is a tag only). A part-time
 // educator is tagged with one or more ways of being paid (teachers.payRateTypes): per session,
-// per hour or per day, each at the workspace's one rate for it (Settings → Educator pay —
+// per hour, per day or "base plus", each at the workspace's rates (Settings → Educator pay —
 // claim-settings.model.js). On each course they choose one; once a claim on that course is live,
 // the course stays on that choice so an advance and the full payment add up.
 //
-//   session  a course's sessions
-//   hourly   the hours taught — each delivered session's timetable slot on the day it ran; the
-//            sessions still to come count at the course's usual slot length
-//   daily    the days taught — the dates with a delivered session; the sessions still to come
-//            count as days at the course's usual sessions per day
+//   session    a course's sessions
+//   hourly     the hours taught — each delivered session's timetable slot on the day it ran; the
+//              sessions still to come count at the course's usual slot length
+//   daily      the days taught — the dates with a delivered session; the sessions still to come
+//              count as days at the course's usual sessions per day
+//   base_plus  a course's sessions, each paid the session rate (the base) plus the commission
+//              for every learner enrolled in the class — e.g. KSh 500 + 12 learners × KSh 50 =
+//              KSh 1,100 a session. The learners are counted when the figures are worked out
+//              (and fixed on a claim when it is sent).
 //
 // A course's value is those units × the rate, rounded to a whole shilling. From that:
 //   advance  a fixed share of the whole course's value (30% unless the workspace changed it),
@@ -96,9 +101,22 @@ async function occurrencesFor(classId) {
   }
 }
 
-const RATE_TYPES = ["session", "hourly", "daily"];
+const RATE_TYPES = ["session", "hourly", "daily", "base_plus"];
 const RATE_KEY = { session: "sessionRate", hourly: "hourlyRate", daily: "dailyRate" };
-const RATE_NAME = { session: "session", hourly: "hourly", daily: "daily" };
+const RATE_NAME = { session: "session", hourly: "hourly", daily: "daily", base_plus: "Base plus" };
+const RATE_PHRASE = { session: "per session", hourly: "by the hour", daily: "by the day", base_plus: "on Base plus" };
+
+// Learners enrolled in each class (active links), for Base plus: { classId → count }.
+async function enrolledCounts(classIds) {
+  const links = await LearnerHubLinkModel.findByClassIds(classIds);
+  const byClass = new Map();
+  for (const link of links) {
+    if (link.status !== "active" || !link.classId) continue;
+    if (!byClass.has(link.classId)) byClass.set(link.classId, new Set());
+    byClass.get(link.classId).add(link.learnerId);
+  }
+  return new Map(classIds.map((id) => [id, byClass.get(id)?.size || 0]));
+}
 const roundUnits = (value) => Math.round(value * 100) / 100;
 
 function parseList(value) {
@@ -125,7 +143,7 @@ function rateTypesOf(teacher) {
 
 // Everything money-related about one (educator, class, course) on one way of paying: what the
 // course is worth, what has been earned and requested so far, and what can be requested now.
-function buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType = "session" }) {
+function buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType = "session", learnerCount = 0 }) {
   const today = todayStr();
   const sessionIds = new Set(sessions.map((s) => s.id));
   const past = occurrences.filter((o) => o.courseId === course.id && sessionIds.has(o.sessionId) && o.date <= today);
@@ -155,8 +173,16 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
     session: { total: sessionsTotal, delivered: sessionsDelivered },
     hourly: { total: roundUnits(hours + remainingSessions * hoursPerSession), delivered: roundUnits(hours) },
     daily: { total: daysDelivered + Math.ceil(remainingSessions / sessionsPerDay), delivered: daysDelivered },
+    base_plus: { total: sessionsTotal, delivered: sessionsDelivered },
   }[rateType];
-  const rate = settings[RATE_KEY[rateType]] || null;
+  // Base plus: a session pays the base (the session rate) plus the commission for each enrolled
+  // learner. Both must be set for it to be offered.
+  const basePlus = rateType === "base_plus";
+  const baseRate = basePlus ? settings.sessionRate || null : null;
+  const commissionRate = basePlus ? settings.commissionRate || null : null;
+  const rate = basePlus
+    ? (baseRate && commissionRate ? Math.round((baseRate + learnerCount * commissionRate) * 1000) / 1000 : null)
+    : settings[RATE_KEY[rateType]] || null;
   const courseAmount = rate ? wholeShillings(units.total * rate) : 0;
   const earnedAmount = rate ? wholeShillings(units.delivered * rate) : 0;
   const advanceAmount = wholeShillings((courseAmount * settings.advancePercent) / 100);
@@ -173,7 +199,9 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
   // Nothing can be claimed on a way of paying the workspace hasn't put a rate on, or on hours
   // when the timetable gives this course no times to count.
   let unpayable = null;
-  if (!rate) unpayable = `The ${RATE_NAME[rateType]} rate isn't set yet — ask the admin to set it in Settings → Educator pay.`;
+  if (basePlus && !baseRate) unpayable = "Base plus is paid on top of the session rate, which isn't set yet — ask the admin to set it in Settings → Educator pay.";
+  else if (basePlus && !commissionRate) unpayable = "The Base plus commission per learner isn't set yet — ask the admin to set it in Settings → Educator pay.";
+  else if (!rate) unpayable = `The ${RATE_NAME[rateType]} rate isn't set yet — ask the admin to set it in Settings → Educator pay.`;
   else if (rateType === "hourly" && sessionsTotal > 0 && units.total <= 0) unpayable = "The timetable has no start and end times for this course, so its hours can't be counted.";
 
   let advanceBlocked = null;
@@ -204,8 +232,10 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
     rate,
     unitsTotal: units.total,
     unitsDelivered: units.delivered,
-    // Kept for screens that still read the session-only names.
-    sessionRate: rate,
+    // Kept for screens that still read the session-only names. For Base plus it's the base.
+    sessionRate: basePlus ? baseRate : rate,
+    // Base plus only: what each session's rate is made of.
+    ...(basePlus ? { baseRate, commissionRate, learnerCount } : {}),
     advancePercent: settings.advancePercent,
     sessionsTotal,
     sessionsDelivered,
@@ -227,10 +257,10 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
 
 // The figures for every way this educator may be paid on this course, and the one to show first.
 // A course with a live claim stays on that claim's way of paying.
-function buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims }) {
+function buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims, learnerCount = 0 }) {
   const locked = claims.find((c) => c.status !== "rejected")?.rateType || null;
   const types = locked ? [locked] : rateTypesOf(teacher);
-  const options = types.map((rateType) => buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType }));
+  const options = types.map((rateType) => buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType, learnerCount }));
   // Show first the one that can be claimed on now, else the first.
   const primary = options.find((o) => o.canRequestFull || o.canRequestAdvance) || options[0];
   return { ...primary, rateLocked: Boolean(locked), rateOptions: options };
@@ -285,6 +315,7 @@ const ClaimService = {
     const hubs = await Promise.all(hubIds.map((id) => LearningHubModel.findById(id)));
     const hubById = new Map(hubs.filter(Boolean).map((h) => [h.id, h]));
 
+    const learnersByClass = await enrolledCounts([...classById.keys()]);
     const occurrenceLists = await Promise.all([...classById.keys()].map((id) => occurrencesFor(id)));
     const occurrencesByClass = new Map([...classById.keys()].map((id, i) => [id, occurrenceLists[i]]));
 
@@ -308,6 +339,7 @@ const ClaimService = {
         slots: allSlots.filter((s) => s.classId === cls.id),
         settings,
         claims: courseClaims,
+        learnerCount: learnersByClass.get(cls.id) || 0,
       });
       rows.push({
         ...describeCourse({ link, cls, course, hub }),
@@ -358,7 +390,7 @@ const ClaimService = {
     if (!context) fail("This course or class no longer exists", 404);
     const { cls, course, hub } = context;
 
-    const [sessions, occurrences, slots, settings, claims, readiness, attendance, anchors] = await Promise.all([
+    const [sessions, occurrences, slots, settings, claims, readiness, attendance, anchors, learnersByClass] = await Promise.all([
       SessionModel.findByCourseId(courseId),
       occurrencesFor(classId),
       TimetableModel.findAll({ classId }),
@@ -367,9 +399,10 @@ const ClaimService = {
       ReportService.getReadinessForClassCourse(classId, courseId),
       AttendanceModel.findAll({ classId }),
       CourseScheduleModel.findByClassId(classId),
+      enrolledCounts([classId]),
     ]);
 
-    const figures = buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims });
+    const figures = buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims, learnerCount: learnersByClass.get(classId) || 0 });
     const today = todayStr();
 
     // Where each session that hasn't happened yet is due to fall.
@@ -497,7 +530,7 @@ const ClaimService = {
     const figures = detail.rateOptions.find((o) => o.rateType === rateType);
     if (!figures) {
       fail(detail.rateLocked
-        ? `This course is already being claimed ${detail.rateType === "session" ? "per session" : detail.rateType === "hourly" ? "by the hour" : "by the day"}.`
+        ? `This course is already being claimed ${RATE_PHRASE[detail.rateType] || "per session"}.`
         : "You can't claim this way — ask the admin which ways of paying apply to you.", 409);
     }
     const blocked = type === "advance" ? figures.advanceBlocked : figures.fullBlocked;
@@ -527,7 +560,10 @@ const ClaimService = {
       rate: figures.rate,
       unitsTotal: figures.unitsTotal,
       unitsDelivered: figures.unitsDelivered,
-      sessionRate: figures.rate,
+      sessionRate: figures.sessionRate,
+      // Base plus: the learners and commission this claim was worked out on.
+      learnerCount: figures.rateType === "base_plus" ? figures.learnerCount : null,
+      commissionRate: figures.rateType === "base_plus" ? figures.commissionRate : null,
       sessionsTotal: figures.sessionsTotal,
       sessionsDelivered: figures.sessionsDelivered,
       courseAmount: figures.courseAmount,
@@ -693,3 +729,4 @@ const ClaimService = {
 };
 
 module.exports = ClaimService;
+module.exports._internal = { buildFigures, rateTypesOf };

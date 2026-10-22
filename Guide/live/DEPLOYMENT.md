@@ -102,6 +102,136 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (22 Oct 2026, afternoon) — can-do checks in assessments; Base plus educator pay; Hub check-ins; bootcamp Enroll goes through an age-based diagnostic; home page programme buttons and a header Enroll page
+
+**Backend, portal and website**, from `curriculum` (branch `modules`) at `3b5bee1` and
+`curriculum-web` (branch `new`) at `aab635e`. Includes everything in "This release (22 Oct 2026)"
+below — if that one isn't up yet, follow its notes too. **Upload the backend first**, then the
+portal, then the website.
+
+### What changed — portal
+
+- **Can-do checks in assessments.** A new structured item, **Can-do check**, in every assessment
+  type: the learner picks *I can do it independently*, *I can do it with help* or *I can't do it
+  yet*. It marks itself — full marks, half marks, none (no marks in a survey). The three labels
+  can be renamed on each item.
+- **Base plus pay plan.** A third way of paying a part-time educator: each session pays the
+  session rate (the base) plus the class's enrolled learners × a **commission rate**. Set the
+  commission in **Settings → Educator pay**, then tick **Base plus** on an educator. A claim keeps
+  the learner count and commission it was worked out on; the review dialog and the invoice PDF
+  show the sum.
+- **Hub check-ins** (sidebar **Hub Check-ins**). Customer Service check-ins with learning hubs:
+  - A **schedule** per hub (once, weekly, fortnightly or monthly; in person or online) with an
+    Account Manager and a Training Lead. Check-ins are put on the calendar 90 days ahead.
+  - **My Check-ins**: today, upcoming, overdue. One shared report per check-in, saved as a draft
+    and submitted by either of the two. Issues and actions, each with an owner, a due date and an
+    update history; they stay open until done, even after the report is submitted.
+  - A check-in whose day passes with no report started becomes **Missed**; one with a draft
+    becomes **Pending submission**. Reminders the day before and on the day, and for overdue
+    actions, in the bell and by email.
+  - **Who sees what:** the workspace owner sees everything. Staff need **Hub check-ins (Account
+    Managers & Training Leads)** ticked in their access role (Settings → Staff roles), and then see
+    only hubs they're assigned to. Tick **Hub check-ins: schedules & oversight** as well for the
+    people who add schedules, see every hub and the overview, and cancel or reopen check-ins.
+  - A reminder card on the dashboard when someone has a check-in today or a report overdue.
+
+### What changed — website
+
+- **Bootcamp Enroll goes through a diagnostic.** A bootcamp page has an **Enroll** button: the
+  parent enters the child's age, the child takes a short diagnostic, the report shows, then the
+  enrolment form. The diagnostic comes from the first of the bootcamp's pathways whose
+  developmental stage covers that age — the parent never picks a pathway, and none is named. With
+  no diagnostic for that age, the parent goes straight to the enrolment form.
+- **Bootcamp page:** the "Pathways in this bootcamp" section is gone; price, dates, place, ages and
+  **Enroll** sit in one booking card on the right. The "Prices shown are indicative" note is gone
+  from the bootcamps list.
+- **Home page:** the hero's buttons are now **Bootcamps**, **Home Schooling** and **Tech Clubs**;
+  **Browse pathways** sits under the Vision, Mission and 2030 Goal cards.
+- **The header's Enroll** (and the phone menu's) opens a new page, **/get-started**: one card per
+  programme a family can join themselves, each into its own sign-up, and an **Ask us** link to the
+  enquiry form. The footer's Enroll and the "Enroll a learner" banners still open the enquiry form.
+
+### Two new migrations, applied on Restart
+
+- `20261022120000_add_base_plus_educator_pay.js` — `claim_settings.commissionRate`;
+  `teacher_claims.learnerCount` and `commissionRate`.
+- `20261022130000_create_hub_checkins.js` — `checkin_schedules`, `checkin_sessions`,
+  `checkin_actions`, `checkin_action_updates`.
+
+Both additive. No new environment variable; no new npm package.
+
+### One new cron job (recommended)
+
+`npm run checkins:process`, **hourly**, from the backend's application root (cPanel → Cron Jobs,
+the same way as `mail:process`). It puts check-ins on the calendar, marks them Missed / Pending
+submission and sends the reminders. Without it the same happens whenever someone opens Hub
+Check-ins, but reminders then only go out when the page is opened.
+
+### Backend (`backend-deploy.zip`)
+
+From `3b5bee1`, byte-identical in Dev, Live and Capable; 542 entries, 130 migrations, the newest
+`20261022130000_create_hub_checkins.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DoGFY4Pj.js` |
+| Live | `npm run build:live` | `index-DeDFBvm8.js` |
+| Capable | `npm run build:capable` | `index-EkKkmPhP.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2907 KB) | 40 of 40 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2768 KB) | 25 of 25 pre-rendered with content |
+
+One page more than last time in each: `/get-started`. Both checked: built site (no dev-server
+files), each calling its own API. Live has no projects, store items or competitions listed, so
+none are pre-rendered — that is the data, not a failed build.
+
+### Checked so far
+
+Server tests (46) and website tests (95) pass, and every build passes. Against a local database
+and API: Hub check-ins through the service (32 checks) and over HTTP with real staff logins and
+roles (14 checks — who may see, change, cancel); the bootcamp API returns each pathway's ages and
+the diagnostic loads by age. The bootcamp booking card, home page buttons and **/get-started**
+looked at in a browser on desktop and phone. **The Enroll → diagnostic → enrolment flow, Base
+plus claims and can-do checks were not clicked through end to end, and nothing is tried on the
+hosting yet** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'checkin_sessions';` returns one row and
+   `SHOW COLUMNS FROM claim_settings LIKE 'commissionRate';` returns one row. If not, Run JS
+   script → `db:migrate`.
+3. **Cron:** add `npm run checkins:process` hourly (see above).
+4. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+5. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+6. **Verify:**
+   - An assessment: add a **Can-do check** from Structured items, take it as a learner, and see
+     it marked (half marks for "with help").
+   - Settings → Educator pay: set a commission rate; an educator with **Base plus** sees it on a
+     claim as session rate + learners × commission.
+   - Hub Check-ins: add a schedule for a hub; the Account Manager (a staff login whose role has
+     **Hub check-ins (Account Managers & Training Leads)**) sees it under My Check-ins, saves a draft and submits the report.
+   - A bootcamp page on the website: the booking card with **Enroll**; Enroll asks the age, then
+     shows the diagnostic (or the enrolment form when no pathway's stage covers that age). For a
+     diagnostic, the bootcamp's pathways need **Public diagnostic** switched on and a stage age
+     range that covers the child.
+   - The website header's **Enroll** opens the page with Bootcamps, Home Schooling and Tech Clubs.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `f98711a`).
+
+---
+
 ## This release (22 Oct 2026) — assessment folders; full indicator lists on Performance Bands; pathway course arrows fixed; bootcamp page without "Enquire to book"; M-Pesa code included, switched off
 
 **Backend, portal and website**, from `curriculum` (branch `modules`) at `c12fa9b` and

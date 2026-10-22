@@ -93,6 +93,8 @@ import AssessmentBuilderPage from "../modules/assessments/pages/AssessmentBuilde
 import AssessmentViewPage from "../modules/assessments/pages/AssessmentViewPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import ActivityPage from "../modules/activity/pages/ActivityPage";
+import CheckinsPage from "../modules/checkins/pages/CheckinsPage";
+import CheckinSessionPage from "../modules/checkins/pages/CheckinSessionPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
 import SupervisorDashboardPage from "../modules/claims/pages/SupervisorDashboardPage";
 import SupervisorClaimsPage from "../modules/claims/pages/SupervisorClaimsPage";
@@ -191,6 +193,10 @@ export default function AppRoutes() {
         <Route path="billing/:id" element={<InvoiceDetailPage />} />
         {/* The activity log — who did what, when. The owner, and staff whose role grants it. */}
         <Route path="activity" element={<ActivityPage />} />
+        {/* Hub check-ins — Account Managers, Training Leads and their managers (modules/checkins). */}
+        <Route path="checkins" element={<CheckinsPage />} />
+        <Route path="checkins/actions" element={<CheckinsPage />} />
+        <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
         {/* Educator claims — the supervisor's review and the admin's approval and payment — are
             Billing's "Educator Claims" tab. The educator's own side lives in the teacher-portal
             (claims, claims/:classId/:courseId). */}

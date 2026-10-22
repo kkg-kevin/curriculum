@@ -42,6 +42,7 @@ const ROOTS = {
   "hub-visits": { table: "hub_visits", noun: "hub visit", module: "hub-visits" },
   leads: { table: "leads", noun: "enquiry", module: "enquiries" },
   claims: { table: "teacher_claims", noun: "claim", module: "claims" },
+  checkins: { table: null, noun: "hub check-in", module: "checkins" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
@@ -82,6 +83,11 @@ const COLLECTIONS = {
   bootcamps: { hubs: { table: "bootcamp_hubs", noun: "hub run" } },
   courses: { folders: { table: "course_folders", noun: "course folder" } },
   assessments: { folders: { table: "assessment_folders", noun: "assessment folder" } },
+  checkins: {
+    schedules: { table: "checkin_schedules", noun: "check-in schedule" },
+    sessions: { table: "checkin_sessions", noun: "hub check-in" },
+    actions: { table: "checkin_actions", noun: "check-in action" },
+  },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },
 };

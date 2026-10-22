@@ -3,6 +3,7 @@
 // `module` on an entry → the name of that area of the app.
 export const AREA_LABELS = {
   account: "Sign-in & account",
+  checkins: "Hub check-ins",
   people: "Staff, roles & sharing",
   "learning-hubs": "Learning Hubs",
   curriculum: "Curriculum",

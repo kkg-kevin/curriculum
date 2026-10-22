@@ -1,7 +1,7 @@
 const { z } = require("zod");
 const { roundMarks, roundIndicatorMarks } = require("./assessment.utils");
 const {
-  STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, SUBMISSION_ITEM_KINDS,
+  STRUCTURE_MODES, ITEM_KINDS, OBSERVATION_ITEM_KINDS, TASK_TYPES, SUBMISSION_ITEM_KINDS, CAN_DO_LEVELS,
 } = require("./builder.constants");
 
 // "survey" is an ungraded, self-reflection assessment type — the learner rates their own
@@ -66,6 +66,9 @@ const itemSchema = z.object({
   blanks:        z.array(z.string().min(1)).optional().default([]),
   sequence:      z.array(z.string().min(1)).optional().default([]),
   ratingScale:   z.array(z.string().min(1)).optional().default(DEFAULT_SURVEY_SCALE),
+  // A can-do check's wording for each level, in CAN_DO_LEVELS order (the marks each earns are
+  // fixed). Defaults to the standard wording.
+  levelLabels:   z.array(z.string().trim().min(1, "Every level needs its wording").max(150)).optional().default(CAN_DO_LEVELS.map((l) => l.label)),
   acceptedFileTypes: z.array(z.string().min(1)).optional().default([]),
   // Assignment/Project task fields
   taskType:      z.enum(TASK_TYPES).optional().nullable().default(null),
@@ -83,7 +86,8 @@ const itemSchema = z.object({
   .refine((d) => d.kind !== "matching" || d.pairs.length >= 2, { message: "Add at least 2 pairs", path: ["pairs"] })
   .refine((d) => d.kind !== "fillBlank" || d.blanks.length >= 1, { message: "Add at least 1 blank answer", path: ["blanks"] })
   .refine((d) => d.kind !== "ordering" || d.sequence.length >= 2, { message: "Add at least 2 steps", path: ["sequence"] })
-  .refine((d) => d.kind !== "survey" || d.ratingScale.length >= 2, { message: "Add at least 2 scale points", path: ["ratingScale"] });
+  .refine((d) => d.kind !== "survey" || d.ratingScale.length >= 2, { message: "Add at least 2 scale points", path: ["ratingScale"] })
+  .refine((d) => d.kind !== "canDo" || d.levelLabels.length === CAN_DO_LEVELS.length, { message: `A can-do check has exactly ${CAN_DO_LEVELS.length} levels`, path: ["levelLabels"] });
 
 const rubricCriterionSchema = z.object({
   id:          z.string().optional(),

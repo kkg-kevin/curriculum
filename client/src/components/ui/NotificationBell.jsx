@@ -72,6 +72,19 @@ function resolveNotificationPath(n) {
     case "claim_rejected":
       // News about the educator's own claim — that course's page in the teacher-portal.
       return p.route || "/teacher-portal/claims";
+    case "checkin_assigned":
+    case "checkin_upcoming":
+    case "checkin_today":
+    case "checkin_report_overdue":
+    case "checkin_missed":
+    case "checkin_rescheduled":
+    case "checkin_cancelled":
+    case "checkin_hub_flagged":
+    case "checkin_action_assigned":
+    case "checkin_action_overdue":
+    case "checkin_action_escalated":
+      // Hub check-ins: the check-in's own page, or the action opened over the check-ins page.
+      return p.route || "/checkins";
     default:
       return null;
   }
