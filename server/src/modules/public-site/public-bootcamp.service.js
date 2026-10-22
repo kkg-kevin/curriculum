@@ -236,6 +236,9 @@ async function resolveForSaleBootcamp(idOrSlug) {
 // publicDiagnosticEnabled/age-range are independently set up as a public diagnostic (Curriculum →
 // Competency Framework). This keeps the bootcamp flow a thin picker in front of the one, already
 //-working /pathways/:slug/diagnostic flow rather than a second grading/attempt path.
+//
+// Returns the stage's age range ({ minAge, maxAge }) when offerable — the bootcamp "Enroll" flow
+// picks the pathway from the child's age with it — and false otherwise.
 async function pathwayDiagnosticOfferable(pathway) {
   // publicDiagnosticAssessmentId wins when set, falling back to diagnosticAssessmentId — same
   // "effective id" resolution public-diagnostic.service.js's loadOfferableAssessment uses, so a
@@ -250,7 +253,8 @@ async function pathwayDiagnosticOfferable(pathway) {
     return false;
   }
   const assessment = await AssessmentModel.findById(effectiveAssessmentId);
-  return !!assessment && !requiresManualGrading(assessment);
+  if (!assessment || requiresManualGrading(assessment)) return false;
+  return { minAge: Number(stage.minAge), maxAge: Number(stage.maxAge) };
 }
 
 // The bootcamp's pathwayDiagnostics, resolved to what the public "Take the diagnostic" picker
@@ -259,19 +263,22 @@ async function pathwayDiagnosticOfferable(pathway) {
 // /pathways/:slug/diagnostic) and display fields. A pathway assigned in the builder but whose OWN
 // public diagnostic isn't set up (or no longer is) is silently dropped — see
 // pathwayDiagnosticOfferable's comment for why the bootcamp's own assessmentId choice doesn't
-// override this.
+// override this. Kept in the bootcamp's own order, with each pathway's age range: the website's
+// Enroll button takes the first one whose range covers the child's age.
 async function resolvePathwayDiagnostics(pathwayDiagnostics) {
   if (!pathwayDiagnostics || pathwayDiagnostics.length === 0) return [];
   const pathways = await Promise.all(pathwayDiagnostics.map((pd) => PathwayModel.findById(pd.pathwayId)));
   const offerable = await Promise.all(pathways.map((p) => (p ? pathwayDiagnosticOfferable(p) : false)));
   return pathways
-    .map((pathway, i) => (pathway && offerable[i] ? pathway : null))
+    .map((pathway, i) => (pathway && offerable[i] ? { pathway, ages: offerable[i] } : null))
     .filter(Boolean)
-    .map((pathway) => ({
+    .map(({ pathway, ages }) => ({
       pathwayId: pathway.id,
       pathwaySlug: slugify(pathway.name) || "pathway",
       pathwayName: pathway.name,
       pathwayColor: pathway.color || null,
+      minAge: ages.minAge,
+      maxAge: ages.maxAge,
     }));
 }
 
