@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { FiCheck, FiX } from "react-icons/fi";
-import { normalizeLegacyItem, entryMarks } from "../schemas/assessment.schema";
+import { normalizeLegacyItem, entryMarks, canDoLevelFor } from "../schemas/assessment.schema";
 import { useAssessmentCompetencies } from "../hooks/useAssessment";
 import RichContent from "./RichContent";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+// Marked automatically from the learner's answer — mirrors the server's grading.utils.js.
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
 const OBSERVATION_KIND_LABELS = { checklist: "Checklist", rating: "Rating", practicalSkill: "Practical Skill", behaviour: "Behaviour", note: "Note" };
 
 const fieldStyle = {
@@ -29,7 +30,26 @@ function formatResponse(response) {
   return String(response);
 }
 
+// A can-do check, as marked: the level the learner picked and what it earned (no marks in a survey).
+function CanDoRow({ index, item, response, autoResult }) {
+  const level = canDoLevelFor(item, response);
+  const look = level || { color: T.inkMuted, bg: "#F9FAFB", border: T.border };
+  return (
+    <div style={{ padding: "12px 14px", backgroundColor: look.bg, border: `1px solid ${look.border}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
+        {autoResult && <span style={{ fontSize: 11, fontWeight: 700, color: look.color, whiteSpace: "nowrap" }}>{autoResult.marksAwarded ?? 0}/{autoResult.maxMarks ?? entryMarks(item)}</span>}
+      </div>
+      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: look.color, fontWeight: 600 }}>
+        {level ? level.label : <em style={{ color: T.inkFaint, fontWeight: 400 }}>No answer given</em>}
+      </p>
+    </div>
+  );
+}
+
 function AutoGradedRow({ index, item, response, autoResult }) {
+  if (item.kind === "canDo") return <CanDoRow index={index} item={item} response={response} autoResult={autoResult} />;
   const correct = autoResult?.correct;
   return (
     <div style={{ padding: "12px 14px", backgroundColor: correct ? "#ECFDF5" : "#FFF5F5", border: `1px solid ${correct ? "#A7F3D0" : "#FECACA"}`, borderRadius: 10 }}>

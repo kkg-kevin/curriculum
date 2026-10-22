@@ -6,13 +6,34 @@ export const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "obser
 export const STRUCTURE_MODES = ["structured", "unstructured", "mixed"];
 export const STRUCTURE_MODE_LABELS = { structured: "Structured", unstructured: "Unstructured", mixed: "Mixed" };
 
-export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "shortAnswer", "survey"];
+export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "shortAnswer", "survey", "canDo"];
 export const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
 export const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
 export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
 // A survey assessment's own palette group — just the self-rating "survey" item kind, scoped
 // down so a survey's builder offers nothing but flat rating questions.
 export const SURVEY_ITEM_KINDS = ["survey"];
+// A "can-do" self-assessment (one of the structured items): the learner reads a statement and
+// says how well they can do it. Marked automatically from the level picked — offered in every
+// assessment type (in a Survey it carries no marks, like everything else there). Mirrors the
+// server's CAN_DO_LEVELS.
+// The levels in order, with the share of the question's marks each earns (fixed). The wording can
+// be changed per question — an item's `levelLabels`, same order. A learner's answer is the key.
+export const CAN_DO_LEVELS = [
+  { key: "independent", credit: 1, label: "I can do it independently", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+  { key: "withHelp", credit: 0.5, label: "I can do it with help", color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" },
+  { key: "cannot", credit: 0, label: "I can't do it", color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" },
+];
+
+// A can-do item's levels with its own wording (falling back to the standard wording).
+export function canDoLevels(item) {
+  return CAN_DO_LEVELS.map((level, i) => ({ ...level, label: item?.levelLabels?.[i]?.trim() || level.label }));
+}
+
+// The level a learner's answer (its key) stands for, or null.
+export function canDoLevelFor(item, response) {
+  return canDoLevels(item).find((level) => level.key === response) || null;
+}
 
 export const TASK_TYPES = ["written", "practical", "research"];
 export const TASK_TYPE_LABELS = { written: "Written", practical: "Practical", research: "Research" };
@@ -22,6 +43,7 @@ export const DEFAULT_SURVEY_SCALE = ["Strongly Disagree", "Disagree", "Neutral",
 export const ITEM_KIND_LABELS = {
   mcqSingle: "Multiple Choice (Single)", mcqMultiple: "Multiple Choice (Multiple)", trueFalse: "True / False",
   matching: "Matching", ordering: "Ordering", fillBlank: "Fill in the Blank", shortAnswer: "Short Answer", survey: "Survey (Scale)",
+  canDo: "Can-do Check (I can…)",
   longAnswer: "Long Answer", essay: "Essay", reflection: "Reflection", scenarioResponse: "Scenario Based",
   practicalTask: "Practical Task", openEnded: "Open-ended Question",
   documentUpload: "Document Upload", imageUpload: "Image Upload", videoUpload: "Video Upload",
@@ -46,16 +68,19 @@ export const ITEM_GROUPS = {
 // `supportsQuestionRubric`: this type's questions/criteria can compound a single tagged
 // indicator's marks from a checklist of sub-criteria (see ScoringCriteriaEditor in
 // AssessmentBuilderPage.jsx and ScoringCriteriaChecklist in GradingPanel.jsx).
+// `onlyKinds` narrows a group to some of its kinds for that type — a project's and a survey's
+// Structured Items offer just the can-do check.
 export const BUILDER_REGISTRY = {
   quiz:        { label: "Quiz", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   exam:        { label: "Exam", itemGroups: ["structured", "unstructured", "submission"], supportsSections: true },
   assignment:  { label: "Assignment", itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true, supportsQuestionRubric: true },
-  project:     { label: "Project", itemGroups: ["unstructured", "submission"], supportsItems: false, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true, supportsQuestionRubric: true },
+  // A project's work is its deliverables, milestones and rubric; its only questions are can-do checks.
+  project:     { label: "Project", itemGroups: ["structured"], onlyKinds: { structured: ["canDo"] }, canDoOnly: true, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true, supportsQuestionRubric: true },
   observation: { label: "Teacher Observation", itemGroups: ["structured", "unstructured", "observation"], supportsSections: true, supportsQuestionRubric: true },
   // Ungraded self-reflection — a learner rates their own understanding of a concept on a scale.
   // Flat list of questions (no sections), never scored (see grading.utils.js), but its
   // questions can still be tagged to competency indicators like any other assessment type.
-  survey:      { label: "Survey", itemGroups: ["survey"], supportsSections: false },
+  survey:      { label: "Survey", itemGroups: ["survey", "structured"], onlyKinds: { structured: ["canDo"] }, supportsSections: false },
 };
 
 // Legacy items authored before the Builder existed used `questionType` with a smaller kind set.

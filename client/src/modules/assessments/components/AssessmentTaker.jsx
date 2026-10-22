@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiCheck } from "react-icons/fi";
-import { normalizeLegacyItem, ITEM_KIND_LABELS } from "../schemas/assessment.schema";
+import { normalizeLegacyItem, ITEM_KIND_LABELS, canDoLevels } from "../schemas/assessment.schema";
 import { useFileUpload } from "../../../hooks/useFileUpload";
 import UploadProgress from "../../../components/UploadProgress";
 import RichContent from "./RichContent";
@@ -232,6 +232,37 @@ function ScaleField({ item, value, onChange }) {
   );
 }
 
+// A can-do check: the learner picks how well they can do what the statement says. Big, touch-
+// friendly buttons, one per level; the answer stored is the level's key (see grading.utils.js).
+function CanDoField({ item, value, onChange }) {
+  return (
+    <div role="radiogroup" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))" }}>
+      {canDoLevels(item).map((level) => {
+        const selected = value === level.key;
+        return (
+          <button
+            key={level.key}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(level.key)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, textAlign: "left",
+              border: `2px solid ${selected ? level.color : T.border}`, backgroundColor: selected ? level.bg : "#fff",
+              color: selected ? level.color : T.ink, fontSize: 14, fontWeight: selected ? 700 : 500, fontFamily: "Inter, sans-serif", cursor: "pointer",
+            }}
+          >
+            <span style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, border: `2px solid ${level.color}`, backgroundColor: selected ? level.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              {selected && <FiCheck size={12} />}
+            </span>
+            {level.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function TextField({ value, onChange, placeholder }) {
   return (
     <textarea
@@ -249,6 +280,7 @@ function ItemField({ item, value, onChange }) {
   if (item.kind === "ordering") return <OrderingField item={item} value={value} onChange={onChange} />;
   if (item.kind === "matching") return <MatchingField item={item} value={value} onChange={onChange} />;
   if (item.kind === "survey") return <ScaleField item={item} value={value} onChange={onChange} />;
+  if (item.kind === "canDo") return <CanDoField item={item} value={value} onChange={onChange} />;
   if (item.kind === "externalLink") return <TextField value={value} onChange={onChange} placeholder="Paste a link…" />;
   if (FILE_KINDS.includes(item.kind)) {
     const accept = item.acceptedFileTypes?.length ? item.acceptedFileTypes.join(",") : undefined;

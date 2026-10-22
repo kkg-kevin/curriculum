@@ -24,7 +24,7 @@ import ImageUploadField from "../../../components/ImageUploadField";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE,
+  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE, CAN_DO_LEVELS,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation", survey: "Survey" };
@@ -594,6 +594,7 @@ function defaultEntry(kind, sectionId, assessmentType) {
     blanks: kind === "fillBlank" ? [""] : [],
     sequence: kind === "ordering" ? ["", ""] : [],
     ratingScale: kind === "survey" ? [...DEFAULT_SURVEY_SCALE] : [],
+    levelLabels: kind === "canDo" ? CAN_DO_LEVELS.map((level) => level.label) : undefined,
     acceptedFileTypes: [],
     taskType: null,
     submissionKinds: [],
@@ -607,11 +608,17 @@ function entryLabel(entry) {
 /* ── Item palette ───────────────────────────────────────────────────────── */
 
 function ItemPalette({ type, structureType, onAdd }) {
-  const groups = structureType === "structured"
-    ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "structured")
-    : structureType === "unstructured"
-      ? (BUILDER_REGISTRY[type]?.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
-      : (BUILDER_REGISTRY[type]?.itemGroups || []);
+  const registry = BUILDER_REGISTRY[type] || {};
+  // A type that narrows its groups to a few kinds (a project's or survey's Structured Items are
+  // just the can-do check) always shows them, whatever the structure type.
+  const groups = registry.onlyKinds
+    ? (registry.itemGroups || [])
+    : structureType === "structured"
+      ? (registry.itemGroups || []).filter((g) => g === "structured")
+      : structureType === "unstructured"
+        ? (registry.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
+        : (registry.itemGroups || []);
+  const kindsOf = (group) => registry.onlyKinds?.[group] || ITEM_GROUPS[group];
 
   // Groups always start collapsed on a fresh create/edit visit — opt-in (not opt-out) so any
   // group that only appears after switching structure type also starts collapsed.
@@ -636,7 +643,7 @@ function ItemPalette({ type, structureType, onAdd }) {
                 <path d="M6 9l6 6 6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            {isOpen && ITEM_GROUPS[group].map((kind) => (
+            {isOpen && kindsOf(group).map((kind) => (
               <button key={kind} type="button" className="tb-palette-btn" onClick={() => onAdd(kind)}>
                 <span className="tb-palette-dot" style={{ backgroundColor: ITEM_GROUP_COLORS[group] }} />
                 {ITEM_KIND_LABELS[kind]}
@@ -995,6 +1002,38 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
           <Label>Scale</Label>
           <ListEditor values={entry.ratingScale} onChange={(v) => set("ratingScale", v)} placeholder="Point" minItems={2} />
           <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>The learner picks one point on this scale — there's no right or wrong answer, so it's reviewed manually rather than auto-graded.</p>
+        </div>
+      )}
+
+      {entry.kind === "canDo" && (
+        <div>
+          <Label>Levels</Label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {CAN_DO_LEVELS.map((level, i) => (
+              <div key={level.key} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: level.color, flexShrink: 0 }} />
+                <input
+                  className="tb-input"
+                  value={entry.levelLabels?.[i] ?? level.label}
+                  maxLength={150}
+                  onChange={(e) => {
+                    const next = CAN_DO_LEVELS.map((l, j) => entry.levelLabels?.[j] ?? l.label);
+                    next[i] = e.target.value;
+                    set("levelLabels", next);
+                  }}
+                  aria-label={`Wording for "${level.label}"`}
+                />
+                <span style={{ flexShrink: 0, minWidth: "88px", fontSize: "11.5px", fontWeight: 700, color: level.color, textAlign: "right" }}>
+                  {Math.round(level.credit * 100)}% of the marks
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+            {type === "survey"
+              ? "The learner picks the level that fits. In a survey it isn't marked."
+              : "The learner picks the level that fits, and it's marked straight away: the full marks, half, or none. Change the wording if you like — the marks each level earns stay the same."}
+          </p>
         </div>
       )}
 
@@ -1875,7 +1914,7 @@ export default function AssessmentBuilderPage() {
   const color = TYPE_COLORS[type];
   const tabs = [
     { key: "info", label: "Assessment Information" },
-    ...(BUILDER_REGISTRY[type]?.supportsItems !== false ? [{ key: "structure", label: "Structure & Items" }] : []),
+    ...(BUILDER_REGISTRY[type]?.supportsItems !== false ? [{ key: "structure", label: BUILDER_REGISTRY[type]?.canDoOnly ? "Can-do Checks" : "Structure & Items" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsRubric ? [{ key: "rubric", label: "Grading Rubric" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsDeliverables ? [{ key: "deliverables", label: "Deliverables & Milestones" }] : []),
     ...(BUILDER_REGISTRY[type]?.supportsInventory ? [{ key: "inventory", label: "Materials" }] : []),

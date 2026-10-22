@@ -3,7 +3,7 @@ import { FiCheck, FiAlertTriangle, FiPackage, FiFlag } from "react-icons/fi";
 import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
-  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks, roundMarks,
+  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks, roundMarks, canDoLevels,
 } from "../schemas/assessment.schema";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
@@ -44,7 +44,8 @@ function Badge({ children, color = "#25476a" }) {
   );
 }
 
-function ItemDetail({ item }) {
+// `scored` is false in a survey — a can-do check there shows its levels without marks.
+function ItemDetail({ item, scored = true }) {
   const isObservation = OBSERVATION_ITEM_KINDS.includes(item.kind);
   return (
     <>
@@ -87,6 +88,13 @@ function ItemDetail({ item }) {
       )}
       {item.kind === "shortAnswer" && item.correctAnswer && (
         <p style={{ margin: "8px 0 0", fontSize: "12.5px", color: "#6B7280", fontStyle: "italic" }}>Model answer: {item.correctAnswer}</p>
+      )}
+      {item.kind === "canDo" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "8px" }}>
+          {canDoLevels(item).map((level) => (
+            <Badge key={level.key}>{level.label}{scored ? ` · ${Math.round(level.credit * 100)}%` : ""}</Badge>
+          ))}
+        </div>
       )}
       {item.kind === "survey" && item.ratingScale?.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "8px" }}>
@@ -131,7 +139,7 @@ function ScoringCriteriaList({ criteria }) {
   );
 }
 
-function StructureSection({ sections, entries }) {
+function StructureSection({ sections, entries, scored = true }) {
   const sectionIds = new Set(sections.map((s) => s.id));
   const orphanEntries = entries.filter((e) => !e.sectionId || !sectionIds.has(e.sectionId));
   let counter = 0;
@@ -148,7 +156,7 @@ function StructureSection({ sections, entries }) {
             ) : (
               <div style={{ marginBottom: "6px", fontSize: "13.5px" }}><RichContent html={entry.question ?? entry.text} /></div>
             )}
-            <ItemDetail item={entry} />
+            <ItemDetail item={entry} scored={scored} />
           </div>
         </div>
       </div>
@@ -253,7 +261,7 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
 
         {registry?.supportsItems !== false && (
           <Section title={`${isObservation ? "Observation Items" : type === "survey" ? "Questions" : "Items"}${entries.length ? ` · ${entries.length}${type === "survey" ? "" : ` · ${totalItemPoints} pts`}` : ""}`}>
-            <StructureSection sections={sections} entries={entries} />
+            <StructureSection sections={sections} entries={entries} scored={type !== "survey"} />
           </Section>
         )}
 

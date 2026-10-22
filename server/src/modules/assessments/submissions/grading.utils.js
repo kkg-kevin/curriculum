@@ -1,8 +1,11 @@
 const { computeEntryMarks, roundMarks } = require("../assessment.utils");
+const { CAN_DO_LEVELS } = require("../builder.constants");
 
-// Item kinds with a single, unambiguous correct answer stored on the item itself — everything
-// else (free text, uploads, observation indicators, rubric-graded work) needs a human to score it.
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+// Item kinds marked automatically from the learner's answer: the ones with a single, unambiguous
+// correct answer stored on the item itself, and can-do checks (marked by the level the learner
+// picks). Everything else (free text, uploads, observation indicators, rubric-graded work) needs
+// a human to score it.
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
 
 function isAutoGradableItem(item) {
   return AUTO_GRADABLE_KINDS.includes(item.kind);
@@ -67,6 +70,13 @@ function gradeItem(item, response) {
         && pairs.every((p) => answer.some((a) => a.left === p.left && a.right === p.right));
       break;
     }
+    case "canDo": {
+      // Partial credit: the share of the marks the chosen level earns ("with help" = half).
+      // No answer, or an unknown one, earns nothing. `level` is kept on the result for display.
+      const level = CAN_DO_LEVELS.find((l) => l.key === response);
+      const credit = level ? level.credit : 0;
+      return { correct: credit === 1, marksAwarded: roundMarks(maxMarks * credit), maxMarks, level: level ? level.key : null };
+    }
     default:
       correct = false;
   }
@@ -84,16 +94,20 @@ function computeAutoScore(assessment, answers) {
   let autoMax = 0;
   const itemResults = [];
 
+  // A survey is never scored (see computeMaxScore) — a can-do check in one keeps its answer
+  // (on the submission's answers) but earns no marks.
+  if (assessment.type === "survey") return { autoScore, autoMax, itemResults };
+
   items.forEach((item) => {
     if (!isAutoGradableItem(item)) return;
     const response = answersByItem.get(item.id);
-    const { correct, marksAwarded, maxMarks } = gradeItem(item, response);
+    const { correct, marksAwarded, maxMarks, level } = gradeItem(item, response);
     autoScore += marksAwarded;
     autoMax += maxMarks;
-    itemResults.push({ itemId: item.id, correct, marksAwarded, maxMarks });
+    itemResults.push({ itemId: item.id, correct, marksAwarded, maxMarks, ...(level !== undefined ? { level } : {}) });
   });
 
-  return { autoScore, autoMax, itemResults };
+  return { autoScore: roundMarks(autoScore), autoMax: roundMarks(autoMax), itemResults };
 }
 
 // Total possible marks across the whole assessment — items plus (for observation) indicators,
@@ -124,8 +138,9 @@ function computeMaxScore(assessment) {
 // sees and the accumulating per-learner indicator progress. Untagged items (plain `points`,
 // no indicatorMarks) contribute nothing — there's no indicator to attribute them to.
 //
-// Auto-graded items are exact: grading is binary, so an indicator's tagged share either fully
-// counts (correct) or fully doesn't (incorrect) — no assumption involved. Manually-graded
+// Auto-graded items are exact: an indicator's tagged share counts by the share of the item's
+// marks earned — all or nothing for a right/wrong question, the level's share for a can-do check
+// ("with help" earns half of each tagged indicator's marks). Manually-graded
 // items/rubric use whatever per-indicator split the teacher entered in their feedback
 // (itemFeedbackSchema's indicatorMarks — see GradingPanel.jsx); if a submission was graded
 // before that existed, or a teacher skipped the split, this falls back to apportioning the
