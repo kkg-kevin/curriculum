@@ -274,6 +274,7 @@ const AuditService = {
         password_changed: "Changed their password",
         password_reset: "Reset their password from an emailed link",
         session_expired: "Signed out after inactivity",
+        role_switched: `Switched to their ${reason === "teacher" ? "educator" : reason === "school" ? "learning hub" : reason === "learner" ? "parent" : reason || "other"} role`,
       };
       await write({
         ownerAdminId: account ? await workspaceOf({ user: account }) : null,

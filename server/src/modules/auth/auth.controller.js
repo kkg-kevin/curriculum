@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AuthService = require("./auth.service");
-const { loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } = require("./auth.validation");
+const { switchRoleSchema, loginSchema, signupSchema, createUserSchema, updateMeSchema, verifyPasswordSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } = require("./auth.validation");
 const { COOKIE_NAME, NODE_ENV } = require("../../config/env");
 const jwt = require("jsonwebtoken");
 const AuditService = require("../audit/audit.service");
@@ -43,6 +43,16 @@ const login = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
 });
 
+// Moves the signed-in session to another of the account's roles (the header's role switcher, or
+// the choice right after signing in). A new cookie replaces the old one.
+const switchRole = asyncHandler(async (req, res) => {
+  const { role } = switchRoleSchema.parse(req.body);
+  const { user, token } = await AuthService.switchRole(req.cookies?.[COOKIE_NAME], role);
+  AuditService.recordAuth(req, "role_switched", { user, reason: role });
+  res.cookie(COOKIE_NAME, token, cookieOptions);
+  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
+});
+
 const logout = asyncHandler(async (req, res) => {
   const signedInAs = jwt.decode(req.cookies?.[COOKIE_NAME] || "")?.sub;
   await AuthService.logout(req.cookies?.[COOKIE_NAME]);
@@ -53,7 +63,7 @@ const logout = asyncHandler(async (req, res) => {
 
 // `session` tells the client how long it may sit idle before signing out (SESSION_IDLE_MINUTES).
 const me = asyncHandler(async (req, res) => {
-  const user = await AuthService.getById(req.user.id);
+  const user = await AuthService.getById(req.user.id, req.user.role, { withRoles: true });
   res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
 });
 
@@ -121,4 +131,4 @@ const createAdmin = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: user });
 });
 
-module.exports = { signup, login, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin };
+module.exports = { signup, login, switchRole, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin };

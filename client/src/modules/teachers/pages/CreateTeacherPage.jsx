@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,7 +45,11 @@ export default function CreateTeacherPage() {
     createTeacher(payload, {
       onSuccess: (teacher) => {
         const viewPath = teacherPath(user?.role, teacher.id, "view");
-        if (data.password) {
+        // Their email already signs in as something else: no new password was set.
+        if (teacher.loginLinked) {
+          toast("This email already has a Digifunzi login, so it now has the Educator role too. They sign in with their own password and choose Educator.", { duration: 8000 });
+          navigate(viewPath);
+        } else if (data.password) {
           setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
         } else {
           navigate(viewPath);

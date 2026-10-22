@@ -42,7 +42,8 @@ async function protect(req, res, next) {
       return next(err);
     }
     req.sessionJti = payload.jti;
-    const user = await AuthService.getById(payload.sub);
+    // The role this session runs as (an account may hold several — see account-roles.js).
+    const user = await AuthService.getById(payload.sub, payload.role);
     req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules, roleId: user.roleId, organisationId: user.organisationId || null };
     next();
   } catch (err) {

@@ -38,8 +38,14 @@ async function isLeftoverLogin(user) {
 }
 
 // Removes `user` when it's a leftover, so its email is free again. True when it did.
+// A login that also holds another role (account-roles.js) whose record still exists isn't a
+// leftover — it is still somebody's educator, hub or parent login.
 async function releaseIfLeftover(user) {
   if (!user || !(await isLeftoverLogin(user))) return false;
+  const { extraRolesOf } = require("./account-roles");
+  for (const role of extraRolesOf(user)) {
+    if (!(await isLeftoverLogin({ ...user, role }))) return false;
+  }
   await UserSessionModel.deleteByUserId(user.id);
   await db("users").where({ id: user.id }).del();
   return true;

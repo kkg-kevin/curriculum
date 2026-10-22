@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { FiAlertTriangle } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
@@ -51,8 +52,12 @@ export default function EditTeacherPage() {
   const onSubmit = (data) => {
     const viewPath = teacherPath(user?.role, id, "view");
     updateTeacher({ id, data }, {
-      onSuccess: () => {
-        if (data.password) {
+      onSuccess: (saved) => {
+        // Their email already signs in as something else: no new password was set.
+        if (saved?.loginLinked) {
+          toast("This email already has a Digifunzi login, so it now has the Educator role too. They sign in with their own password and choose Educator.", { duration: 8000 });
+          navigate(viewPath);
+        } else if (data.password) {
           setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
         } else {
           navigate(viewPath);
