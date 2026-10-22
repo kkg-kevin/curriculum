@@ -35,6 +35,9 @@ const competitionRoutes = require("./modules/competitions/competition.routes");
 const bootcampRoutes = require("./modules/bootcamps/bootcamp.routes");
 const notificationRoutes = require("./modules/notifications/notification.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
+const mpesaRoutes = require("./modules/payments/mpesa/mpesa.routes");
+const { publicRouter: publicPaymentRoutes, settingsRouter: paymentSettingsRoutes } = mpesaRoutes;
+const mpesaCallbackRoutes = require("./modules/payments/mpesa/mpesa-callback.routes");
 const hubVisitRoutes = require("./modules/hub-visits/hub-visit.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
 const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bootcamp-enrollment.routes");
@@ -184,6 +187,13 @@ app.use("/api/public", publicBootcampEnrollmentRoutes);
 // Unauthenticated by design — the "choose which emails you get" link in an email's footer. The
 // token in the link opens one account's email preferences and nothing else.
 app.use("/api/public", publicEmailPreferenceRoutes);
+// Unauthenticated by design — Safaricom telling us about M-Pesa payments. The secret token in the
+// path is the access control; see mpesa-callback.routes.js.
+app.use("/api/public/pay-hooks", mpesaCallbackRoutes);
+// Unauthenticated by design — paying one invoice from a link, without signing in (the website's
+// "Pay now" after a sign-up). The token in the path opens that one invoice's amount; see
+// payments/payment-links.js.
+app.use("/api/public/payments", publicPaymentRoutes);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -249,6 +259,12 @@ app.use("/api/notifications", protect, notificationRoutes);
 app.use("/api/email-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, emailSettingsRoutes);
 // Who signs the workspace's certificates (Settings → Certificates) — owner only, like the above.
 app.use("/api/certificate-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, certificateSettingsRoutes);
+// The workspace's own M-Pesa Paybill (Settings → Payments) — owner only, like the above: where a
+// workspace's money goes is not a staff decision.
+app.use("/api/payment-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, paymentSettingsRoutes);
+// M-Pesa: whether it's on, a prompt's progress, and Billing → M-Pesa (payments to match).
+// Mounted before billing's "/:id" routes so "mpesa" is never read as an invoice id.
+app.use("/api/billing/mpesa", protect, attachOwnRecords, mpesaRoutes);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Hub Visits — a non-school hub logging learner space-usage visits and turning them into
 // hub_usage invoices through the Billing module above (see hub-visit.service.js's header

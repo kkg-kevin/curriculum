@@ -109,6 +109,10 @@ const SKIP = [
   /^\/api\/(assessments|courses)\/drafts(\/|$)/, // autosave while building; the Save that follows is what's logged
   /^\/api\/assessment-submissions\/issues\/course-progress$/, // automatic, on finishing a session
   /^\/api\/public\/diagnostics\//, // anonymous website diagnostic attempts
+  // Safaricom's M-Pesa callbacks and the website's pay-without-signing-in links: each address
+  // carries a secret token, and the money itself is recorded in billing's own audit trail.
+  /^\/api\/public\/pay-hooks\//,
+  /^\/api\/public\/payments\//,
 ];
 
 const normalise = (path) => String(path || "").split("?")[0].toLowerCase().replace(/\/+$/, "");

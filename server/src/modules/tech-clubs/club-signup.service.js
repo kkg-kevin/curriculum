@@ -13,6 +13,7 @@ const UserModel = require("../auth/user.model");
 const BillingModel = require("../billing/billing.model");
 const BillingService = require("../billing/billing.service");
 const LeadModel = require("../leads/lead.model");
+const PaymentLinks = require("../payments/payment-links");
 const NotificationService = require("../notifications/notification.service");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 
@@ -66,6 +67,33 @@ async function rollback({ learnerIds, usernames, parentUserId, membershipId }) {
   }
   if (parentUserId) await UserModel.delete(parentUserId).catch(() => {});
   if (membershipId) await ClubMembershipModel.deleteMembership(membershipId).catch(() => {});
+}
+
+// A paid sign-up: the membership goes active, every child's login unlocks, children the admin
+// already placed go into their class, and the enquiry the sign-up made is stamped paid. Safe to
+// run twice — a membership that is no longer pending is left alone.
+async function activateMembership(membershipId, ownerAdminId, { amount, currency, paidByUserId = null }) {
+  const membership = await ClubMembershipModel.findById(membershipId, ownerAdminId);
+  if (!membership || membership.status !== "pending") return;
+  const active = await ClubMembershipModel.update(membership.id, ownerAdminId, { status: "active", startDate: new Date().toISOString().slice(0, 10) });
+  for (const child of await ClubMembershipModel.findChildren(membership.id, ownerAdminId)) {
+    const learner = await LearnerModel.findById(child.learnerId);
+    if (learner?.accountStatus === "pending_payment") await LearnerModel.update(learner.id, { accountStatus: "active" });
+    if (learner) {
+      await NotificationService.notifyLearner(learner.id, {
+        type: "account_activated",
+        title: "Your account is active",
+        message: "Your Tech Club payment has been confirmed. Welcome!",
+        payload: { route: "/learner-portal" },
+        dedupeKey: `tech_club_activated:${learner.id}`,
+      }).catch(() => {});
+    }
+  }
+  await syncMembershipChildren(active);
+  const lead = await db("leads").where({ clubMembershipId: membership.id }).first();
+  if (lead && !lead.paidAt) {
+    await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: currency || CURRENCY, paidAt: new Date(), paidByUserId }).catch(() => {});
+  }
 }
 
 // The parent's own login (email, no username) — a child's login can't see or add siblings.
@@ -199,6 +227,8 @@ const ClubSignupService = {
       amountDue: Number(invoice.total),
       parentEmail: data.parent.email,
       children: data.children.map((child) => ({ name: fullName(child), username: child.username })),
+      // Pay now by M-Pesa, without signing in (null when M-Pesa is off) — see payments/payment-links.js.
+      pay: await PaymentLinks.forWebsite(invoice, "tech_club_signup"),
     };
   },
 
@@ -222,27 +252,30 @@ const ClubSignupService = {
       }, req);
     }
 
-    const active = await ClubMembershipModel.update(membership.id, ownerAdminId, { status: "active", startDate: new Date().toISOString().slice(0, 10) });
-    for (const child of await ClubMembershipModel.findChildren(membership.id, ownerAdminId)) {
-      const learner = await LearnerModel.findById(child.learnerId);
-      if (learner?.accountStatus === "pending_payment") await LearnerModel.update(learner.id, { accountStatus: "active" });
-      if (learner) {
-        await NotificationService.notifyLearner(learner.id, {
-          type: "account_activated",
-          title: "Your account is active",
-          message: "Your Tech Club payment has been confirmed. Welcome!",
-          payload: { route: "/learner-portal" },
-          dedupeKey: `tech_club_activated:${learner.id}`,
-        }).catch(() => {});
-      }
-    }
-    // Children the admin already placed go into their class now.
-    await syncMembershipChildren(active);
-    const lead = await db("leads").where({ clubMembershipId: membership.id }).first();
-    if (lead && !lead.paidAt) {
-      await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: invoice.currency || CURRENCY, paidAt: new Date(), paidByUserId: req.user.id }).catch(() => {});
-    }
-    return active;
+    // Paying the invoice in full has already switched the family on (see activateForPaidInvoice);
+    // an admin approving a part payment does it here.
+    await activateMembership(membership.id, ownerAdminId, { amount, currency: invoice.currency, paidByUserId: req.user.id });
+    return ClubMembershipModel.findById(membership.id, ownerAdminId);
+  },
+
+  // A membership's sign-up invoice was paid in full (by M-Pesa, or recorded in Billing) — switch
+  // the family on, as Approve does. Does nothing for any other invoice.
+  async activateForPaidInvoice(invoice, { amount, paidByUserId }) {
+    if (invoice.invoiceType !== "tech_club" || !invoice.clubMembershipId) return;
+    const membership = await ClubMembershipModel.findByIdAnyOwner(invoice.clubMembershipId);
+    if (!membership || membership.signupInvoiceId !== invoice.id || membership.status !== "pending") return;
+    await activateMembership(membership.id, membership.ownerAdminId, { amount: amount ?? Number(invoice.total), currency: invoice.currency, paidByUserId });
+    const hub = await LearningHubModel.findById(membership.hubId);
+    // Staff who recorded the payment themselves don't need telling.
+    if (paidByUserId) return;
+    await NotificationService._notify(membership.ownerAdminId, {
+      type: "tech_club_signup_paid",
+      title: "Tech Club sign-up paid",
+      message: `${membership.guardianName} paid invoice ${invoice.invoiceNumber} for ${hub?.name || "their Tech Club"}, so the family is now active. Place the children in a class on the Tech Clubs page.`,
+      payload: { route: `/tech-clubs?membership=${membership.id}` },
+      dedupeKey: `tech_club_signup_paid:${membership.id}`,
+      ownerAdminId: membership.ownerAdminId,
+    }).catch(() => {});
   },
 
   // Admin: a sign-up that won't go ahead (never paid, duplicate, fake) → cancel its invoice and
@@ -366,6 +399,7 @@ const ClubSignupService = {
         itemName: `${hub?.name || "Tech Club"} — ${pkg?.name || "membership"}`,
         amount: Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)),
         currency: invoice.currency || CURRENCY,
+        invoiceId: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
         hubName: hub?.name || null,
         mode: null,

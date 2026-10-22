@@ -1,4 +1,5 @@
 const LeadModel = require("../leads/lead.model");
+const PaymentLinks = require("../payments/payment-links");
 const LeadService = require("../leads/lead.service");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
@@ -137,20 +138,28 @@ const BootcampEnrollmentService = {
       throw err;
     }
 
-    await LeadModel.update(lead.id, { learnerId: learner.id });
-
-    // The confirmation screen shows "pay KES X in cash at <hub>" — the price/hub the visitor
-    // needs to actually complete the (currently cash-only) payment, per the original "option to
-    // pay depending on the set price" requirement. No payment happens here — this is purely
-    // informational; the money changes hands in person and an admin records it via markLeadPaid.
-    // A bootcamp priced by course/module (not a single whole-bootcamp priceAmount) has no one
-    // number until resolveEffectiveBootcampPrice sums whichever mode is actually in use —
-    // enrollment always signs the learner up for the whole bootcamp, never one course, so a
-    // single total is what's actually owed regardless of pricing mode.
+    // The confirmation screen shows "pay KES X at <hub>" — the price/hub the visitor needs to
+    // complete the payment. A bootcamp priced by course/module (not a single whole-bootcamp
+    // priceAmount) has no one number until resolveEffectiveBootcampPrice sums whichever mode is
+    // actually in use — enrollment always signs the learner up for the whole bootcamp, never one
+    // course, so a single total is what's actually owed regardless of pricing mode.
     const hub = await LearningHubModel.findById(offering.hubId);
     const price = resolveEffectiveBootcampPrice(bootcamp);
+
+    // The invoice is raised now (as Home Learning and Tech Club sign-ups do), so the family can pay
+    // it by M-Pesa from the "payment pending" screen; paying it in full switches the learner on
+    // (activateForPaidInvoice). Staff can still take cash and press "Mark paid".
+    let invoice = null;
+    if (Number(price.amount) > 0) {
+      invoice = await raiseEnrollmentInvoice({ lead, learnerId: learner.id, hubId: offering.hubId, bootcamp, amount: money(price.amount), currency: price.currency || "KES" })
+        .catch((err) => { console.error("[bootcamp-enrollment] could not raise the enrolment invoice:", err.message); return null; });
+    }
+    await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
+    // The parent gets it by email too, with how to pay it (see billing.emails.js).
+    if (invoice) require("../billing/billing.service").emailIssuedInvoice(invoice.id);
+
     return {
-      lead: { ...lead, learnerId: learner.id },
+      lead: { ...lead, learnerId: learner.id, invoiceId: invoice?.id || null },
       // The visitor already knows their own username/password (they just typed them) — nothing
       // new to show them here, unlike the old auto-generated-credential flow.
       learnerUsername: data.username,
@@ -159,6 +168,9 @@ const BootcampEnrollmentService = {
         currency: price.currency,
         mode: price.mode,
         hubName: hub?.name || null,
+        invoiceNumber: invoice?.invoiceNumber || null,
+        // Pay now by M-Pesa, without signing in (null when M-Pesa is off or there's no invoice).
+        pay: invoice ? await PaymentLinks.forWebsite(invoice, "bootcamp_enrollment") : null,
       },
     };
   },
@@ -178,9 +190,26 @@ const BootcampEnrollmentService = {
       throw badRequest("This enquiry has no provisioned learner to mark paid.");
     }
 
+    const amount = money(data.amount);
+
+    // An enrolment made since invoices are raised at sign-up: the cash goes on that invoice.
+    const enrollmentInvoice = lead.invoiceId ? await BillingModel.findInvoiceById(lead.invoiceId) : null;
+    if (enrollmentInvoice && PAYABLE.includes(enrollmentInvoice.status)) {
+      // Required here, not at the top: billing.service.js reaches this module through its
+      // invoice-paid hooks.
+      const BillingService = require("../billing/billing.service");
+      const { invoice } = await BillingService.applyPayment(enrollmentInvoice.id, {
+        amount, provider: "manual", paymentMethod: "cash", recordedBy: actorUserId,
+        idempotencyKey: `bootcamp-lead-${lead.id}`, notes: data.description || "Bootcamp enrolment",
+      });
+      // Paid in full, the payment has already switched the learner on; a part payment the admin
+      // accepts does it here.
+      const learner = await activateLead(lead.id, { amount, currency: invoice.currency, paidByUserId: actorUserId, invoice });
+      return { invoice, learner };
+    }
+
     const bootcamp = lead.bootcampId ? await BootcampModel.findById(lead.bootcampId) : null;
     const description = data.description || `${bootcamp?.name || "Bootcamp"} — cash payment`;
-    const amount = money(data.amount);
     const now = new Date();
 
     let invoice;
@@ -242,6 +271,72 @@ const BootcampEnrollmentService = {
 
     return { invoice, learner };
   },
+
+  // A bootcamp enrolment's invoice was paid in full (by M-Pesa, or recorded in Billing) — switch
+  // the learner on, as "Mark paid" does. Does nothing for any other invoice.
+  async activateForPaidInvoice(invoice, { amount, paidByUserId }) {
+    if (invoice.invoiceType !== "bootcamp") return;
+    const lead = await LeadModel.findByInvoiceId(invoice.id);
+    if (!lead || lead.paidAt) return;
+    await activateLead(lead.id, { amount: amount ?? Number(invoice.total), currency: invoice.currency, paidByUserId, invoice });
+    const [bootcamp, hub] = await Promise.all([
+      lead.bootcampId ? BootcampModel.findById(lead.bootcampId) : null,
+      LearningHubModel.findById(lead.hubId),
+    ]);
+    // Staff who recorded the payment themselves don't need telling.
+    if (hub?.ownerAdminId && !paidByUserId) {
+      await NotificationService._notify(hub.ownerAdminId, {
+        type: "bootcamp_enrollment_paid",
+        title: "Bootcamp enrolment paid",
+        message: `${lead.learnerName || "A learner"} (${lead.name}) paid invoice ${invoice.invoiceNumber} for ${bootcamp?.name || "a bootcamp"}, so their account is now active.`,
+        payload: { route: `/enquiries?lead=${lead.id}` },
+        dedupeKey: `bootcamp_enrollment_paid:${lead.id}`,
+        ownerAdminId: hub.ownerAdminId,
+      }).catch(() => {});
+    }
+  },
 };
+
+const PAYABLE = ["issued", "partially_paid", "overdue"];
+
+// The enrolment's invoice, issued to the family at sign-up — the bootcamp at the hub the learner
+// was enrolled into. Written through BillingModel directly, like hub-visit charges: the generic
+// createInvoice route is for staff typing an invoice in.
+async function raiseEnrollmentInvoice({ lead, learnerId, hubId, bootcamp, amount, currency }) {
+  const now = new Date();
+  let invoice;
+  await BillingModel.transaction(async (trx) => {
+    invoice = await BillingModel.createInvoice({
+      invoiceNumber: await nextInvoiceNumber(trx),
+      issuerType: "learning_hub", issuerHubId: hubId, payerUserId: null, payerHubId: null,
+      learnerId, hubId, invoiceType: "bootcamp", status: "issued", currency,
+      subtotal: amount, discount: 0, total: amount, amountPaid: 0, issuedAt: now, notes: null,
+    }, trx);
+    await BillingModel.createItem({
+      invoiceId: invoice.id, learnerId, courseId: null, description: `${bootcamp.name} — enrolment`,
+      quantity: 1, unitAmount: amount, totalAmount: amount, metadata: { leadId: lead.id, bootcampId: bootcamp.id },
+    }, trx);
+    await BillingModel.createAuditEvent({ invoiceId: invoice.id, actorUserId: null, eventType: "invoice_issued", newStatus: "issued", amount, metadata: { source: "bootcamp_enrollment" } }, trx);
+  });
+  return invoice;
+}
+
+// A paid enrolment: the enquiry is stamped paid and the learner's login unlocks. Safe to run
+// twice — an enquiry already stamped paid is left alone. Returns the learner.
+async function activateLead(leadId, { amount, currency, paidByUserId = null, invoice }) {
+  const lead = await LeadModel.findById(leadId);
+  if (!lead) return null;
+  if (lead.paidAt) return LearnerModel.findById(lead.learnerId);
+  await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: currency || "KES", paidAt: new Date(), paidByUserId });
+  const learner = await LearnerModel.update(lead.learnerId, { accountStatus: "active" });
+  await NotificationService.notifyLearner(lead.learnerId, {
+    type: "account_activated",
+    title: "Your account is active",
+    message: `Your payment of ${currency || "KES"} ${amount} has been recorded. Your account is now fully active.`,
+    payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/learner-portal" },
+    dedupeKey: `bootcamp_activated:${lead.learnerId}`,
+  }).catch(() => {});
+  return learner;
+}
 
 module.exports = BootcampEnrollmentService;

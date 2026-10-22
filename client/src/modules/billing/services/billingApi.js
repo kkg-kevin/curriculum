@@ -20,6 +20,23 @@ export const billingApi = {
   getStatement: (payerType, payerId, params = {}) => api.get(`${BASE}/statements/${payerType}/${payerId}`, { params }).then((r) => r.data.data),
   listCustomers: () => api.get(`${BASE}/customers`).then((r) => r.data),
   getCustomer: (hubId) => api.get(`${BASE}/customers/${hubId}`).then((r) => r.data.data),
+  // M-Pesa (modules/payments/mpesa on the server): whether it's on, the "enter your PIN" prompt,
+  // and Billing → M-Pesa (payments to match).
+  mpesaStatus: () => api.get(`${BASE}/mpesa/status`).then((r) => r.data.data),
+  mpesaPay: (invoiceId, data) => api.post(`${BASE}/${invoiceId}/mpesa`, data).then((r) => r.data.data),
+  // "Pay now" on the payment-pending screen — the account's own sign-up invoice.
+  mpesaPayPending: (data) => api.post("/api/auth/pending-payment/mpesa", data).then((r) => r.data.data),
+  mpesaRequest: (requestId) => api.get(`${BASE}/mpesa/requests/${requestId}`).then((r) => r.data.data),
+  mpesaTransactions: (params = {}) => api.get(`${BASE}/mpesa/transactions`, { params }).then((r) => r.data.data),
+  mpesaFailedRequests: () => api.get(`${BASE}/mpesa/failed-requests`).then((r) => r.data.data),
+  mpesaAllocate: (id, invoice) => api.post(`${BASE}/mpesa/transactions/${id}/allocate`, { invoice }).then((r) => r.data.data),
+  mpesaIgnore: (id, note) => api.post(`${BASE}/mpesa/transactions/${id}/ignore`, { note }).then((r) => r.data.data),
+  // Ask Safaricom about a payment / send it back to the payer — both answered later by Safaricom.
+  mpesaCheck: (id) => api.post(`${BASE}/mpesa/transactions/${id}/check`).then((r) => r.data.data),
+  mpesaReverse: (id, note) => api.post(`${BASE}/mpesa/transactions/${id}/reverse`, { note }).then((r) => r.data.data),
+  // An M-Pesa statement (the CSV file's text): what would be added, then adding it.
+  mpesaStatementPreview: (csv) => api.post(`${BASE}/mpesa/statement/preview`, csv, { headers: { "Content-Type": "text/csv" } }).then((r) => r.data.data),
+  mpesaStatementImport: (csv) => api.post(`${BASE}/mpesa/statement/import`, csv, { headers: { "Content-Type": "text/csv" } }).then((r) => r.data.data),
   // Home Learning packages — Billing → Packages.
   listPackages: () => api.get(`${BASE}/packages`).then((r) => r.data.data),
   createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),

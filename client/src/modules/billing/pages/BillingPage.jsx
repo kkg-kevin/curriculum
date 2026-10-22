@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, RequestQuote as RequestQuoteIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, PhoneIphone as PhoneIphoneIcon, RequestQuote as RequestQuoteIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -17,6 +17,7 @@ import { InvoiceSourceLine, SOURCES, sourceKey } from "../components/invoiceSour
 import { LoadingState, EmptyState } from "../components/PageStates";
 import Pagination from "../components/Pagination";
 import PackagesPanel from "../components/PackagesPanel";
+import MpesaPanel from "../components/MpesaPanel";
 import ClaimsReviewPage from "../../claims/pages/ClaimsReviewPage";
 import { can, canViewAny, isStaff } from "../../../hooks/usePermissions";
 
@@ -29,6 +30,8 @@ const ADMIN_TABS = [
   { key: "customers", label: "Customers", icon: GroupsIcon },
   { key: "invoices", label: "Invoices", icon: ReceiptLongIcon },
   { key: "payments", label: "Payments", icon: PaidIcon },
+  // M-Pesa payments into the Paybill, and the ones waiting to be matched to an invoice.
+  { key: "mpesa", label: "M-Pesa", icon: PhoneIphoneIcon },
   // Home Learning packages — created and priced here; the Home Learning page picks from them.
   { key: "packages", label: "Packages", icon: Inventory2Icon },
   // Educator claims (modules/claims/) — payment requests from educators, reviewed and paid here.
@@ -336,6 +339,7 @@ function BillingPage() {
         </div>
       )}
 
+      {isAdmin && activeTab === "mpesa" && <MpesaPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel programme="tech_club" />}
       {isAdmin && activeTab === "claims" && <ClaimsReviewPage embedded />}

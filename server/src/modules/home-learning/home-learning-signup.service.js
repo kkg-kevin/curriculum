@@ -12,6 +12,7 @@ const UserModel = require("../auth/user.model");
 const BillingModel = require("../billing/billing.model");
 const BillingService = require("../billing/billing.service");
 const LeadModel = require("../leads/lead.model");
+const PaymentLinks = require("../payments/payment-links");
 const NotificationService = require("../notifications/notification.service");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 
@@ -65,6 +66,33 @@ async function rollback({ learnerIds, usernames, parentUserId, householdId }) {
   if (householdId) {
     await db("home_learning_enrollments").where({ householdId }).del().catch(() => {});
     await db("home_learning_households").where({ id: householdId }).del().catch(() => {});
+  }
+}
+
+// A paid sign-up: the household goes active, every child's login unlocks, and the enquiry the
+// sign-up made is stamped paid. Safe to run twice — a household that is no longer pending is left
+// alone.
+async function activateHousehold(householdId, ownerAdminId, { amount, currency, paidByUserId = null }) {
+  const household = await HouseholdModel.findById(householdId, ownerAdminId);
+  if (!household || household.status !== "pending") return;
+  await HomeLearningService.update(ownerAdminId, household.id, { status: "active", startDate: new Date().toISOString().slice(0, 10) });
+  const enrollments = await HouseholdModel.findEnrollmentsByHousehold(household.id, ownerAdminId);
+  for (const enrollment of enrollments) {
+    const learner = await LearnerModel.findById(enrollment.learnerId);
+    if (learner?.accountStatus === "pending_payment") await LearnerModel.update(learner.id, { accountStatus: "active" });
+    if (learner) {
+      await NotificationService.notifyLearner(learner.id, {
+        type: "account_activated",
+        title: "Your account is active",
+        message: "Your Home Learning payment has been confirmed. Welcome!",
+        payload: { route: "/learner-portal" },
+        dedupeKey: `home_learning_activated:${learner.id}`,
+      }).catch(() => {});
+    }
+  }
+  const lead = await db("leads").where({ homeLearningHouseholdId: household.id }).first();
+  if (lead && !lead.paidAt) {
+    await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: currency || CURRENCY, paidAt: new Date(), paidByUserId }).catch(() => {});
   }
 }
 
@@ -185,6 +213,8 @@ const HomeLearningSignupService = {
       amountDue: Number(invoice.total),
       parentEmail: data.parent.email,
       children: data.children.map((child) => ({ name: fullName(child), username: child.username })),
+      // Pay now by M-Pesa, without signing in (null when M-Pesa is off) — see payments/payment-links.js.
+      pay: await PaymentLinks.forWebsite(invoice, "home_learning_signup"),
     };
   },
 
@@ -304,26 +334,30 @@ const HomeLearningSignupService = {
       }, req);
     }
 
-    await HomeLearningService.update(ownerAdminId, household.id, { status: "active", startDate: new Date().toISOString().slice(0, 10) });
-    const enrollments = await HouseholdModel.findEnrollmentsByHousehold(household.id, ownerAdminId);
-    for (const enrollment of enrollments) {
-      const learner = await LearnerModel.findById(enrollment.learnerId);
-      if (learner?.accountStatus === "pending_payment") await LearnerModel.update(learner.id, { accountStatus: "active" });
-      if (learner) {
-        await NotificationService.notifyLearner(learner.id, {
-          type: "account_activated",
-          title: "Your account is active",
-          message: "Your Home Learning payment has been confirmed. Welcome!",
-          payload: { route: "/learner-portal" },
-          dedupeKey: `home_learning_activated:${learner.id}`,
-        }).catch(() => {});
-      }
-    }
-    const lead = await db("leads").where({ homeLearningHouseholdId: household.id }).first();
-    if (lead && !lead.paidAt) {
-      await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: invoice.currency || CURRENCY, paidAt: new Date(), paidByUserId: req.user.id }).catch(() => {});
-    }
+    // Paying the invoice in full has already switched the family on (see activateForPaidInvoice);
+    // an admin approving a part payment does it here.
+    await activateHousehold(household.id, ownerAdminId, { amount, currency: invoice.currency, paidByUserId: req.user.id });
     return HouseholdModel.findById(household.id, ownerAdminId);
+  },
+
+  // A household's sign-up invoice was paid in full (by M-Pesa, or recorded in Billing) — switch
+  // the family on, as Approve does. Does nothing for any other invoice.
+  async activateForPaidInvoice(invoice, { amount, paidByUserId }) {
+    if (invoice.invoiceType !== "home_learning" || !invoice.householdId) return;
+    const household = await db("home_learning_households").where({ id: invoice.householdId }).first();
+    if (!household || household.signupInvoiceId !== invoice.id || household.status !== "pending") return;
+    await activateHousehold(household.id, household.ownerAdminId, { amount: amount ?? Number(invoice.total), currency: invoice.currency, paidByUserId });
+    const pkg = household.packageId ? await HomeLearningPackageModel.findById(household.packageId, household.ownerAdminId) : null;
+    // Staff who recorded the payment themselves don't need telling.
+    if (paidByUserId) return;
+    await NotificationService._notify(household.ownerAdminId, {
+      type: "home_learning_signup_paid",
+      title: "Home Learning sign-up paid",
+      message: `${household.guardianName} paid invoice ${invoice.invoiceNumber}${pkg ? ` (${pkg.name})` : ""}, so the family is now active. Place the children on the Home Learning page.`,
+      payload: { route: `/home-learning?household=${household.id}` },
+      dedupeKey: `home_learning_signup_paid:${household.id}`,
+      ownerAdminId: household.ownerAdminId,
+    }).catch(() => {});
   },
 
   // Admin: a sign-up that won't go ahead (never paid, duplicate, fake) → cancel its invoice and
@@ -369,6 +403,7 @@ const HomeLearningSignupService = {
       itemName: `Home Learning — ${pkg?.name || "family package"}`,
       amount: Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)),
       currency: invoice.currency || CURRENCY,
+      invoiceId: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
       hubName: null,
       mode: null,

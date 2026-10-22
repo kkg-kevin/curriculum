@@ -9,6 +9,8 @@
     "dev": "nodemon src/server.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "mail:process": "node src/scripts/processEmailOutbox.js",
+    "mpesa:reconcile": "node src/scripts/reconcileMpesa.js",
+    "mpesa:register-urls": "node src/scripts/registerMpesaUrls.js",
     "org:merge:report": "node src/scripts/mergeOrganisation.js",
     "org:merge:apply": "node src/scripts/mergeOrganisation.js --apply",
     "db:migrate": "knex migrate:latest",

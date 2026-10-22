@@ -70,9 +70,14 @@ async function sendInvoiceEmail(invoice, { manual = false } = {}) {
       ["Total", formatMoney(invoice.total, invoice.currency)],
       ["Amount due", formatMoney(invoice.amountDue, invoice.currency)],
       ...(due ? [["Due date", due]] : []),
+      // How to pay by M-Pesa (decorate() sets payBy only while something is owed and M-Pesa is on).
+      ...(invoice.payBy ? [["Pay by M-Pesa", `Paybill ${invoice.payBy.paybill}`], ["Account number", invoice.payBy.account]] : []),
     ],
     button: { label: "View invoice", url: invoiceUrl(invoice) },
-    afterParagraphs: ["Sign in to see the full invoice, print it or download it as a PDF."],
+    afterParagraphs: [
+      ...(invoice.payBy ? [`To pay by M-Pesa: go to Lipa na M-Pesa → Pay Bill, enter business number ${invoice.payBy.paybill} and account number ${invoice.payBy.account}. Your payment is matched to this invoice automatically.`] : []),
+      "Sign in to see the full invoice, print it or download it as a PDF.",
+    ],
     footerNote: `You're receiving this email because ${issuerName} has this address on file for billing.`,
   });
   return queueMail({
@@ -105,6 +110,7 @@ async function sendPaymentReceiptEmail(invoice, payment) {
     ],
     rows: [
       ...(payment.receiptNumber ? [["Receipt", payment.receiptNumber]] : []),
+      ...(payment.provider === "mpesa" && payment.providerReference ? [["M-Pesa receipt", payment.providerReference]] : []),
       ["Invoice", invoice.invoiceNumber],
       ["Amount paid", formatMoney(payment.amount, invoice.currency)],
       ["Paid on", formatDate(payment.paidAt || payment.paymentDate || new Date())],

@@ -5,6 +5,7 @@ const {
   listSupervisors, createSupervisor, updateSupervisor, removeSupervisor,
 } = require("./claim.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
+const { claimPayouts, payClaim } = require("../payments/mpesa/mpesa.controller");
 
 const router = express.Router();
 
@@ -37,5 +38,9 @@ router.delete("/:id", authorize("teacher"), withdrawClaim);
 router.post("/:id/supervisor-decision", authorize("supervisor", "admin"), supervisorDecision);
 router.post("/:id/admin-decision", authorize("admin"), adminDecision);
 router.post("/:id/mark-paid", authorize("admin"), markPaid);
+// Paying an approved claim by M-Pesa (B2C) — see payments/mpesa/mpesa.operations.js. The claim
+// becomes paid when Safaricom confirms the money went.
+router.get("/:id/mpesa-payouts", authorize("admin"), claimPayouts);
+router.post("/:id/mpesa-payout", authorize("admin"), payClaim);
 
 module.exports = router;

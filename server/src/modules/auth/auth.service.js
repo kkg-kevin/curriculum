@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const db = require("../../config/db");
 const passwords = require("../../shared/utils/password");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./user.model");
@@ -453,6 +454,15 @@ const AuthService = {
   // one that's already fully paid — the client only renders this on the "payment" suspension
   // screen, where a null just means "no price on file, ask the hub."
   async getPendingPayment(user) {
+    const pending = await this.pendingPaymentDetails(user);
+    if (!pending?.invoiceId) return pending;
+    // How to pay it by M-Pesa — the Paybill of the invoice's workspace (null when that's off).
+    const { paymentInstructions } = require("../payments/mpesa/mpesa.instructions");
+    const invoice = await db("billing_invoices").where({ id: pending.invoiceId }).first();
+    return { ...pending, payBy: invoice ? await paymentInstructions(invoice).catch(() => null) : null };
+  },
+
+  async pendingPaymentDetails(user) {
     if (!user || user.role !== "learner") return null;
     // Same learner-resolution as resolveSuspension: a dedicated login resolves directly, a
     // guardian-mediated login resolves to whichever child that account's own email currently
@@ -487,6 +497,20 @@ const AuthService = {
     }
 
     const price = resolveEffectiveBootcampPrice(bootcamp);
+    // Enrolments since invoices are raised at sign-up owe what's left on that invoice (and can pay
+    // it by M-Pesa); older ones only have the bootcamp's price to show.
+    const invoice = lead.invoiceId ? await db("billing_invoices").where({ id: lead.invoiceId }).first() : null;
+    if (invoice && ["issued", "partially_paid", "overdue"].includes(invoice.status)) {
+      return {
+        bootcampName: bootcamp.name,
+        amount: Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)),
+        currency: invoice.currency || price.currency,
+        mode: price.mode,
+        hubName,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+      };
+    }
     return {
       bootcampName: bootcamp.name,
       amount: price.amount,
