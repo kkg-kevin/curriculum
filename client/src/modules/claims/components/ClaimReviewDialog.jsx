@@ -2,7 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiInfo, FiX } from "react-icons/fi";
 import { useAdminDecision, useClaim, useClaimPayouts, useMarkClaimPaid, usePayClaimByMpesa, useSupervisorDecision } from "../hooks/useClaims";
-import { ClaimStatusPill, ClaimTimeline, Dialog, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateLabel, unitsLabel } from "../shared";
+import { ClaimStatusPill, ClaimTimeline, Dialog, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateDetail, unitsLabel } from "../shared";
 import { InvoicePanel, useSideBySide } from "./ClaimInvoiceViewer";
 import SessionEvidence from "./SessionEvidence";
 
@@ -189,7 +189,7 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 6 }}>
             <Row label="Worked out" value={RATE_TYPE_LABEL[claim.rateType || "session"]} />
             <Row label="Delivered" value={`${unitsLabel(claim.unitsDelivered ?? claim.sessionsDelivered, claim.rateType)} of ${unitsLabel(claim.unitsTotal ?? claim.sessionsTotal, claim.rateType)}`} />
-            <Row label="Rate" value={rateLabel(claim.rate ?? claim.sessionRate, claim.rateType, claim.currency)} />
+            <Row label="Rate" value={rateDetail(claim)} />
             <Row label="Course value" value={money(claim.courseAmount)} />
             {claim.type === "full" && claim.advanceDeducted > 0 && <Row label="Less advance" value={`− ${money(claim.advanceDeducted)}`} />}
             <div style={{ borderTop: `1px dashed ${T.border}`, marginTop: 4 }}>

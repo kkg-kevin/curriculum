@@ -26,7 +26,7 @@ const asText = (value) => (value == null ? "" : String(value));
 export default function EducatorPayPanel() {
   const { data, isLoading, isError } = useClaimSettings();
   const save = useUpdateClaimSettings();
-  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", advancePercent: "" });
+  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", commissionRate: "", advancePercent: "" });
 
   useEffect(() => {
     if (data) {
@@ -34,6 +34,7 @@ export default function EducatorPayPanel() {
         sessionRate: asText(data.sessionRate),
         hourlyRate: asText(data.hourlyRate),
         dailyRate: asText(data.dailyRate),
+        commissionRate: asText(data.commissionRate),
         advancePercent: asText(data.advancePercent),
       });
     }
@@ -45,8 +46,12 @@ export default function EducatorPayPanel() {
   const anyRate = RATES.some(({ key }) => rateValue(key) > 0);
   const pct = Number(form.advancePercent);
   const pctValid = form.advancePercent.trim() !== "" && Number.isInteger(pct) && pct >= 0 && pct <= 100;
-  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || pct !== data.advancePercent);
-  const valid = ratesValid && anyRate && pctValid;
+  // Base plus: a commission per enrolled learner, paid on top of the session rate each session.
+  const commission = rateValue("commissionRate");
+  const commissionValid = commission === null || commission > 0;
+  const commissionNeedsBase = commission > 0 && !(rateValue("sessionRate") > 0);
+  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || commission !== (data.commissionRate ?? null) || pct !== data.advancePercent);
+  const valid = ratesValid && anyRate && pctValid && commissionValid && !commissionNeedsBase;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -55,6 +60,7 @@ export default function EducatorPayPanel() {
         sessionRate: rateValue("sessionRate"),
         hourlyRate: rateValue("hourlyRate"),
         dailyRate: rateValue("dailyRate"),
+        commissionRate: commission,
         advancePercent: pct,
       });
       toast.success("Educator pay saved");
@@ -85,7 +91,7 @@ export default function EducatorPayPanel() {
           <div style={card}>
             <h3 style={subheading}>Part time</h3>
             <p style={hint}>
-              A part-time educator claims for each course they teach, on one of the ways of paying tagged on them: the hours, sessions or days they delivered, times the rate here. Leave a rate empty if you don&apos;t pay that way.
+              A part-time educator claims for each course they teach, on one of the ways of paying tagged on them: the hours, sessions or days they delivered, times the rate here — or Base plus, below. Leave a rate empty if you don&apos;t pay that way.
             </p>
             <div style={{ marginTop: 14, display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
               {RATES.map((r) => {
@@ -110,6 +116,36 @@ export default function EducatorPayPanel() {
                   </div>
                 );
               })}
+            </div>
+
+            <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #F3F4F6" }}>
+              <h4 style={{ ...subheading, fontSize: 13 }}>Base plus</h4>
+              <p style={{ ...hint, marginTop: 2 }}>
+                Each session pays the session rate above plus this commission for every learner enrolled in the class. Leave it empty if you don&apos;t pay this way.
+              </p>
+              <div style={{ marginTop: 10, maxWidth: 260 }}>
+                <label htmlFor="pay-commissionRate" style={label}>Commission per learner ({currency})</label>
+                <input
+                  id="pay-commissionRate"
+                  className="stg-input"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  inputMode="decimal"
+                  value={form.commissionRate}
+                  placeholder="Not offered"
+                  onChange={(e) => setForm((f) => ({ ...f, commissionRate: e.target.value }))}
+                />
+                <p style={{ ...hint, fontSize: 11.5, color: commissionNeedsBase || !commissionValid ? "#B45309" : hint.color }}>
+                  {!commissionValid
+                    ? "Must be more than 0."
+                    : commission === null
+                      ? "Empty: Base plus isn't offered."
+                      : commissionNeedsBase
+                        ? "Set the session rate too — Base plus is paid on top of it."
+                        : `A session with 12 learners pays ${formatMoney(rateValue("sessionRate") + 12 * commission, currency)} (${formatMoney(rateValue("sessionRate"), currency)} + 12 × ${formatMoney(commission, currency)}).`}
+                </p>
+              </div>
             </div>
 
             <div style={{ marginTop: 18, maxWidth: 260 }}>

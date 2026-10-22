@@ -1,9 +1,10 @@
 const { z } = require("zod");
 
 const CLAIM_TYPES = ["advance", "full"];
-// What a part-time educator can be paid on — the workspace sets one rate for each (Settings →
-// Educator pay) and an educator is tagged with the ones that apply to them.
-const RATE_TYPES = ["session", "hourly", "daily"];
+// What a part-time educator can be paid on — the workspace sets the rates (Settings → Educator
+// pay) and an educator is tagged with the ones that apply to them. "base_plus" is the session
+// rate plus a commission for each learner enrolled in the class, every session.
+const RATE_TYPES = ["session", "hourly", "daily", "base_plus"];
 const CLAIM_STATUSES = ["pending_supervisor", "pending_admin", "approved", "paid", "rejected"];
 
 // The eTIMS invoice is uploaded first (POST /api/uploads/document) and only its stored path is
@@ -47,9 +48,12 @@ const settingsSchema = z
     sessionRate: rate("session"),
     hourlyRate: rate("hourly"),
     dailyRate: rate("daily"),
+    // Base plus: the commission per enrolled learner per session (its base is the session rate).
+    commissionRate: rate("commission"),
     advancePercent: z.coerce.number().int().min(0, "Between 0 and 100").max(100, "Between 0 and 100"),
   })
-  .refine((d) => d.sessionRate || d.hourlyRate || d.dailyRate, { message: "Set at least one part-time rate", path: ["sessionRate"] });
+  .refine((d) => d.sessionRate || d.hourlyRate || d.dailyRate, { message: "Set at least one part-time rate", path: ["sessionRate"] })
+  .refine((d) => !d.commissionRate || d.sessionRate, { message: "Base plus is paid on top of the session rate — set the session rate too", path: ["sessionRate"] });
 
 const createSupervisorSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(150),

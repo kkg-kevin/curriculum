@@ -1,6 +1,6 @@
 import { buildInvoicePdf } from "../billing/components/pdf";
 import { BRAND_NAME } from "../../branding";
-import { formatMoney, rateLabel, unitsLabel } from "./shared";
+import { formatMoney, rateDetail, unitsLabel } from "./shared";
 
 // The invoice the system generates for an educator's claim — one of its two invoices, next to
 // the eTIMS invoice the educator uploads. Drawn from the claim's own figures (fixed when it was
@@ -46,7 +46,7 @@ function invoiceFor(claim) {
     const unitsTotal = claim.unitsTotal ?? claim.sessionsTotal;
     const percent = courseAmount > 0 ? Math.round((amount / courseAmount) * 100) : 0;
     items = [{
-      description: `${course}\nAdvance: ${percent}% of the course's value of ${formatMoney(courseAmount, currency)} (${unitsLabel(unitsTotal, rateType)} × ${rateLabel(rate, rateType, currency)})`,
+      description: `${course}\nAdvance: ${percent}% of the course's value of ${formatMoney(courseAmount, currency)} (${unitsLabel(unitsTotal, rateType)} × ${rateDetail({ ...claim, rate, rateType, currency })})`,
       quantity: 1,
       unitAmount: amount,
       totalAmount: amount,
@@ -54,7 +54,7 @@ function invoiceFor(claim) {
   } else {
     const delivered = claim.unitsDelivered ?? claim.sessionsDelivered;
     items = [{
-      description: `${course}\n${unitsLabel(delivered, rateType)} delivered at ${rateLabel(rate, rateType, currency)}`,
+      description: `${course}\n${unitsLabel(delivered, rateType)} delivered at ${rateDetail({ ...claim, rate, rateType, currency })}`,
       quantity: Number(delivered) || 0,
       unitAmount: rate,
       totalAmount: courseAmount,

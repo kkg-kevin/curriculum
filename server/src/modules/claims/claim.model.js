@@ -5,7 +5,7 @@ const TABLE = "teacher_claims";
 const JSON_FIELDS = ["evidence"];
 // mysql2 hands DECIMAL columns back as strings — every read goes through `shape` so the rest of
 // the module can do arithmetic on them.
-const MONEY_FIELDS = ["sessionRate", "rate", "unitsTotal", "unitsDelivered", "courseAmount", "advanceDeducted", "amount"];
+const MONEY_FIELDS = ["sessionRate", "rate", "unitsTotal", "unitsDelivered", "courseAmount", "advanceDeducted", "amount", "commissionRate"];
 
 function shape(row) {
   if (!row) return row;
