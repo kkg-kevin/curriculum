@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiFolder, FiFolderPlus, FiMoreVertical, FiSearch, FiX } from "react-icons/fi";
-import ImageUploadField from "../../../components/ImageUploadField";
+import ImageUploadField from "../ImageUploadField";
 
-// Course folders on the Courses page: the folder tiles, and the small dialogs to name a folder,
-// fill it with courses, and move one course between folders.
+// Folders on a list page (Courses, Assessments): the folder tiles, and the small dialogs to name a
+// folder, fill it, and move one record between folders. `noun` names what's being filed —
+// { one: "course", many: "courses", example? } — so the same pieces read right on either page.
 
 const font = "Inter, sans-serif";
 export const FOLDER_COLORS = ["#25476a", "#2e7db5", "#38aae1", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777"];
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1.5px solid #E5E7EB", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontFamily: font, outline: "none" };
 const primaryBtn = { padding: "10px 18px", backgroundColor: "#25476a", color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: font, cursor: "pointer" };
+const countLabel = (n, noun) => `${n} ${n === 1 ? noun.one : noun.many}`;
 const ghostBtn = { padding: "10px 16px", backgroundColor: "#fff", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: font, cursor: "pointer" };
 
 function Modal({ title, onClose, children, footer, width = 460 }) {
@@ -33,8 +35,8 @@ function Modal({ title, onClose, children, footer, width = 460 }) {
   );
 }
 
-/** One folder on the Courses page. `onMenu` gets "rename" | "delete". */
-export function FolderTile({ folder, onOpen, onMenu }) {
+/** One folder on a list page. `onMenu` gets "rename" | "delete". */
+export function FolderTile({ folder, noun, onOpen, onMenu }) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -89,7 +91,7 @@ export function FolderTile({ folder, onOpen, onMenu }) {
       <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{folder.name}</h3>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#38aae1", fontWeight: 600 }}>
-          <FiFolder size={13} /> {folder.courseCount} course{folder.courseCount === 1 ? "" : "s"}
+          <FiFolder size={13} /> {countLabel(folder.itemCount ?? 0, noun)}
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {folder.description || <span style={{ fontStyle: "italic", color: "#D1D5DB" }}>No description added</span>}
@@ -117,7 +119,7 @@ export function NewFolderTile({ onClick }) {
 }
 
 /** Create or edit a folder: its name, description, image and colour. */
-export function FolderDialog({ folder, onSave, onClose, saving }) {
+export function FolderDialog({ folder, noun, onSave, onClose, saving }) {
   const [name, setName] = useState(folder?.name || "");
   const [description, setDescription] = useState(folder?.description || "");
   const [coverImage, setCoverImage] = useState(folder?.coverImage || "");
@@ -139,8 +141,8 @@ export function FolderDialog({ folder, onSave, onClose, saving }) {
           <input autoFocus maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Robotics, Grade 4, Holiday camps" style={inputStyle} />
         </label>
         <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>
-          Description <span style={{ fontWeight: 400, color: "#9CA3AF", marginTop: -4 }}>Optional — what the courses in this folder have in common</span>
-          <textarea maxLength={2000} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Hands-on robotics courses for Grades 4–6" style={{ ...inputStyle, resize: "vertical", minHeight: 76 }} />
+          Description <span style={{ fontWeight: 400, color: "#9CA3AF", marginTop: -4 }}>Optional — what the {noun.many} in this folder have in common</span>
+          <textarea maxLength={2000} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={noun.example || `e.g. The ${noun.many} for Grade 4 robotics`} style={{ ...inputStyle, resize: "vertical", minHeight: 76 }} />
         </label>
         <div style={{ display: "grid", gap: 6 }}>
           <ImageUploadField label="Folder image (optional)" value={coverImage} onChange={(url) => setCoverImage(url || "")} width="100%" height="140px" />
@@ -158,50 +160,52 @@ export function FolderDialog({ folder, onSave, onClose, saving }) {
   );
 }
 
-/** Pick courses to put in `folder` (courses already in it aren't offered). */
-export function AddCoursesDialog({ folder, courses, folders, onAdd, onClose, saving }) {
+/** Pick records to put in `folder` (ones already in it aren't offered). `detail(item)` is the
+ * short text shown beside each name (a course's code, an assessment's type), searched too. */
+export function AddItemsDialog({ folder, items, folders, noun, detail = () => "", onAdd, onClose, saving }) {
   const [search, setSearch] = useState("");
   const [picked, setPicked] = useState(() => new Set());
   const folderName = useMemo(() => new Map(folders.map((f) => [f.id, f.name])), [folders]);
   const candidates = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return courses
-      .filter((c) => c.folderId !== folder.id)
-      .filter((c) => !query || c.name.toLowerCase().includes(query) || c.code?.toLowerCase().includes(query))
+    return items
+      .filter((item) => item.folderId !== folder.id)
+      .filter((item) => !query || item.name.toLowerCase().includes(query) || String(detail(item) || "").toLowerCase().includes(query))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [courses, folder.id, search]);
+  }, [items, folder.id, search, detail]);
   const toggle = (id) => setPicked((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   return (
     <Modal
-      title={`Add courses to “${folder.name}”`}
+      title={`Add ${noun.many} to “${folder.name}”`}
       onClose={onClose}
       width={540}
       footer={<>
         <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
         <button type="button" disabled={saving || picked.size === 0} onClick={() => onAdd([...picked])} style={{ ...primaryBtn, opacity: saving || picked.size === 0 ? 0.6 : 1 }}>
-          {saving ? "Adding…" : picked.size ? `Add ${picked.size} course${picked.size === 1 ? "" : "s"}` : "Add courses"}
+          {saving ? "Adding…" : picked.size ? `Add ${countLabel(picked.size, noun)}` : `Add ${noun.many}`}
         </button>
       </>}
     >
       <div style={{ position: "relative", marginBottom: 12 }}>
         <FiSearch size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
-        <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses…" style={{ ...inputStyle, paddingLeft: 34 }} />
+        <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder={`Search ${noun.many}…`} style={{ ...inputStyle, paddingLeft: 34 }} />
       </div>
       {candidates.length === 0 ? (
-        <p style={{ margin: "18px 0", textAlign: "center", fontSize: 13, color: "#9CA3AF" }}>{search.trim() ? "No courses match." : "Every course is already in this folder."}</p>
+        <p style={{ margin: "18px 0", textAlign: "center", fontSize: 13, color: "#9CA3AF" }}>{search.trim() ? `No ${noun.many} match.` : `Every ${noun.one} is already in this folder.`}</p>
       ) : (
         <div style={{ display: "grid", gap: 6 }}>
-          {candidates.map((course) => {
-            const on = picked.has(course.id);
+          {candidates.map((item) => {
+            const on = picked.has(item.id);
+            const extra = detail(item);
             return (
-              <button key={course.id} type="button" onClick={() => toggle(course.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${on ? "#38aae1" : "#EEF0F2"}`, backgroundColor: on ? "#F1F9FD" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: font }}>
+              <button key={item.id} type="button" onClick={() => toggle(item.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${on ? "#38aae1" : "#EEF0F2"}`, backgroundColor: on ? "#F1F9FD" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: font }}>
                 <span style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: on ? "#38aae1" : "#fff", border: on ? "none" : "1.5px solid #D1D5DB", color: "#fff" }}>{on && <FiCheck size={13} />}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 600, color: "#111827" }}>{course.name}</span>
-                  {course.folderId && <span style={{ display: "block", fontSize: 11.5, color: "#9CA3AF" }}>Moves from “{folderName.get(course.folderId) || "another folder"}”</span>}
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 600, color: "#111827" }}>{item.name}</span>
+                  {item.folderId && <span style={{ display: "block", fontSize: 11.5, color: "#9CA3AF" }}>Moves from “{folderName.get(item.folderId) || "another folder"}”</span>}
                 </span>
-                {course.code && <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>{course.code}</span>}
+                {extra && <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>{extra}</span>}
               </button>
             );
           })}
@@ -211,17 +215,17 @@ export function AddCoursesDialog({ folder, courses, folders, onAdd, onClose, sav
   );
 }
 
-/** Move one course into a folder, or out of all folders. */
-export function MoveToFolderDialog({ course, folders, onMove, onNewFolder, onClose, saving }) {
-  const [target, setTarget] = useState(course.folderId || "");
+/** Move one record into a folder, or out of all folders. */
+export function MoveToFolderDialog({ item, folders, onMove, onNewFolder, onClose, saving }) {
+  const [target, setTarget] = useState(item.folderId || "");
   const options = [{ id: "", name: "Not in a folder" }, ...folders];
   return (
     <Modal
-      title={`Move “${course.name}”`}
+      title={`Move “${item.name}”`}
       onClose={onClose}
       footer={<>
         <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
-        <button type="button" disabled={saving || target === (course.folderId || "")} onClick={() => onMove(target)} style={{ ...primaryBtn, opacity: saving || target === (course.folderId || "") ? 0.6 : 1 }}>{saving ? "Moving…" : "Move"}</button>
+        <button type="button" disabled={saving || target === (item.folderId || "")} onClick={() => onMove(target)} style={{ ...primaryBtn, opacity: saving || target === (item.folderId || "") ? 0.6 : 1 }}>{saving ? "Moving…" : "Move"}</button>
       </>}
     >
       <div style={{ display: "grid", gap: 6 }}>
@@ -231,7 +235,7 @@ export function MoveToFolderDialog({ course, folders, onMove, onNewFolder, onClo
             <button key={f.id || "none"} type="button" onClick={() => setTarget(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${on ? "#38aae1" : "#EEF0F2"}`, backgroundColor: on ? "#F1F9FD" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: font, fontSize: 13.5, color: "#111827", fontWeight: on ? 700 : 500 }}>
               <FiFolder size={16} style={{ color: f.id ? (f.color || "#25476a") : "#9CA3AF" }} />
               <span style={{ flex: 1 }}>{f.name}</span>
-              {f.id === (course.folderId || "") && <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>Current</span>}
+              {f.id === (item.folderId || "") && <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>Current</span>}
             </button>
           );
         })}

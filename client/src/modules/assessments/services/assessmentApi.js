@@ -9,6 +9,15 @@ export const assessmentApi = {
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
 
+  // Assessment folders (Assessments page) — an assessment sits in at most one; deleting a folder
+  // keeps its assessments.
+  getFolders: () => api.get(`${ENDPOINT}/folders`).then((r) => r.data.data),
+  createFolder: (data) => api.post(`${ENDPOINT}/folders`, data).then((r) => r.data.data),
+  updateFolder: (id, data) => api.put(`${ENDPOINT}/folders/${id}`, data).then((r) => r.data.data),
+  deleteFolder: (id) => api.delete(`${ENDPOINT}/folders/${id}`).then((r) => r.data.data),
+  addAssessmentsToFolder: (id, assessmentIds) => api.put(`${ENDPOINT}/folders/${id}/assessments`, { assessmentIds }).then((r) => r.data.data),
+  removeAssessmentFromFolder: (id, assessmentId) => api.delete(`${ENDPOINT}/folders/${id}/assessments/${assessmentId}`).then((r) => r.data.data),
+
   /* Competencies — this assessment's tagged competencies (authored globally in Settings) */
   getAssessmentCompetencies: (assessmentId) =>
     api.get(`${ENDPOINT}/${assessmentId}/competencies/links`).then((r) => r.data.data),

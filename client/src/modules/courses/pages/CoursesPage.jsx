@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiFolder, FiFolderPlus, FiList, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { useCoursesQuery, useDeleteCourse, useDuplicateCourse, useCourseFoldersQuery, useCourseFolderMutation } from "../hooks/useCourse";
 import { courseApi } from "../services/courseApi";
-import { AddCoursesDialog, FolderDialog, FolderTile, MoveToFolderDialog, NewFolderTile } from "../components/CourseFolders";
+import { AddItemsDialog, FolderDialog, FolderTile, MoveToFolderDialog, NewFolderTile } from "../../../components/folders/Folders";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useDraftsQuery, useDeleteDraft, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftCard from "../../../components/ui/DraftCard";
@@ -43,6 +43,9 @@ function sortCourses(courses, sortBy) {
   else sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return sorted;
 }
+
+// What the shared folder pieces call the records filed on this page.
+const FOLDER_NOUN = { one: "course", many: "courses", example: "e.g. Hands-on robotics courses for Grades 4–6" };
 
 function MenuButton({ icon, label, onClick, danger = false }) {
   const [hovered, setHovered] = useState(false);
@@ -489,6 +492,7 @@ export default function CoursesPage() {
             <FolderTile
               key={folder.id}
               folder={folder}
+              noun={FOLDER_NOUN}
               onOpen={() => openFolderAt(folder.id)}
               onMenu={(action) => setDialog({ kind: action === "rename" ? "rename" : "delete", folder })}
             />
@@ -561,6 +565,7 @@ export default function CoursesPage() {
       {(dialog?.kind === "new" || dialog?.kind === "rename") && (
         <FolderDialog
           folder={dialog.kind === "rename" ? dialog.folder : null}
+          noun={FOLDER_NOUN}
           saving={createFolder.isPending || updateFolder.isPending}
           onClose={closeDialog}
           onSave={(values) => {
@@ -580,10 +585,12 @@ export default function CoursesPage() {
         />
       )}
       {dialog?.kind === "add" && (
-        <AddCoursesDialog
+        <AddItemsDialog
           folder={dialog.folder}
-          courses={courses}
+          items={courses}
           folders={folders}
+          noun={FOLDER_NOUN}
+          detail={(course) => course.code}
           saving={addToFolder.isPending}
           onClose={closeDialog}
           onAdd={(courseIds) => addToFolder.mutate({ id: dialog.folder.id, courseIds }, { onSuccess: closeDialog })}
@@ -591,7 +598,7 @@ export default function CoursesPage() {
       )}
       {dialog?.kind === "move" && (
         <MoveToFolderDialog
-          course={dialog.course}
+          item={dialog.course}
           folders={folders}
           saving={moveCourse.isPending}
           onClose={closeDialog}
