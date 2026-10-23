@@ -115,7 +115,7 @@ const requiredText = (max, message) => z.string().trim().min(1, message).max(max
 const signupChildSchema = z.object({
   firstName: requiredText(80, "Enter each child's first name"),
   lastName: requiredText(80, "Enter each child's last name"),
-  gender: z.enum(["female", "male", "other"], { errorMap: () => ({ message: "Choose each child's gender" }) }),
+  gender: z.enum(["female", "male"], { errorMap: () => ({ message: "Choose each child's gender" }) }),
   dateOfBirth: isoDate.optional().or(z.literal("")),
   currentGrade: optionalText(150),
   username,

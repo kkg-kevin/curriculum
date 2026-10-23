@@ -26,7 +26,7 @@ function rowErrors(row) {
   const errors = [];
   if (!row.firstName) errors.push("First name is required");
   if (!row.lastName) errors.push("Last name is required");
-  if (!["male", "female", "other"].includes((row.gender || "").toLowerCase())) errors.push("Gender must be male, female, or other");
+  if (!["male", "female"].includes((row.gender || "").toLowerCase())) errors.push("Gender must be male or female");
   if (!row.guardianName) errors.push("Guardian name is required");
   if (!row.guardianPhone) errors.push("Guardian phone is required");
   return errors;

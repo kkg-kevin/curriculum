@@ -32,7 +32,7 @@ export function formatDate(value) {
 export const TYPE_LABEL = { advance: "Advance", full: "Full payment" };
 
 // How a claim (or a course's figures) is worked out — per session, by the hour, by the day, or
-// Base plus (the session rate plus a commission per enrolled learner, each session), at the
+// Base plus (its own session rate plus a commission per enrolled learner, each session), at the
 // workspace's rates (Settings → Educator pay). Older claims are all per session.
 export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily", base_plus: "Base plus" };
 const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"], base_plus: ["session", "sessions"] };

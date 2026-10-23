@@ -102,12 +102,13 @@ the frontend needs a second, separately-built zip.
 
 ---
 
-## This release (23 Oct 2026) — buying on the website (cart, checkout, orders); a payment step after sign-ups; admin My profile; a profile photo editor; advance course coverage; one login, several roles
+## This release (23 Oct 2026) — buying on the website (cart, checkout, orders); a payment step after sign-ups; admin My profile; a profile photo editor; advance course coverage; Base plus's own session rate; gender Male/Female only; one login, several roles
 
-**Backend and website** from `curriculum` (branch `modules`) at `199fa03` and `curriculum-web`
-(branch `new`) at `25bd15f`; **portal** from `0da38c2` (no portal code changed after it). Rebuilt
-later on 23 Oct for two fixes: Store item descriptions showed raw `<p>` tags on the website, and the
-Store and Projects pages still said "online checkout is coming soon". Includes
+**Backend, portal and website** from `curriculum` (branch `modules`) at `8d1f805` and
+`curriculum-web` (branch `new`) at `231977c` (last rebuilt in the evening of 23 Oct). Since the
+first build that day: Store item descriptions no longer show raw `<p>` tags, the Store and Projects
+pages no longer say "online checkout is coming soon", gender is Male or Female only, and Base plus
+has its own session rate. Includes
 everything in "This release (22 Oct 2026, evening)" below and "one login, several roles"
 (`451e662`), which wasn't in this folder before. **Upload the backend first**, then the portal,
 then the website.
@@ -169,10 +170,18 @@ then the website.
   tab). The Progress Arc and Current Level Summary say what's left to unlock the next level in
   one line.
 - **Settings → People & sharing → Users** is paginated (20 a page).
+- **Settings → Educator pay → Base plus** has its own **Session rate** next to the commission, instead
+  of riding on the Per session rate. Base plus is offered when both are set. A workspace already
+  offering Base plus has its Per session rate copied in on Restart, so pay is unchanged.
+- **Gender is Male or Female only** wherever it's asked: the learner form, the learner's profile,
+  the Family page, the Home Learning household form, bulk import, and the website's Home Schooling
+  and Tech Club sign-ups (which said Girl / Boy / Prefer not to say). Bootcamp enrolments and project
+  orders, which don't ask, leave it blank instead of "other". A learner already saved as "other"
+  keeps it until edited, when it must be chosen again.
 - **One login, several roles** (from `451e662`): the same email saved as an educator, hub or parent
   can sign in as each; the login page asks which, and the header switches.
 
-### Five new migrations, applied on Restart
+### Six new migrations, applied on Restart
 
 - `20261022140000_add_user_extra_roles.js` — `users.extraRoles`.
 - `20261023090000_create_payment_options_and_notices.js` — `payment_options`, `payment_notices`.
@@ -181,6 +190,8 @@ then the website.
 - `20261023110000_add_phone_and_job_title_to_users.js` — `users.phone`, `users.jobTitle`.
 - `20261023120000_create_store_orders.js` — `orders`, `order_items`, `assessments.gallery` and
   `kitPriceAmount`, invoice type `store_order`, number sequence `order`.
+- `20261023130000_add_base_plus_session_rate.js` — `claim_settings.basePlusSessionRate`; copies the
+  Per session rate into it where Base plus (a commission) is already set.
 
 All additive (two widen an ENUM). No new npm package. **No new environment variable**, but the
 order emails link to the website: the API uses `MAIL_WEBSITE_URL`, or else the first `https`
@@ -188,16 +199,16 @@ address in `PUBLIC_SITE_URL` — check that's `https://digifunzi.co.ke`.
 
 ### Backend (`backend-deploy.zip`)
 
-From `199fa03`, byte-identical in Dev, Live and Capable; 560 entries, 135 migrations, the newest
-`20261023120000_create_store_orders.js`.
+From `8d1f805`, byte-identical in Dev, Live and Capable; 561 entries, 136 migrations, the newest
+`20261023130000_add_base_plus_session_rate.js`.
 
 ### Portal (`assets.zip` + `index.html`)
 
 | Environment | Build | Entry |
 |---|---|---|
-| Dev | `npm run build` | `index-DC0pIIGc.js` |
-| Live | `npm run build:live` | `index-Cm90D0Dk.js` |
-| Capable | `npm run build:capable` | `index--1PhVMwK.js` |
+| Dev | `npm run build` | `index-DEoAHgau.js` |
+| Live | `npm run build:live` | `index-QDY0DkD_.js` |
+| Capable | `npm run build:capable` | `index-B_6znmJw.js` |
 
 CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
 to call only its own API.

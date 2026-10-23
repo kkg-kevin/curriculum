@@ -231,7 +231,7 @@ function AddChildPanel({ household, availableLearners, curricula, educators, act
       }} style={formGrid(190)}>
         <label style={labelStyle}>First name<input style={inputStyle} required value={child.firstName} onChange={(e) => setChildValue("firstName", e.target.value)} /></label>
         <label style={labelStyle}>Last name<input style={inputStyle} required value={child.lastName} onChange={(e) => setChildValue("lastName", e.target.value)} /></label>
-        <label style={labelStyle}>Gender<select style={inputStyle} required value={child.gender} onChange={(e) => setChildValue("gender", e.target.value)}><option value="">Choose</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></label>
+        <label style={labelStyle}>Gender<select style={inputStyle} required value={child.gender} onChange={(e) => setChildValue("gender", e.target.value)}><option value="">Choose</option><option value="female">Female</option><option value="male">Male</option></select></label>
         <label style={labelStyle}>Date of birth<input style={inputStyle} type="date" value={child.dateOfBirth} onChange={(e) => setChildValue("dateOfBirth", e.target.value)} /></label>
         <label style={labelStyle}>Learner username (optional)<input style={inputStyle} value={child.username} onChange={(e) => setChildValue("username", e.target.value)} /></label>
         <label style={labelStyle}>Guardian portal password (optional; sets or resets login)<input style={inputStyle} type="password" minLength={8} disabled={!household.guardianEmail} placeholder={household.guardianEmail ? "" : "Add a guardian email first"} value={child.password} onChange={(e) => setChildValue("password", e.target.value)} /></label>

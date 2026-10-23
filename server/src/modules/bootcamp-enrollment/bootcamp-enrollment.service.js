@@ -129,7 +129,7 @@ const BootcampEnrollmentService = {
       learner = await LearnerService.createLearner({
         firstName,
         lastName,
-        gender: "other",
+        gender: null, // the bootcamp form doesn't ask; male or female is set on the learner later
         guardianName: data.parentName,
         guardianPhone: data.parentPhone,
         guardianEmail: data.parentEmail,

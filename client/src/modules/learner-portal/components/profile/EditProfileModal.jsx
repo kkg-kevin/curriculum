@@ -43,7 +43,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         photo: learner.photo || null,
         firstName: learner.firstName || "",
         lastName: learner.lastName || "",
-        gender: learner.gender || "",
+        gender: ["male", "female"].includes(learner.gender) ? learner.gender : "", // an old "other" must be re-chosen
         dateOfBirth: learner.dateOfBirth || "",
         nationality: learner.nationality || "",
         languages: learner.languages || "",
@@ -140,7 +140,6 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
               <option value="">Select gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
-              <option value="other">Other</option>
             </select>
             {errors.gender && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.gender}</p>}
           </div>

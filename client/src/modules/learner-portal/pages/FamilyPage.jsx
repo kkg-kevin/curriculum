@@ -67,7 +67,6 @@ function AddChildForm({ household, kind, onDone, onCancel }) {
           <option value="">Choose…</option>
           <option value="female">Female</option>
           <option value="male">Male</option>
-          <option value="other">Other</option>
         </select>
       </label>
       <label style={labelStyle}>Date of birth (optional)<input style={inputStyle} type="date" value={child.dateOfBirth} onChange={set("dateOfBirth")} /></label>

@@ -18,7 +18,7 @@ export const PAY_RATE_TYPES = [
   { value: "hourly", label: "Hourly", hint: "Paid for the hours taught" },
   { value: "session", label: "Per session", hint: "Paid for each session delivered" },
   { value: "daily", label: "Daily", hint: "Paid for each day taught" },
-  { value: "base_plus", label: "Base plus", hint: "The session rate plus a commission for each learner in the class" },
+  { value: "base_plus", label: "Base plus", hint: "Its own session rate plus a commission for each learner in the class" },
 ];
 
 export const TEACHER_LEVELS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `Level ${n}` }));
