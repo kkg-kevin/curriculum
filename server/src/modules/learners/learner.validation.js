@@ -7,7 +7,7 @@ const { z } = require("zod");
 const baseLearnerSchema = z.object({
   firstName:     z.string().min(1, "First name is required"),
   lastName:      z.string().min(1, "Last name is required"),
-  gender:        z.enum(["male", "female", "other"]),
+  gender:        z.enum(["male", "female"], { message: "Choose male or female" }),
   guardianName:  z.string().min(1, "Guardian name is required"),
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid guardian email").optional().or(z.literal("")),
@@ -64,7 +64,7 @@ const updateLearnerAccountStatusSchema = z.object({
 const bulkImportRowSchema = z.object({
   firstName:     z.string().min(1, "First name is required"),
   lastName:      z.string().min(1, "Last name is required"),
-  gender:        z.enum(["male", "female", "other"]),
+  gender:        z.enum(["male", "female"], { message: "Choose male or female" }),
   guardianName:  z.string().min(1, "Guardian name is required"),
   guardianPhone: z.string().min(1, "Guardian phone is required"),
   guardianEmail: z.string().email("Invalid guardian email").optional().or(z.literal("")),

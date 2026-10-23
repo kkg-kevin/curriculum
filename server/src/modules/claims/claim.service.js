@@ -32,8 +32,9 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 //              sessions still to come count at the course's usual slot length
 //   daily      the days taught — the dates with a delivered session; the sessions still to come
 //              count as days at the course's usual sessions per day
-//   base_plus  a course's sessions, each paid the session rate (the base) plus the commission
-//              for every learner enrolled in the class — e.g. KSh 500 + 12 learners × KSh 50 =
+//   base_plus  a course's sessions, each paid Base plus's own session rate (the base — set apart
+//              from the per-session rate) plus the commission for every learner enrolled in the
+//              class — e.g. KSh 500 + 12 learners × KSh 50 =
 //              KSh 1,100 a session. The learners are counted when the figures are worked out
 //              (and fixed on a claim when it is sent).
 //
@@ -190,10 +191,10 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
     daily: { total: daysDelivered + Math.ceil(remainingSessions / sessionsPerDay), delivered: daysDelivered },
     base_plus: { total: sessionsTotal, delivered: sessionsDelivered },
   }[rateType];
-  // Base plus: a session pays the base (the session rate) plus the commission for each enrolled
-  // learner. Both must be set for it to be offered.
+  // Base plus: a session pays its own base (the Base plus session rate, not the per-session one)
+  // plus the commission for each enrolled learner. Both must be set for it to be offered.
   const basePlus = rateType === "base_plus";
-  const baseRate = basePlus ? settings.sessionRate || null : null;
+  const baseRate = basePlus ? settings.basePlusSessionRate || null : null;
   const commissionRate = basePlus ? settings.commissionRate || null : null;
   const rate = basePlus
     ? (baseRate && commissionRate ? Math.round((baseRate + learnerCount * commissionRate) * 1000) / 1000 : null)
@@ -216,7 +217,7 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
   // Nothing can be claimed on a way of paying the workspace hasn't put a rate on, or on hours
   // when the timetable gives this course no times to count.
   let unpayable = null;
-  if (basePlus && !baseRate) unpayable = "Base plus is paid on top of the session rate, which isn't set yet — ask the admin to set it in Settings → Educator pay.";
+  if (basePlus && !baseRate) unpayable = "The Base plus session rate isn't set yet — ask the admin to set it in Settings → Educator pay.";
   else if (basePlus && !commissionRate) unpayable = "The Base plus commission per learner isn't set yet — ask the admin to set it in Settings → Educator pay.";
   else if (!rate) unpayable = `The ${RATE_NAME[rateType]} rate isn't set yet — ask the admin to set it in Settings → Educator pay.`;
   else if (rateType === "hourly" && sessionsTotal > 0 && units.total <= 0) unpayable = "The timetable has no start and end times for this course, so its hours can't be counted.";

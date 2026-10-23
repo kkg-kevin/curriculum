@@ -2,7 +2,7 @@ const { z } = require("zod");
 
 const CLAIM_TYPES = ["advance", "full"];
 // What a part-time educator can be paid on — the workspace sets the rates (Settings → Educator
-// pay) and an educator is tagged with the ones that apply to them. "base_plus" is the session
+// pay) and an educator is tagged with the ones that apply to them. "base_plus" is its own session
 // rate plus a commission for each learner enrolled in the class, every session.
 const RATE_TYPES = ["session", "hourly", "daily", "base_plus"];
 const CLAIM_STATUSES = ["pending_supervisor", "pending_admin", "approved", "paid", "rejected"];
@@ -48,7 +48,10 @@ const settingsSchema = z
     sessionRate: rate("session"),
     hourlyRate: rate("hourly"),
     dailyRate: rate("daily"),
-    // Base plus: the commission per enrolled learner per session (its base is the session rate).
+    // Base plus: its own session rate (the base) and the commission per enrolled learner per
+    // session — both set, or neither (not offered). The base is optional so an older screen saving
+    // without it keeps what's stored.
+    basePlusSessionRate: rate("Base plus session").optional(),
     commissionRate: rate("commission"),
     advancePercent: z.coerce.number().int().min(0, "Between 0 and 100").max(100, "Between 0 and 100"),
     // Course coverage needed before an advance: a % of the course's sessions OR a number of
@@ -57,8 +60,9 @@ const settingsSchema = z
     advanceCoveragePercent: z.coerce.number().int("A whole number").min(0, "Between 0 and 100").max(100, "A coverage percentage is between 0 and 100").optional(),
     advanceCoverageSessions: z.coerce.number().int("A whole number").min(0, "Can't be below 0").max(1000).optional(),
   })
-  .refine((d) => d.sessionRate || d.hourlyRate || d.dailyRate, { message: "Set at least one part-time rate", path: ["sessionRate"] })
-  .refine((d) => !d.commissionRate || d.sessionRate, { message: "Base plus is paid on top of the session rate — set the session rate too", path: ["sessionRate"] });
+  .refine((d) => d.sessionRate || d.hourlyRate || d.dailyRate || (d.basePlusSessionRate && d.commissionRate), { message: "Set at least one part-time rate", path: ["sessionRate"] })
+  .refine((d) => d.basePlusSessionRate === undefined || !d.commissionRate || d.basePlusSessionRate, { message: "Set the Base plus session rate too", path: ["basePlusSessionRate"] })
+  .refine((d) => !d.basePlusSessionRate || d.commissionRate, { message: "Set the Base plus commission per learner too", path: ["commissionRate"] });
 
 const createSupervisorSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(150),

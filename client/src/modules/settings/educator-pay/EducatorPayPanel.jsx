@@ -26,7 +26,7 @@ const asText = (value) => (value == null ? "" : String(value));
 export default function EducatorPayPanel() {
   const { data, isLoading, isError } = useClaimSettings();
   const save = useUpdateClaimSettings();
-  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", commissionRate: "", advancePercent: "", advanceCoveragePercent: "", advanceCoverageSessions: "" });
+  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", basePlusSessionRate: "", commissionRate: "", advancePercent: "", advanceCoveragePercent: "", advanceCoverageSessions: "" });
 
   useEffect(() => {
     if (data) {
@@ -34,6 +34,7 @@ export default function EducatorPayPanel() {
         sessionRate: asText(data.sessionRate),
         hourlyRate: asText(data.hourlyRate),
         dailyRate: asText(data.dailyRate),
+        basePlusSessionRate: asText(data.basePlusSessionRate),
         commissionRate: asText(data.commissionRate),
         advancePercent: asText(data.advancePercent),
         advanceCoveragePercent: data.advanceCoveragePercent ? String(data.advanceCoveragePercent) : "",
@@ -45,7 +46,6 @@ export default function EducatorPayPanel() {
   const currency = data?.currency || "KES";
   const rateValue = (key) => (form[key].trim() === "" ? null : Number(form[key]));
   const ratesValid = RATES.every(({ key }) => rateValue(key) === null || rateValue(key) > 0);
-  const anyRate = RATES.some(({ key }) => rateValue(key) > 0);
   const pct = Number(form.advancePercent);
   const pctValid = form.advancePercent.trim() !== "" && Number.isInteger(pct) && pct >= 0 && pct <= 100;
   // Course coverage before an advance: a % of the course's sessions OR a number of sessions,
@@ -55,13 +55,19 @@ export default function EducatorPayPanel() {
   const coveragePctValid = Number.isInteger(coveragePct) && coveragePct >= 0 && coveragePct <= 100;
   const coverageSessionsValid = Number.isInteger(coverageSessions) && coverageSessions >= 0 && coverageSessions <= 1000;
   const coverageValid = coveragePctValid && coverageSessionsValid;
-  // Base plus: a commission per enrolled learner, paid on top of the session rate each session.
+  // Base plus, a way of paying of its own: its own session rate (the base) plus a commission per
+  // enrolled learner, each session. Both set, or both empty (not offered).
+  const basePlusRate = rateValue("basePlusSessionRate");
   const commission = rateValue("commissionRate");
+  const basePlusRateValid = basePlusRate === null || basePlusRate > 0;
   const commissionValid = commission === null || commission > 0;
-  const commissionNeedsBase = commission > 0 && !(rateValue("sessionRate") > 0);
-  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || commission !== (data.commissionRate ?? null) || pct !== data.advancePercent
+  const basePlusOffered = basePlusRate > 0 && commission > 0;
+  const basePlusHalfSet = (basePlusRate > 0) !== (commission > 0);
+  const anyRate = RATES.some(({ key }) => rateValue(key) > 0) || basePlusOffered;
+  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || basePlusRate !== (data.basePlusSessionRate ?? null)
+    || commission !== (data.commissionRate ?? null) || pct !== data.advancePercent
     || coveragePct !== (data.advanceCoveragePercent || 0) || coverageSessions !== (data.advanceCoverageSessions || 0));
-  const valid = ratesValid && anyRate && pctValid && commissionValid && !commissionNeedsBase && coverageValid;
+  const valid = ratesValid && anyRate && pctValid && basePlusRateValid && commissionValid && !basePlusHalfSet && coverageValid;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -70,6 +76,7 @@ export default function EducatorPayPanel() {
         sessionRate: rateValue("sessionRate"),
         hourlyRate: rateValue("hourlyRate"),
         dailyRate: rateValue("dailyRate"),
+        basePlusSessionRate: basePlusRate,
         commissionRate: commission,
         advancePercent: pct,
         advanceCoveragePercent: coveragePct,
@@ -105,19 +112,27 @@ export default function EducatorPayPanel() {
             {ratesValid && !anyRate && <Field warning="Set at least one rate, or no part-time educator can claim." />}
           </SettingsSection>
 
-          <SettingsSection title="Base plus" description="The session rate plus a commission for each learner enrolled in the class, every session.">
+          <SettingsSection title="Base plus" description="Its own session rate plus a commission for each learner enrolled in the class, every session. Leave both empty if you don't pay this way.">
             <FieldGrid min={160}>
+              <Field
+                label={`Session rate (${currency})`}
+                htmlFor="pay-basePlusSessionRate"
+                warning={!basePlusRateValid ? "Must be more than 0." : commission > 0 && !(basePlusRate > 0) ? "Set the session rate too." : null}
+              >
+                <NumberInput id="pay-basePlusSessionRate" value={form.basePlusSessionRate} onChange={set("basePlusSessionRate")} placeholder="Not offered" step="0.001" />
+              </Field>
               <Field
                 label={`Commission per learner (${currency})`}
                 htmlFor="pay-commissionRate"
-                warning={!commissionValid ? "Must be more than 0." : commissionNeedsBase ? "Set the session rate too — Base plus is paid on top of it." : null}
-                note={commission ? `12 learners: ${formatMoney(rateValue("sessionRate") + 12 * commission, currency)} a session.` : null}
+                warning={!commissionValid ? "Must be more than 0." : basePlusRate > 0 && !(commission > 0) ? "Set the commission too." : null}
               >
                 <NumberInput id="pay-commissionRate" value={form.commissionRate} onChange={set("commissionRate")} placeholder="Not offered" step="0.001" />
               </Field>
               <div />
-              <div />
             </FieldGrid>
+            {basePlusOffered && basePlusRateValid && commissionValid && (
+              <Field note={`With 12 learners: ${formatMoney(basePlusRate, currency)} + 12 × ${formatMoney(commission, currency)} = ${formatMoney(basePlusRate + 12 * commission, currency)} a session.`} />
+            )}
           </SettingsSection>
 
           <SettingsSection

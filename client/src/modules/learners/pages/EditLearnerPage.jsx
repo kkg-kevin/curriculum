@@ -40,7 +40,7 @@ export default function EditLearnerPage() {
       reset({
         firstName:     learner.firstName     || "",
         lastName:      learner.lastName      || "",
-        gender:        learner.gender        || "",
+        gender:        ["male", "female"].includes(learner.gender) ? learner.gender : "", // an old "other" must be re-chosen
         dateOfBirth:   learner.dateOfBirth   || "",
         nationality:   learner.nationality   || "",
         languages:     learner.languages     || "",
