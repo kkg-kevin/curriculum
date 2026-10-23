@@ -102,6 +102,159 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (23 Oct 2026) — buying on the website (cart, checkout, orders); a payment step after sign-ups; admin My profile; a profile photo editor; advance course coverage; one login, several roles
+
+**Backend and website** from `curriculum` (branch `modules`) at `199fa03` and `curriculum-web`
+(branch `new`) at `25bd15f`; **portal** from `0da38c2` (no portal code changed after it). Rebuilt
+later on 23 Oct for two fixes: Store item descriptions showed raw `<p>` tags on the website, and the
+Store and Projects pages still said "online checkout is coming soon". Includes
+everything in "This release (22 Oct 2026, evening)" below and "one login, several roles"
+(`451e662`), which wasn't in this folder before. **Upload the backend first**, then the portal,
+then the website.
+
+### What changed — website
+
+- **Buying online.** Store items and Projects have **Buy now** and **Add to cart** (a quantity for
+  Store items; "Add the materials kit" for a project that has one). A cart icon with a count shows
+  in the header. **/cart** changes quantities and kits. **/checkout** asks for:
+  - the buyer's details;
+  - for projects, a parent account password and the child (a new one, or one who already has a
+    login);
+  - pickup at a hub or delivery, when there's something physical;
+  - a review;
+  - then the **Payment step** below.
+  Each order is emailed to the buyer with a link to **/pay/…**, where they can pay any time in the
+  next 14 days.
+- **Payment step after sign-ups.** Home Schooling, Tech Club and Bootcamp sign-ups now end on a
+  Payment step that shows the ways to pay switched on in the portal: M-Pesa Paybill, M-Pesa Send
+  Money, bank transfer, cheque, cash. The family pays, then types in the M-Pesa code, bank
+  reference or cheque number (or says cash is coming). The M-Pesa phone prompt shows
+  "Coming soon" until Daraja is set up.
+- **Bootcamp Enroll** asks for the child's date of birth instead of their age, and the enrolment
+  form creates the parent's own login too (an email that already has an account must give its
+  password).
+- **Photos:** Store items and Projects show a gallery (arrows, thumbnails, swipe, full screen);
+  listing cards show how many photos there are.
+- The "Indicative price — final pricing confirmed at enquiry" line is gone, and product pages give
+  search engines the real price. The Store and Projects pages no longer say "Prices shown are
+  indicative. Online checkout is coming soon".
+- **Store item descriptions** written in the portal's editor show as clean paragraphs, not raw
+  `<p>` tags (fixed in the backend, so it needs the new backend). Descriptions everywhere on the
+  website keep a blank line between paragraphs.
+
+### What changed — portal
+
+- **Billing → Orders:** website orders with their items, customer, pickup or delivery, and
+  payment. **Start preparing**, **Ready for pickup** / **Mark dispatched** (with a note for the
+  family), **Mark completed**, **Cancel**, and a printable packing slip. The family is emailed when
+  it's ready, dispatched or cancelled. A paid order with projects gives them to the child by itself.
+- **Billing → To confirm:** payments families report from the Payment step. **Confirm received**
+  records the payment (and switches a fully paid sign-up or order on); **Reject** tells the family
+  why.
+- **Settings → Payments:** **How families can pay** (switch each way on, with its details) and
+  **Delivery & pickup (website store)** (pickup at your in-person hubs; delivery for a flat fee).
+  The M-Pesa (Daraja) connection is underneath.
+- **Settings → Items → Goods** and a project's **Selling** panel: up to 12 photos each (crop, drag to
+  reorder, the first is the cover). Projects have a **Materials Kit Price**.
+- **Admin My profile:** the avatar in the header opens **My profile** / **Sign out**. My profile
+  has the photo, name, job title, phone, password, the emails you receive and your organisation's
+  admins.
+- **Profile photo editor** wherever a profile photo is set (admin, educator, hub, learner, parent,
+  supervisor, and the educator and learner forms): round crop, zoom, rotate, flip, brightness,
+  contrast, and **Adjust** for a photo already uploaded. Supervisors can now upload a photo.
+- **Settings → Educator pay:** a minimum course coverage before an advance — a % of the course's
+  sessions **or** a number of sessions, whichever comes first (empty = no minimum, as before). The
+  page is simpler, and Certificates and Payments use the same layout, full width.
+- **Learner profile:** only the pathway the learner is placed in shows (Up next and the Pathway
+  tab). The Progress Arc and Current Level Summary say what's left to unlock the next level in
+  one line.
+- **Settings → People & sharing → Users** is paginated (20 a page).
+- **One login, several roles** (from `451e662`): the same email saved as an educator, hub or parent
+  can sign in as each; the login page asks which, and the header switches.
+
+### Five new migrations, applied on Restart
+
+- `20261022140000_add_user_extra_roles.js` — `users.extraRoles`.
+- `20261023090000_create_payment_options_and_notices.js` — `payment_options`, `payment_notices`.
+- `20261023100000_add_advance_coverage_to_claim_settings.js` — `claim_settings.advanceCoveragePercent`
+  and `advanceCoverageSessions` (0 = no minimum).
+- `20261023110000_add_phone_and_job_title_to_users.js` — `users.phone`, `users.jobTitle`.
+- `20261023120000_create_store_orders.js` — `orders`, `order_items`, `assessments.gallery` and
+  `kitPriceAmount`, invoice type `store_order`, number sequence `order`.
+
+All additive (two widen an ENUM). No new npm package. **No new environment variable**, but the
+order emails link to the website: the API uses `MAIL_WEBSITE_URL`, or else the first `https`
+address in `PUBLIC_SITE_URL` — check that's `https://africa.digifunzi.com`.
+
+### Backend (`backend-deploy.zip`)
+
+From `199fa03`, byte-identical in Dev, Live and Capable; 560 entries, 135 migrations, the newest
+`20261023120000_create_store_orders.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DC0pIIGc.js` |
+| Live | `npm run build:live` | `index-Cm90D0Dk.js` |
+| Capable | `npm run build:capable` | `index--1PhVMwK.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2932 KB) | 40 of 40 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2802 KB) | 26 of 26 pre-rendered with content |
+
+Both checked: built site (no dev-server files), each calling its own API, `.htaccess` sending
+`/cart`, `/checkout` and `/pay/…` to the app, and no "checkout is coming soon" note. The pages are
+saved with text from the API at build time, and the hosted APIs don't have the description fix yet:
+a Store item page may flash the old text until the page loads. **After the backend is deployed,
+ask for the websites to be rebuilt once more** so the saved pages (and what search engines read)
+are clean too.
+
+### Checked so far
+
+Server tests (57) and website tests (97) pass, and every build passes. Against a local database:
+orders end to end through the service (19 checks: pickup, delivery fee, project + kit with a new
+child, payment switching the order and the child on, every status step, cancelling an unpaid
+order cancels its invoice), payment notices (21 checks), advance coverage (6 tests). In a browser
+against the local API: the website from a Store item through the cart and checkout to the Payment
+step (placing the order answered by a stand-in, so no emails went out); Billing → Orders with a
+real test order; My profile; the photo editor (pick, rotate, zoom, save, Adjust); the Settings
+pages. **Nothing is tried on the hosting yet, and no real order has been paid on a server** —
+follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'orders';` and `SHOW COLUMNS FROM users LIKE 'jobTitle';` each return one row.
+   If not, Run JS script → `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Settings → Payments** (as the website's admin): switch on the ways families can pay and set
+   **Delivery & pickup** — until then only cash is offered and orders are collected from a hub.
+   Give projects a **Materials Kit Price** if kits are sold.
+5. **Website:** upload `africa-digifunzi-com-dist.zip` to the `https://africa.digifunzi.com` document root and Extract.
+6. **Verify:**
+   - A Store item on the website: **Add to cart**, the cart icon, **/cart**, **/checkout** through
+     to the Payment step. Place one small real order; it shows in **Billing → Orders** as Awaiting
+     payment, and the buyer gets the order email with its pay link.
+   - Report a payment from the Payment step (e.g. cash); confirm it in **Billing → To confirm** —
+     the order turns **Paid**. Mark it **Ready for pickup** and **Completed**.
+   - A project order with a new child: after payment, the child signs in and finds the project
+     under Assessments.
+   - A Home Schooling or Tech Club sign-up ends on the Payment step.
+   - The header avatar → **My profile**; change the photo with **Adjust**.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips
+(from commit `7f44b6b`).
+
+---
+
 ## This release (22 Oct 2026, evening) — website only: the bootcamp description sits under the name
 
 **Website only**, from `curriculum-web` (branch `new`) at `8a8f28c`. The backend and portal in this
