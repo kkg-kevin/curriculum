@@ -1,7 +1,7 @@
 const InventoryModel = require("../settings/items/items.model");
 const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
-const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
+const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");
 
 // The public marketing site's Store section (digifunzi-landing's /store) sells physical goods —
 // the Quarky robot, classroom bundles, accessories. A "store item" here is a row in the shared
@@ -98,7 +98,7 @@ const PublicStoreService = {
 
     return {
       ...listItem(item),
-      description: item.description || "",
+      description: htmlToText(item.description),
       highlights: arr(item.highlights),
       includes: arr(item.includes),
       specs: arr(item.specs)

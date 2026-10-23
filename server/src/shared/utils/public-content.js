@@ -24,12 +24,16 @@ function requirePublicContentAdminId() {
 
 // Rich-text fields (course/pathway/project descriptions, project overview) are authored as
 // TipTap HTML. The landing site renders these as plain text, so flatten tags and decode the
-// handful of entities the editor emits before exposing them publicly.
+// handful of entities the editor emits before exposing them publicly. Paragraphs keep a blank
+// line between them (the site shows line breaks); list items (TipTap wraps each in a <p>) and
+// <br> get a single newline.
 function htmlToText(html) {
   if (!html) return "";
   return String(html)
     .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n")
+    .replace(/<\/\s*p\s*>\s*<\/\s*li\s*>/gi, "</li>")
+    .replace(/<\/\s*li\s*>/gi, "\n")
+    .replace(/<\/\s*(p|div|ul|ol|h[1-6])\s*>/gi, "\n\n")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
