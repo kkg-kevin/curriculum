@@ -8,6 +8,8 @@ export const authApi = {
   // auth.service.js's login on the server for how the two resolve to the same account.
   login: (identifier, password) => api.post(`${ENDPOINT}/login`, { identifier, password }).then((r) => r.data.data),
   logout: () => api.post(`${ENDPOINT}/logout`).then((r) => r.data),
+  // Moves the signed-in session to another of the account's roles (an admin who also teaches).
+  switchRole: (role) => api.post(`${ENDPOINT}/switch-role`, { role }).then((r) => r.data.data),
   me: () => api.get(`${ENDPOINT}/me`).then((r) => r.data.data),
   // "The user is still here" — the only thing that keeps a session from timing out (see
   // client/src/context/session.js). Background polling deliberately doesn't count.

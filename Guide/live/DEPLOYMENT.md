@@ -102,6 +102,30 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (22 Oct 2026, evening) — website only: the bootcamp description sits under the name
+
+**Website only**, from `curriculum-web` (branch `new`) at `8a8f28c`. The backend and portal in this
+folder are unchanged — still the "22 Oct 2026, afternoon" ones below, which should go up first if
+they aren't already.
+
+- **Bootcamp pages:** the description now sits in the header, under the name and tagline; the
+  separate "About this bootcamp" section is gone. A long description is still cut short with
+  **Read more**.
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2769 KB) | 25 of 25 pre-rendered with content |
+
+Checked: built site (no dev-server files), calling its own API.
+
+**Deploy:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract. **Verify:** open a
+bootcamp — its description is under the tagline, with no "About this bootcamp" heading.
+
+**Not in this folder yet:** one login holding several roles (curriculum `451e662`) is committed but
+the backend and portal haven't been rebuilt with it.
+
+---
+
 ## This release (22 Oct 2026, afternoon) — can-do checks in assessments; Base plus educator pay; Hub check-ins; bootcamp Enroll goes through an age-based diagnostic; home page programme buttons and a header Enroll page
 
 **Backend, portal and website**, from `curriculum` (branch `modules`) at `3b5bee1` and
@@ -121,7 +145,7 @@ portal, then the website.
   the learner count and commission it was worked out on; the review dialog and the invoice PDF
   show the sum.
 - **Hub check-ins** (sidebar **Hub Check-ins**). Customer Service check-ins with learning hubs:
-  - A **schedule** per hub (once, weekly, fortnightly or monthly; in person or online) with an
+  - A **schedule** per hub (one-off, weekly, monthly, quarterly, every 6 months or yearly; in person or online) with an
     Account Manager and a Training Lead. Check-ins are put on the calendar 90 days ahead.
   - **My Check-ins**: today, upcoming, overdue. One shared report per check-in, saved as a draft
     and submitted by either of the two. Issues and actions, each with an owner, a due date and an

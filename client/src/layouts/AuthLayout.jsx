@@ -239,6 +239,8 @@ function AuthLayout() {
 
         .df-link { color: #25476a; font-weight: 600; text-decoration: none; }
         .df-link:hover { text-decoration: underline; }
+        .df-role-option:not(:disabled):hover { border-color: #38aae1 !important; box-shadow: 0 6px 18px rgba(37, 71, 106, 0.12); }
+        .df-role-option:focus-visible { outline: 3px solid #93C5FD; outline-offset: 2px; }
 
         .df-step-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
         .df-step-tab {

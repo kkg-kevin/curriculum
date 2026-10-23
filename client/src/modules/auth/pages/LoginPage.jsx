@@ -9,6 +9,8 @@ import { loginSchema } from "../schemas/auth.schema";
 import { FieldWrap, IconInput, PasswordInput } from "../components/AuthFields";
 import { IS_CAPABLE } from "../../../branding";
 import { peekSignedOutReason, clearSignedOutReason } from "../../../context/session";
+import { ROLE_HOME } from "../../../routes/RoleRoute";
+import RoleChooser from "../components/RoleChooser";
 
 // Why the last session ended, if it ended on its own (see context/session.js).
 function signedOutNotice(reason) {
@@ -24,8 +26,11 @@ function signedOutNotice(reason) {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, switchRole, logout } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  // A login with more than one role (an admin who also teaches): which one to use, asked after
+  // the password is accepted. The session starts as the account's own role.
+  const [choice, setChoice] = useState(null);
   const [notice] = useState(() => signedOutNotice(peekSignedOutReason()));
   useEffect(() => { clearSignedOutReason(); }, []);
 
@@ -42,7 +47,11 @@ export default function LoginPage() {
   const onSubmit = async ({ identifier, password }) => {
     setSubmitting(true);
     try {
-      await login(identifier, password);
+      const signedIn = await login(identifier, password);
+      if (signedIn?.roles?.length > 1) {
+        setChoice({ name: signedIn.name, roles: signedIn.roles, current: signedIn.role });
+        return;
+      }
       // A suspended account logs in like anyone else — ProtectedRoute then renders the in-app
       // "Account Suspended" screen in place of whatever route we land on, so no special-casing
       // is needed here; "/" is fine as the target.
@@ -54,6 +63,27 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  // Each role opens at its own home; the page they were sent from belonged to whichever role.
+  const chooseRole = async (role) => {
+    try {
+      if (role !== choice.current) await switchRole(role);
+      navigate(ROLE_HOME[role] || "/", { replace: true });
+    } catch (err) {
+      toast.error(err.message || "Couldn't open that role. Please try again.");
+    }
+  };
+
+  if (choice) {
+    return (
+      <RoleChooser
+        name={choice.name}
+        roles={choice.roles}
+        onChoose={chooseRole}
+        onCancel={async () => { await logout(); setChoice(null); }}
+      />
+    );
+  }
 
   return (
     <>

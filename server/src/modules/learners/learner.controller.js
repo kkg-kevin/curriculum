@@ -67,6 +67,8 @@ const createLearner = asyncHandler(async (req, res) => {
   // account), nothing is written at all, rather than leaving a learner record with no login.
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.guardianName, email: data.guardianEmail, password, role: "learner" });
+  } else {
+    await AuthService.linkExistingLogin(data.guardianEmail, "learner");
   }
   // Stamped server-side (never from the body — the schema strips it) so the creating admin keeps
   // access before any hub link exists; see isLinkedToOwnHub.

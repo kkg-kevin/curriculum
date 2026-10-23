@@ -1,6 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { signup, login, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin } = require("./auth.controller");
+const { signup, login, switchRole, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin } = require("./auth.controller");
 const { protect, authorize } = require("../../shared/middleware/auth.middleware");
 const { initiateForPendingSignup } = require("../payments/mpesa/mpesa.controller");
 
@@ -45,6 +45,8 @@ router.post("/reset-password", resetPasswordLimiter, resetPassword);
 router.post("/signup", signup);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
+// Another of the account's roles for this session (see account-roles.js).
+router.post("/switch-role", protect, switchRole);
 router.get("/me", protect, me);
 router.post("/activity", protect, recordActivity);
 router.put("/me", protect, updateMe);

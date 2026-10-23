@@ -79,15 +79,18 @@ const createTeacher = asyncHandler(async (req, res) => {
   }
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a teacher record with no login.
-  if (password) {
-    await AuthService.setOrCreatePassword({ name: `${data.firstName} ${data.lastName}`, email: data.email, password, role: "teacher" });
-  }
+  // `loginLinked`: their email already signs in as something else (e.g. the admin adding
+  // themselves), so that login gains the educator role and keeps its own password.
+  const login = password
+    ? await AuthService.setOrCreatePassword({ name: `${data.firstName} ${data.lastName}`, email: data.email, password, role: "teacher" })
+    : await AuthService.linkExistingLogin(data.email, "teacher");
+  const loginLinked = Boolean(login && (login.linked || !password));
   // Stamped server-side (never from the body — the schema strips it) so the creating admin keeps
   // access before any hub link exists; see isLinkedToOwnHub.
   if (req.user.role === "admin") data.createdByAdminId = req.ownerAdminId;
   const teacher = await TeacherService.createTeacher(data);
   if (linkHubId) await TeacherService.linkHub(teacher.id, linkHubId);
-  res.status(201).json({ success: true, data: teacher });
+  res.status(201).json({ success: true, data: { ...teacher, loginLinked } });
 });
 
 const getAllTeachers = asyncHandler(async (req, res) => {
@@ -160,9 +163,11 @@ const updateTeacher = asyncHandler(async (req, res) => {
       err.statusCode = 400;
       throw err;
     }
-    await AuthService.setOrCreatePassword({ name: `${teacher.firstName} ${teacher.lastName}`, email: teacher.email, password, role: "teacher" });
+    const login = await AuthService.setOrCreatePassword({ name: `${teacher.firstName} ${teacher.lastName}`, email: teacher.email, password, role: "teacher" });
+    return res.json({ success: true, data: { ...teacher, loginLinked: Boolean(login?.linked) } });
   }
-  res.json({ success: true, data: teacher });
+  const linked = await AuthService.linkExistingLogin(teacher.email, "teacher");
+  res.json({ success: true, data: { ...teacher, loginLinked: Boolean(linked) } });
 });
 
 // Activate / deactivate / put-on-leave a teacher. Separate from the general PUT so it's a

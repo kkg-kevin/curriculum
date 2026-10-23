@@ -74,6 +74,8 @@ const createLearningHub = asyncHandler(async (req, res) => {
   }
   if (password) {
     await AuthService.setOrCreatePassword({ name: data.name, email: data.email, password, role: "school" });
+  } else {
+    await AuthService.linkExistingLogin(data.email, "school");
   }
   // ownerAdminId is never client-supplied — always the creating admin's own tenant id, same
   // posture as curriculum.controller.js keeping curriculumAdminId out of the general write path.
@@ -175,6 +177,8 @@ const updateLearningHub = asyncHandler(async (req, res) => {
       throw err;
     }
     await AuthService.setOrCreatePassword({ name: record.name, email: record.email, password, role: "school" });
+  } else {
+    await AuthService.linkExistingLogin(record.email, "school");
   }
   res.json({ success: true, data: record });
 });

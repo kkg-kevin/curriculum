@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../modules/auth/services/authApi";
 import ImageUploadField from "../ImageUploadField";
 import NotificationBell from "./NotificationBell";
+import RoleSwitcher from "./RoleSwitcher";
 
 // Admin is the only role with no dedicated "My Profile" page (Learner/Teacher/School each have
 // their own portal profile page where photo upload lives instead) — so this popover is admin's
@@ -322,9 +323,12 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
           {!isMobile ? (
             <div>
               <div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{user?.name || "..."}</div>
-              <div style={{ fontSize: "12px", color: "#6B7280" }}>{roleLabel}</div>
+              {/* The role label, or — for a login with more than one role — a menu to switch. */}
+              <RoleSwitcher label={roleLabel} />
             </div>
-          ) : null}
+          ) : (
+            <RoleSwitcher label={roleLabel} compact />
+          )}
         </div>
       </div>
     </header>

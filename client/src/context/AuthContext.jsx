@@ -83,6 +83,9 @@ export function AuthProvider({ children }) {
   useEffect(() => onTabMessage((msg) => {
     if (msg.type === "anyone-signed-in" && userRef.current && isTabSignedIn()) broadcast({ type: "session-here" });
     if (msg.type === "signed-out" && userRef.current) endLocally(msg.reason);
+    // Another tab switched role: the shared cookie is that role now, so this tab reopens as it
+    // ("/" sends each role on to its own home).
+    if (msg.type === "role-switched" && userRef.current && userRef.current.role !== msg.role) window.location.assign("/");
   }), [endLocally]);
 
   // The server refused this session (see api.js) — idle too long there, or already ended.
@@ -116,6 +119,18 @@ export function AuthProvider({ children }) {
     return loggedInUser;
   }, [queryClient]);
 
+  // Another of the account's roles for this session (`user.roles`). Cached data belonged to the
+  // other role's views, so it's cleared the same way as on login.
+  const switchRole = useCallback(async (role) => {
+    epochRef.current += 1;
+    queryClient.clear();
+    const switched = await authApi.switchRole(role);
+    resetActivityClock();
+    setUser(switched);
+    broadcast({ type: "role-switched", role: switched.role });
+    return switched;
+  }, [queryClient]);
+
   const signup = useCallback(async (payload) => {
     return authApi.signup(payload);
   }, []);
@@ -140,7 +155,7 @@ export function AuthProvider({ children }) {
   const signOutForInactivity = useCallback((minutes) => logout(`idle:${minutes}`), [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, suspended, pendingPayment, login, signup, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, suspended, pendingPayment, login, switchRole, signup, logout, updateUser }}>
       {children}
       {AUTH_ENABLED && user && (
         <SessionTimeoutGuard

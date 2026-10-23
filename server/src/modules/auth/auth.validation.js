@@ -59,7 +59,11 @@ const resetPasswordSchema = z.object({
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+// The role to switch the signed-in session to — one the account holds (checked in the service).
+const switchRoleSchema = z.object({ role: z.string().trim().min(1).max(40) });
+
 module.exports = {
+  switchRoleSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   USER_ROLES,

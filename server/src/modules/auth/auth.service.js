@@ -13,7 +13,8 @@ const UserSessionModel = require("./user-session.model");
 const PasswordResetTokenModel = require("./password-reset-token.model");
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
-const { releaseIfLeftover } = require("./leftover-login");
+const { releaseIfLeftover, isLeftoverLogin } = require("./leftover-login");
+const { LINKABLE_ROLES, extraRolesOf, rolesOf, availableRoles } = require("./account-roles");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
 
@@ -140,10 +141,11 @@ async function assertUserExists(user) {
 
 // jti gives each issued token a unique identity to revoke by (see logout below) — without it,
 // the denylist would have nothing to key a single token's revocation on short of storing the
-// whole raw token string.
-function signToken(user) {
+// whole raw token string. `role` is the role this session runs as — the account's own, or one
+// of its extra roles (account-roles.js) chosen at sign-in or switched to.
+function signToken(user, role = user.role) {
   return jwt.sign(
-    { sub: user.id, role: user.role, email: user.email, username: user.username, jti: crypto.randomUUID() },
+    { sub: user.id, role, email: user.email, username: user.username, jti: crypto.randomUUID() },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -176,11 +178,21 @@ const AuthService = {
   // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
   // account is created, same as self-signup. A leftover login of another kind (see
   // leftover-login.js — its record was deleted) gives its email up rather than refusing.
+  //
+  // An existing login of another role takes an educator, hub or parent role as an extra role
+  // instead (account-roles.js): the person signs in with their own password and chooses which
+  // role. Its password is never touched that way — whoever adds the role doesn't get to set the
+  // password of someone else's login. The result then carries `linked: true`.
   async setOrCreatePassword({ name, email, password, role }) {
     const existing = await UserModel.findByEmail(email);
     if (existing) {
       if (existing.role !== role && await releaseIfLeftover(existing)) {
         return this.createUser({ name, email, password, role });
+      }
+      if (existing.role !== role && LINKABLE_ROLES.includes(role) && existing.email) {
+        const extraRoles = extraRolesOf(existing);
+        const updated = extraRoles.includes(role) ? existing : await UserModel.update(existing.id, { extraRoles: [...extraRoles, role] });
+        return { ...sanitize(updated), linked: true };
       }
       if (existing.role !== role) {
         const err = new Error(`This email is already registered as a ${existing.role} account`);
@@ -278,13 +290,63 @@ const AuthService = {
     // A suspended account is still allowed to log in — the client shows an in-app "Account
     // Suspended" page and every write is refused server-side. `suspended` rides along on the
     // returned user so the client knows immediately, without a second round trip.
-    const suspended = await resolveSuspension(user);
-    const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
-    const token = signToken(user);
+    // Signed in as the account's own role (or its first live one); with more than one
+    // (`roles`), the client asks which to use and switches to it (switchRole below).
+    const role = (await availableRoles(user))[0] || user.role;
+    const token = await this.startSession(user, role);
+    return { user: await this.sessionUser(user, role), token };
+  },
+
+  // An educator, hub or parent saved WITHOUT a password whose email already has a login of
+  // another role: that login takes the role too (account-roles.js), so the person can sign in
+  // as it with their own password. Nothing happens when there's no such login, it already holds
+  // the role, or it's a leftover (setOrCreatePassword deals with those when a password is set).
+  async linkExistingLogin(email, role) {
+    if (!email || !LINKABLE_ROLES.includes(role)) return null;
+    const existing = await UserModel.findByEmail(email);
+    if (!existing?.email || existing.role === role || rolesOf(existing).includes(role)) return null;
+    if (await isLeftoverLogin(existing)) return null;
+    return sanitize(await UserModel.update(existing.id, { extraRoles: [...extraRolesOf(existing), role] }));
+  },
+
+  // A new session for `user` running as `role`; returns its token.
+  async startSession(user, role) {
+    const token = signToken(user, role);
     const { jti, exp } = jwt.decode(token);
     await UserSessionModel.create({ jti, userId: user.id, expiresAt: new Date(exp * 1000) });
     await UserSessionModel.pruneStale(SESSION_IDLE_MINUTES + 1);
-    return { user: { ...sanitize(user), suspended, pendingPayment, ...(await staffAccess(user)) }, token };
+    return token;
+  },
+
+  // What the client gets about the signed-in user: the account, shown as the session's role, with
+  // every role it can sign in as (`roles`), and that role's suspension / staff access.
+  async sessionUser(user, role, { withRoles = true } = {}) {
+    const asRole = { ...user, role };
+    const suspended = await resolveSuspension(asRole);
+    const pendingPayment = suspended === "payment" ? await this.getPendingPayment(asRole) : null;
+    return {
+      ...sanitize(asRole),
+      ...(withRoles ? { roles: await availableRoles(user) } : {}),
+      suspended,
+      pendingPayment,
+      ...(await staffAccess(asRole)),
+    };
+  },
+
+  // Moves the current session to another of the account's roles: the old session ends and a new
+  // one starts as `role` (no password needed — it is the same person, already signed in).
+  async switchRole(token, role) {
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = await UserModel.findById(payload.sub);
+    await assertUserExists(user);
+    if (!(await availableRoles(user)).includes(role)) {
+      const err = new Error("You can't sign in with that role");
+      err.statusCode = 403;
+      throw err;
+    }
+    await this.endSession(payload);
+    const next = await this.startSession(user, role);
+    return { user: await this.sessionUser(user, role), token: next };
   },
 
   // Confirms the CURRENTLY logged-in user really knows their own password, without touching
@@ -435,14 +497,15 @@ const AuthService = {
     return { idleTimeoutMs: SESSION_IDLE_MS };
   },
 
-  async getById(id) {
+  // `role` is the session's role (from its token); one the account no longer holds falls back to
+  // the account's own. A suspended user still gets a valid /me response — the client uses
+  // `suspended` to lock them to the in-app "Account Suspended" page. `withRoles` adds the list of
+  // roles it can switch to (a lookup per extra role — /me wants it, `protect` doesn't).
+  async getById(id, role = null, { withRoles = false } = {}) {
     const user = await UserModel.findById(id);
     await assertUserExists(user);
-    // A suspended user still gets a valid /me response — the client uses `suspended` to lock
-    // them to the in-app "Account Suspended" page.
-    const suspended = await resolveSuspension(user);
-    const pendingPayment = suspended === "payment" ? await this.getPendingPayment(user) : null;
-    return { ...sanitize(user), suspended, pendingPayment, ...(await staffAccess(user)) };
+    const active = role && rolesOf(user).includes(role) ? role : user.role;
+    return this.sessionUser(user, active, { withRoles });
   },
 
   // "What do I owe" for the "payment pending" screen — a learner auto-provisioned from a public
