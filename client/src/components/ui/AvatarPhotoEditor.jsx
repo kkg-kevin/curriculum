@@ -74,7 +74,7 @@ export default function AvatarPhotoEditor({ firstName, lastName, photo, onChange
           }}
         >
           <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "700", color: "#374151" }}>Profile Photo</p>
-          <ImageUploadField value={photo || null} onChange={(url) => { onChange(url); setOpen(false); }} width="100%" height="130px" />
+          <ImageUploadField avatar value={photo || null} onChange={(url) => { onChange(url); setOpen(false); }} width="100%" height="130px" />
         </div>,
         document.body
       )}

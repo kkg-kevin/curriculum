@@ -5,9 +5,9 @@ const TABLE = "claim_settings";
 
 // What a workspace pays when it has never changed anything: KSh 904.666 a session, no hourly or
 // daily rate and no Base plus commission (not offered until set), and an advance of 30% of the
-// whole course. These are the part-time rates — full-time educators don't claim (see
+// whole course that can be asked for as soon as the course has sessions (no minimum coverage). These are the part-time rates — full-time educators don't claim (see
 // claim.service.js).
-const DEFAULTS = { sessionRate: 904.666, hourlyRate: null, dailyRate: null, commissionRate: null, advancePercent: 30, currency: "KES" };
+const DEFAULTS = { sessionRate: 904.666, hourlyRate: null, dailyRate: null, commissionRate: null, advancePercent: 30, advanceCoveragePercent: 0, advanceCoverageSessions: 0, currency: "KES" };
 
 const rateOrNull = (value) => (value == null || Number(value) <= 0 ? null : Number(value));
 
@@ -19,6 +19,10 @@ function shape(row) {
     // Base plus: the commission per enrolled learner, on top of the session rate, each session.
     commissionRate: rateOrNull(row.commissionRate),
     advancePercent: Number(row.advancePercent),
+    // How much of the course must be delivered before an advance: a % of its sessions OR a
+    // number of sessions, whichever comes first. 0 = that one isn't used; both 0 = no minimum.
+    advanceCoveragePercent: Number(row.advanceCoveragePercent) || 0,
+    advanceCoverageSessions: Number(row.advanceCoverageSessions) || 0,
     currency: row.currency || DEFAULTS.currency,
   };
 }

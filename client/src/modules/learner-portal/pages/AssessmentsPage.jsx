@@ -18,19 +18,15 @@ export default function LearnerAssessmentsPage() {
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>My Assessments</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>Assessments your teacher has issued to your class.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>Assessments from your teacher, and projects bought for you.</p>
         </div>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ flex: 2, minWidth: 340 }}>
-          {cls ? (
-            <AssessmentsOverview classId={cls.id} />
-          ) : (
-            <div style={{ padding: "32px 24px", textAlign: "center", background: "#fff", borderRadius: 16, border: "1px solid #E5E7EB" }}>
-              <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</p>
-            </div>
-          )}
+          {/* Without a class, still everything issued to the learner directly — a project bought on
+              the website, a diagnostic. */}
+          <AssessmentsOverview classId={cls?.id} />
         </div>
         <div style={{ flex: 1, minWidth: 280 }}>
           <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />

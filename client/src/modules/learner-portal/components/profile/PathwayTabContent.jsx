@@ -37,20 +37,23 @@ export default function PathwayTabContent({ learnerId, curriculumId }) {
 
   const areaColorById = new Map(areas.map((a) => [a.id, a.color]));
   const courseNameById = new Map((coursesResponse?.data || []).map((c) => [c.id, c.name]));
-  const rows = journey.map((j) => ({ ...j, color: areaColorById.get(j.pathwayId) }));
+  // Only the pathway(s) the learner is actually in — placed by their diagnostic or by staff. The
+  // rest are just "default" rows for every pathway the curriculum offers (the staff view needs
+  // those to place a learner; the learner doesn't).
+  const rows = journey.filter((j) => !j.isDefault).map((j) => ({ ...j, color: areaColorById.get(j.pathwayId) }));
 
   return (
     <div style={{ ...cardStyle(), padding: 20 }}>
       <h2 style={{ ...sectionHeaderStyle(), marginBottom: 4 }}>Pathway</h2>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: T.inkMuted }}>
-        Where you currently sit in each pathway's course sequence.
+        The pathway you're enrolled in, and where you sit in its course sequence.
       </p>
 
       {journeyLoading ? (
         <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>Loading…</p>
       ) : !curriculumId || rows.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>
-          Your pathways haven't been sequenced yet — check back once your curriculum sets this up.
+          You haven't been placed in a pathway yet — this happens after your diagnostic assessment.
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

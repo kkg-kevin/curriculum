@@ -11,6 +11,7 @@ export const SOURCES = [
   { key: "home_learning", label: "Home Learning", types: ["home_learning"] },
   { key: "tech_club", label: "Tech Clubs", types: ["tech_club"] },
   { key: "bootcamp", label: "Bootcamps", types: ["bootcamp"] },
+  { key: "store", label: "Website orders", types: ["store_order"] },
   { key: "learner", label: "Learner fees", types: ["learner_term", "course_module"] },
 ];
 

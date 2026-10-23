@@ -80,6 +80,7 @@ const COLLECTIONS = {
     supervisors: { table: "users", noun: "supervisor" },
   },
   curricula: { pathways: { table: "pathways", noun: "pathway" } },
+  billing: { "payment-notices": { table: "payment_notices", noun: "payment notice" }, orders: { table: "orders", noun: "order" } },
   bootcamps: { hubs: { table: "bootcamp_hubs", noun: "hub run" } },
   courses: { folders: { table: "course_folders", noun: "course folder" } },
   assessments: { folders: { table: "assessment_folders", noun: "assessment folder" } },

@@ -78,7 +78,7 @@ const recordActivity = asyncHandler(async (req, res) => {
 const updateMe = asyncHandler(async (req, res) => {
   const parsed = updateMeSchema.parse(req.body);
   const data = Object.fromEntries(Object.entries(parsed).filter(([, v]) => v !== undefined));
-  const user = await AuthService.updateMe(req.user.id, data);
+  const user = await AuthService.updateMe(req.user.id, data, req.user.role);
   res.json({ success: true, data: user });
 });
 

@@ -102,6 +102,7 @@ import SupervisorClaimPage, { AdminClaimPage } from "../modules/claims/pages/Sup
 import ClaimInvoicesPage from "../modules/claims/pages/ClaimInvoicesPage";
 import SupervisorEducatorsPage from "../modules/claims/pages/SupervisorEducatorsPage";
 import SupervisorProfilePage from "../modules/claims/pages/SupervisorProfilePage";
+import AdminProfilePage from "../modules/profile/pages/AdminProfilePage";
 import InvoiceDetailPage from "../modules/billing/pages/InvoiceDetailPage";
 import ReceiptsListPage from "../modules/billing/pages/ReceiptsListPage";
 import ReceiptDetailPage from "../modules/billing/pages/ReceiptDetailPage";
@@ -201,6 +202,8 @@ export default function AppRoutes() {
             Billing's "Educator Claims" tab. The educator's own side lives in the teacher-portal
             (claims, claims/:classId/:courseId). */}
         <Route path="claims" element={<ClaimsRedirect />} />
+        {/* My profile — the signed-in admin's own account (admins only; the page sends anyone else home). */}
+        <Route path="profile" element={<AdminProfilePage />} />
         <Route path="settings">
           <Route index element={<SettingsPage />} />
           <Route path="learning-hubs/create" element={<CreateLearningHubPage />} />

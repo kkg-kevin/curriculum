@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { FiDownload, FiSearch } from "react-icons/fi";
 import { useWorkspaceUsers, useSetUserActive } from "../hooks/useWorkspaceUsers";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import Pagination from "../../../billing/components/Pagination";
 import { ago } from "../../../activity/labels";
 
 // Settings → People & sharing → Users: every login in this workspace, the kind of account it is,
 // what it is attached to, when it was last used, and a switch to stop it signing in without
 // deleting anything. Read-only apart from that switch — people are still added and edited where
 // they always were (Staff, Educators, Learners, Learning Hubs).
+
+const PER_PAGE = 20;
 
 const STATUS = {
   active: { label: "Active", color: "#047857", bg: "#ECFDF5", border: "#A7F3D0" },
@@ -59,6 +62,7 @@ export default function UsersPanel() {
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
   const [confirm, setConfirm] = useState(null); // the user about to be deactivated
+  const [page, setPage] = useState(1);
 
   const users = useMemo(() => data?.users || [], [data]);
   const summary = data?.summary;
@@ -70,6 +74,11 @@ export default function UsersPanel() {
       (!q || [u.name, u.email, u.username, u.attachedTo, u.accessRole].some((v) => String(v || "").toLowerCase().includes(q)))
     );
   }, [users, search, type, status]);
+  // Filtering is done above on the whole list; only the table is paged. Export CSV still takes
+  // every matching user, not just this page.
+  const pageCount = Math.max(1, Math.ceil(shown.length / PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const pageRows = shown.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   if (isLoading) return <p style={{ fontSize: 13, color: "#6B7280" }}>Loading users…</p>;
   if (isError) return <p style={{ fontSize: 13, color: "#B91C1C" }}>Couldn't load users — try refreshing the page.</p>;
@@ -107,7 +116,7 @@ export default function UsersPanel() {
           const on = type === t.type;
           return (
             <button
-              key={t.type || "all"} type="button" onClick={() => setType(t.type)} aria-pressed={on}
+              key={t.type || "all"} type="button" onClick={() => { setType(t.type); setPage(1); }} aria-pressed={on}
               style={{ padding: "6px 12px", borderRadius: 20, border: `1.5px solid ${on ? "#25476a" : "#E5E7EB"}`, background: on ? "#25476a" : "#fff", color: on ? "#fff" : "#374151", fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
             >
               {t.label} <span style={{ opacity: 0.75, fontWeight: 700 }}>{t.count}</span>
@@ -120,12 +129,12 @@ export default function UsersPanel() {
         <div style={{ position: "relative", flex: "1 1 240px" }}>
           <FiSearch size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
           <input
-            value={search} onChange={(e) => setSearch(e.target.value)}
+            value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search name, email, username, hub or role"
             style={{ ...selectStyle, width: "100%", boxSizing: "border-box", paddingLeft: 30 }}
           />
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={selectStyle} aria-label="Status">
+        <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} style={selectStyle} aria-label="Status">
           <option value="">Any status</option>
           {Object.entries(STATUS).map(([key, s]) => (
             <option key={key} value={key}>{s.label} ({summary.byStatus[key] || 0})</option>
@@ -150,7 +159,7 @@ export default function UsersPanel() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((u) => {
+              {pageRows.map((u) => {
                 const path = u.record && RECORD_PATH[u.record.kind]?.(u.record.id);
                 return (
                   <tr key={u.id} style={{ opacity: u.status === "deactivated" ? 0.7 : 1 }}>
@@ -199,10 +208,13 @@ export default function UsersPanel() {
               })}
             </tbody>
           </table>
+          <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} />
         </div>
       )}
       <p style={{ margin: "10px 0 0", fontSize: 11.5, color: "#9CA3AF" }}>
-        Showing {shown.length} of {summary.total}. Last active comes from the activity log, which began on 2 Oct 2026 — an account not used since then shows "No sign-in recorded".
+        {shown.length > PER_PAGE
+          ? `Showing ${(currentPage - 1) * PER_PAGE + 1}–${Math.min(currentPage * PER_PAGE, shown.length)} of ${shown.length}${shown.length < summary.total ? ` matching (${summary.total} in all)` : ""}.`
+          : `Showing ${shown.length} of ${summary.total}.`} Last active comes from the activity log, which began on 2 Oct 2026 — an account not used since then shows "No sign-in recorded".
       </p>
     </div>
   );

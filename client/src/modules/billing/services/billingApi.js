@@ -37,6 +37,15 @@ export const billingApi = {
   // An M-Pesa statement (the CSV file's text): what would be added, then adding it.
   mpesaStatementPreview: (csv) => api.post(`${BASE}/mpesa/statement/preview`, csv, { headers: { "Content-Type": "text/csv" } }).then((r) => r.data.data),
   mpesaStatementImport: (csv) => api.post(`${BASE}/mpesa/statement/import`, csv, { headers: { "Content-Type": "text/csv" } }).then((r) => r.data.data),
+  // Billing → Orders: website Store and Project orders (server: modules/orders).
+  orders: (params = {}) => api.get(`${BASE}/orders`, { params }).then((r) => r.data.data),
+  order: (id) => api.get(`${BASE}/orders/${id}`).then((r) => r.data.data),
+  setOrderStatus: (id, data) => api.post(`${BASE}/orders/${id}/status`, data).then((r) => r.data.data),
+  // Billing → To confirm: families' "I've paid" notices from the website's Payment step
+  // (server: payments/payment-notices.service.js).
+  paymentNotices: (params = {}) => api.get(`${BASE}/payment-notices`, { params }).then((r) => r.data.data),
+  confirmPaymentNotice: (id, data) => api.post(`${BASE}/payment-notices/${id}/confirm`, data).then((r) => r.data.data),
+  rejectPaymentNotice: (id, reason) => api.post(`${BASE}/payment-notices/${id}/reject`, { reason }).then((r) => r.data.data),
   // Home Learning packages — Billing → Packages.
   listPackages: () => api.get(`${BASE}/packages`).then((r) => r.data.data),
   createPackage: (data) => api.post(`${BASE}/packages`, data).then((r) => r.data.data),

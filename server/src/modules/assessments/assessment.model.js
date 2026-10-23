@@ -9,7 +9,7 @@ const {
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "assessments";
-const JSON_FIELDS = ["sections", "items", "rubric", "indicators", "deliverables", "milestones"];
+const JSON_FIELDS = ["sections", "items", "rubric", "indicators", "deliverables", "milestones", "gallery"];
 
 const AssessmentModel = {
   create(data) {

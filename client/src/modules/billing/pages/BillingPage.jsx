@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, PhoneIphone as PhoneIphoneIcon, RequestQuote as RequestQuoteIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
+import { AccountBalance as AccountBalanceIcon, Add as AddIcon, CancelOutlined as CancelOutlinedIcon, DescriptionOutlined as DescriptionOutlinedIcon, EventNote as EventNoteIcon, FactCheck as FactCheckIcon, ShoppingBag as ShoppingBagIcon, Groups as GroupsIcon, Inventory2 as Inventory2Icon, Paid as PaidIcon, PhoneIphone as PhoneIphoneIcon, RequestQuote as RequestQuoteIcon, ReceiptLong as ReceiptLongIcon, Search as SearchIcon, Send as SendIcon, School as SchoolIcon, ViewList as ViewListIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../../learners/services/learnerApi";
@@ -18,6 +18,8 @@ import { LoadingState, EmptyState } from "../components/PageStates";
 import Pagination from "../components/Pagination";
 import PackagesPanel from "../components/PackagesPanel";
 import MpesaPanel from "../components/MpesaPanel";
+import PaymentNoticesPanel from "../components/PaymentNoticesPanel";
+import OrdersPanel from "../components/OrdersPanel";
 import ClaimsReviewPage from "../../claims/pages/ClaimsReviewPage";
 import { can, canViewAny, isStaff } from "../../../hooks/usePermissions";
 
@@ -30,6 +32,10 @@ const ADMIN_TABS = [
   { key: "customers", label: "Customers", icon: GroupsIcon },
   { key: "invoices", label: "Invoices", icon: ReceiptLongIcon },
   { key: "payments", label: "Payments", icon: PaidIcon },
+  // What families bought on the website — Store goods and Projects.
+  { key: "orders", label: "Orders", icon: ShoppingBagIcon },
+  // Families' "I've paid" from the website's Payment step (M-Pesa code, bank, cheque, cash).
+  { key: "confirm", label: "To confirm", icon: FactCheckIcon },
   // M-Pesa payments into the Paybill, and the ones waiting to be matched to an invoice.
   { key: "mpesa", label: "M-Pesa", icon: PhoneIphoneIcon },
   // Home Learning packages — created and priced here; the Home Learning page picks from them.
@@ -339,6 +345,8 @@ function BillingPage() {
         </div>
       )}
 
+      {isAdmin && activeTab === "orders" && <OrdersPanel />}
+      {isAdmin && activeTab === "confirm" && <PaymentNoticesPanel />}
       {isAdmin && activeTab === "mpesa" && <MpesaPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel programme="tech_club" />}

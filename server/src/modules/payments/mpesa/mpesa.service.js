@@ -13,6 +13,7 @@ const BillingService = require("../../billing/billing.service");
 const BillingModel = require("../../billing/billing.model");
 const NotificationService = require("../../notifications/notification.service");
 const PaymentLinks = require("../payment-links");
+const PaymentOptions = require("../payment-options");
 const { organisationIdOf } = require("../../../shared/utils/organisation");
 
 // M-Pesa payments into a Paybill — the workspace's own (Settings → Payments) or the
@@ -454,6 +455,9 @@ const MpesaService = {
       amountDue: Math.max(0, due),
       paid: invoice.status === "paid",
       mpesa: payBy ? { enabled: true, ...payBy } : { enabled: false },
+      // Every way to pay it (payment-options.js) and the "I've paid" notices sent for it.
+      methods: payable ? await PaymentOptions.forInvoice(invoice) : [],
+      notices: await require("../payment-notices.service").listForInvoice(invoice.id),
     };
   },
 

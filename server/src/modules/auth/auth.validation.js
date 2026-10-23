@@ -32,8 +32,17 @@ const createUserSchema = z.object({
 // Self-service account update — deliberately just the photo for now (no self-service page for
 // name/email/password exists yet). No .default() on purpose: an absent key must stay undefined
 // so a PUT that only sends `photo` can't zero out anything else added here later.
+// Empty text clears an optional field.
+const optionalText = (max, message) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(max, message).nullable().optional());
+
+// Your own account. Everyone can set their photo; the rest is an admin's My profile (the
+// service refuses it from other roles — their details live on their educator/hub/learner record).
 const updateMeSchema = z.object({
   photo: z.string().optional().nullable(),
+  name: z.string().trim().min(1, "Your name is required").max(150).optional(),
+  phone: optionalText(30, "Phone number is too long")
+    .refine((v) => v == null || /^[+\d][\d\s()-]{6,28}$/.test(v), "Enter a valid phone number, e.g. 0712 345 678"),
+  jobTitle: optionalText(100, "Job title is too long"),
 });
 
 const verifyPasswordSchema = z.object({

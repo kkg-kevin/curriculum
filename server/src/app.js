@@ -38,6 +38,8 @@ const billingRoutes = require("./modules/billing/billing.routes");
 const mpesaRoutes = require("./modules/payments/mpesa/mpesa.routes");
 const { publicRouter: publicPaymentRoutes, settingsRouter: paymentSettingsRoutes } = mpesaRoutes;
 const mpesaCallbackRoutes = require("./modules/payments/mpesa/mpesa-callback.routes");
+const paymentNoticeRoutes = require("./modules/payments/payment-notices.routes");
+const orderRoutes = require("./modules/orders/orders.routes");
 const hubVisitRoutes = require("./modules/hub-visits/hub-visit.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
 const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bootcamp-enrollment.routes");
@@ -195,6 +197,12 @@ app.use("/api/public/pay-hooks", mpesaCallbackRoutes);
 // "Pay now" after a sign-up). The token in the path opens that one invoice's amount; see
 // payments/payment-links.js.
 app.use("/api/public/payments", publicPaymentRoutes);
+// The same link's "I've paid" (an M-Pesa code, bank reference, cheque number or cash to come) for
+// staff to confirm — see payments/payment-notices.service.js.
+app.use("/api/public/payments", paymentNoticeRoutes.publicRouter);
+// Unauthenticated by design — the website's cart checkout (Store goods and Projects); see
+// modules/orders/orders.service.js.
+app.use("/api/public", orderRoutes.publicRouter);
 
 // Everything below requires a logged-in session. Curriculum authoring, settings, assessments
 // (builder) and uploads are admin-only in full; curriculum.routes.js carves out the two
@@ -244,8 +252,14 @@ app.use("/api/certificates", protect, attachOwnRecords, certificateRoutes);
 // Learner access is scoped to assessment-submission file uploads (documentUpload/imageUpload/
 // videoUpload/audioUpload/codeUpload items and project deliverables) — see AssessmentTaker.jsx.
 // teacher/school need this too, for their own profile-photo uploads (teacher-portal/
-// school-portal profile pages, and the admin-side Teacher/LearningHub forms).
-app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner"), uploadRoutes);
+// school-portal profile pages, and the admin-side Teacher/LearningHub forms). A supervisor may
+// only upload an image — their own profile photo (supervisor-portal My Profile).
+const supervisorPhotoOnly = (req, res, next) => (
+  req.user.role !== "supervisor" || (req.method === "POST" && req.path === "/image")
+    ? next()
+    : res.status(403).json({ success: false, message: "You do not have permission to perform this action" })
+);
+app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner", "supervisor"), supervisorPhotoOnly, uploadRoutes);
 // Competitions — an independent module (a sibling of curriculum), admin-only. A competition can
 // optionally link to a curriculum via curriculumId.
 app.use("/api/competitions", protect, attachOwnRecords, authorize("admin"), competitionRoutes);
@@ -262,10 +276,16 @@ app.use("/api/email-settings", protect, attachOwnRecords, authorize("admin"), bl
 app.use("/api/certificate-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, certificateSettingsRoutes);
 // The workspace's own M-Pesa Paybill (Settings → Payments) — owner only, like the above: where a
 // workspace's money goes is not a staff decision.
+// How families can pay (Paybill, Send Money, bank, cheque, cash) — the website's Payment step.
+app.use("/api/payment-settings/options", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, paymentNoticeRoutes.optionsRouter);
 app.use("/api/payment-settings", protect, attachOwnRecords, authorize("admin"), blockIfCollaboratorRestricted, paymentSettingsRoutes);
 // M-Pesa: whether it's on, a prompt's progress, and Billing → M-Pesa (payments to match).
 // Mounted before billing's "/:id" routes so "mpesa" is never read as an invoice id.
 app.use("/api/billing/mpesa", protect, attachOwnRecords, mpesaRoutes);
+// Billing → To confirm: families' "I've paid" notices. Before "/:id" for the same reason.
+app.use("/api/billing/payment-notices", protect, attachOwnRecords, paymentNoticeRoutes.staffRouter);
+// Billing → Orders: website Store and Project orders. Before "/:id" for the same reason.
+app.use("/api/billing/orders", protect, attachOwnRecords, orderRoutes.staffRouter);
 app.use("/api/billing", protect, attachOwnRecords, billingRoutes);
 // Hub Visits — a non-school hub logging learner space-usage visits and turning them into
 // hub_usage invoices through the Billing module above (see hub-visit.service.js's header

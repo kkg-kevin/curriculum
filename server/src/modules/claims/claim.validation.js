@@ -51,6 +51,11 @@ const settingsSchema = z
     // Base plus: the commission per enrolled learner per session (its base is the session rate).
     commissionRate: rate("commission"),
     advancePercent: z.coerce.number().int().min(0, "Between 0 and 100").max(100, "Between 0 and 100"),
+    // Course coverage needed before an advance: a % of the course's sessions OR a number of
+    // delivered sessions, whichever comes first. 0 = not used. Optional so an older screen saving
+    // without them keeps what's stored.
+    advanceCoveragePercent: z.coerce.number().int("A whole number").min(0, "Between 0 and 100").max(100, "A coverage percentage is between 0 and 100").optional(),
+    advanceCoverageSessions: z.coerce.number().int("A whole number").min(0, "Can't be below 0").max(1000).optional(),
   })
   .refine((d) => d.sessionRate || d.hourlyRate || d.dailyRate, { message: "Set at least one part-time rate", path: ["sessionRate"] })
   .refine((d) => !d.commissionRate || d.sessionRate, { message: "Base plus is paid on top of the session rate — set the session rate too", path: ["sessionRate"] });

@@ -13,6 +13,9 @@ async function runInvoicePaidHooks(invoice, { amount = null, paidByUserId = null
     () => require("../home-learning/home-learning-signup.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../tech-clubs/club-signup.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../bootcamp-enrollment/bootcamp-enrollment.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
+    () => require("../orders/orders.service").activateForPaidInvoice(invoice),
+    // "I've paid" notices still waiting on it have nothing left to confirm.
+    () => require("../payments/payment-notices.service").closeForPaidInvoice(invoice),
   ];
   for (const hook of hooks) {
     try {

@@ -157,3 +157,49 @@ export function useMpesaStatementPreview() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "The statement couldn't be read"),
   });
 }
+
+// Billing → To confirm.
+export function usePaymentNotices(params = {}) {
+  return useQuery({ queryKey: ["billing", "payment-notices", params], queryFn: () => billingApi.paymentNotices(params) });
+}
+
+function noticeAction(mutationFn, successMessage) {
+  return () => {
+    const qc = useQueryClient();
+    return useMutation({
+      mutationFn,
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["billing", "payment-notices"] });
+        qc.invalidateQueries({ queryKey: BILLING_KEYS.all });
+        qc.invalidateQueries({ queryKey: ["billing", "receipts"] });
+        toast.success(successMessage);
+      },
+      onError: (err) => toast.error(err.response?.data?.message || err.message || "Something went wrong"),
+    });
+  };
+}
+
+export const useConfirmPaymentNotice = noticeAction(({ id, ...data }) => billingApi.confirmPaymentNotice(id, data), "Payment confirmed and recorded");
+export const useRejectPaymentNotice = noticeAction(({ id, reason }) => billingApi.rejectPaymentNotice(id, reason), "Payment rejected — the family has been told");
+
+// Billing → Orders.
+export function useOrders(params = {}) {
+  return useQuery({ queryKey: ["billing", "orders", params], queryFn: () => billingApi.orders(params) });
+}
+
+export function useOrder(id) {
+  return useQuery({ queryKey: ["billing", "orders", "one", id], queryFn: () => billingApi.order(id), enabled: Boolean(id) });
+}
+
+export function useSetOrderStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }) => billingApi.setOrderStatus(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["billing", "orders"] });
+      qc.invalidateQueries({ queryKey: BILLING_KEYS.all });
+      toast.success("Order updated");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Something went wrong"),
+  });
+}

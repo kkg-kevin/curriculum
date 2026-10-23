@@ -150,6 +150,11 @@ const saleFields = {
   saleStatus:    z.enum(SALE_STATUSES).optional().default("internal"),
   // A stored "/uploads/x.png" path or an absolute URL — same shape as course.coverImage.
   coverImage:    z.string().max(500).optional().nullable(),
+  // More photos after the cover, in the order the website shows them (no default, so a save that
+  // leaves it out keeps what's stored).
+  gallery:       z.array(z.string().max(500)).max(11, "At most 12 photos").optional(),
+  // The materials kit sold alongside the project at checkout; null = no kit offered.
+  kitPriceAmount: z.coerce.number().int().min(0).max(10000000).optional().nullable(),
   // Whole currency units, no fractional pricing (see the migration comment). Coerced so the
   // portal's number input (which yields a string) is accepted.
   priceAmount:   z.coerce.number().int().min(0).max(10000000).optional().nullable(),

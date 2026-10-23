@@ -4,6 +4,8 @@ const LeadService = require("../leads/lead.service");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
 const AuthService = require("../auth/auth.service");
+const UserModel = require("../auth/user.model");
+const { parentLoginFor } = require("../auth/parent-login");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -23,6 +25,11 @@ const { slugify } = require("../../shared/utils/slugify");
 // auth.service.js's setOrCreatePasswordByUsername) — deliberately distinct from the parent's own
 // personal email, which is only ever used as the lead's contact/follow-up channel, same as every
 // other lead.
+//
+// The parent gets a login of their own too (email + the password they chose), as Home Learning and
+// Tech Club sign-ups do: a parent login sees every child whose guardianEmail is theirs. A family
+// that already has a Digifunzi login under that email signs the new child up with that login's
+// password instead — the child joins that account (see auth/parent-login.js).
 //
 // Deliberately its own module (not folded into leads or learners) since it orchestrates all
 // three of those plus billing — same reasoning hub-visits was kept separate from billing.
@@ -91,6 +98,8 @@ const BootcampEnrollmentService = {
     const { bootcamp, offering } = await resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId);
     const classId = offering.classIds[0];
 
+    const existingParent = await parentLoginFor(data.parentEmail, data.parentPassword);
+
     const bootcampSlug = slugify(bootcamp.name) || "bootcamp";
     const lead = await LeadModel.create({
       source: "enroll",
@@ -115,6 +124,7 @@ const BootcampEnrollmentService = {
     // a colliding username must fail before any login is minted for it, so a typo'd/taken
     // username can never silently reset a different learner's own login.
     let learner;
+    let createdParentId = null;
     try {
       learner = await LearnerService.createLearner({
         firstName,
@@ -133,8 +143,17 @@ const BootcampEnrollmentService = {
         role: "learner",
       });
       await LearnerService.enrollInHub(learner.id, { hubId: offering.hubId, classId, status: "active" });
+      // The parent's login: a new one, or the family's existing one — which takes the parent role
+      // if it signs in as something else (an educator who is also a parent; account-roles.js).
+      if (!existingParent) {
+        const parent = await AuthService.createUser({ name: data.parentName, email: data.parentEmail, password: data.parentPassword, role: "learner" });
+        createdParentId = parent.id;
+      } else if (existingParent.role !== "learner") {
+        await AuthService.linkExistingLogin(data.parentEmail, "learner");
+      }
     } catch (err) {
       if (learner) await LearnerService.deleteLearner(learner.id).catch(() => {});
+      if (createdParentId) await UserModel.delete(createdParentId).catch(() => {});
       throw err;
     }
 
@@ -163,6 +182,8 @@ const BootcampEnrollmentService = {
       // The visitor already knows their own username/password (they just typed them) — nothing
       // new to show them here, unlike the old auto-generated-credential flow.
       learnerUsername: data.username,
+      // The parent signs in with their email: a login made just now, or the one they already had.
+      parentAccount: { email: data.parentEmail, existing: Boolean(existingParent) },
       payment: {
         amount: price.amount,
         currency: price.currency,
