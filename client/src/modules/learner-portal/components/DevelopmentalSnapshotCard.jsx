@@ -1,5 +1,6 @@
 import { FiAward, FiStar } from "react-icons/fi";
 import { formatAgeRange } from "../utils/ageRange";
+import { currentLevelName, levelCaption } from "../utils/bandJourney";
 
 const T = {
   accent: "#25476a",
@@ -34,11 +35,6 @@ function SnapshotRow({ icon, label, value, sub }) {
 // data. band/nextBand come from the same Engine 4 per-band completion + deriveBandJourney logic
 // as ProfileIdentityCard and the Progress Arc card (see DashboardPage.jsx), so this row can
 // never disagree with what those show.
-function levelSummarySub(band, nextBand) {
-  if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;
-  if (band) return "Highest level reached";
-  return "Complete graded work to begin";
-}
 
 export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
   return (
@@ -56,8 +52,8 @@ export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
         <SnapshotRow
           icon={<FiStar size={16} />}
           label="Current Level Summary"
-          value={band?.name || "Not yet placed"}
-          sub={levelSummarySub(band, nextBand)}
+          value={currentLevelName(band, nextBand)}
+          sub={levelCaption(band, nextBand)}
         />
       </div>
     </div>

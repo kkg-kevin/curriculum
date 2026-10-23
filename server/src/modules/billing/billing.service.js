@@ -44,6 +44,14 @@ async function resolvePayerIdentity(invoice) {
     const membership = await db("club_memberships").where({ id: invoice.clubMembershipId }).first();
     if (membership) return { name: membership.guardianName, email: membership.guardianEmail || null, phone: membership.guardianPhone || null, address: null };
   }
+  // A website Store order is billed to whoever placed it (a guest has no login to look up).
+  if (invoice.invoiceType === "store_order") {
+    const order = await db("orders").where({ invoiceId: invoice.id }).first();
+    if (order) {
+      const address = order.fulfilment === "delivery" ? [order.deliveryAddress, order.deliveryTown, order.deliveryCounty].filter(Boolean).join(", ") : null;
+      return { name: order.customerName, email: order.customerEmail, phone: order.customerPhone, address };
+    }
+  }
   if (invoice.payerHubId) {
     const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
     if (!hub) return null;
@@ -780,3 +788,5 @@ const BillingService = {
 };
 
 module.exports = BillingService;
+// Who an invoice is billed to — also for payments/payment-notices.service.js.
+module.exports.resolvePayerIdentity = resolvePayerIdentity;

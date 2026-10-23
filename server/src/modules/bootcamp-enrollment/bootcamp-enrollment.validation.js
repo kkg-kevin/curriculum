@@ -30,6 +30,9 @@ const submitBootcampEnrollmentSchema = z.object({
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
   password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  // The parent's own login (email + this password), to see their child's progress and invoices.
+  // An email that already has a Digifunzi login must give that login's password instead.
+  parentPassword: z.string().min(6, "Your password must be at least 6 characters").max(72),
   // Which of the bootcamp's hubs (bootcamp_hubs) the visitor wants to attend — required only
   // when the bootcamp actually runs at more than one; the service falls back to auto-picking
   // when this is omitted (single-hub bootcamps never show the picker at all).

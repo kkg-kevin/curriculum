@@ -583,9 +583,16 @@ const AuthService = {
     };
   },
 
-  async updateMe(id, data) {
+  // `role` is the session's role: only an admin edits their own name, phone and job title here
+  // (My profile). Everyone else's details live on their educator/hub/learner record.
+  async updateMe(id, data, role = null) {
     const current = await UserModel.findById(id);
     await assertUserExists(current);
+    if (role !== "admin" && ["name", "phone", "jobTitle"].some((field) => field in data)) {
+      const err = new Error("Only an admin can change these details here.");
+      err.statusCode = 403;
+      throw err;
+    }
     // A suspended user can't edit their own profile either — this is a write.
     if (await resolveSuspension(current)) {
       const err = new Error("Your account is suspended.");

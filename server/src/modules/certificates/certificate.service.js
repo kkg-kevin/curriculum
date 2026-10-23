@@ -7,6 +7,7 @@ const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
+const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const NotificationService = require("../notifications/notification.service");
 const logger = require("../../shared/utils/logger");
 
@@ -350,6 +351,9 @@ const CertificateService = {
     const standing = await CertificateModel.findAll({ learnerId, status: "issued" });
     const heldKeys = new Set(standing.map((c) => c.identityKey));
     const heldCourseIds = new Set(standing.filter((c) => c.kind === "course").map((c) => c.courseId));
+    // Only the pathway(s) the learner is actually in — placed by their diagnostic or by staff
+    // (learner_pathways) — not every pathway their curriculum offers.
+    const placedPathwayIds = new Set((await LearnerPathwayModel.findByLearner(learnerId)).map((p) => p.pathwayId));
 
     // Keyed by course: a learner in two classes that run the same course sees it once, at
     // whichever class they're furthest along in — and not at all once they hold its certificate.
@@ -372,6 +376,7 @@ const CertificateService = {
 
       for (const pathway of cls.curriculumId ? await PathwayModel.findByCurriculumId(cls.curriculumId) : []) {
         const courseIds = Array.isArray(pathway.courses) ? pathway.courses.filter(Boolean) : [];
+        if (!placedPathwayIds.has(pathway.id)) continue;
         if (courseIds.length === 0 || heldKeys.has(pathwayKey(pathway.id)) || pathways.has(pathway.id)) continue;
         pathways.set(pathway.id, {
           kind: "pathway", id: pathway.id, title: pathway.name, hubName,

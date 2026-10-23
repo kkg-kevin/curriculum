@@ -42,6 +42,10 @@ function priceOf(assessment) {
   };
 }
 
+function galleryOf(assessment) {
+  return Array.isArray(assessment.gallery) ? assessment.gallery.filter(Boolean) : [];
+}
+
 function listItem(assessment) {
   const deliverables = Array.isArray(assessment.deliverables) ? assessment.deliverables : [];
   const milestones = Array.isArray(assessment.milestones) ? assessment.milestones : [];
@@ -54,7 +58,11 @@ function listItem(assessment) {
     ageMin: assessment.ageMin ?? null,
     ageMax: assessment.ageMax ?? null,
     coverImage: toAbsoluteMediaUrl(assessment.coverImage),
+    // Every photo after the cover (shown in the project's gallery), and how many there are in all.
+    photoCount: [assessment.coverImage, ...galleryOf(assessment)].filter(Boolean).length,
     price: priceOf(assessment),
+    // The materials kit offered at checkout, when the project has one.
+    kitPrice: assessment.kitPriceAmount == null ? null : { amount: Number(assessment.kitPriceAmount), currency: assessment.priceCurrency || "KES" },
     deliverableCount: deliverables.length,
     milestoneCount: milestones.length,
   };
@@ -132,6 +140,7 @@ const PublicProjectService = {
       deliverables,
       milestones,
       requirements,
+      gallery: galleryOf(project).map((src) => toAbsoluteMediaUrl(src)).filter(Boolean),
     };
   },
 };

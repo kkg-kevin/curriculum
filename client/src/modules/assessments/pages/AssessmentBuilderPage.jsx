@@ -20,7 +20,7 @@ import CreatePathwayModal from "../../courses/components/CreatePathwayModal";
 import CreateInventoryItemModal from "../../courses/components/CreateInventoryItemModal";
 import RichTextEditor from "../components/RichTextEditor";
 import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
-import ImageUploadField from "../../../components/ImageUploadField";
+import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField";
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
@@ -294,10 +294,17 @@ function SellingPanel({ form, setForm }) {
 
       {on && (
         <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "16px" }}>
-          <div>
-            <Label>Cover Image</Label>
-            <ImageUploadField value={form.coverImage} onChange={(url) => set({ coverImage: url || "" })} />
-          </div>
+          {/* The first photo is the project's cover (cards, listings); the rest are its website gallery. */}
+          <PhotoGalleryField
+            label="Photos"
+            value={[form.coverImage, ...form.gallery].filter(Boolean)}
+            onChange={(photos) => set({ coverImage: photos[0] || "", gallery: photos.slice(1) })}
+            max={12}
+            cropAspect={16 / 9}
+            sortable
+            coverLabel="Cover"
+            hint="Up to 12 photos. The first is the cover; drag to reorder."
+          />
 
           <div>
             <Label>Short Tagline</Label>
@@ -342,6 +349,25 @@ function SellingPanel({ form, setForm }) {
               value={form.priceNote}
               onChange={(e) => set({ priceNote: e.target.value })}
             />
+          </div>
+
+          <div>
+            <Label>Materials Kit Price</Label>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                className="tb-input"
+                type="number"
+                min="0"
+                style={{ width: "120px", flexShrink: 0 }}
+                placeholder="e.g. 2500"
+                value={form.kitPriceAmount}
+                onChange={(e) => set({ kitPriceAmount: e.target.value })}
+                aria-label="Kit price"
+              />
+              <span style={{ fontSize: "11.5px", color: "#9CA3AF" }}>
+                Offered at checkout as &ldquo;Add the materials kit&rdquo; (the items linked under Materials). Leave blank for no kit.
+              </span>
+            </div>
           </div>
 
           <div>
@@ -1539,6 +1565,8 @@ function PreviewModal({ form, entries, onClose }) {
 const BLANK_SALE = {
   saleStatus: "internal",
   coverImage: "",
+  gallery: [],
+  kitPriceAmount: "",
   priceAmount: "",
   priceCurrency: "KES",
   priceNote: "",
@@ -1552,6 +1580,8 @@ function saleFromAssessment(a) {
   return {
     saleStatus: a.saleStatus || "internal",
     coverImage: a.coverImage || "",
+    gallery: Array.isArray(a.gallery) ? a.gallery : [],
+    kitPriceAmount: a.kitPriceAmount ?? "",
     priceAmount: a.priceAmount ?? "",
     priceCurrency: a.priceCurrency || "KES",
     priceNote: a.priceNote || "",
@@ -1858,6 +1888,8 @@ export default function AssessmentBuilderPage() {
       const numOrNull = (v) => (v === "" || v == null ? null : Number(v));
       payload.saleStatus = form.saleStatus === "for_sale" ? "for_sale" : "internal";
       payload.coverImage = form.coverImage || null;
+      payload.gallery = Array.isArray(form.gallery) ? form.gallery : [];
+      payload.kitPriceAmount = numOrNull(form.kitPriceAmount);
       payload.priceAmount = numOrNull(form.priceAmount);
       payload.priceCurrency = (form.priceCurrency || "KES").trim();
       payload.priceNote = form.priceNote.trim();

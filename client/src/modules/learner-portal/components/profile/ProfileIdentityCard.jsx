@@ -2,6 +2,7 @@ import { FiEdit2, FiStar } from "react-icons/fi";
 import { T, heroGradient } from "./theme";
 import Avatar from "../../../../components/ui/Avatar";
 import { formatAgeRange } from "../../utils/ageRange";
+import { currentLevelName, levelCaption } from "../../utils/bandJourney";
 
 // Unchanged, still exported — GuardianProfileCard uses this too, and it stays on a light card
 // (never moves onto the hero gradient below), so its light-background styling is untouched.
@@ -51,16 +52,8 @@ function computeAge(dateOfBirth) {
 // Same gradient-hero treatment teacher-portal/school-portal already use for their own profile
 // pages — this was the one profile page in the app still using a plain white card here, which is
 // why it read as visually flat next to every other section repeating the same card style.
-// "X% to <next band>" when there's a level still ahead, a trophy note when the learner has
-// reached the top of the ladder, or a nudge to get started when nothing's been reached yet —
-// same motivating framing as the Progress Arc card below (both read the same band data via
-// deriveBandJourney, so this line can never disagree with what that card shows).
-function levelSummarySub(band, nextBand) {
-  if (nextBand) return `${nextBand.completion}% of the way to ${nextBand.name}`;
-  if (band) return "Highest level reached!";
-  return "Complete graded work to begin";
-}
-
+// Current Level Summary reads exactly like the Progress Arc card below: the level the learner
+// is in, and what's left to unlock the next (currentLevelName / levelCaption in bandJourney.js).
 export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit }) {
   const age = computeAge(learner.dateOfBirth);
 
@@ -109,8 +102,8 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
         />
         <StatusPill
           eyebrow="Current Level Summary"
-          value={band?.name || "Not yet placed"}
-          sub={levelSummarySub(band, nextBand)}
+          value={currentLevelName(band, nextBand)}
+          sub={levelCaption(band, nextBand)}
           icon={<FiStar size={13} />}
         />
       </div>

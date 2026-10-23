@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { FiStar, FiLock, FiAward } from "react-icons/fi";
 import { T, sectionHeaderStyle } from "./profile/theme";
 import { useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
-import { deriveBandJourney } from "../utils/bandJourney";
+import { deriveBandJourney, levelCaption } from "../utils/bandJourney";
 
 // Gold ring + soft pulsing glow around whichever node the learner is actively working toward —
 // the "you are here" marker a level-up UI needs to actually feel alive, not just a static list.
@@ -85,23 +85,6 @@ function LevelConnector({ status, percent }) {
   );
 }
 
-// A band with no admin-set bar only ever unlocks at 100% (see scoring-engines.js's
-// runIndicatorProgressEngine) — so that's the honest number to quote here too, not 0/blank.
-function effectiveThreshold(band) {
-  return band.advancementThreshold > 0 ? band.advancementThreshold : 100;
-}
-
-function progressArcCaption(current, next) {
-  // No level achieved yet — `next` is the very first level on the ladder itself, so "You're at
-  // the start — X% of the way to unlocking Explorer" reads as if Explorer were both where the
-  // learner already is AND where they're headed. Name it as the destination only, not a
-  // from/to pair with no real "from."
-  if (next && !current) return `You're just getting started — ${next.completion}% of the way to unlocking ${next.name}, your first level (needs ${effectiveThreshold(next)}%). Keep going!`;
-  if (next) return `You're at ${current.name} — ${next.completion}% of the way to unlocking ${next.name} (needs ${effectiveThreshold(next)}%). Keep going!`;
-  if (current) return `${current.name} — the highest level on this curriculum's ladder. Amazing work!`;
-  return "Complete graded work tagged to these levels to start your journey.";
-}
-
 // Engine 4 — how much of each Performance Band's 100% this learner has actually completed
 // (indicator-achievement-weighted). Rendered as a game-style level track: unlocked levels solid
 // with a medal, the level currently being worked toward highlighted with a glowing "you are here"
@@ -155,7 +138,7 @@ export default function ProgressArcCard({ curriculumId, learnerId }) {
         </span>
       </div>
 
-      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.5 }}>{progressArcCaption(current, next)}</p>
+      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.5 }}>{levelCaption(current, next)}</p>
 
       <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {bandProgress.map((bp, i) => {

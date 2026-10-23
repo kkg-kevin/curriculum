@@ -94,7 +94,7 @@ export default function LearnerForm() {
             <Controller
               name="photo"
               control={control}
-              render={({ field }) => <ImageUploadField value={field.value} onChange={field.onChange} width="140px" height="140px" />}
+              render={({ field }) => <ImageUploadField avatar value={field.value} onChange={field.onChange} width="140px" height="140px" />}
             />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>

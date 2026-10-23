@@ -113,6 +113,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
           <div>
             <label style={labelStyle}>Photo</label>
             <ImageUploadField
+              avatar
               value={formData.photo}
               onChange={(url) => setFormData((prev) => ({ ...prev, photo: url }))}
               width="140px"

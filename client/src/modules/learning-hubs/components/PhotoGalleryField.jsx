@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { uploadApi, IMAGE_TYPES, IMAGE_MAX_MB } from "../../../services/uploadApi";
 import ImageCropDialog from "../../../components/ImageCropDialog";
@@ -11,7 +11,10 @@ import ImageCropDialog from "../../../components/ImageCropDialog";
 //
 // `cropAspect` (width ÷ height of the website's frame): each picked photo goes through a crop step
 // (ImageCropDialog), one after another, before they're uploaded together. GIFs skip it.
-export default function PhotoGalleryField({ value = [], onChange, label = "Photos", max, hint = "Upload images of the learning hub (JPG, PNG)", cropAspect }) {
+// `sortable`: photos can be dragged (or moved with the arrows) into order. `coverLabel`: the first
+// photo is marked with it ("Cover") — for galleries whose first photo is the one shown on cards.
+export default function PhotoGalleryField({ value = [], onChange, label = "Photos", max, hint = "Upload images of the learning hub (JPG, PNG)", cropAspect, sortable = false, coverLabel }) {
+  const [dragIndex, setDragIndex] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   // Photos still waiting for their crop step, and the ones already decided (cropped or whole).
@@ -92,6 +95,14 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
     onChange(value.filter((_, i) => i !== index));
   };
 
+  const movePhoto = (from, to) => {
+    if (to < 0 || to >= value.length || from === to) return;
+    const next = [...value];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onChange(next);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {label && <label style={{ fontSize: "13px", fontWeight: "600", color: "#374151" }}>{label}</label>}
@@ -135,8 +146,39 @@ export default function PhotoGalleryField({ value = [], onChange, label = "Photo
       {value.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: "10px" }}>
           {value.map((url, i) => (
-            <div key={url + i} style={{ position: "relative", aspectRatio: String(cropAspect || 1), borderRadius: "10px", overflow: "hidden", border: "1.5px solid #E5E7EB", background: "#F3F4F6" }}>
-              <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: cropAspect ? "contain" : "cover" }} />
+            <div
+              key={url + i}
+              draggable={sortable}
+              onDragStart={sortable ? () => setDragIndex(i) : undefined}
+              onDragOver={sortable ? (e) => e.preventDefault() : undefined}
+              onDrop={sortable ? (e) => { e.preventDefault(); e.stopPropagation(); if (dragIndex != null) movePhoto(dragIndex, i); setDragIndex(null); } : undefined}
+              onDragEnd={sortable ? () => setDragIndex(null) : undefined}
+              style={{
+                position: "relative", aspectRatio: String(cropAspect || 1), borderRadius: "10px", overflow: "hidden", background: "#F3F4F6",
+                border: `1.5px solid ${coverLabel && i === 0 ? "#25476a" : "#E5E7EB"}`, cursor: sortable ? "grab" : "default", opacity: dragIndex === i ? 0.4 : 1,
+              }}
+            >
+              <img src={url} alt={`Photo ${i + 1}`} draggable={false} style={{ width: "100%", height: "100%", objectFit: cropAspect ? "contain" : "cover" }} />
+              {coverLabel && i === 0 && (
+                <span style={{ position: "absolute", left: "4px", bottom: "4px", padding: "2px 7px", borderRadius: "999px", background: "#25476a", color: "#fff", fontSize: "10px", fontWeight: 700 }}>{coverLabel}</span>
+              )}
+              {sortable && value.length > 1 && (
+                <span style={{ position: "absolute", right: "4px", bottom: "4px", display: "flex", gap: "3px" }}>
+                  {[[-1, FiChevronLeft, "Move earlier"], [1, FiChevronRight, "Move later"]].map(([step, Icon, title]) => (
+                    <button
+                      key={step}
+                      type="button"
+                      title={title}
+                      aria-label={title}
+                      disabled={i + step < 0 || i + step >= value.length}
+                      onClick={(e) => { e.stopPropagation(); movePhoto(i, i + step); }}
+                      style={{ width: "20px", height: "20px", borderRadius: "50%", border: "none", backgroundColor: "rgba(17,24,39,0.65)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: i + step < 0 || i + step >= value.length ? 0.3 : 1 }}
+                    >
+                      <Icon size={12} />
+                    </button>
+                  ))}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removePhoto(i); }}

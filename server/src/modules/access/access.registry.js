@@ -123,6 +123,10 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/tech-clubs\/[^/]+\/decline-signup$/, module: "tech-clubs", action: "delete" },
   // Issuing, cancelling and recording a payment change an existing invoice.
   { method: "POST", pattern: /^\/api\/billing\/[^/]+\/(issue|cancel|payments)$/, module: "billing", action: "edit" },
+  // Confirming or rejecting a family's "I've paid" notice records (or refuses) a payment.
+  { method: "POST", pattern: /^\/api\/billing\/payment-notices\/[^/]+\/(confirm|reject)$/, module: "billing", action: "edit" },
+  // Moving a website order along (preparing, ready, dispatched, cancelled) changes it.
+  { method: "POST", pattern: /^\/api\/billing\/orders\/[^/]+\/status$/, module: "billing", action: "edit" },
   // Detaching a competency, pathway or material from a course or assessment edits that course or
   // assessment — nothing is deleted (attaching one is already an edit).
   { method: "DELETE", pattern: /^\/api\/courses\/[^/]+\/(competencies|pathways|inventory)\/links\/[^/]+$/, module: "courses", action: "edit" },

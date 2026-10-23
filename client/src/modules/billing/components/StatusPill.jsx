@@ -8,6 +8,7 @@ export const TYPE_LABELS = {
   hub_usage: "Hub usage",
   home_learning: "Home Learning package",
   tech_club: "Tech Club membership",
+  store_order: "Website order",
 };
 
 export const TYPE_HELP = {

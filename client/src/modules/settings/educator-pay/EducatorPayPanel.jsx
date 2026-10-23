@@ -2,18 +2,18 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useClaimSettings, useUpdateClaimSettings } from "../../claims/hooks/useClaims";
 import { formatMoney } from "../../claims/shared";
+import { SettingsPage, SettingsSection, Field, FieldGrid, FooterNote, LoadState } from "../components/SettingsLayout";
 
-const heading = { margin: 0, fontSize: 15, fontWeight: 800, color: "#111827" };
-const subheading = { margin: 0, fontSize: 13.5, fontWeight: 800, color: "#111827" };
-const hint = { margin: "4px 0 0", fontSize: 12.5, color: "#6B7280", lineHeight: 1.5, maxWidth: 680 };
-const label = { display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 5 };
-const card = { padding: "16px 18px", borderRadius: 12, border: "1px solid #E5E7EB", background: "#fff" };
+
+function NumberInput({ id, value, onChange, placeholder, max, step = "1" }) {
+  return <input id={id} className="stg-input" type="number" min="0" max={max} step={step} inputMode="decimal" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />;
+}
 
 // The part-time rates, each with the unit it pays for.
 const RATES = [
-  { key: "hourlyRate", label: "Hourly rate", unit: "an hour", example: (r) => `12 hours pay ${r}`, sample: 12 },
-  { key: "sessionRate", label: "Session rate", unit: "a session", example: (r) => `A 12-session course pays ${r}`, sample: 12 },
-  { key: "dailyRate", label: "Daily rate", unit: "a day", example: (r) => `10 days pay ${r}`, sample: 10 },
+  { key: "hourlyRate", label: "Per hour" },
+  { key: "sessionRate", label: "Per session" },
+  { key: "dailyRate", label: "Per day" },
 ];
 
 const asText = (value) => (value == null ? "" : String(value));
@@ -26,7 +26,7 @@ const asText = (value) => (value == null ? "" : String(value));
 export default function EducatorPayPanel() {
   const { data, isLoading, isError } = useClaimSettings();
   const save = useUpdateClaimSettings();
-  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", commissionRate: "", advancePercent: "" });
+  const [form, setForm] = useState({ sessionRate: "", hourlyRate: "", dailyRate: "", commissionRate: "", advancePercent: "", advanceCoveragePercent: "", advanceCoverageSessions: "" });
 
   useEffect(() => {
     if (data) {
@@ -36,6 +36,8 @@ export default function EducatorPayPanel() {
         dailyRate: asText(data.dailyRate),
         commissionRate: asText(data.commissionRate),
         advancePercent: asText(data.advancePercent),
+        advanceCoveragePercent: data.advanceCoveragePercent ? String(data.advanceCoveragePercent) : "",
+        advanceCoverageSessions: data.advanceCoverageSessions ? String(data.advanceCoverageSessions) : "",
       });
     }
   }, [data]);
@@ -46,12 +48,20 @@ export default function EducatorPayPanel() {
   const anyRate = RATES.some(({ key }) => rateValue(key) > 0);
   const pct = Number(form.advancePercent);
   const pctValid = form.advancePercent.trim() !== "" && Number.isInteger(pct) && pct >= 0 && pct <= 100;
+  // Course coverage before an advance: a % of the course's sessions OR a number of sessions,
+  // whichever the educator reaches first. Empty = that one isn't used.
+  const coveragePct = form.advanceCoveragePercent.trim() === "" ? 0 : Number(form.advanceCoveragePercent);
+  const coverageSessions = form.advanceCoverageSessions.trim() === "" ? 0 : Number(form.advanceCoverageSessions);
+  const coveragePctValid = Number.isInteger(coveragePct) && coveragePct >= 0 && coveragePct <= 100;
+  const coverageSessionsValid = Number.isInteger(coverageSessions) && coverageSessions >= 0 && coverageSessions <= 1000;
+  const coverageValid = coveragePctValid && coverageSessionsValid;
   // Base plus: a commission per enrolled learner, paid on top of the session rate each session.
   const commission = rateValue("commissionRate");
   const commissionValid = commission === null || commission > 0;
   const commissionNeedsBase = commission > 0 && !(rateValue("sessionRate") > 0);
-  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || commission !== (data.commissionRate ?? null) || pct !== data.advancePercent);
-  const valid = ratesValid && anyRate && pctValid && commissionValid && !commissionNeedsBase;
+  const dirty = Boolean(data) && (RATES.some(({ key }) => rateValue(key) !== (data[key] ?? null)) || commission !== (data.commissionRate ?? null) || pct !== data.advancePercent
+    || coveragePct !== (data.advanceCoveragePercent || 0) || coverageSessions !== (data.advanceCoverageSessions || 0));
+  const valid = ratesValid && anyRate && pctValid && commissionValid && !commissionNeedsBase && coverageValid;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -62,6 +72,8 @@ export default function EducatorPayPanel() {
         dailyRate: rateValue("dailyRate"),
         commissionRate: commission,
         advancePercent: pct,
+        advanceCoveragePercent: coveragePct,
+        advanceCoverageSessions: coverageSessions,
       });
       toast.success("Educator pay saved");
     } catch (err) {
@@ -69,112 +81,80 @@ export default function EducatorPayPanel() {
     }
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <section>
-        <h2 style={heading}>Educator pay</h2>
-        <p style={hint}>
-          The rates every educator is paid at, set once for the whole workspace. Each educator is tagged full time or part time on their profile (Educators → edit), and a part-time educator with the ways of paying that apply to them.
-        </p>
-      </section>
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const opensAfter = Math.min(...[coveragePct ? Math.ceil((12 * coveragePct) / 100) : Infinity, coverageSessions || Infinity]);
 
-      {isLoading && <p style={hint}>Loading…</p>}
-      {isError && <p style={{ ...hint, color: "#B91C1C" }}>Educator pay could not be loaded.</p>}
+  return (
+    <SettingsPage
+      title="Educator pay"
+      description="What part-time educators are paid when they claim, set once for everyone. Full-time educators are paid outside the portal and don't claim — each educator's type is set on their profile."
+    >
+      <LoadState isLoading={isLoading} isError={isError} what="Educator pay" />
 
       {data && (
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 860 }}>
-          <div style={card}>
-            <h3 style={subheading}>Full time</h3>
-            <p style={hint}>Full-time educators are paid outside the portal. They don&apos;t claim, and the claims pages tell them so.</p>
-          </div>
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <SettingsSection title={`Rates (${currency})`} description="Leave a rate empty if you don't pay that way.">
+            <FieldGrid min={160}>
+              {RATES.map((r) => (
+                <Field key={r.key} label={r.label} htmlFor={`pay-${r.key}`}>
+                  <NumberInput id={`pay-${r.key}`} value={form[r.key]} onChange={set(r.key)} placeholder="Not offered" step="0.001" />
+                </Field>
+              ))}
+            </FieldGrid>
+            {!ratesValid && <Field warning="Rates must be more than 0." />}
+            {ratesValid && !anyRate && <Field warning="Set at least one rate, or no part-time educator can claim." />}
+          </SettingsSection>
 
-          <div style={card}>
-            <h3 style={subheading}>Part time</h3>
-            <p style={hint}>
-              A part-time educator claims for each course they teach, on one of the ways of paying tagged on them: the hours, sessions or days they delivered, times the rate here — or Base plus, below. Leave a rate empty if you don&apos;t pay that way.
-            </p>
-            <div style={{ marginTop: 14, display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
-              {RATES.map((r) => {
-                const value = rateValue(r.key);
-                return (
-                  <div key={r.key}>
-                    <label htmlFor={`pay-${r.key}`} style={label}>{r.label} ({currency})</label>
-                    <input
-                      id={`pay-${r.key}`}
-                      className="stg-input"
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      inputMode="decimal"
-                      value={form[r.key]}
-                      placeholder="Not offered"
-                      onChange={(e) => setForm((f) => ({ ...f, [r.key]: e.target.value }))}
-                    />
-                    <p style={{ ...hint, fontSize: 11.5 }}>
-                      {value > 0 ? `Per ${r.unit.replace(/^an? /, "")}. ${r.example(formatMoney(r.sample * value, currency))}.` : value === null ? "Empty: not offered." : "Must be more than 0."}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+          <SettingsSection title="Base plus" description="The session rate plus a commission for each learner enrolled in the class, every session.">
+            <FieldGrid min={160}>
+              <Field
+                label={`Commission per learner (${currency})`}
+                htmlFor="pay-commissionRate"
+                warning={!commissionValid ? "Must be more than 0." : commissionNeedsBase ? "Set the session rate too — Base plus is paid on top of it." : null}
+                note={commission ? `12 learners: ${formatMoney(rateValue("sessionRate") + 12 * commission, currency)} a session.` : null}
+              >
+                <NumberInput id="pay-commissionRate" value={form.commissionRate} onChange={set("commissionRate")} placeholder="Not offered" step="0.001" />
+              </Field>
+              <div />
+              <div />
+            </FieldGrid>
+          </SettingsSection>
 
-            <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #F3F4F6" }}>
-              <h4 style={{ ...subheading, fontSize: 13 }}>Base plus</h4>
-              <p style={{ ...hint, marginTop: 2 }}>
-                Each session pays the session rate above plus this commission for every learner enrolled in the class. Leave it empty if you don&apos;t pay this way.
-              </p>
-              <div style={{ marginTop: 10, maxWidth: 260 }}>
-                <label htmlFor="pay-commissionRate" style={label}>Commission per learner ({currency})</label>
-                <input
-                  id="pay-commissionRate"
-                  className="stg-input"
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  inputMode="decimal"
-                  value={form.commissionRate}
-                  placeholder="Not offered"
-                  onChange={(e) => setForm((f) => ({ ...f, commissionRate: e.target.value }))}
-                />
-                <p style={{ ...hint, fontSize: 11.5, color: commissionNeedsBase || !commissionValid ? "#B45309" : hint.color }}>
-                  {!commissionValid
-                    ? "Must be more than 0."
-                    : commission === null
-                      ? "Empty: Base plus isn't offered."
-                      : commissionNeedsBase
-                        ? "Set the session rate too — Base plus is paid on top of it."
-                        : `A session with 12 learners pays ${formatMoney(rateValue("sessionRate") + 12 * commission, currency)} (${formatMoney(rateValue("sessionRate"), currency)} + 12 × ${formatMoney(commission, currency)}).`}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, maxWidth: 260 }}>
-              <label htmlFor="pay-advance" style={label}>Advance (% of the course)</label>
-              <input
-                id="pay-advance"
-                className="stg-input"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={form.advancePercent}
-                onChange={(e) => setForm((f) => ({ ...f, advancePercent: e.target.value }))}
+          <SettingsSection
+            title="Advance"
+            description="A share of the course paid up front and taken off the full payment. It opens once the educator has delivered either minimum, whichever comes first — leave both empty to allow it from the start."
+          >
+            <FieldGrid min={160}>
+              <Field label="Advance (% of course)" htmlFor="pay-advance" warning={pctValid ? null : "A whole number from 0 to 100."}>
+                <NumberInput id="pay-advance" value={form.advancePercent} onChange={set("advancePercent")} max="100" />
+              </Field>
+              <Field label="Opens after (% of sessions)" htmlFor="pay-coverage-pct" warning={coveragePctValid ? null : "A whole number from 0 to 100."}>
+                <NumberInput id="pay-coverage-pct" value={form.advanceCoveragePercent} onChange={set("advanceCoveragePercent")} placeholder="—" max="100" />
+              </Field>
+              <Field label="or after (sessions)" htmlFor="pay-coverage-sessions" warning={coverageSessionsValid ? null : "A whole number, 0 or more."}>
+                <NumberInput id="pay-coverage-sessions" value={form.advanceCoverageSessions} onChange={set("advanceCoverageSessions")} placeholder="—" />
+              </Field>
+            </FieldGrid>
+            {pctValid && coverageValid && (
+              <Field note={coveragePct || coverageSessions
+                ? `On a 12-session course: ${pct}% opens after ${opensAfter} delivered ${opensAfter === 1 ? "session" : "sessions"}.`
+                : `${pct}% of the course, available from the start.`}
               />
-              <p style={{ ...hint, fontSize: 11.5 }}>
-                {pctValid ? `While a course runs, an educator can ask for ${pct}% of its value up front; it comes off their full payment.` : "A whole number from 0 to 100."}
-              </p>
-            </div>
-            {!anyRate && <p style={{ ...hint, color: "#B45309" }}>Set at least one rate, or no part-time educator can claim.</p>}
-          </div>
+            )}
+          </SettingsSection>
 
-          <p style={{ ...hint, marginTop: 0 }}>A change applies to claims sent from now on. Claims already sent keep the figures they were sent with.</p>
-          <div>
-            <button type="submit" className="stg-btn-primary" disabled={!dirty || !valid || save.isPending}>
-              {save.isPending ? "Saving…" : "Save"}
-            </button>
-          </div>
+          <SettingsSection
+            title="Save changes"
+            description={dirty ? "You have unsaved changes." : "Everything is saved."}
+            aside={(
+              <>
+                <FooterNote>Applies to new claims; ones already sent keep their figures.</FooterNote>
+                <button type="submit" className="stg-btn-primary" disabled={!dirty || !valid || save.isPending}>{save.isPending ? "Saving…" : "Save"}</button>
+              </>
+            )}
+          />
         </form>
       )}
-    </div>
+    </SettingsPage>
   );
 }

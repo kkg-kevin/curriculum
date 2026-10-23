@@ -84,6 +84,36 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "star", eyebrow: "Tech Club" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/tech-clubs"),
   },
+  // Paying at the end of a website sign-up (payments/payment-notices.service.js): staff hear
+  // about a payment to check, the parent when theirs couldn't be confirmed.
+  payment_notice_submitted: {
+    label: "A family says they've paid and it needs confirming",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "info", icon: "check", eyebrow: "Payment to confirm" },
+    path: () => "/billing?tab=confirm",
+  },
+  store_order_placed: {
+    label: "A website order comes in",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Website order" },
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/billing?tab=orders"),
+  },
+  store_order_paid: {
+    label: "A website order is paid",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Order paid" },
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/billing?tab=orders"),
+  },
+  payment_notice_rejected: {
+    label: "A payment you told us about couldn't be confirmed",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Payment" },
+    path: (p) => (p.invoiceId ? `/learner-portal/invoices/${p.invoiceId}` : "/learner-portal/invoices"),
+  },
   // Educator claims (modules/claims/) — the reviewer hears about a new claim, the educator about
   // each decision on theirs.
   // Hub check-ins (modules/checkins/checkin.notifications.js). "Check-in today" stays in-app only.

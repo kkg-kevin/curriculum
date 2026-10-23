@@ -39,7 +39,10 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 //
 // A course's value is those units × the rate, rounded to a whole shilling. From that:
 //   advance  a fixed share of the whole course's value (30% unless the workspace changed it),
-//            requestable once per course while it is still running;
+//            requestable once per course while it is still running — and, when the workspace
+//            sets a minimum course coverage, only once that much of the course is delivered
+//            (a % of its sessions OR a number of sessions, whichever comes first; counted in
+//            delivered sessions whichever way the educator is paid);
 //   full     the course's value less any advance already requested, requestable once every
 //            session has been delivered.
 //
@@ -143,6 +146,18 @@ function rateTypesOf(teacher) {
 
 // Everything money-related about one (educator, class, course) on one way of paying: what the
 // course is worth, what has been earned and requested so far, and what can be requested now.
+// How many delivered sessions an advance needs on a course of `sessionsTotal` sessions: the
+// percentage (rounded up — 25% of 10 sessions = 3) OR the number of sessions, whichever is
+// reached first, so the smaller of the two that are set. Neither set means no minimum.
+function requiredCoverage(settings, sessionsTotal) {
+  const percent = Number(settings.advanceCoveragePercent) || 0;
+  const sessions = Number(settings.advanceCoverageSessions) || 0;
+  const options = [];
+  if (percent > 0) options.push(Math.ceil((sessionsTotal * percent) / 100));
+  if (sessions > 0) options.push(sessions);
+  return options.length ? Math.min(...options) : 0;
+}
+
 function buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType = "session", learnerCount = 0 }) {
   const today = todayStr();
   const sessionIds = new Set(sessions.map((s) => s.id));
@@ -195,6 +210,8 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
   const advancePaid = sum(advances.filter((c) => c.status === "paid"));
   const balance = Math.max(0, courseAmount - advanceRequested);
   const remaining = Math.max(0, sessionsTotal - sessionsDelivered);
+  // Delivered sessions needed before an advance (0 = no minimum).
+  const advanceMinSessions = requiredCoverage(settings, sessionsTotal);
 
   // Nothing can be claimed on a way of paying the workspace hasn't put a rate on, or on hours
   // when the timetable gives this course no times to count.
@@ -210,6 +227,11 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
   else if (fullClaim) advanceBlocked = "The full payment has already been requested for this course.";
   else if (advances.length) advanceBlocked = "An advance has already been requested for this course.";
   else if (remaining === 0) advanceBlocked = "Every session is delivered — request the full payment instead.";
+  else if (advanceMinSessions >= sessionsTotal) advanceBlocked = `An advance needs ${advanceMinSessions} delivered sessions and this course has ${sessionsTotal} — request the full payment once it's delivered.`;
+  else if (sessionsDelivered < advanceMinSessions) {
+    const toGo = advanceMinSessions - sessionsDelivered;
+    advanceBlocked = `An advance opens once ${advanceMinSessions} of this course's ${sessionsTotal} sessions are delivered — ${toGo} more to go.`;
+  }
 
   let fullBlocked = null;
   if (unpayable) fullBlocked = unpayable;
@@ -237,6 +259,7 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
     // Base plus only: what each session's rate is made of.
     ...(basePlus ? { baseRate, commissionRate, learnerCount } : {}),
     advancePercent: settings.advancePercent,
+    advanceMinSessions,
     sessionsTotal,
     sessionsDelivered,
     sessionsCancelled: cancelledIds.size,
@@ -729,4 +752,4 @@ const ClaimService = {
 };
 
 module.exports = ClaimService;
-module.exports._internal = { buildFigures, rateTypesOf };
+module.exports._internal = { buildFigures, rateTypesOf, requiredCoverage };

@@ -54,6 +54,7 @@ function listItem(item) {
     badge: item.badge || "",
     stockStatus: item.stockStatus || "available",
     image: toAbsoluteMediaUrl(item.image),
+    photoCount: [item.image, ...arr(item.gallery)].filter(Boolean).length,
     price: priceOf(item),
     highlightCount: highlights.length,
   };

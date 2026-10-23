@@ -11,6 +11,9 @@ export const paymentSettingsApi = {
   remove: () => api.delete(BASE).then((r) => r.data.data),
   test: () => api.post(`${BASE}/test`).then((r) => r.data.data),
   registerUrls: () => api.post(`${BASE}/register-urls`).then((r) => r.data.data),
+  // How families can pay (server: payments/payment-options.js).
+  getOptions: () => api.get(`${BASE}/options`).then((r) => r.data.data),
+  saveOptions: (options) => api.put(`${BASE}/options`, options).then((r) => r.data.data),
 };
 
 const KEY = ["payment-settings"];
@@ -41,4 +44,22 @@ export const useRegisterPaybillUrls = () => useSettingsMutation(paymentSettingsA
 
 export function useTestPaymentKeys() {
   return useMutation({ mutationFn: paymentSettingsApi.test, onError: (err) => toast.error(errorText(err)) });
+}
+
+const OPTIONS_KEY = ["payment-settings", "options"];
+
+export function usePaymentOptions() {
+  return useQuery({ queryKey: OPTIONS_KEY, queryFn: paymentSettingsApi.getOptions });
+}
+
+export function useSavePaymentOptions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: paymentSettingsApi.saveOptions,
+    onSuccess: (data) => {
+      qc.setQueryData(OPTIONS_KEY, data);
+      toast.success("Payment methods saved");
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
 }

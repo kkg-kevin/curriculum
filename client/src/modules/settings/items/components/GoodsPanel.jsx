@@ -7,7 +7,7 @@ import {
 import CardKebab from "./CardKebab";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
-import ImageUploadField from "../../../../components/ImageUploadField";
+import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
 
@@ -324,10 +324,17 @@ function GoodsItemModal({ editTarget, onClose }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {error && <div style={{ padding: "10px 14px", backgroundColor: "#FFF5F5", border: "1px solid #FECACA", borderRadius: "10px", color: "#EF4444", fontSize: "13px" }}>{error}</div>}
-        <div>
-          <Label>Image</Label>
-          <ImageUploadField value={form.image} onChange={(url) => setField("image", url)} />
-        </div>
+        {/* The first photo is the item's image (cards, listings); the rest are its website gallery. */}
+        <PhotoGalleryField
+          label="Photos"
+          value={[form.image, ...form.gallery].filter(Boolean)}
+          onChange={(photos) => setForm((f) => ({ ...f, image: photos[0] || null, gallery: photos.slice(1) }))}
+          max={12}
+          cropAspect={4 / 3}
+          sortable
+          coverLabel="Cover"
+          hint="Up to 12 photos. The first is the cover; drag to reorder."
+        />
         <div>
           <Label>Name *</Label>
           <input className="stg-input" value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Quarky Robot Kit" />

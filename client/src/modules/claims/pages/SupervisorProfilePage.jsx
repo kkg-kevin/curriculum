@@ -5,7 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { authApi } from "../../auth/services/authApi";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { T, cardStyle, formatDate, inputStyle, primaryButton } from "../shared";
-import { Avatar } from "../components/supervisorParts";
+import AvatarPhotoEditor from "../../../components/ui/AvatarPhotoEditor";
 import EmailNotificationSettings from "../../../components/ui/EmailNotificationSettings";
 
 const label = { display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink };
@@ -25,7 +25,16 @@ function Detail({ icon: Icon, name, value }) {
 // The supervisor's own account: who they are signed in as, and changing their password. Their
 // name and email are set by the admin who created the account.
 export default function SupervisorProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [firstName, ...rest] = String(user?.name || "").trim().split(/\s+/);
+  const savePhoto = async (photo) => {
+    try {
+      await authApi.updateMe({ photo });
+      updateUser({ photo });
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Could not update your photo");
+    }
+  };
   const { data } = useSupervisorClaims();
   const [form, setForm] = useState({ current: "", next: "", again: "" });
   const [saving, setSaving] = useState(false);
@@ -66,7 +75,7 @@ export default function SupervisorProfilePage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: 18, alignItems: "start" }}>
         <div style={{ ...cardStyle, padding: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-            <Avatar name={user?.name} photo={user?.photo} size={60} />
+            <AvatarPhotoEditor firstName={firstName} lastName={rest.join(" ")} photo={user?.photo} onChange={savePhoto} size={60} />
             <div style={{ minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: T.ink, overflowWrap: "anywhere" }}>{user?.name}</p>
               <span style={{ display: "inline-block", marginTop: 4, padding: "3px 10px", borderRadius: 999, background: T.tintBg, color: T.accent, fontSize: 12, fontWeight: 700 }}>Supervisor</span>

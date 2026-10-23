@@ -299,7 +299,7 @@ function SchoolPhotoEditor({ school, onSaved }) {
           }}
         >
           <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: "700", color: "#374151" }}>School Photo</p>
-          <ImageUploadField value={school.photo || null} onChange={handleChange} width="100%" height="130px" />
+          <ImageUploadField avatar value={school.photo || null} onChange={handleChange} width="100%" height="130px" />
           {isPending && <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#9CA3AF" }}>Saving…</p>}
         </div>,
         document.body
