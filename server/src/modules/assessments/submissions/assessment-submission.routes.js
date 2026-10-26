@@ -7,6 +7,7 @@ const {
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
+  getIssuedForLearnerAsStaff,
   getDiagnosticForLearner,
   getPathwayDiagnosticsForLearner,
   getLearnerIndicatorProgress,
@@ -66,6 +67,8 @@ router.get("/learner/:learnerId/competency-progress", authorize("admin", "school
 
 // Learner-facing: what's issued to them, and their own attempt.
 router.get("/learner/issued", authorize("learner"), getIssuedForLearner);
+// The same list for one learner, read by an admin/school viewing that learner's profile.
+router.get("/learner/:learnerId/issued", authorize("admin", "school"), getIssuedForLearnerAsStaff);
 // Fired client-side when a learner finishes every other section of a course session —
 // see SectionViewPage.jsx's areNonAssessmentSectionsComplete check.
 router.post("/issues/course-progress", authorize("learner"), issueOnSessionComplete);

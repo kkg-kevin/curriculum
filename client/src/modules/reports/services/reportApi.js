@@ -17,4 +17,6 @@ export const reportApi = {
   unpublish:     (id)                => api.post(`${BASE}/${id}/unpublish`).then((r) => r.data.data),
   // hubId scopes to the hub the portal switcher is on; omitted returns every hub's reports.
   getMine:       (hubId)             => api.get(`${BASE}/learner/mine`, { params: hubId ? { hubId } : {} }).then((r) => r.data),
+  // Admin/school: one learner's published reports, for their profile.
+  getForLearner: (learnerId, hubId)  => api.get(`${BASE}/learner/${learnerId}`, { params: hubId ? { hubId } : {} }).then((r) => r.data),
 };

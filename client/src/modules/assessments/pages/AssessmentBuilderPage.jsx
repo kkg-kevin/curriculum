@@ -516,66 +516,84 @@ function IndicatorPicker({ options, selectedIds, onChange }) {
   );
 }
 
-// Reconciles an IndicatorPicker's selected-id list back onto an `indicatorMarks` array — ids
-// that remain keep their existing marks value; a newly-added id defaults to an even split of the
-// entry's own points value (not 0), so tagging a competency onto a question never silently zeroes
-// out its score before the author gets a chance to fine-tune the per-indicator split.
-function syncIndicatorMarks(indicatorMarks, newIds, totalPoints = 0) {
-  const shares = splitMarks(totalPoints, newIds.length);
-  return newIds.map((id, i) => indicatorMarks.find((m) => m.indicatorId === id) || { indicatorId: id, marks: shares[i] });
-}
-
-// Reconciles the IndicatorPicker's selected-id list the same way syncIndicatorMarks does, except
-// when a rubric checklist (scoringCriteria) is already active: in that case every tagged
-// indicator's marks must equal an even share of the checklist's own total (not entry.points, a
-// stale field only meaningful before rubric mode is ever entered), so tagging a 2nd/3rd indicator
-// re-splits ALL of them evenly instead of leaving indicator #1 at its old value while only the
-// newly-tagged one gets the new share — which previously produced a mismatched sum (e.g. a 10pt
-// checklist + newly-tagged 2nd indicator computed off stale points:10 summed to 15, not 10) until
-// the next checklist edit happened to self-heal it via ScoringCriteriaEditor's own commit().
-function syncIndicatorMarksForEntry(entry, newIds) {
-  const criteria = entry.scoringCriteria || [];
-  if (criteria.length > 0) {
-    const total = criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    const shares = splitMarks(total, newIds.length);
-    return newIds.map((id, i) => ({ indicatorId: id, marks: shares[i] }));
-  }
-  return syncIndicatorMarks(entry.indicatorMarks || [], newIds, entry.points);
-}
-
-/* ── question rubric (Observation / Project / Assignment) ─────────────────
-   A question tagged to one or more indicators can compound their marks from a single shared
-   checklist of sub-criteria instead of a hand-typed number per indicator. The checklist's total
-   is split evenly across every tagged indicator (same even-split rule syncIndicatorMarks already
-   uses when a plain number is typed) — so tagging a 2nd/3rd indicator no longer hides the rubric
-   editor, it just re-divides the same rubric's total across all of them. Switching into rubric
-   mode seeds the first criterion with the current even share (never resets to 0); switching back
-   just clears scoringCriteria and leaves the last-computed marks values in place. */
+/* ── marks per indicator: Direct marks or Rubric ───────────────────────────
+   A question/criterion tagged to competency indicators gets its marks one of two ways, never
+   both at once:
+     Direct marks — the author types how many marks each indicator is worth.
+     Rubric       — the author builds a checklist of criteria, each one marking ONE of the tagged
+                    indicators; an indicator's marks are the sum of its criteria (the direct boxes
+                    stay on screen, read-only, showing those sums).
+   The mode is the data itself: a non-empty `scoringCriteria` means Rubric. Scoring downstream
+   still only reads indicatorMarks/points, which Rubric mode keeps in step with the criteria. A
+   criterion left without an indicator (a rubric built before criteria were assigned, or one whose
+   indicator was untagged) is shared evenly across the tagged indicators, so no marks go missing. */
 
 const linkBtnStyle = { background: "none", border: "none", padding: 0, fontSize: "11.5px", fontWeight: 600, color: "#38aae1", cursor: "pointer" };
 
-function startScoringCriteria(entry) {
-  const indicatorMarks = entry.indicatorMarks || [];
-  const current = roundMarks(indicatorMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0));
-  return [{ id: genId(), label: "", points: current || 1 }];
+// Each tagged indicator's marks, worked out from the rubric's criteria (see above).
+function indicatorMarksFromCriteria(indicatorMarks, criteria) {
+  if (indicatorMarks.length === 0) return indicatorMarks;
+  const single = indicatorMarks.length === 1;
+  const sums = new Map(indicatorMarks.map((m) => [m.indicatorId, 0]));
+  let unassigned = 0;
+  criteria.forEach((c) => {
+    const points = Number(c.points) || 0;
+    if (single) sums.set(indicatorMarks[0].indicatorId, sums.get(indicatorMarks[0].indicatorId) + points);
+    else if (sums.has(c.indicatorId)) sums.set(c.indicatorId, sums.get(c.indicatorId) + points);
+    else unassigned += points;
+  });
+  const shares = splitMarks(unassigned, indicatorMarks.length);
+  return indicatorMarks.map((m, i) => ({ ...m, marks: roundMarks(sums.get(m.indicatorId) + (unassigned > 0 ? shares[i] : 0)) }));
 }
 
-function ScoringCriteriaEditor({ entry, onChange }) {
+// Applies an IndicatorPicker's new selection to an entry — returns the fields to patch. Direct
+// marks: indicators that stay keep their marks, a newly tagged one starts at an even share of the
+// entry's points (never 0, so tagging never silently zeroes a question). Rubric: criteria marking
+// an untagged indicator are left without one, and every indicator's marks are re-summed from the
+// criteria. Untagging the last indicator drops the rubric and keeps its total as the flat marks.
+function syncIndicatorMarksForEntry(entry, newIds) {
+  const current = entry.indicatorMarks || [];
   const criteria = entry.scoringCriteria || [];
+  if (criteria.length === 0) {
+    const shares = splitMarks(entry.points, newIds.length);
+    return { indicatorMarks: newIds.map((id, i) => current.find((m) => m.indicatorId === id) || { indicatorId: id, marks: shares[i] }) };
+  }
+  if (newIds.length === 0) {
+    return { indicatorMarks: [], scoringCriteria: [], points: roundMarks(criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0)) };
+  }
+  const nextCriteria = criteria.map((c) => (newIds.includes(c.indicatorId) ? c : { ...c, indicatorId: newIds.length === 1 ? newIds[0] : null }));
+  const base = newIds.map((id) => current.find((m) => m.indicatorId === id) || { indicatorId: id, marks: 0 });
+  return { indicatorMarks: indicatorMarksFromCriteria(base, nextCriteria), scoringCriteria: nextCriteria };
+}
+
+// Switching into Rubric mode starts one criterion per tagged indicator, worth what that indicator
+// is worth now (1 if nothing yet) — so the totals carry straight over.
+function startScoringCriteria(entry) {
+  const indicatorMarks = entry.indicatorMarks || [];
+  const criteria = indicatorMarks.map((m) => ({ id: genId(), label: "", points: Number(m.marks) || 1, indicatorId: m.indicatorId }));
+  return { scoringCriteria: criteria, indicatorMarks: indicatorMarksFromCriteria(indicatorMarks, criteria) };
+}
+
+function indicatorLabel(indicatorOptions, indicatorId) {
+  const opt = indicatorOptions.find((o) => o.id === indicatorId);
+  return opt?.chipName || opt?.name || indicatorId;
+}
+
+function ScoringCriteriaEditor({ entry, onChange, indicatorOptions }) {
+  const criteria = entry.scoringCriteria || [];
+  const indicatorMarks = entry.indicatorMarks || [];
+  const several = indicatorMarks.length > 1;
   const total = roundMarks(criteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0));
+  const unassignedCount = several ? criteria.filter((c) => !indicatorMarks.some((m) => m.indicatorId === c.indicatorId)).length : 0;
 
-  const commit = (nextCriteria) => {
-    const indicatorMarks = entry.indicatorMarks || [];
-    const nextTotal = nextCriteria.reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    const shares = splitMarks(nextTotal, indicatorMarks.length);
-    onChange({
-      ...entry,
-      scoringCriteria: nextCriteria,
-      indicatorMarks: indicatorMarks.map((m, i) => ({ ...m, marks: shares[i] })),
-    });
+  const commit = (nextCriteria) => onChange({ ...entry, scoringCriteria: nextCriteria, indicatorMarks: indicatorMarksFromCriteria(indicatorMarks, nextCriteria) });
+
+  // A new criterion marks the first indicator that has none yet, else the same one as the last row.
+  const nextIndicatorId = () => {
+    const uncovered = indicatorMarks.find((m) => !criteria.some((c) => c.indicatorId === m.indicatorId));
+    return (uncovered || indicatorMarks.find((m) => m.indicatorId === criteria[criteria.length - 1]?.indicatorId) || indicatorMarks[0])?.indicatorId || null;
   };
-
-  const add = () => commit([...criteria, { id: genId(), label: "", points: 1 }]);
+  const add = () => commit([...criteria, { id: genId(), label: "", points: 1, indicatorId: nextIndicatorId() }]);
   const update = (id, patch) => commit(criteria.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id) => commit(criteria.filter((c) => c.id !== id));
 
@@ -583,18 +601,103 @@ function ScoringCriteriaEditor({ entry, onChange }) {
     <div>
       <Label>Rubric</Label>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {criteria.map((c) => (
-          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <input className="tb-input" placeholder="Criterion (e.g. Did the student answer)" value={c.label} onChange={(e) => update(c.id, { label: e.target.value })} style={{ flex: 1 }} />
-            <input type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }} value={c.points} onChange={(e) => update(c.id, { points: marksInput(e.target.value) })} />
-            <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
-          </div>
-        ))}
+        {criteria.map((c) => {
+          const unassigned = several && !indicatorMarks.some((m) => m.indicatorId === c.indicatorId);
+          return (
+            <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: "6px", padding: several ? "8px" : 0, border: several ? "1px solid #F3F4F6" : "none", borderRadius: "9px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input className="tb-input" placeholder="Criterion (e.g. Did the student answer)" value={c.label} onChange={(e) => update(c.id, { label: e.target.value })} style={{ flex: 1 }} />
+                <input type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }} value={c.points} onChange={(e) => update(c.id, { points: marksInput(e.target.value) })} />
+                <button type="button" className="tb-icon-btn danger" onClick={() => remove(c.id)}><FiX size={13} /></button>
+              </div>
+              {several && (
+                <select
+                  className="tb-input"
+                  value={unassigned ? "" : c.indicatorId}
+                  onChange={(e) => update(c.id, { indicatorId: e.target.value || null })}
+                  style={{ fontSize: "12px", borderColor: unassigned ? "#FCA5A5" : undefined }}
+                >
+                  <option value="">Which indicator does this mark?</option>
+                  {indicatorMarks.map((m) => <option key={m.indicatorId} value={m.indicatorId}>{indicatorLabel(indicatorOptions, m.indicatorId)}</option>)}
+                </select>
+              )}
+            </div>
+          );
+        })}
       </div>
       <button type="button" className="tb-add-item-btn" style={{ marginTop: "8px" }} onClick={add}>+ Add Criterion</button>
+      {unassignedCount > 0 && (
+        <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: 600, color: "#DC2626" }}>
+          {unassignedCount} {unassignedCount !== 1 ? "criteria have" : "criterion has"} no indicator yet — until you pick one, its marks are shared evenly.
+        </p>
+      )}
       <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: total === 0 ? 700 : 400, color: total === 0 ? "#DC2626" : "#9CA3AF" }}>
         Total: {total} pt{total !== 1 ? "s" : ""}{total === 0 && " — worth nothing until you add criteria"}
       </p>
+    </div>
+  );
+}
+
+// The marks section for an entry tagged to at least one indicator (see the block comment above).
+// `allowRubric` is false for types whose questions can't carry a rubric — those get Direct only.
+function IndicatorMarksEditor({ entry, onChange, indicatorOptions, allowRubric }) {
+  const indicatorMarks = entry.indicatorMarks || [];
+  const rubricMode = allowRubric && (entry.scoringCriteria || []).length > 0;
+  const total = entryMarks(entry);
+  const setMode = (mode) => {
+    if (mode === "rubric" && !rubricMode) onChange({ ...entry, ...startScoringCriteria(entry) });
+    if (mode === "direct" && rubricMode) onChange({ ...entry, scoringCriteria: [] });
+  };
+  const modeBtn = (mode, label) => {
+    const active = (mode === "rubric") === rubricMode;
+    return (
+      <button
+        type="button"
+        onClick={() => setMode(mode)}
+        style={{ flex: 1, padding: "6px 10px", fontSize: "12px", fontWeight: 700, borderRadius: "7px", cursor: "pointer", border: "none", backgroundColor: active ? "#fff" : "transparent", color: active ? "#25476a" : "#6B7280", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.08)" : "none" }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  return (
+    <div>
+      <Label>Marks</Label>
+      {allowRubric && (
+        <div style={{ display: "flex", gap: "4px", padding: "3px", backgroundColor: "#F3F4F6", borderRadius: "9px", marginBottom: "8px" }}>
+          {modeBtn("direct", "Direct marks")}
+          {modeBtn("rubric", "Rubric")}
+        </div>
+      )}
+      <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#6B7280" }}>
+        {rubricMode
+          ? "Each indicator's marks come from the rubric criteria below that mark it."
+          : "Type the marks each indicator is worth."}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {indicatorMarks.map((m) => (
+          <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px", opacity: rubricMode ? 0.75 : 1 }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{indicatorLabel(indicatorOptions, m.indicatorId)}</span>
+            <input
+              type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
+              value={m.marks}
+              disabled={rubricMode}
+              title={rubricMode ? "Set by the rubric" : undefined}
+              onChange={(e) => onChange({ ...entry, indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)) })}
+            />
+          </div>
+        ))}
+      </div>
+      <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: total === 0 ? 700 : 400, color: total === 0 ? "#DC2626" : "#9CA3AF" }}>
+        Total: {total} pt{total !== 1 ? "s" : ""}
+        {total === 0 && (rubricMode ? " — worth nothing until the rubric has marks" : " — worth nothing until you set marks above")}
+      </p>
+      {rubricMode && (
+        <div style={{ marginTop: "12px" }}>
+          <ScoringCriteriaEditor entry={entry} onChange={onChange} indicatorOptions={indicatorOptions} />
+        </div>
+      )}
     </div>
   );
 }
@@ -770,7 +873,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
           <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
             {ITEM_KIND_LABELS[entry.kind]}
           </span>
-          {entry.kind !== "note" && type !== "survey" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
+          {type !== "survey" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
           <div className="tb-entry-actions">
             <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, -1); }} disabled={eIdx === 0} title="Move up">↑</button>
             <button type="button" className="tb-icon-btn" onClick={(e) => { e.stopPropagation(); onMoveEntry(entry.id, 1); }} disabled={eIdx === siblingCount - 1} title="Move down">↓</button>
@@ -860,10 +963,8 @@ function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCor
 function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
   const set = (key, val) => onChange({ ...entry, [key]: val });
   const isObservation = OBSERVATION_ITEM_KINDS.includes(entry.kind);
-  // A "note"-kind observation indicator is a freeform comment, not a judgment — the only entry
-  // kind with nothing to score or tag. Every other kind (including every other observation kind)
-  // now shares the exact same IndicatorPicker + Marks UI every item/rubric criterion already uses.
-  const isNote = entry.kind === "note";
+  // Every kind — every observation kind, a "note" included — shares the exact same
+  // IndicatorPicker + Marks UI every item/rubric criterion already uses.
   const supportsTasks = BUILDER_REGISTRY[type]?.supportsTasks && !isObservation;
   const indicatorMarks = entry.indicatorMarks || [];
 
@@ -874,88 +975,23 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <RichTextEditor value={entryLabel(entry)} onChange={(html) => set(isObservation ? "text" : "question", html)} minHeight={90} maxHeight={220} />
       </div>
 
-      {!isNote && (
-        <IndicatorPicker
-          options={indicatorOptions}
-          selectedIds={indicatorMarks.map((m) => m.indicatorId)}
-          onChange={(ids) => set("indicatorMarks", syncIndicatorMarksForEntry(entry, ids))}
-        />
-      )}
+      <IndicatorPicker
+        options={indicatorOptions}
+        selectedIds={indicatorMarks.map((m) => m.indicatorId)}
+        onChange={(ids) => onChange({ ...entry, ...syncIndicatorMarksForEntry(entry, ids) })}
+      />
 
       {/* A survey question is never scored (see grading.utils.js) — it can still be tagged to a
           competency indicator above, just with no marks value attached to that tag, so the
           Marks/rubric UI (which only makes sense for a graded entry) is skipped entirely. */}
-      {!isNote && type !== "survey" && (
+      {type !== "survey" && (
         indicatorMarks.length === 0 ? (
           <div>
             <Label>Marks</Label>
             <input type="number" min="0" step="0.1" className="tb-input" value={entry.points} onChange={(e) => set("points", marksInput(e.target.value))} />
           </div>
-        ) : BUILDER_REGISTRY[type]?.supportsQuestionRubric ? (
-          <div>
-            <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#6B7280" }}>
-              Assesses: <strong>{indicatorMarks.map((m) => indicatorOptions.find((o) => o.id === m.indicatorId)?.chipName || indicatorOptions.find((o) => o.id === m.indicatorId)?.name || m.indicatorId).join(", ")}</strong>
-              {indicatorMarks.length > 1 && " — rubric total splits evenly across these"}
-            </p>
-            {(entry.scoringCriteria || []).length > 0 ? (
-              <>
-                <ScoringCriteriaEditor entry={entry} onChange={onChange} />
-                <button type="button" style={{ ...linkBtnStyle, marginTop: "8px" }} onClick={() => set("scoringCriteria", [])}>Use a flat number instead</button>
-              </>
-            ) : indicatorMarks.length === 1 ? (
-              <>
-                <Label>Marks</Label>
-                <input
-                  type="number" min="0" step="0.1" className="tb-input"
-                  value={indicatorMarks[0].marks}
-                  onChange={(e) => set("indicatorMarks", [{ ...indicatorMarks[0], marks: marksInput(e.target.value) }])}
-                />
-                <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => set("scoringCriteria", startScoringCriteria(entry))}>+ Build a rubric</button>
-              </>
-            ) : (
-              <>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {indicatorMarks.map((m) => {
-                    const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
-                    return (
-                      <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
-                        <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
-                        <input
-                          type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
-                          value={m.marks}
-                          onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)))}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => set("scoringCriteria", startScoringCriteria(entry))}>+ Build a rubric</button>
-              </>
-            )}
-          </div>
         ) : (
-          <div>
-            <Label>Marks per Indicator</Label>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {indicatorMarks.map((m) => {
-                const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
-                return (
-                  <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#FAFBFF", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
-                    <input
-                      type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
-                      value={m.marks}
-                      onChange={(e) => set("indicatorMarks", indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)))}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: entryMarks(entry) === 0 ? 700 : 400, color: entryMarks(entry) === 0 ? "#DC2626" : "#9CA3AF" }}>
-              Total: {entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}
-              {entryMarks(entry) === 0 && " — worth nothing until you set marks above"}
-            </p>
-          </div>
+          <IndicatorMarksEditor entry={entry} onChange={onChange} indicatorOptions={indicatorOptions} allowRubric={!!BUILDER_REGISTRY[type]?.supportsQuestionRubric} />
         )
       )}
 
@@ -1074,7 +1110,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF", fontStyle: "italic" }}>A single checkbox item — no rating scale needed.</p>
       )}
       {isObservation && entry.kind === "note" && (
-        <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF", fontStyle: "italic" }}>A freeform prompt — the teacher writes notes against it.</p>
+        <p style={{ margin: 0, fontSize: "11.5px", color: "#9CA3AF", fontStyle: "italic" }}>A freeform prompt — the teacher writes notes against it, and can mark it like any other item.</p>
       )}
       {isObservation && ["rating", "practicalSkill", "behaviour"].includes(entry.kind) && (
         <div>
@@ -1255,73 +1291,12 @@ function GradingRubricTab({ type, rubric, onChange, indicatorOptions }) {
                 <IndicatorPicker
                   options={indicatorOptions}
                   selectedIds={indicatorMarks.map((m) => m.indicatorId)}
-                  onChange={(ids) => update(c.id, { indicatorMarks: syncIndicatorMarksForEntry(c, ids) })}
+                  onChange={(ids) => update(c.id, syncIndicatorMarksForEntry(c, ids))}
                 />
               </div>
-              {indicatorMarks.length > 0 && supportsQuestionRubric ? (
+              {indicatorMarks.length > 0 && (
                 <div style={{ marginTop: "10px" }}>
-                  <p style={{ margin: "0 0 8px", fontSize: "11.5px", color: "#6B7280" }}>
-                    Assesses: <strong>{indicatorMarks.map((m) => indicatorOptions.find((o) => o.id === m.indicatorId)?.chipName || indicatorOptions.find((o) => o.id === m.indicatorId)?.name || m.indicatorId).join(", ")}</strong>
-                    {indicatorMarks.length > 1 && " — rubric total splits evenly across these"}
-                  </p>
-                  {(c.scoringCriteria || []).length > 0 ? (
-                    <>
-                      <ScoringCriteriaEditor entry={c} onChange={(next) => update(c.id, next)} />
-                      <button type="button" style={{ ...linkBtnStyle, marginTop: "8px" }} onClick={() => update(c.id, { scoringCriteria: [] })}>Use a flat number instead</button>
-                    </>
-                  ) : indicatorMarks.length === 1 ? (
-                    <>
-                      <Label>Marks</Label>
-                      <input
-                        type="number" min="0" step="0.1" className="tb-input"
-                        value={indicatorMarks[0].marks}
-                        onChange={(e) => update(c.id, { indicatorMarks: [{ ...indicatorMarks[0], marks: marksInput(e.target.value) }] })}
-                      />
-                      <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => update(c.id, { scoringCriteria: startScoringCriteria(c) })}>+ Build a rubric</button>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {indicatorMarks.map((m) => {
-                          const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
-                          return (
-                            <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#fff", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
-                              <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
-                              <input
-                                type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
-                                value={m.marks}
-                                onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)) })}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <button type="button" style={{ ...linkBtnStyle, marginTop: "8px", display: "block" }} onClick={() => update(c.id, { scoringCriteria: startScoringCriteria(c) })}>+ Build a rubric</button>
-                    </>
-                  )}
-                </div>
-              ) : indicatorMarks.length > 0 && (
-                <div style={{ marginTop: "10px" }}>
-                  <Label>Marks per Indicator</Label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {indicatorMarks.map((m) => {
-                      const opt = indicatorOptions.find((o) => o.id === m.indicatorId);
-                      return (
-                        <div key={m.indicatorId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "#fff", border: "1px solid #F3F4F6", borderRadius: "9px" }}>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: "12.5px", color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>{opt?.chipName || opt?.name || m.indicatorId}</span>
-                          <input
-                            type="number" min="0" step="0.1" className="tb-input" style={{ width: "72px", flexShrink: 0 }}
-                            value={m.marks}
-                            onChange={(e) => update(c.id, { indicatorMarks: indicatorMarks.map((x) => (x.indicatorId === m.indicatorId ? { ...x, marks: marksInput(e.target.value) } : x)) })}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: "11.5px", fontWeight: entryMarks(c) === 0 ? 700 : 400, color: entryMarks(c) === 0 ? "#DC2626" : "#9CA3AF" }}>
-                    Total: {entryMarks(c)} pt{entryMarks(c) !== 1 ? "s" : ""}
-                    {entryMarks(c) === 0 && " — worth nothing until you set marks above"}
-                  </p>
+                  <IndicatorMarksEditor entry={c} onChange={(next) => update(c.id, next)} indicatorOptions={indicatorOptions} allowRubric={!!supportsQuestionRubric} />
                 </div>
               )}
             </div>

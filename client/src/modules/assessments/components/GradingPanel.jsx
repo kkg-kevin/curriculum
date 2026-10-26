@@ -70,7 +70,7 @@ function AutoGradedRow({ index, item, response, autoResult }) {
 // with scoringCriteria (see ScoringCriteriaEditor in AssessmentBuilderPage.jsx); the checked
 // total is written straight into feedback.marks, so it flows through the exact same
 // itemFeedback/computeIndicatorBreakdown pipeline every other manually-graded entry already uses.
-function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle }) {
+function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle, indicatorName }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {criteria.map((c) => {
@@ -78,7 +78,10 @@ function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle }) {
         return (
           <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: T.ink, cursor: "pointer" }}>
             <input type="checkbox" checked={checked} onChange={() => onToggle(c.id)} />
-            <span style={{ flex: 1 }}>{c.label}</span>
+            <span style={{ flex: 1 }}>
+              {c.label}
+              {indicatorName?.(c.indicatorId) && <span style={{ marginLeft: 6, fontSize: 10.5, color: T.inkFaint }}>· {indicatorName(c.indicatorId)}</span>}
+            </span>
             <span style={{ fontSize: 11, color: T.inkFaint, fontWeight: 600 }}>{c.points} pt{c.points !== 1 ? "s" : ""}</span>
           </label>
         );
@@ -87,39 +90,55 @@ function ScoringCriteriaChecklist({ criteria, checkedIds, onToggle }) {
   );
 }
 
-// Splits an earned total evenly across every indicator tagged to an entry — e.g. a 10pt rubric
-// with 2 tagged indicators, scored 8, gives each indicator 4 earned marks. Written into
-// feedback.indicatorMarks so grading.utils.js's computeIndicatorBreakdown uses this exact split
-// instead of falling back to apportioning by each indicator's pre-set weight (its default
-// behaviour when a manual entry carries no per-indicator feedback at all).
-function evenIndicatorSplit(taggedIndicators, earnedTotal) {
-  if (taggedIndicators.length === 0) return [];
-  const share = Math.round((earnedTotal / taggedIndicators.length) * 100) / 100;
-  return taggedIndicators.map(({ indicatorId }) => ({ indicatorId, marks: share }));
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// What each tagged indicator earned on an entry, written into feedback.indicatorMarks so
+// grading.utils.js's computeIndicatorBreakdown uses this exact split. The same two ways the
+// builder gives an indicator its marks (IndicatorMarksEditor in AssessmentBuilderPage.jsx):
+//   Rubric — each ticked criterion's points go to the indicator it marks (a criterion with no
+//            indicator is shared evenly, the same as in the builder).
+//   Direct — the marks given are shared in proportion to what each indicator is worth: a 1 + 0.5
+//            entry scored 1.5 gives 1 and 0.5, scored 0.75 gives 0.5 and 0.25.
+// One tagged indicator needs no split (it earns the entry's marks), so nothing is written.
+function indicatorSplit(entry, earnedTotal, checkedIds = null) {
+  const tagged = entry.indicatorMarks || [];
+  if (tagged.length <= 1) return [];
+  const criteria = entry.scoringCriteria || [];
+  if (criteria.length > 0 && checkedIds) {
+    const sums = new Map(tagged.map((m) => [m.indicatorId, 0]));
+    let unassigned = 0;
+    criteria.filter((c) => checkedIds.includes(c.id)).forEach((c) => {
+      const points = Number(c.points) || 0;
+      if (sums.has(c.indicatorId)) sums.set(c.indicatorId, sums.get(c.indicatorId) + points);
+      else unassigned += points;
+    });
+    return tagged.map((m) => ({ indicatorId: m.indicatorId, marks: round2(sums.get(m.indicatorId) + unassigned / tagged.length) }));
+  }
+  const possible = tagged.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+  return tagged.map((m) => ({
+    indicatorId: m.indicatorId,
+    marks: round2(possible > 0 ? (earnedTotal * (Number(m.marks) || 0)) / possible : earnedTotal / tagged.length),
+  }));
 }
 
 // An entry's marks input — either a checklist rubric (when scoringCriteria was authored for the
-// question) or one flat "Marks" field. When tagged to two or more competency indicators, the
-// earned total is split evenly across them (see evenIndicatorSplit) and written to
-// feedback.indicatorMarks so the competency breakdown reflects actual performance on this entry
-// rather than each indicator's pre-set authoring weight. A single tagged indicator earns the
-// entry's full marks, same as before. Tagged indicators are named below for context either way.
+// question) or one flat "Marks" field. When tagged to two or more competency indicators, what
+// each earned is worked out by indicatorSplit and written to feedback.indicatorMarks. A single
+// tagged indicator earns the entry's full marks. Tagged indicators are named below either way.
 function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
   const max = entryMarks(entry);
   const taggedIndicators = entry.indicatorMarks || [];
   const scoringCriteria = entry.scoringCriteria || [];
 
   const applyMarks = (marks) => {
-    const indicatorMarks = taggedIndicators.length > 1 ? evenIndicatorSplit(taggedIndicators, marks) : [];
-    onChange({ ...feedback, marks, indicatorMarks });
+    onChange({ ...feedback, marks, indicatorMarks: indicatorSplit(entry, marks) });
   };
 
   const toggleCriterion = (criterionId) => {
     const checkedIds = feedback.checkedCriteriaIds || [];
     const nextChecked = checkedIds.includes(criterionId) ? checkedIds.filter((id) => id !== criterionId) : [...checkedIds, criterionId];
     const marks = scoringCriteria.filter((c) => nextChecked.includes(c.id)).reduce((sum, c) => sum + (Number(c.points) || 0), 0);
-    const indicatorMarks = taggedIndicators.length > 1 ? evenIndicatorSplit(taggedIndicators, marks) : [];
-    onChange({ ...feedback, marks, checkedCriteriaIds: nextChecked, indicatorMarks });
+    onChange({ ...feedback, marks, checkedCriteriaIds: nextChecked, indicatorMarks: indicatorSplit(entry, marks, nextChecked) });
   };
 
   return (
@@ -127,7 +146,12 @@ function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
       {scoringCriteria.length > 0 ? (
         <>
           <p style={{ margin: "0 0 2px", fontSize: 12, color: T.inkMuted, fontWeight: 600 }}>Rubric</p>
-          <ScoringCriteriaChecklist criteria={scoringCriteria} checkedIds={feedback.checkedCriteriaIds || []} onToggle={toggleCriterion} />
+          <ScoringCriteriaChecklist
+            criteria={scoringCriteria}
+            checkedIds={feedback.checkedCriteriaIds || []}
+            onToggle={toggleCriterion}
+            indicatorName={taggedIndicators.length > 1 ? (id) => indicatorNameById.get(id)?.name : null}
+          />
           <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>Marks: {feedback.marks} / {max}</p>
         </>
       ) : (
@@ -222,17 +246,6 @@ function ObservationRow({ index, indicator, feedback, indicatorNameById, onChang
   );
 }
 
-// A "note"-kind observation indicator is a freeform comment, not a judgment — read-only here,
-// same reasoning as DeliverableRow (nothing to score, just something to see).
-function ObservationNoteRow({ index, indicator }) {
-  return (
-    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
-      <div style={{ flex: 1, fontSize: 13 }}><RichContent html={indicator.text} /></div>
-    </div>
-  );
-}
-
 // Teacher's grading surface for one learner's submission. Auto-gradable items are shown
 // read-only (already scored server-side at submit time — see grading.utils.js); everything else
 // — short-answer/unstructured/submission items and every rubric criterion — gets a marks input
@@ -242,14 +255,11 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const items = useMemo(() => (assessment.items || []).map(normalizeLegacyItem), [assessment.items]);
   const rubric = assessment.rubric || [];
   const deliverables = assessment.deliverables || [];
-  // Teacher Observation scores through its own `indicators` array instead of `items` — a
-  // "note"-kind indicator is a freeform comment (no judgment to score), so it's split out and
-  // shown read-only instead. `items`/`rubric`/`deliverables` are always empty for this type, so
-  // this is purely additive — nothing above changes for any other assessment type.
+  // Teacher Observation scores through its own `indicators` array instead of `items` — every
+  // kind, a note included, gets marks. `items`/`rubric`/`deliverables` are always empty for this
+  // type, so this is purely additive — nothing above changes for any other assessment type.
   const isObservation = assessment.type === "observation";
-  const indicators = assessment.indicators || [];
-  const scorableIndicators = isObservation ? indicators.filter((i) => i.kind !== "note") : [];
-  const noteIndicators = isObservation ? indicators.filter((i) => i.kind === "note") : [];
+  const scorableIndicators = isObservation ? assessment.indicators || [] : [];
   const answersByItem = useMemo(() => new Map((submission.answers || []).map((a) => [a.itemId, a.response])), [submission.answers]);
   const autoByItem = useMemo(() => new Map((submission.autoItemResults || []).map((r) => [r.itemId, r])), [submission.autoItemResults]);
 
@@ -347,17 +357,6 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
                 onChange={(f) => setFeedback(ind.id, f)}
               />
             ))}
-          </div>
-        </div>
-      )}
-
-      {noteIndicators.length > 0 && (
-        <div>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Observation Notes
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {noteIndicators.map((ind, i) => <ObservationNoteRow key={ind.id} index={i} indicator={ind} />)}
           </div>
         </div>
       )}

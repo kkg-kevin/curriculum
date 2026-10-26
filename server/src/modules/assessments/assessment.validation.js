@@ -41,14 +41,15 @@ const indicatorMarkSchema = z.object({
 const indicatorMarksList = z.array(indicatorMarkSchema).transform(roundIndicatorMarks);
 
 // One checklist line in a question's grading rubric — e.g. "Did the student answer" (1pt).
-// Only meaningful when the parent entry is tagged to exactly one indicatorMark: the Builder
-// keeps that indicator's `marks` in sync with the sum of these (see ScoringCriteriaEditor in
-// AssessmentBuilderPage.jsx), so nothing downstream needs to know this array exists — scoring
-// still reads indicatorMarks/points exactly as before.
+// `indicatorId` is which of the entry's tagged indicators this line marks (when it has several).
+// The Builder keeps each tagged indicator's `marks` equal to the sum of its lines (see
+// IndicatorMarksEditor in AssessmentBuilderPage.jsx), so scoring still reads indicatorMarks/
+// points exactly as before. A line with no indicatorId (older rubrics) is shared evenly.
 const scoringCriterionSchema = z.object({
-  id:     z.string().optional(),
-  label:  z.string().min(1, "Criterion is required").max(300),
-  points: markValue.optional().default(0),
+  id:          z.string().optional(),
+  label:       z.string().min(1, "Criterion is required").max(300),
+  points:      markValue.optional().default(0),
+  indicatorId: z.string().nullable().optional().default(null),
 });
 
 // `id` is optional — the Builder assigns a client-side id while editing; the server

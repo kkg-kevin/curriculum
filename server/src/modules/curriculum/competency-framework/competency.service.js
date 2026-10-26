@@ -61,6 +61,12 @@ function samePathwayName(a, b) {
   return (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 }
 
+function fail(statusCode, message) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  throw err;
+}
+
 const DEFAULT_RUNGS = [
   { label: "Early Childhood",  ageRange: "3–5",   order: 1 },
   { label: "Lower Primary",    ageRange: "6–8",   order: 2 },
@@ -949,7 +955,13 @@ const CompetencyService = {
       if (!assessment) return;
       compLinks.forEach((l) => relevantCompetencyIds.add(l.competencyId));
 
-      const scoredEntries = [...(assessment.items || []), ...(assessment.rubric || [])];
+      // Observation items too (every kind) — grading attributes their marks to indicators the
+      // same way (grading.utils.js's computeIndicatorBreakdown).
+      const scoredEntries = [
+        ...(assessment.items || []),
+        ...(assessment.rubric || []),
+        ...(assessment.type === "observation" ? (assessment.indicators || []) : []),
+      ];
       scoredEntries.forEach((entry) => {
         (entry.indicatorMarks || []).forEach(({ indicatorId, marks }) => {
           usedIndicatorIds.add(indicatorId);
@@ -1257,48 +1269,94 @@ const CompetencyService = {
   },
 
   /* ── Pathway ─────────────────────────────────────────────────
-   * A learner's placement timeline, per Pathway: where they started, every time
-   * they've advanced, and wherever they currently stand. Nothing is persisted until a
-   * placement is actually made — until then, a default is computed on the fly (the first course
-   * in the pathway's own authored sequence). */
+   * The pathways a learner is on, and their placement timeline in each: where they started,
+   * every time they've advanced, and wherever they currently stand. A learner is on:
+   *   - the automatic pathway — the one authored for their Developmental Stage at a hub whose
+   *     class runs this curriculum (the same pick maybeAutoIssuePathwayDiagnostics issues its
+   *     diagnostic for). Nothing is saved until that diagnostic places them; until then they're
+   *     shown at its first course.
+   *   - every pathway they have a learner_pathways record for — placed by a diagnostic or an
+   *     advancement (source "auto"), or assigned by staff (source "manual", assignPathway). */
 
-  // One entry per Pathway in this curriculum — either the learner's real journey
-  // record, or (if they've never been placed) a computed default that isn't saved until
-  // placeLearner is called.
+  // A pathway's courses in its own authored order — Performance Bands with pathwayId+courseId
+  // set, ordered by `order` (see PerformanceBandModel.findByPathway; course-to-course
+  // advancement is decided by indicator-contribution/threshold, not a score walk) — then
+  // whatever's left in courses[] that has no band configured yet. A pathway belongs to exactly
+  // one Developmental Stage, so the first course in ITS OWN sequence is always where a learner
+  // starts.
+  async orderedPathwayCourseIds(curriculumId, pathway) {
+    const bands = await PerformanceBandModel.findByPathway(curriculumId, pathway.id);
+    const sequencedIds = bands.map((b) => b.courseId).filter((cid) => (pathway.courses || []).includes(cid));
+    return [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
+  },
+
+  // The learner's Developmental Stage at each hub whose class runs this curriculum (stage lives
+  // on the hub link — see maybeAutoIssueDiagnostic in learner.service.js).
+  async learnerStageIds(curriculumId, learnerId) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const stageIds = new Set();
+    for (const link of links) {
+      if (!link.classId || !link.currentStageId) continue;
+      const cls = await ClassModel.findById(link.classId);
+      if (cls?.curriculumId === curriculumId) stageIds.add(link.currentStageId);
+    }
+    return stageIds;
+  },
+
+  // One entry per pathway the learner is on in this curriculum, the automatic one first. Each
+  // carries its ordered courseIds — the learner's My Courses adds these to their class's.
   async getPathway(curriculumId, learnerId) {
     const pathways = await PathwayModel.findByCurriculumId(curriculumId);
+    const records = (await LearnerPathwayModel.findByLearner(learnerId)).filter((r) => r.curriculumId === curriculumId);
+    const stageIds = await CompetencyService.learnerStageIds(curriculumId, learnerId);
+    const autoIds = new Set([...stageIds].map((sid) => pathways.find((p) => p.ageCategoryId === sid)?.id).filter(Boolean));
 
-    return Promise.all(pathways.map(async (pathway) => {
-      const journey = await LearnerPathwayModel.findOne(learnerId, pathway.id);
-      if (journey) {
-        return {
-          pathwayId: pathway.id,
-          pathwayName: pathway.name,
-          currentCourseId: journey.currentCourseId,
-          history: journey.history,
-          isDefault: false,
-        };
-      }
-
-      // The pathway's own authored course order — Performance Bands with pathwayId+courseId
-      // set, ordered by `order` (see PerformanceBandModel.findByPathway; course-to-course
-      // advancement is now decided by indicator-contribution/threshold, not a score walk) — then
-      // whatever's left in courses[] that has no band configured yet. A pathway now belongs to
-      // exactly one Developmental Stage, so there's no cross-stage "defaultForStages" override to
-      // resolve any more — the first course in ITS OWN sequence is always the default start.
-      const bands = await PerformanceBandModel.findByPathway(curriculumId, pathway.id);
-      const sequencedIds = bands.map((b) => b.courseId).filter((cid) => (pathway.courses || []).includes(cid));
-      const orderedIds = [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
-      const defaultCourseId = orderedIds[0] || null;
-
-      return {
+    const rows = [];
+    for (const pathway of pathways) {
+      const record = records.find((r) => r.pathwayId === pathway.id);
+      if (!record && !autoIds.has(pathway.id)) continue;
+      const courseIds = await CompetencyService.orderedPathwayCourseIds(curriculumId, pathway);
+      rows.push({
         pathwayId: pathway.id,
         pathwayName: pathway.name,
-        currentCourseId: defaultCourseId,
-        history: [],
-        isDefault: true,
-      };
-    }));
+        stageId: pathway.ageCategoryId || null,
+        source: record?.source || "auto",
+        currentCourseId: record ? record.currentCourseId : courseIds[0] || null,
+        history: record?.history || [],
+        isDefault: !record,
+        courseIds,
+      });
+    }
+    return rows.sort((a, b) => Number(a.source === "manual") - Number(b.source === "manual"));
+  },
+
+  // Staff put a learner on a pathway by hand, alongside their automatic one. They start at its
+  // first course and move up the ladder like any other placement (maybeAdvancePathwayCourse).
+  // Only a pathway in a curriculum one of the learner's classes runs — those are the courses a
+  // learner can open (course.controller.js's assertCourseAccess).
+  async assignPathway(curriculumId, learnerId, pathwayId) {
+    const pathway = await PathwayModel.findById(pathwayId);
+    if (!pathway || pathway.curriculumId !== curriculumId) fail(404, "Pathway not found");
+    if (!(await LearnerModel.findById(learnerId))) fail(404, "Learner not found");
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const classes = await Promise.all(links.filter((l) => l.classId).map((l) => ClassModel.findById(l.classId)));
+    if (!classes.some((c) => c?.curriculumId === curriculumId)) {
+      fail(400, "This learner isn't in a class that runs this curriculum.");
+    }
+    const current = await CompetencyService.getPathway(curriculumId, learnerId);
+    if (current.some((row) => row.pathwayId === pathwayId)) fail(409, "This learner is already on this pathway.");
+    const [firstCourseId] = await CompetencyService.orderedPathwayCourseIds(curriculumId, pathway);
+    if (!firstCourseId) fail(400, "This pathway has no courses yet — add some before assigning it.");
+    return LearnerPathwayModel.place(learnerId, curriculumId, pathwayId, firstCourseId, "manual", null, "manual");
+  },
+
+  // Takes a hand-assigned pathway off a learner (its placement history goes with it). The
+  // automatic one can't be removed — it follows the learner's stage.
+  async removePathway(curriculumId, learnerId, pathwayId) {
+    const record = await LearnerPathwayModel.findOne(learnerId, pathwayId);
+    if (!record || record.curriculumId !== curriculumId) fail(404, "This learner isn't on this pathway.");
+    if (record.source !== "manual") fail(400, "Only a pathway added by hand can be removed — the automatic one follows the learner's stage.");
+    await LearnerPathwayModel.deleteOne(learnerId, pathwayId);
   },
 
   // Records a placement/advancement for one learner in one Pathway — always appends

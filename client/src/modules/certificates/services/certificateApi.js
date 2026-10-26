@@ -11,6 +11,8 @@ export const certificateApi = {
   getMine:        (hubId)             => api.get(`${BASE}/learner/mine`, { params: hubId ? { hubId } : {} }).then((r) => r.data.data),
   // What this learner can earn next: { courses: [...], pathways: [...] }, each { title, done, total }.
   getMyProgress:  (hubId)             => api.get(`${BASE}/learner/progress`, { params: hubId ? { hubId } : {} }).then((r) => r.data.data),
+  // Admin / school: the same for one learner at one of the caller's hubs, for their profile.
+  getLearnerProgress: (learnerId, hubId) => api.get(`${BASE}/learner/${learnerId}/progress`, { params: { hubId } }).then((r) => r.data.data),
   listForLearner: (learnerId)         => api.get(BASE, { params: { learnerId } }).then((r) => r.data.data),
   listForClass:   (classId, courseId) => api.get(BASE, { params: { classId, courseId } }).then((r) => r.data.data),
   // Admin / school: every certificate in the workspace or hub. filters: { hubId, kind, status, q }.

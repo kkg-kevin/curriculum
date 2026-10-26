@@ -6,6 +6,8 @@ const KEYS = {
   issuesForClass: (classId)   => ["assessment-issues", "byClass", classId],
   roster:         (issueId)   => ["assessment-issues", issueId, "roster"],
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
+  // Under issuedLearner's prefix, so everything that refreshes the learner's list refreshes this too.
+  issuedLearnerStaff: (learnerId) => ["assessment-issues", "learner-issued", "staff", learnerId],
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId, curriculumId) => ["assessment-issues", "diagnostic", learnerId, curriculumId || null],
   pathwayDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "pathways", learnerId],
@@ -61,10 +63,12 @@ export function useRevokeIssue() {
   });
 }
 
-export function useIssuedForLearner() {
+// The signed-in learner's own list — or, given a learnerId, that learner's list read by an
+// admin/school viewing their profile.
+export function useIssuedForLearner(learnerId) {
   return useQuery({
-    queryKey: KEYS.issuedLearner(),
-    queryFn:  () => assessmentSubmissionApi.getIssuedForLearner(),
+    queryKey: learnerId ? KEYS.issuedLearnerStaff(learnerId) : KEYS.issuedLearner(),
+    queryFn:  () => (learnerId ? assessmentSubmissionApi.getIssuedForLearnerAsStaff(learnerId) : assessmentSubmissionApi.getIssuedForLearner()),
   });
 }
 

@@ -10,6 +10,7 @@ const KEYS = {
   list:      (classId, courseId) => ["reports", "list", classId, courseId],
   detail:    (id)                => ["reports", id],
   mine:      (hubId)             => ["reports", "mine", hubId || null],
+  learner:   (learnerId, hubId)  => ["reports", "learner", learnerId, hubId || null],
   hubAnalytics: (hubId, days, gender) => ["reports", "hubAnalytics", hubId, days, gender || null],
   platformAnalytics: (days)      => ["reports", "platformAnalytics", days],
 };
@@ -62,10 +63,12 @@ export function usePlatformAnalytics(days = 30) {
   });
 }
 
-export function useMyReports(hubId = null) {
+// The signed-in learner's own reports — or, given a learnerId, that learner's read by an
+// admin/school viewing their profile.
+export function useMyReports(hubId = null, learnerId = null) {
   return useQuery({
-    queryKey: KEYS.mine(hubId),
-    queryFn:  () => reportApi.getMine(hubId),
+    queryKey: learnerId ? KEYS.learner(learnerId, hubId) : KEYS.mine(hubId),
+    queryFn:  () => (learnerId ? reportApi.getForLearner(learnerId, hubId) : reportApi.getMine(hubId)),
   });
 }
 

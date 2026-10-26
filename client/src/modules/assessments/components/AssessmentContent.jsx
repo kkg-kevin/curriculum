@@ -234,10 +234,9 @@ export default function AssessmentContent({ id, assessment: providedAssessment =
   const milestones = assessment.milestones || [];
   const registry = BUILDER_REGISTRY[type];
 
-  // A "note"-kind observation indicator is a freeform comment, not a judgment — excluded from the
-  // total the same way grading.utils.js's computeMaxScore excludes it. Non-observation entries
-  // never carry kind "note", so the filter is a no-op for every other assessment type.
-  const totalItemPoints = roundMarks(entries.filter((e) => e.kind !== "note").reduce((sum, e) => sum + entryMarks(e), 0));
+  // Every entry counts, an observation "note" included — the same total grading.utils.js's
+  // computeMaxScore gives.
+  const totalItemPoints = roundMarks(entries.reduce((sum, e) => sum + entryMarks(e), 0));
   const totalRubricPoints = roundMarks(rubric.reduce((sum, c) => sum + entryMarks(c), 0));
 
   return (

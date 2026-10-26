@@ -54,6 +54,15 @@ const getMyProgress = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await CertificateService.progressForLearner(learner.id, req.query.hubId || null) });
 });
 
+// Staff-facing: the same, for one learner at one of the caller's own hubs (?hubId=, required) —
+// the achievements section of that learner's profile as staff see it.
+const getLearnerProgress = asyncHandler(async (req, res) => {
+  const hubId = req.query.hubId;
+  if (!hubId) fail(400, "hubId is required");
+  assertOwn((await ownHubIds(req)).includes(hubId));
+  res.json({ success: true, data: await CertificateService.progressForLearner(req.params.learnerId, hubId) });
+});
+
 // Staff-facing, three ways in:
 //   ?learnerId=            one learner's, from wherever this member of staff can reach
 //   ?classId=&courseId=    a class's (optionally one course)
@@ -141,6 +150,6 @@ const verifyCertificate = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  listMyCertificates, getMyProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
+  listMyCertificates, getMyProgress, getLearnerProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
   getSettings, updateSettings, verifyCertificate,
 };

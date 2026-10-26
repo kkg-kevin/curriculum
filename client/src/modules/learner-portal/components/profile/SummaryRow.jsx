@@ -26,9 +26,10 @@ function Stage({ label, sub, done }) {
 }
 
 // `classId`, when given, scopes to one hub's class — see AssessmentsOverview for why.
-export default function SummaryRow({ classId } = {}) {
+// `staffLearnerId` — an admin/school viewing that learner's profile (see AssessmentsOverview).
+export default function SummaryRow({ classId, staffLearnerId } = {}) {
   const navigate = useNavigate();
-  const { data, isLoading } = useIssuedForLearner();
+  const { data, isLoading } = useIssuedForLearner(staffLearnerId);
   const allRows = data?.data || [];
   const rows = classId ? allRows.filter((r) => r.issue.classId === classId) : allRows;
 
@@ -45,13 +46,13 @@ export default function SummaryRow({ classId } = {}) {
       <div style={{ ...cardStyle(), padding: 20, flex: 1, minWidth: 280 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h2 style={sectionHeaderStyle()}>Assessment Summary</h2>
-          <button
+          {!staffLearnerId && <button
             type="button"
             onClick={() => navigate("/learner-portal/reports")}
             style={{ background: "none", border: "none", color: T.accent, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
             View full reports
-          </button>
+          </button>}
         </div>
         {isLoading ? (
           <p style={{ margin: 0, fontSize: 13, color: T.inkFaint }}>Loading…</p>

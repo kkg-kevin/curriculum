@@ -587,3 +587,31 @@ export function usePlaceLearner(curriculumId, learnerId) {
     onError: (err) => toast.error(err.response?.data?.message || "Failed to place learner"),
   });
 }
+
+// A pathway assigned by hand starts at its first course; it also counts towards the learner's
+// certificate progress, so that is refreshed too.
+export function useAssignLearnerPathway(curriculumId, learnerId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pathwayId) => competenciesApi.assignLearnerPathway(curriculumId, learnerId, pathwayId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.pathway(curriculumId, learnerId) });
+      qc.invalidateQueries({ queryKey: ["certificates", "progress"] });
+      toast.success("Pathway added");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to add pathway"),
+  });
+}
+
+export function useRemoveLearnerPathway(curriculumId, learnerId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pathwayId) => competenciesApi.removeLearnerPathway(curriculumId, learnerId, pathwayId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.pathway(curriculumId, learnerId) });
+      qc.invalidateQueries({ queryKey: ["certificates", "progress"] });
+      toast.success("Pathway removed");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to remove pathway"),
+  });
+}

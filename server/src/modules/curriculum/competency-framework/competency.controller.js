@@ -2,6 +2,7 @@ const asyncHandler      = require("express-async-handler");
 const CompetencyService = require("./competency.service");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const CurriculumModel = require("../curriculum.model");
+const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const {
   linkCompetencySchema,
@@ -30,6 +31,7 @@ const {
   calculateIndicatorProgressSchema,
   setIndicatorAchievementSchema,
   placeLearnerSchema,
+  assignLearnerPathwaySchema,
 } = require("./competency.validation");
 
 // A `.partial()` schema still applies each field's own `.default(...)` when that field is
@@ -414,8 +416,38 @@ exports.getPathway = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Before staff change which pathways a learner is on: a hub may only change its own learners,
+// an admin only learners enrolled at a hub in their workspace (ownCurriculumOnly has already
+// proved the curriculum is theirs; this proves the learner is).
+async function assertCanPlaceLearner(req, learnerId) {
+  if (req.user.role === "admin") {
+    const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    const ownHubIds = new Set(hubs.map((h) => h.id));
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    assertOwn(links.some((l) => ownHubIds.has(l.hubId)));
+    return;
+  }
+  await assertLearnerHubAccess(req, learnerId);
+}
+
 exports.placeLearner = asyncHandler(async (req, res) => {
+  await assertCanPlaceLearner(req, req.params.learnerId);
   const body = placeLearnerSchema.parse(req.body);
   const data = await CompetencyService.placeLearner(req.params.id, req.params.learnerId, req.params.areaId, body);
   res.status(201).json({ success: true, data });
+});
+
+// Staff assign a learner a pathway by hand (alongside the automatic one) — body { pathwayId } —
+// or take a hand-assigned one off again. See CompetencyService.assignPathway / removePathway.
+exports.assignLearnerPathway = asyncHandler(async (req, res) => {
+  await assertCanPlaceLearner(req, req.params.learnerId);
+  const { pathwayId } = assignLearnerPathwaySchema.parse(req.body);
+  const data = await CompetencyService.assignPathway(req.params.id, req.params.learnerId, pathwayId);
+  res.status(201).json({ success: true, data });
+});
+
+exports.removeLearnerPathway = asyncHandler(async (req, res) => {
+  await assertCanPlaceLearner(req, req.params.learnerId);
+  await CompetencyService.removePathway(req.params.id, req.params.learnerId, req.params.pathwayId);
+  res.json({ success: true });
 });

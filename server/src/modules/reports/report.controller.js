@@ -123,6 +123,20 @@ const listReportsForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: reports, count: reports.length });
 });
 
+// Admin/school-facing: one learner's published reports, for that learner's profile as staff see
+// it — only reports from the caller's own hubs (an admin's workspace, a school's own hub),
+// narrowed to ?hubId= when the profile's hub picker is on one.
+const listReportsForLearnerAsStaff = asyncHandler(async (req, res) => {
+  const ownHubIds = req.user.role === "school"
+    ? [req.ownSchool?.id].filter(Boolean)
+    : (await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id);
+  const hubId = req.query.hubId || null;
+  if (hubId) assertOwn(ownHubIds.includes(hubId));
+  const reports = (await ReportService.listForLearner(req.params.learnerId, hubId))
+    .filter((r) => ownHubIds.includes(r.hubId));
+  res.json({ success: true, data: reports, count: reports.length });
+});
+
 const getReport = asyncHandler(async (req, res) => {
   const report = await ReportService.getById(req.params.id);
   if (!report) {
@@ -179,6 +193,7 @@ module.exports = {
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,
+  listReportsForLearnerAsStaff,
   getReport,
   updateRemarks,
   publishReport,

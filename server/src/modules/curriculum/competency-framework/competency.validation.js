@@ -316,6 +316,11 @@ const placeLearnerSchema = z.object({
   assessmentId: z.string().nullable().optional().default(null),
 });
 
+// Staff assigning a learner a pathway by hand — they start at its first course.
+const assignLearnerPathwaySchema = z.object({
+  pathwayId: z.string().min(1, "pathwayId is required"),
+});
+
 module.exports = {
   linkCompetencySchema,
   updateCompetencyLinkSchema,
@@ -344,4 +349,5 @@ module.exports = {
   calculateIndicatorProgressSchema,
   setIndicatorAchievementSchema,
   placeLearnerSchema,
+  assignLearnerPathwaySchema,
 };

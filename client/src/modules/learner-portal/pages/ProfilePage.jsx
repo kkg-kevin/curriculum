@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useUpdateLearner } from "../../learners/hooks/useLearners";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import { useCompetencies, useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import { deriveBandJourney } from "../utils/bandJourney";
@@ -61,7 +61,7 @@ export default function ProfilePage() {
   // just one hub's slice. Stage IS hub-specific (see selectedHub.currentStageId's own comment in
   // learner.service.js) — a learner running two different curricula at two hubs genuinely has a
   // different Developmental Stage at each.
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
+  const { data: courses = [], isLoading: coursesLoading } = useLearnerCourses(cls?.curriculumId, cls?.gradeId, learner?.id);
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(cls?.curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(cls?.curriculumId);
   const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
