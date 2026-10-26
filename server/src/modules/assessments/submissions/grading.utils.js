@@ -112,9 +112,8 @@ function computeAutoScore(assessment, answers) {
 
 // Total possible marks across the whole assessment — items plus (for observation) indicators,
 // plus rubric, the same accounting AssessmentContent.jsx already surfaces to a teacher/admin.
-// A "note"-kind observation indicator is a freeform comment, not a judgment to score — excluded
-// from the sum the same way a plain comment would be, regardless of whatever `points` it
-// happens to carry.
+// Every observation kind counts, a "note" included (since 26 Oct 2026 a note is marked and
+// tagged like the rest; notes written before then were set to 0 marks, so their totals held).
 function computeMaxScore(assessment) {
   // No possible score for a survey — a self-rating isn't "worth" marks (see
   // requiresManualGrading above for the matching "never needs grading" side of this).
@@ -122,7 +121,7 @@ function computeMaxScore(assessment) {
   const entries = [
     ...(assessment.items || []),
     ...(assessment.type === "observation" ? (assessment.indicators || []) : []),
-  ].filter((e) => e.kind !== "note");
+  ];
   const itemMax = entries.reduce((sum, e) => sum + computeEntryMarks(e), 0);
   const rubricMax = (assessment.rubric || []).reduce((sum, c) => sum + computeEntryMarks(c), 0);
   // A project's milestones (see gradeMilestone in assessment-submission.service.js) are graded
@@ -184,9 +183,9 @@ function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
 
   (assessment.items || []).forEach((item) => applyEntry(item, item.id));
   (assessment.rubric || []).forEach((c) => applyEntry(c, `rubric:${c.id}`));
-  // Observation indicators score through the exact same applyEntry path as items/rubric — a
-  // "note"-kind entry is a freeform comment, not a judgment, so it's excluded here too.
-  (assessment.indicators || []).filter((i) => i.kind !== "note").forEach((ind) => applyEntry(ind, ind.id));
+  // Observation indicators — every kind, a note included — score through the exact same
+  // applyEntry path as items/rubric.
+  (assessment.indicators || []).forEach((ind) => applyEntry(ind, ind.id));
 
   return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => ({
     indicatorId,

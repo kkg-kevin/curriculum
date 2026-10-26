@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { FiBookOpen, FiCheckCircle, FiPlayCircle } from "react-icons/fi";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
@@ -34,7 +34,7 @@ function StatTile({ icon, value, label }) {
 export default function MyCoursesPage() {
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
   const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(curriculumId, cls?.gradeId);
+  const { data: courses, isLoading: coursesLoading } = useLearnerCourses(curriculumId, cls?.gradeId, learner?.id);
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.

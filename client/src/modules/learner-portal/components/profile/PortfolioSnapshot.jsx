@@ -18,10 +18,11 @@ function Stat({ value, label, isReal, icon: Icon }) {
   );
 }
 
-export default function PortfolioSnapshot({ coursesCompleted, curriculumId, learnerId, classId }) {
+// `staffLearnerId` — an admin/school viewing that learner's profile (see AssessmentsOverview).
+export default function PortfolioSnapshot({ coursesCompleted, curriculumId, learnerId, classId, staffLearnerId }) {
   const { data: competencies = [] } = useCompetencies(curriculumId);
   const { data: scores = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
-  const { data: issuedData } = useIssuedForLearner();
+  const { data: issuedData } = useIssuedForLearner(staffLearnerId);
 
   // "On track" = adopted competencies whose real score has cleared this curriculum's own
   // minimumThreshold for that competency — the same threshold shown on the Competencies tab.

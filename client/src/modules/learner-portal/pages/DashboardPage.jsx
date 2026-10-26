@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiAlertCircle, FiAward, FiBookOpen, FiCheckCircle, FiClipboard, FiClock, FiTrendingUp, FiUser, FiUserCheck } from "react-icons/fi";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import { useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAttendanceHistoryQuery } from "../../attendance/hooks/useAttendance";
@@ -78,7 +78,7 @@ export default function DashboardPage() {
   const school = selectedHub || null;
 
   const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
-  const { data: courses = [] } = useCurriculumCurrentCourses(curriculumId, cls?.gradeId);
+  const { data: courses = [] } = useLearnerCourses(curriculumId, cls?.gradeId, learner?.id);
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
   const progressKey = user?.email || user?.username;

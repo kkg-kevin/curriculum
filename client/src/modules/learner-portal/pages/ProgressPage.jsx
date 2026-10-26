@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { FiCheckCircle, FiClipboard, FiTrendingUp } from "react-icons/fi";
-import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
+import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import { summarizeCoursesProgress, resolveCourseEntryPath } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 
@@ -49,7 +49,7 @@ function statusOf(percent) {
 export default function LearnerProgressPage() {
   const navigate = useNavigate();
   const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading } = useOutletContext();
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCourses(cls?.curriculumId, cls?.gradeId);
+  const { data: courses, isLoading: coursesLoading } = useLearnerCourses(cls?.curriculumId, cls?.gradeId, learner?.id);
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.

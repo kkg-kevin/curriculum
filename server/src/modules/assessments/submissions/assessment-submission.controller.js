@@ -175,6 +175,19 @@ const revokeIssue = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// A learner's issued assessments exactly as their own list shows them — feedback still held back
+// until its report is published. Shared by the learner's route and the staff one below.
+async function issuedRowsAsLearnerSeesThem(learnerId) {
+  const rawRows = await AssessmentSubmissionService.getIssuedRowsForLearner(learnerId);
+  return Promise.all(rawRows.map(async (row) => {
+    const submission = redactUnpublishedReport(row.submission);
+    // Redacted (unpublished) rows already have gradedBy nulled out above, so this naturally
+    // resolves to null for them too — no separate gating needed.
+    const gradedByName = await AssessmentSubmissionService.resolveGraderName(submission.gradedBy);
+    return { ...row, submission: { ...submission, gradedByName } };
+  }));
+}
+
 // Learner's own issued-assessments list — scoped entirely off their own enrollment links,
 // never off a client-supplied classId, so a learner can't read another class's assignments.
 // A learner can now be enrolled in several classes at once, so this merges every active
@@ -182,14 +195,21 @@ const revokeIssue = asyncHandler(async (req, res) => {
 const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
-  const rawRows = await AssessmentSubmissionService.getIssuedRowsForLearner(learner.id);
-  const rows = await Promise.all(rawRows.map(async (row) => {
-    const submission = redactUnpublishedReport(row.submission);
-    // Redacted (unpublished) rows already have gradedBy nulled out above, so this naturally
-    // resolves to null for them too — no separate gating needed.
-    const gradedByName = await AssessmentSubmissionService.resolveGraderName(submission.gradedBy);
-    return { ...row, submission: { ...submission, gradedByName } };
-  }));
+  const rows = await issuedRowsAsLearnerSeesThem(learner.id);
+  res.json({ success: true, data: rows, count: rows.length });
+});
+
+// Admin/school-facing: the same list, for the learner's profile as staff see it. Rows issued to
+// a class are kept to classes at the caller's own hubs, so a learner also enrolled in another
+// workspace never shows that workspace's assessments here.
+const getIssuedForLearnerAsStaff = asyncHandler(async (req, res) => {
+  const { learnerId } = req.params;
+  await assertLearnerHubAccess(req, learnerId);
+  const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+  const own = await Promise.all(links.map((l) => (req.user.role === "school" ? isOwnHub(req, l.hubId) : isOwnHubForAdmin(req, l.hubId))));
+  const ownClassIds = new Set(links.filter((l, i) => own[i] && l.classId).map((l) => l.classId));
+  const rows = (await issuedRowsAsLearnerSeesThem(learnerId))
+    .filter((row) => !row.issue.classId || ownClassIds.has(row.issue.classId));
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -433,6 +453,7 @@ module.exports = {
   getRosterForIssue,
   revokeIssue,
   getIssuedForLearner,
+  getIssuedForLearnerAsStaff,
   getDiagnosticForLearner,
   getPathwayDiagnosticsForLearner,
   getLearnerIndicatorProgress,

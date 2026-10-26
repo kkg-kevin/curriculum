@@ -81,6 +81,8 @@ const {
   reorderPathwayCourses,
   getPathway,
   placeLearner,
+  assignLearnerPathway,
+  removeLearnerPathway,
 } = require("./competency-framework/competency.controller");
 const asyncHandler = require("express-async-handler");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -142,6 +144,9 @@ router.route("/:id/competencies/bands/progress/learner/:learnerId").get(authoriz
 router.route("/:id/competencies/pathways/:pathwayId/course-progress/learner/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getLearnerPathwayCourseProgress);
 router.route("/:id/competencies/pathway-placement/:learnerId").get(authorize("admin", "school", "learner"), ownCurriculumOnly, getPathway);
 router.route("/:id/competencies/pathway-placement/:learnerId/:areaId").post(authorize("admin", "school"), ownCurriculumOnly, placeLearner);
+// Pathways staff assign a learner by hand, alongside the automatic (stage) one.
+router.route("/:id/competencies/learner-pathways/:learnerId").post(authorize("admin", "school"), ownCurriculumOnly, assignLearnerPathway);
+router.route("/:id/competencies/learner-pathways/:learnerId/:pathwayId").delete(authorize("admin", "school"), ownCurriculumOnly, removeLearnerPathway);
 // Curriculum CRUD — listing every curriculum, creating a new one, and deleting one outright
 // stay global-admin-only actions; a curriculumAdmin only ever manages content *within* their
 // one assigned curriculum, never the roster of curricula or the record's own lifecycle.

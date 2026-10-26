@@ -1,9 +1,8 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi } from "../../learners/services/learnerApi";
-import { classApi } from "../../classes/services/classApi";
+import { useLearnerMentors } from "./useLearnerMentors";
 import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { getActiveLearnerId, setActiveLearnerId } from "../utils/activeLearner";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
@@ -83,39 +82,7 @@ export function useLearnerPortalScope() {
     });
   };
 
-  // "My Teachers & Mentors" resolves every educator assigned to any course in each hub's
-  // class — real data via a small join, not a fabricated mentor list. A class can now have
-  // more than one educator (assigned per course), so this naturally becomes a richer list than
-  // the old single-class-teacher lookup. Hubs with no educators assigned are simply omitted.
-  // Deliberately built from the FULL hub list, not just selectedHub — this list is meant to
-  // stay unscoped (every hub's educators), same as the hub list itself.
-  const classIds = useMemo(() => [...new Set(hubs.map((h) => h.class?.id).filter(Boolean))], [hubs]);
-  const { data: mentorLinks = [], isLoading: mentorLinksLoading } = useQuery({
-    queryKey: ["learner-mentor-links", classIds],
-    queryFn: () => Promise.all(classIds.map((id) => classApi.getCourseTeachers(id))).then((r) => r.flat()),
-    enabled: classIds.length > 0,
-  });
-  const mentors = useMemo(() => {
-    const seen = new Set();
-    const result = [];
-    hubs.forEach((h) => {
-      if (!h.class?.id) return;
-      const links = mentorLinks.filter((l) => l.classId === h.class.id);
-      const uniqueTeacherIds = [...new Set(links.map((l) => l.teacherId))];
-      uniqueTeacherIds.forEach((teacherId) => {
-        const key = `${h.id}:${teacherId}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        const link = links.find((l) => l.teacherId === teacherId);
-        if (link?.teacher) result.push({ teacher: link.teacher, hubName: h.name });
-      });
-    });
-    if (activeHomeEnrollment?.educator) {
-      const key = `home:${activeHomeEnrollment.educator.id}`;
-      if (!seen.has(key)) result.push({ teacher: activeHomeEnrollment.educator, hubName: "Home Learning" });
-    }
-    return result;
-  }, [hubs, mentorLinks, activeHomeEnrollment]);
+  const { mentors, mentorsLoading } = useLearnerMentors(hubs, activeHomeEnrollment?.educator || null);
 
   const hasNoHubs = !learnerLoading && !hubsLoading && !!learner && hubs.length === 0;
 
@@ -137,7 +104,7 @@ export function useLearnerPortalScope() {
     cls,
     hasNoHubs,
     mentors,
-    mentorsLoading: classIds.length > 0 && mentorLinksLoading,
+    mentorsLoading,
     isLoading: learnerLoading || (!!learner && (hubsLoading || homeLearningLoading)),
   };
 }

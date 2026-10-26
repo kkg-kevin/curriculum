@@ -6,6 +6,7 @@ const {
   generateReport,
   listReportsForClassCourse,
   listReportsForLearner,
+  listReportsForLearnerAsStaff,
   getReport,
   updateRemarks,
   publishReport,
@@ -33,6 +34,9 @@ router.post("/:id/unpublish", authorize("admin", "school", "teacher"), unpublish
 
 // Learner-facing: this learner's own published reports.
 router.get("/learner/mine", authorize("learner"), listReportsForLearner);
+// One learner's published reports, for an admin/school viewing that learner's profile — below
+// "/learner/mine" so "mine" isn't read as a learner id.
+router.get("/learner/:learnerId", authorize("admin", "school"), listReportsForLearnerAsStaff);
 
 // Shared read — a learner reads their own published report, a teacher/school/admin reads any
 // report belonging to a class they own.

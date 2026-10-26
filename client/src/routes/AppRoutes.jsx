@@ -79,6 +79,7 @@ import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
 import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
 import PublicLearnerProfilePage from "../modules/learners/pages/PublicLearnerProfilePage";
+import LearnerProfileViewPage from "../modules/learners/pages/LearnerProfileViewPage";
 import VerifyCertificatePage from "../modules/certificates/pages/VerifyCertificatePage";
 import LearnerCertificateViewPage from "../modules/certificates/pages/CertificateViewPage";
 import CertificatesListPage from "../modules/certificates/pages/CertificatesListPage";
@@ -256,6 +257,8 @@ export default function AppRoutes() {
           <Route path="create" element={<CreateLearnerPage />} />
           <Route path=":id/edit" element={<EditLearnerPage />} />
           <Route path=":id/view" element={<LearnerViewPage />} />
+          {/* The learner's own profile, as they see it in the learner portal. */}
+          <Route path=":id/profile" element={<LearnerProfileViewPage />} />
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
@@ -329,6 +332,7 @@ export default function AppRoutes() {
           <Route path="learners/:schoolId" element={<SchoolLearnersPage />} />
           <Route path="learners/create" element={<CreateLearnerPage />} />
           <Route path="learners/:id/view" element={<LearnerViewPage />} />
+          <Route path="learners/:id/profile" element={<LearnerProfileViewPage />} />
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="attendance" element={<SchoolAttendancePage />} />
           <Route path="timetable" element={<SchoolTimetablePage />} />

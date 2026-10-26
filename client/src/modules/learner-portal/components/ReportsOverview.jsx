@@ -25,13 +25,13 @@ function ReportRow({ report, navigate, primary }) {
           </p>
         </div>
       </div>
-      <button
+      {navigate && <button
         type="button"
         onClick={() => navigate(`/learner-portal/reports/${report.id}`)}
         style={{ padding: primary ? "8px 16px" : "6px 12px", backgroundColor: primary ? T.accent : T.tintBg, color: primary ? "#fff" : T.accent, border: primary ? "none" : `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: primary ? 12 : 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
       >
         View Report
-      </button>
+      </button>}
     </div>
   );
 }
@@ -59,13 +59,13 @@ function DiagnosticRow({ row, navigate }) {
           </p>
         </div>
       </div>
-      <button
+      {navigate && <button
         type="button"
         onClick={() => navigate(`/learner-portal/assessments/${issue.id}`)}
         style={{ padding: "8px 16px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
       >
         View Report
-      </button>
+      </button>}
     </div>
   );
 }
@@ -73,9 +73,13 @@ function DiagnosticRow({ row, navigate }) {
 // Shared between the standalone Reports page and the Profile page's Reports tab, same pattern
 // as AssessmentsOverview being reused in both places. `hubId` scopes the list to the hub the
 // portal switcher is on, matching every other surface here (courses, competencies, assessments).
-export default function ReportsOverview({ limit, hubId } = {}) {
-  const navigate = useNavigate();
-  const { data, isLoading, isError } = useMyReports(hubId);
+// `staffLearnerId` — an admin/school viewing that learner's profile, outside the learner portal:
+// that learner's reports are read, `learner`/`cls` come in as props, and the rows don't link into
+// the learner portal.
+export default function ReportsOverview({ limit, hubId, staffLearnerId, learner: learnerProp, cls: clsProp } = {}) {
+  const portalNavigate = useNavigate();
+  const navigate = staffLearnerId ? null : portalNavigate;
+  const { data, isLoading, isError } = useMyReports(hubId, staffLearnerId);
   const rows = data?.data || [];
   // Filtering to one course is only meaningful (and only rendered) in the full, unlimited view
   // — the capped preview embedded in Profile's Reports tab is meant to stay a quick glance, not
@@ -87,7 +91,9 @@ export default function ReportsOverview({ limit, hubId } = {}) {
   // asked for it to show up the same way. Reused straight from the same hooks the first-login
   // gate already uses to find them; filtered to graded+published, same gate FirstLoginDiagnosticGate
   // itself waits on.
-  const { learner, cls } = useOutletContext() || {};
+  const outlet = useOutletContext() || {};
+  const learner = learnerProp || outlet.learner;
+  const cls = clsProp || outlet.cls;
   const { data: stageRow, isLoading: stageLoading } = useDiagnosticForLearner(learner?.id, cls?.curriculumId);
   const { data: areaRows = [], isLoading: areaLoading } = usePathwayDiagnosticsForLearner(learner?.id);
   const diagnosticRows = [stageRow, ...areaRows]
@@ -186,7 +192,7 @@ export default function ReportsOverview({ limit, hubId } = {}) {
         ))}
       </div>
 
-      {limit && combinedCount > limit && (
+      {limit && combinedCount > limit && navigate && (
         <button
           type="button"
           onClick={() => navigate("/learner-portal/reports")}

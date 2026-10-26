@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiActivity, FiHome } from "react-icons/fi";
+import { FiActivity, FiHome, FiUser } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
@@ -13,7 +13,7 @@ import {
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { classApi } from "../../classes/services/classApi";
-import { useLadder, usePathway, usePathways, useAgeCategories, usePerformanceBands } from "../../curriculum/hooks/useCompetencies";
+import { useLadder, usePathway, usePathways, useAgeCategories, usePerformanceBands, useAssignLearnerPathway, useRemoveLearnerPathway } from "../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useDiagnosticForLearner, usePathwayDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
@@ -316,34 +316,42 @@ function PathwayDiagnosticsCard({ learnerId, curriculumId }) {
   );
 }
 
-// Per-Pathway course placement — where the learner currently sits in each area's
-// course sequence (Robotics 1 → 2 → 3 → 4, etc.), read-only here (mirrors the learner-portal's
-// own read-only JourneyRow) — placement is resolved automatically from how each Pathway's
-// courses are set up (its course order, plus a diagnostic assessment where one's configured),
-// not picked per area by hand. The Developmental Stage selector below is a separate, still-
-// manual control — it drives which diagnostics auto-issue and which stage-default a Learning
-// Area's placement falls back to, not a per-area override itself. Stage lives on the hub
-// enrollment link (`hubId`), not the learner record — see maybeAutoIssueDiagnostic's comment in
-// learner.service.js.
-function PathwayCard({ learnerId, hubId, currentStageId, curriculumId }) {
+// The pathways this learner is on, and where they sit in each one's course sequence (Robotics
+// 1 → 2 → 3 → 4, etc.). The automatic one is the pathway for their Developmental Stage — its
+// diagnostic places them, and it follows the stage selector below. Staff can add more by hand
+// ("Add pathway"): the learner starts at its first course, moves up the ladder like any other
+// placement, and sees its courses in My Courses (CompetencyService.assignPathway). Only a
+// hand-added pathway can be removed. Stage lives on the hub enrollment link (`hubId`), not the
+// learner record — see maybeAutoIssueDiagnostic's comment in learner.service.js.
+function PathwayCard({ learnerId, hubId, currentStageId, curriculumId, canRemove }) {
   const { data: journey = [], isLoading: journeyLoading } = usePathway(curriculumId, learnerId);
   const { data: areas = [] } = usePathways(curriculumId);
   const { data: stages = [] } = useAgeCategories(curriculumId);
   const { data: coursesResponse } = useCoursesQuery();
   const { mutate: updateHubLink, isPending: savingStage } = useUpdateLearnerHubLink();
+  const { mutate: assignPathway, isPending: assigning } = useAssignLearnerPathway(curriculumId, learnerId);
+  const { mutate: removePathway, isPending: removing } = useRemoveLearnerPathway(curriculumId, learnerId);
+  const [addId, setAddId] = useState("");
+  const [removeTarget, setRemoveTarget] = useState(null);
 
   if (!curriculumId || journeyLoading) return null;
-  if (journey.length === 0) return null;
 
   const allCourses = coursesResponse?.data || [];
   const courseNameById = new Map(allCourses.map((c) => [c.id, c.name]));
   const areaById = new Map(areas.map((a) => [a.id, a]));
+  const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
+  const onIds = new Set(journey.map((j) => j.pathwayId));
+  // A pathway is one row per stage, so each option names its stage too.
+  const addable = areas
+    .filter((a) => !onIds.has(a.id))
+    .map((a) => ({ ...a, label: `${a.name} — ${stageNameById.get(a.ageCategoryId) || "No stage yet"}`, empty: (a.courses || []).length === 0 }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", gridColumn: "1 / -1" }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pathway — Course Placement</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Pathways</h3>
       <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>
-        Where this learner currently sits in each pathway's course sequence.
+        The pathway for this learner's stage is assigned automatically. Add others by hand — they start at the first course, and its courses appear in the learner's My Courses.
       </p>
 
       {stages.length > 0 && (
@@ -363,31 +371,89 @@ function PathwayCard({ learnerId, hubId, currentStageId, curriculumId }) {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {journey.map((j) => {
-          const area = areaById.get(j.pathwayId);
-          const areaColor = area?.color || "#25476a";
-          const courseName = j.currentCourseId ? courseNameById.get(j.currentCourseId) : null;
-          return (
-            <div key={j.pathwayId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 160, flex: 1 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.pathwayName}</span>
-              </div>
-              {courseName ? (
-                <>
-                  <span style={{ fontSize: 13, color: "#111827" }}>{courseName}</span>
-                  <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
-                    {j.isDefault ? "Default placement" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
+      {journey.length === 0 ? (
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#9CA3AF" }}>
+          Not on any pathway yet — set a Developmental Stage for the automatic one, or add one below.
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {journey.map((j) => {
+            const area = areaById.get(j.pathwayId);
+            const areaColor = area?.color || "#25476a";
+            const courseName = j.currentCourseId ? courseNameById.get(j.currentCourseId) : null;
+            const courseIds = j.courseIds || [];
+            const step = j.currentCourseId ? courseIds.indexOf(j.currentCourseId) + 1 : 0;
+            const manual = j.source === "manual";
+            const stageName = stageNameById.get(j.stageId);
+            return (
+              <div key={j.pathwayId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 180, flex: 1, flexWrap: "wrap" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.pathwayName}</span>
+                  {stageName && <span style={{ fontSize: 11, color: "#6B7280" }}>{stageName}</span>}
+                  <span style={{ padding: "1px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: manual ? "#F5F3FF" : "#e8f5fb", color: manual ? "#6D28D9" : ACCENT, border: `1px solid ${manual ? "#DDD6FE" : "#a8d5ee"}` }}>
+                    {manual ? "Added by staff" : "Automatic · stage"}
                   </span>
-                </>
-              ) : (
-                <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                </div>
+                {courseName ? (
+                  <>
+                    <span style={{ fontSize: 13, color: "#111827" }}>
+                      {courseName}{step > 0 && courseIds.length > 1 ? ` · step ${step} of ${courseIds.length}` : ""}
+                    </span>
+                    <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
+                      {j.isDefault ? "Awaiting diagnostic" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
+                )}
+                {manual && canRemove && (
+                  <button type="button" disabled={removing} onClick={() => setRemoveTarget(j)} style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: removing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {addable.length > 0 && (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select
+            value={addId}
+            onChange={(e) => setAddId(e.target.value)}
+            style={{ flex: 1, minWidth: 220, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
+          >
+            <option value="">Add a pathway…</option>
+            {addable.map((a) => (
+              <option key={a.id} value={a.id} disabled={a.empty}>{a.label}{a.empty ? " (no courses yet)" : ""}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!addId || assigning}
+            onClick={() => assignPathway(addId, { onSuccess: () => setAddId("") })}
+            style={{ padding: "8px 16px", backgroundColor: !addId || assigning ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !addId || assigning ? "not-allowed" : "pointer", flexShrink: 0 }}
+          >
+            {assigning ? "Adding…" : "Add pathway"}
+          </button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={!!removeTarget}
+        title="Remove Pathway"
+        message={`"${removeTarget?.pathwayName}" will be taken off this learner, with their progress through its courses. Its courses leave their My Courses unless their class has them too.`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          removePathway(removeTarget.pathwayId);
+          setRemoveTarget(null);
+        }}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }
@@ -768,6 +834,10 @@ export default function LearnerViewPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
+            {/* The learner's own profile page, as they and their family see it. */}
+            <button type="button" onClick={() => navigate(learnerPath(user?.role, id, "profile"))} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", backgroundColor: "#ffffff", color: ACCENT, border: "1.5px solid #ffffff", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              <FiUser size={15} /> View Profile
+            </button>
             {isAdmin && (
               <button
                 type="button"
@@ -835,7 +905,7 @@ export default function LearnerViewPage() {
             <PathwayDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
           </>
         )}
-        <PathwayCard learnerId={id} hubId={primary?.id} currentStageId={primary?.currentStageId} curriculumId={curriculumId} />
+        <PathwayCard learnerId={id} hubId={primary?.id} currentStageId={primary?.currentStageId} curriculumId={curriculumId} canRemove={isAdmin || isSchool} />
         <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} dateOfBirth={learner.dateOfBirth} />
       </div>
 

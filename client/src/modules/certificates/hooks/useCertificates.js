@@ -22,6 +22,15 @@ export function useMyCertificateProgress(hubId) {
   return useQuery({ queryKey: ["certificates", "progress", hubId || null], queryFn: () => certificateApi.getMyProgress(hubId) });
 }
 
+// Staff: the same for one learner at one of the caller's hubs (their profile's achievements).
+export function useLearnerCertificateProgress(learnerId, hubId) {
+  return useQuery({
+    queryKey: ["certificates", "progress", "learner", learnerId, hubId],
+    queryFn:  () => certificateApi.getLearnerProgress(learnerId, hubId),
+    enabled:  !!learnerId && !!hubId,
+  });
+}
+
 // Staff: every certificate this learner holds that the caller can reach.
 export function useLearnerCertificates(learnerId) {
   return useQuery({

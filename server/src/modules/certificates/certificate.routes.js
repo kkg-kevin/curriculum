@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  listMyCertificates, getMyProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
+  listMyCertificates, getMyProgress, getLearnerProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
   getSettings, updateSettings,
 } = require("./certificate.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -16,6 +16,8 @@ const router = express.Router();
 router.get("/learner/mine", authorize("learner"), listMyCertificates);
 // What this learner can earn next, with how far along they are.
 router.get("/learner/progress", authorize("learner"), getMyProgress);
+// Staff-facing: the same for one learner (?hubId= one of the caller's hubs), on their profile.
+router.get("/learner/:learnerId/progress", authorize("admin", "school"), getLearnerProgress);
 
 // Staff-facing: one learner's (?learnerId=), a class's (?classId=&courseId=), or — admin and
 // school — every certificate in the workspace / hub.

@@ -12,6 +12,8 @@ export const assessmentSubmissionApi = {
   reissue:            (issueId, payload) => api.post(`${BASE}/issues/${issueId}/reissue`, payload).then((r) => r.data.data),
 
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
+  // Admin/school: the same list for one learner, as their profile shows it.
+  getIssuedForLearnerAsStaff: (learnerId) => api.get(`${BASE}/learner/${learnerId}/issued`).then((r) => r.data),
   getDiagnosticForLearner: (learnerId, curriculumId) => api.get(`${BASE}/diagnostic/${learnerId}`, { params: curriculumId ? { curriculumId } : {} }).then((r) => r.data.data),
   getPathwayDiagnosticsForLearner: (learnerId) => api.get(`${BASE}/diagnostic/pathways/${learnerId}`).then((r) => r.data.data),
   getLearnerIndicatorProgress: (learnerId, curriculumId) => api.get(`${BASE}/learner/${learnerId}/competency-progress`, { params: curriculumId ? { curriculumId } : {} }).then((r) => r.data.data),

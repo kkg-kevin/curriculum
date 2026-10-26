@@ -70,9 +70,11 @@ const STATUS_CONFIG = {
 // Profile page's Assessments tab (which already has a page-level hero) — this is just the body.
 // `classId`, when given, scopes to one hub's class — a learner enrolled at several hubs can
 // have assessments issued in more than one, and each hub only makes sense against its own.
-export default function AssessmentsOverview({ limit, classId } = {}) {
+// `staffLearnerId`, when given, is an admin/school viewing that learner's profile: their list is
+// read instead, and the learner-portal buttons are left off.
+export default function AssessmentsOverview({ limit, classId, staffLearnerId } = {}) {
   const navigate = useNavigate();
-  const { data, isLoading } = useIssuedForLearner();
+  const { data, isLoading } = useIssuedForLearner(staffLearnerId);
   const allRows = data?.data || [];
   // Standalone issues (course-progress-triggered, and reissues — see reissueToLearner
   // server-side) have no classId of their own to match against; excluding them here left them
@@ -127,9 +129,9 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
                     <span style={{ fontSize: 12, fontWeight: 700, color: cfg.color, backgroundColor: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 999, padding: "6px 12px" }}>
                       {cfg.label}{submission.status === "graded" ? ` · ${submission.totalScore}/${submission.maxScore}` : ""}
                     </span>
-                    <button type="button" onClick={() => navigate(`/learner-portal/assessments/${issue.id}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {!staffLearnerId && <button type="button" onClick={() => navigate(`/learner-portal/assessments/${issue.id}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       {cfg.cta}
-                    </button>
+                    </button>}
                   </div>
                 </div>
                 {(issue.dueDate || issue.timeLimitMinutes) && (
@@ -145,7 +147,7 @@ export default function AssessmentsOverview({ limit, classId } = {}) {
         </div>
       )}
 
-      {limit && rows.length > limit && (
+      {limit && rows.length > limit && !staffLearnerId && (
         <button
           type="button"
           onClick={() => navigate("/learner-portal/assessments")}

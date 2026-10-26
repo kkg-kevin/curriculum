@@ -6,7 +6,8 @@ const TABLE = "learner_pathways";
 // A learner's placement timeline, one record per (learner, Pathway): where they
 // currently stand plus an append-only history of every place they've been placed, so
 // "the level they've reached" is always derivable from the latest history entry, not just
-// a single overwritten field.
+// a single overwritten field. `source` is how the learner came to be on the pathway: "auto"
+// (their stage's pathway, placed by its diagnostic) or "manual" (assigned by staff).
 const LearnerPathwayModel = {
   findByLearner(learnerId) {
     return db(TABLE).where({ learnerId });
@@ -17,8 +18,9 @@ const LearnerPathwayModel = {
   },
 
   // Sets (or moves) a learner's current course in one Pathway, appending to history
-  // rather than overwriting it. Creates the record on first placement.
-  async place(learnerId, curriculumId, pathwayId, courseId, reason, assessmentId = null) {
+  // rather than overwriting it. Creates the record on first placement, with `source`; a later
+  // placement never changes it (a diagnostic on a hand-assigned pathway leaves it manual).
+  async place(learnerId, curriculumId, pathwayId, courseId, reason, assessmentId = null, source = "auto") {
     const existing = await firstOrNull(db(TABLE).where({ learnerId, pathwayId }));
     const now = new Date();
     const entry = { courseId, reachedAt: now.toISOString(), reason, assessmentId };
@@ -30,6 +32,7 @@ const LearnerPathwayModel = {
         curriculumId,
         pathwayId,
         currentCourseId: courseId,
+        source,
         history: [entry],
         createdAt: now,
         updatedAt: now,
@@ -45,6 +48,10 @@ const LearnerPathwayModel = {
       updatedAt: now,
     });
     return { ...existing, currentCourseId: courseId, history, updatedAt: now };
+  },
+
+  deleteOne(learnerId, pathwayId) {
+    return db(TABLE).where({ learnerId, pathwayId }).del();
   },
 
   deleteByLearnerId(learnerId) {

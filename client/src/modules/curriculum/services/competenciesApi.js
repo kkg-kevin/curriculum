@@ -191,4 +191,11 @@ export const competenciesApi = {
 
   placeLearner: (curriculumId, learnerId, areaId, data) =>
     api.post(`${base(curriculumId)}/pathway-placement/${learnerId}/${areaId}`, data).then((r) => r.data.data),
+
+  /* Pathways staff assign a learner by hand, alongside the automatic (stage) one */
+  assignLearnerPathway: (curriculumId, learnerId, pathwayId) =>
+    api.post(`${base(curriculumId)}/learner-pathways/${learnerId}`, { pathwayId }).then((r) => r.data.data),
+
+  removeLearnerPathway: (curriculumId, learnerId, pathwayId) =>
+    api.delete(`${base(curriculumId)}/learner-pathways/${learnerId}/${pathwayId}`).then((r) => r.data),
 };
