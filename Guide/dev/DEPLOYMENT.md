@@ -102,6 +102,235 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (26 Oct 2026, afternoon) — parent portal; hub check-ins simplified; no deleting what's in use; bootcamp diagnostics from the curriculum; Business / Families billing
+
+**Backend and portal** from `curriculum` (branch `modules`) at `3cd016d`. **No website change** —
+the website zips in this folder from 23 Oct are still the current ones. Includes everything in
+"This release (26 Oct 2026, morning)" below, which was never uploaded on its own — upload this one
+instead. **Take a database backup first** (one migration drops the old check-in tables), **upload
+the backend first**, then the portal.
+
+### What changed — portal
+
+- **Parent portal.** A parent (an email login with children linked to it) now has their own portal
+  at `/parent` instead of sharing the learner portal:
+  - **My family** — every child on one page (hub and class, work to do, latest result, next
+    session, attendance, latest report, certificates), what needs the parent ("Needs your
+    attention": overdue work, a placement test not taken, a child with no login, the next invoice),
+    and totals (children, work to do, money to pay).
+  - **Each child** in the sidebar opens that child's learner profile exactly as the learner sees it
+    — the parent switches child from the sidebar, no password prompt. Parents **watch, children do
+    the work**: assessments open read-only ("Waiting for Amani to start"), and the server refuses a
+    parent starting, saving or submitting a child's work.
+  - **Login** (from each child's card) — the child's username, and a new password when they forget
+    theirs; a child with no login yet gets a username and password set up here.
+  - **Timetable** — every child's sessions in one calendar, labelled with whose they are.
+  - **Payments** — every child's invoices together (they used to show only the child picked), plus
+    Home Learning and Tech Club bills. **Packages** and **My account** (photo, name, phone,
+    password, emails).
+  - A child's own username login keeps the learner portal, unchanged. Old links (bookmarks,
+    notification emails) into the learner portal take a parent to the same thing in theirs.
+- **Setting a learner's password never changes their username.** On the learner's Edit Profile, a
+  learner who has a username sees it, not as a box (the browser used to fill that box in from saved
+  logins and rename the child's login on save).
+- **Hub check-ins, simplified** — notification → check-in → report. The hub form names the hub's
+  **Account Manager** and **Training Lead** (an educator with a login, or an admin); the admin sets
+  up a schedule per hub (weekly / monthly / every 6 months / yearly, first date, online or in
+  person). A check-in is due on its day; a pop-up on sign-in reminds the pair until the report —
+  **Highs, Lows, Resolutions** — is in. An educator named on a hub signs in to the hub portal for
+  check-ins (every hub of the workspace, view only). Rescheduling, cancelling, the A–G report and
+  the issues/actions tracker are gone (see the migration below — nothing written is lost).
+- **Learners → Logins**: parent and learner logins are on the Learners page now; Settings → Users
+  lists the other logins.
+- **No deleting what's still in use.** Deleting a curriculum, hub, course (module, session),
+  assessment, class, class group, educator, learner, competency, a curriculum's competencies /
+  pathways / stages / bands, system level, item, room, access role, bootcamp, game, supervisor or
+  package first checks what uses it. In use: the dialog lists what (e.g. "9 classes — Grade 4
+  Blue, …; 2 educators; 6 invoices") and offers to deactivate / archive instead where that exists
+  (hub, class, educator, learner account, course, room, packages); the delete itself is refused.
+  Messages that promised a delete would quietly unlink things are reworded.
+- **Bootcamp diagnostics come from the curriculum.** Curriculum → Competencies → Pathways: each
+  stage has two diagnostics — **For learners** (issued once enrolled, any type except Teacher
+  Observation) and **On the website** (visitors and bootcamp sign-ups; only assessments marked
+  automatically can be picked). The bootcamp form no longer picks diagnostics; it lists its
+  curriculum's, with a link there. The website's bootcamp Enroll offers the website diagnostics of
+  the bootcamp's pathways — what it offers today doesn't change (see the migration).
+- **Billing — Business (B2B) and Families (B2C).** Customers, Invoices and Payments share an
+  **All customers | Business (B2B) | Families (B2C)** switch. Business = invoices billed to a
+  learning hub/school; Families = billed to a person (parents, households, website buyers).
+  Customers now lists families too (grouped by the email billed); each invoice and payment carries
+  a B2B / B2C label.
+
+### Three new migrations, applied on Restart
+
+- `20261026110000_simplify_hub_checkins.js` — **drops columns and tables**: each check-in report
+  becomes `{ highs, lows, resolutions }` (an old report is carried over under those three headings,
+  issues and follow-ups included, so nothing written is lost); a cancelled check-in with nothing
+  written is deleted, any other unreported one is open again; drops the time / length / link /
+  venue / agenda columns and the `checkin_actions` and `checkin_action_updates` tables.
+- `20261026120000_add_checkin_people_to_learning_hubs.js` — `learning_hubs.accountManagerId` /
+  `trainingLeadId`, filled in from each hub's current check-in schedule.
+- `20261026130000_curriculum_owns_bootcamp_diagnostics.js` — a pathway stage offering its learner
+  diagnostic on the website gets it as its own website diagnostic (so the website offers the same
+  thing as before); a website diagnostic that was switched off is cleared; drops
+  `bootcamps.pathwayDiagnostics` (its picks never reached the website or the learners).
+
+No new npm package, no new environment variable, cron unchanged (`npm run checkins:process`
+hourly). New endpoints: `/api/parent/*` (overview, timetable, children's logins); every guarded
+delete also answers `?check=1` with what uses the record (nothing deleted).
+
+### Backend (`backend-deploy.zip`)
+
+From `3cd016d`, byte-identical in Dev, Live and Capable; 574 entries, 141 migrations, the newest
+`20261026130000_curriculum_owns_bootcamp_diagnostics.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DrySHEm4.js` |
+| Live | `npm run build:live` | `index-C099zgW-.js` |
+| Capable | `npm run build:capable` | `index-Cc75JqXF.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Checked so far
+
+Server tests (58) pass and every build passes. Against the running local API: every delete check
+answers what uses the record and deletes nothing; an in-use curriculum or hub is refused (409) and
+still there; a parent's family overview, timetable and billing cover all their children; a parent
+starting, saving or submitting a child's work is refused and creates nothing; another family's
+child can't be reached; a parent sets up and resets a child's login (old password refused, new one
+works, username unchanged); a teacher-marked assessment is refused as a website diagnostic;
+Business/Families totals per customer. **Not yet clicked through in a browser, and nothing tried on
+the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup** — the check-in migration drops tables.
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW COLUMNS FROM learning_hubs LIKE 'accountManagerId';` returns one row and
+   `SHOW COLUMNS FROM bootcamps LIKE 'pathwayDiagnostics';` returns none. If not, Run JS script →
+   `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Verify:**
+   - Sign in as a parent with two children: My family shows both; each child in the sidebar opens
+     their profile; an assessment opens read-only; Payments lists both children's invoices; a
+     child's **Login** shows their username.
+   - Sign in with a child's username: the learner portal as before.
+   - A hub's form: Account Manager and Training Lead; Hub Check-ins → set up a schedule; on the due
+     day the pair get the pop-up and write Highs / Lows / Resolutions. Old reports read under the
+     three headings.
+   - Try deleting a curriculum with classes: the dialog lists them and Delete is off. Delete
+     something unused (a new room): it goes.
+   - Curriculum → Competencies → Pathways: a stage's **For learners** / **On the website**; the
+     website's bootcamp Enroll still offers the diagnostic it did.
+   - Billing: the Business / Families switch; Customers lists families.
+
+**Rolling back:** restore the backup, then upload the earlier backend and portal zips (from commit
+`8b3d109`).
+
+---
+
+## This release (26 Oct 2026, morning — superseded by the afternoon build above) — the learner's profile as staff see it; pathways added by hand; marked observation notes; Direct marks or Rubric
+
+**Backend and portal** from `curriculum` (branch `modules`) at `e1573d6`. **No website change** —
+the website zips in this folder from 23 Oct are still the current ones. Includes everything in
+"This release (23 Oct 2026)" below. **Upload the backend first**, then the portal.
+
+### What changed — portal
+
+- **Learner → View Profile** (admins, collaborators and hubs): the learner's own profile as they
+  and their family see it in the learner portal — identity, Progress Arc, guardian, share link,
+  portfolio, hubs and teachers, certificates and what's next, and the Overview, Competencies,
+  Pathway, Assessments and Reports tabs, with a hub picker for a learner at several hubs. The edit
+  buttons open the learner's Edit page; password and email settings aren't shown. Only data from
+  your own hubs.
+- **Pathways added by hand.** The learner page's **Pathways** card lists every pathway the learner
+  is on — the automatic one for their Developmental Stage (*Automatic · stage*, "Awaiting
+  diagnostic" until its diagnostic is graded) and any added by staff (*Added by staff*). **Add a
+  pathway…** puts the learner on another pathway of their class's curriculum, at its first course;
+  they move up its ladder like any other. Only a hand-added pathway can be removed (collaborators
+  can add, not remove). The automatic placement works exactly as before.
+- **My Courses** (and the learner dashboard, Progress and profile) lists the class grade's courses
+  **plus the courses of every pathway the learner is on**. The learner's Pathways tab shows them
+  all, with "Added by your hub" on hand-added ones. The learner page and the public share page show
+  only the learner's own pathways (they used to list every pathway as "Default placement").
+- **Teacher Observation notes are marked.** A Note takes competency indicators and marks like
+  Checklist, Rating, Practical skill and Behaviour, and is marked under "Needs grading". Existing
+  notes are set to 0 marks (see the migrations), so no observation's total changes.
+- **Direct marks or Rubric, never both.** A question tagged to indicators has a **Direct marks /
+  Rubric** switch. Direct: type each indicator's marks. Rubric: each criterion marks one indicator
+  ("Which indicator does this mark?"), and the indicator's marks are the sum of its criteria; the
+  direct boxes show those sums, greyed out. Switching to Rubric starts one criterion per indicator
+  at its current marks. Same on the Grading Rubric tab. Existing rubrics on questions with several
+  indicators keep sharing their marks evenly until each criterion is given an indicator (a red note
+  says so).
+- **Grading:** a ticked rubric criterion credits its own indicator; direct marks are shared in
+  proportion to each indicator's marks (1 + 0.5 scored 1.5 gives 1 and 0.5) — they used to be
+  split evenly, which could credit an indicator more than it is worth. Grades already saved don't
+  change.
+- **Curriculum → Competencies** counts indicators assessed by Teacher Observations as in use, so
+  they show on Performance Bands and pathway course ladders without "show all".
+
+### Two new migrations, applied on Restart
+
+- `20261026090000_add_source_to_learner_pathways.js` — `learner_pathways.source` (`auto` |
+  `manual`, default `auto`).
+- `20261026100000_zero_marks_on_observation_notes.js` — data only: every observation Note not tagged
+  to an indicator is set to 0 marks (they all carried a hidden 1). Submissions keep the total they
+  were created with.
+
+Both additive. No new npm package, no new environment variable. New endpoints:
+`GET /api/assessment-submissions/learner/:learnerId/issued`, `GET /api/reports/learner/:learnerId`,
+`GET /api/certificates/learner/:learnerId/progress`, and
+`POST`/`DELETE /api/curricula/:id/competencies/learner-pathways/:learnerId[/:pathwayId]`.
+
+### Backend (`backend-deploy.zip`)
+
+From `e1573d6`, byte-identical in Dev, Live and Capable; 563 entries, 138 migrations, the newest
+`20261026100000_zero_marks_on_observation_notes.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-D-PHT76t.js` |
+| Live | `npm run build:live` | `index-CwA2YCOP.js` |
+| Capable | `npm run build:capable` | `index-DAEJpEh1.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Checked so far
+
+Server tests (58) pass and every build passes. Against a local database: a pathway added by hand
+lands at its first course, adding it twice is refused, the automatic one can't be removed, and
+removing the hand-added one restores the learner as before; the notes migration set 6 notes to 0
+marks with every observation's total unchanged; the marks split worked through on sample numbers
+(direct 1 + 0.5, rubric criteria per indicator, untagging an indicator). **Not yet clicked through
+in a browser, and nothing tried on the hosting** — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart. Check
+   `SHOW COLUMNS FROM learner_pathways LIKE 'source';` returns one row. If not, Run JS script →
+   `db:migrate`.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Verify:**
+   - A learner → **View Profile**: their cards and tabs load, Assessments and Reports show their work.
+   - The learner's **Pathways** card: **Add a pathway…**, then sign in as the learner (or a parent)
+     — its courses are in My Courses and it shows on the Pathways tab. Remove it again.
+   - A Teacher Observation: give a Note an indicator and marks; switch a question to **Rubric** and
+     give each criterion an indicator; grade it and check the learner's competency scores.
+
+**Rolling back:** restore the backup, then upload the earlier backend and portal zips (from commit
+`8b3d109`).
+
+---
+
 ## This release (23 Oct 2026) — buying on the website (cart, checkout, orders); a payment step after sign-ups; admin My profile; a profile photo editor; advance course coverage; Base plus's own session rate; gender Male/Female only; one login, several roles
 
 **Backend, portal and website** from `curriculum` (branch `modules`) at `8d1f805` and
