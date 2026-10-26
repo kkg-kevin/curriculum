@@ -46,9 +46,8 @@ async function activeOrderedCourses(pathway) {
 }
 
 // Whether this pathway's diagnostic is actually offerable to an anonymous visitor right now:
-// the flag is on, an EFFECTIVE assessment (publicDiagnosticAssessmentId when set, falling back
-// to diagnosticAssessmentId — same resolution public-diagnostic.service.js's
-// loadOfferableAssessment uses) still resolves and is fully auto-gradable (live re-check — the
+// the flag is on, its website diagnostic (publicDiagnosticAssessmentId — same resolution
+// public-diagnostic.service.js's loadOfferableAssessment uses) still resolves and is fully auto-gradable (live re-check — the
 // flag and the assessment are independently editable), AND both age bounds are set on the
 // pathway's own Developmental Stage (a missing bound means "not configured", not "any age" — the
 // anonymous path fails safe). A pathway belongs to exactly one stage instead of carrying its own
@@ -56,7 +55,7 @@ async function activeOrderedCourses(pathway) {
 // same resolution.
 async function diagnosticInfoFor(pathway) {
   const off = { available: false, minAge: null, maxAge: null };
-  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId;
   if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return off;
   const stage = pathway.ageCategoryId ? await AgeCategoryModel.findById(pathway.ageCategoryId) : null;
   if (stage?.minAge == null || stage?.maxAge == null || Number(stage.minAge) > Number(stage.maxAge)) {

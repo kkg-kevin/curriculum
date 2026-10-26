@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   FiGrid, FiBookOpen, FiLayers, FiHome, FiUserCheck, FiUsers, FiCheckSquare,
-  FiCalendar, FiBarChart2, FiDollarSign, FiUser,
+  FiCalendar, FiBarChart2, FiDollarSign, FiUser, FiClipboard,
 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
@@ -22,7 +22,11 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
   });
   const schoolId = schoolsData?.data?.[0]?.id || null;
 
+  // An Account Manager / Training Lead looks at every hub (view only) and does their check-ins:
+  // no Rooms, Billing or the hub's own Profile.
+  const hubLead = !!user?.hubLead;
   const menuItems = [
+    ...(hubLead ? [{ name: "Hub Check-ins", path: "/school-portal/checkins", end: false, enabled: true, icon: FiClipboard }] : []),
     { name: "Dashboard",   path: "/school-portal", end: true, enabled: true, icon: FiGrid },
     { name: "Curriculum",  path: "/school-portal/curriculum", end: false, enabled: true, icon: FiBookOpen },
     { name: "Classes",     path: `/school-portal/classes/${schoolId}`,    end: false, enabled: !!schoolId, icon: FiLayers },
@@ -34,7 +38,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     { name: "Reports",     path: "/school-portal/reports", end: false, enabled: true, icon: FiBarChart2 },
     { name: "Billing",     path: "/school-portal/billing", end: false, enabled: true, icon: FiDollarSign },
     { name: "Profile",     path: "/school-portal/profile", end: false, enabled: true, icon: FiUser },
-  ];
+  ].filter((item) => !hubLead || !["Rooms", "Billing", "Profile"].includes(item.name));
 
   return (
     <>

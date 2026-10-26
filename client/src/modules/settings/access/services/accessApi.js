@@ -1,4 +1,4 @@
-import api from "../../../../services/api";
+import api, { checkDelete } from "../../../../services/api";
 
 const BASE = "/api/access";
 
@@ -10,4 +10,5 @@ export const accessApi = {
   createRole: (data) => api.post(`${BASE}/roles`, data).then((r) => r.data.data),
   updateRole: (id, data) => api.put(`${BASE}/roles/${id}`, data).then((r) => r.data.data),
   deleteRole: (id) => api.delete(`${BASE}/roles/${id}`).then((r) => r.data),
+  checkDeleteRole: (id) => checkDelete(`${BASE}/roles/${id}`),
 };

@@ -33,7 +33,7 @@ const ADMIN_MENU_ITEMS = [
   // reviews claims still needs this item to get there.
   { name: "Billing", path: "/billing", icon: FiDollarSign, module: ["billing", "claims", "claims-approval"] },
   // Hub check-ins: taking part (Account Managers, Training Leads) or overseeing them.
-  { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: ["checkins", "checkins-manage"] },
+  { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: "checkins-manage" },
   { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
   { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
 ];

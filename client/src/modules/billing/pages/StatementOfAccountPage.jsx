@@ -15,7 +15,7 @@ export default function StatementOfAccountPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isLearner = user?.role === "learner";
-  const basePath = isLearner ? "/learner-portal" : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const basePath = isLearner ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
 
   const { data: invoicesData } = useInvoicesQuery();
   const invoices = invoicesData?.data || [];

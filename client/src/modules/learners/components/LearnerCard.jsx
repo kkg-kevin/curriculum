@@ -6,6 +6,7 @@ import { useDeleteLearner, useUpdateLearnerAccountStatus } from "../hooks/useLea
 import { useAuth } from "../../../context/AuthContext";
 import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { learnerApi } from "../services/learnerApi";
 import { formatClassName } from "../../classes/utils/classDisplay";
 
 const ACCENT = "#25476a";
@@ -185,6 +186,8 @@ export function LearnerCard({ learner, classMap }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteLearner(learner.id); }}
+        usageCheck={() => learnerApi.checkRemove(learner.id)}
+        onAlternative={accountStatus === "active" ? () => { setConfirmOpen(false); updateAccountStatus({ id: learner.id, accountStatus: "inactive" }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

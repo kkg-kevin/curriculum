@@ -6,6 +6,7 @@ import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
 import { useTeacherPortalScope, HUB_STORAGE_KEY } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
 import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
+import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -71,6 +72,9 @@ function TeacherPortalLayout() {
 
         <Footer />
       </div>
+
+      {/* An educator named on a hub as its Account Manager / Training Lead: their reports due. */}
+      <CheckinsDuePopup />
 
       <style>{`
         .teacher-shell {

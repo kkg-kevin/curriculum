@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const base = (curriculumId) => `/api/curricula/${curriculumId}/competencies`;
 
@@ -13,6 +13,7 @@ export const competenciesApi = {
 
   unlinkCompetency: (curriculumId, competencyId) =>
     api.delete(`${base(curriculumId)}/links/${competencyId}`).then((r) => r.data.data),
+  checkUnlinkCompetency: (curriculumId, competencyId) => checkDelete(`${base(curriculumId)}/links/${competencyId}`),
 
   updateCompetencyLink: (curriculumId, competencyId, data) =>
     api.put(`${base(curriculumId)}/links/${competencyId}`, data).then((r) => r.data.data),
@@ -29,6 +30,7 @@ export const competenciesApi = {
 
   deleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) =>
     api.delete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`).then((r) => r.data),
+  checkDeleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) => checkDelete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`),
 
   /* Pathways — this curriculum's own roadmaps (courses + diagnostic + age + placement) */
   getPathways: (curriculumId) =>
@@ -42,6 +44,7 @@ export const competenciesApi = {
 
   deletePathway: (curriculumId, pathwayId) =>
     api.delete(`${base(curriculumId)}/pathways/${pathwayId}`).then((r) => r.data),
+  checkDeletePathway: (curriculumId, pathwayId) => checkDelete(`${base(curriculumId)}/pathways/${pathwayId}`),
 
   // pathwayId here is a pathway-template id (Settings library) — the server clones it into
   // this curriculum as a fresh, independent pathway. The wire field stays `pathwayId`.
@@ -90,6 +93,7 @@ export const competenciesApi = {
 
   deleteAgeCategory: (curriculumId, acId) =>
     api.delete(`${base(curriculumId)}/age-categories/${acId}`).then((r) => r.data),
+  checkDeleteAgeCategory: (curriculumId, acId) => checkDelete(`${base(curriculumId)}/age-categories/${acId}`),
 
   /* Progress Levels */
   getProgressLevels: (curriculumId) =>
@@ -154,6 +158,7 @@ export const competenciesApi = {
 
   deletePerformanceBand: (curriculumId, bandId) =>
     api.delete(`/api/curricula/${curriculumId}/competencies/bands/${bandId}`).then((r) => r.data),
+  checkDeletePerformanceBand: (curriculumId, bandId) => checkDelete(`/api/curricula/${curriculumId}/competencies/bands/${bandId}`),
 
   reorderPerformanceBands: (curriculumId, ageCategoryId, orderedIds) =>
     api.put(`/api/curricula/${curriculumId}/competencies/bands/reorder`, { ageCategoryId, orderedIds }).then((r) => r.data.data),

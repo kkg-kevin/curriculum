@@ -45,6 +45,9 @@ async function protect(req, res, next) {
     // The role this session runs as (an account may hold several — see account-roles.js).
     const user = await AuthService.getById(payload.sub, payload.role);
     req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules, roleId: user.roleId, organisationId: user.organisationId || null };
+    // An Account Manager / Training Lead session runs as "school" (the hub portal) — see
+    // AuthService.sessionUser; scope.middleware.js and blockHubLeadWrites read this.
+    if (user.hubLead) req.user.hubLead = true;
     next();
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404) return next(err);
@@ -95,6 +98,26 @@ async function blockIfSuspended(req, res, next) {
   }
 }
 
+// An Account Manager / Training Lead (a login named on a hub — account-roles.js) sees every hub in
+// the hub portal but changes nothing there. Mounted once, after `protect`, like blockIfSuspended:
+// safe methods pass; of the rest only their check-in reports, their own sign-in/session, and their
+// own notifications get through.
+const HUB_LEAD_WRITES = [
+  /^\/api\/checkins\/sessions\/[^/]+\/report$/,
+  /^\/api\/auth\//,
+  /^\/api\/notifications(\/|$)/,
+];
+
+function blockHubLeadWrites(req, res, next) {
+  if (!req.user?.hubLead || SAFE_METHODS.has(req.method)) return next();
+  const path = req.originalUrl.split("?")[0];
+  if (HUB_LEAD_WRITES.some((pattern) => pattern.test(path))) return next();
+  const err = new Error("As an Account Manager or Training Lead you can view the hubs, not change them — only your check-in reports.");
+  err.statusCode = 403;
+  err.code = "HUB_LEAD_READ_ONLY";
+  next(err);
+}
+
 // A collaborator (see the 20260914090000 migration) gets the same tenant-wide edit access as the
 // admin who invited them — attachOwnRecords aliases req.user.role to "admin" (keeping the real
 // role at req.user.actualRole) for every request except DELETE, so every EXISTING admin-only
@@ -113,4 +136,4 @@ function blockIfCollaboratorRestricted(req, res, next) {
   return next(err);
 }
 
-module.exports = { protect, authorize, blockIfSuspended, blockIfCollaboratorRestricted };
+module.exports = { protect, authorize, blockIfSuspended, blockHubLeadWrites, blockIfCollaboratorRestricted };

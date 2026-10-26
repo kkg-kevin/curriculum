@@ -59,7 +59,7 @@ function Field({ label, required, error, hint, children }) {
   );
 }
 
-function TextInput({ name, placeholder, type = "text", label, required, hint }) {
+function TextInput({ name, placeholder, type = "text", label, required, hint, autoComplete }) {
   const { register, formState: { errors } } = useFormContext();
   const error = errors?.[name]?.message;
   return (
@@ -67,6 +67,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint }) 
       <input
         type={type}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         {...register(name)}
         style={inputStyle(!!error)}
         onFocus={(e)  => { e.target.style.borderColor = "#b8d9ee"; e.target.style.backgroundColor = "#fff"; }}
@@ -179,6 +180,7 @@ export default function LearnerForm() {
           <TextInput
             name="username"
             label="Student Username"
+            autoComplete="off"
             placeholder="e.g. grace.wambui"
             hint="Without a password below, this username still logs into the guardian's account above; with one, it's the learner's own separate login."
           />

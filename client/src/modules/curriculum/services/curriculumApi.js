@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const ENDPOINT = "/api/curricula";
 
@@ -11,6 +11,7 @@ export const curriculumApi = {
   getMine: () => api.get(`${ENDPOINT}/mine`).then((r) => r.data.data),
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${ENDPOINT}/${id}`),
   // A second, independent copy in this workspace ("… (Copy)") — same courses and assessments,
   // its own stages, pathways, bands, versions and academic years.
   duplicate: (id) => api.post(`${ENDPOINT}/${id}/duplicate`).then((r) => r.data.data),

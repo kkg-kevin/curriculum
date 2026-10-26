@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiStar, FiHome, FiBookOpen, FiUsers } from "react-icons/fi";
-import { useClassQuery, useDeleteClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useSetPrimaryCourseTeacher } from "../hooks/useClasses";
+import { useClassQuery, useDeleteClass, useUpdateClass, useClassCourseTeachers, useAssignCourseTeacher, useUnassignCourseTeacher, useSetPrimaryCourseTeacher } from "../hooks/useClasses";
 import { useAllLearningHubsQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
@@ -10,6 +10,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import { useAuth } from "../../../context/AuthContext";
 import { classesListPath, classPath, learnerPath, learnerCreatePath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { classApi } from "../services/classApi";
 import PromotionPanel from "../components/PromotionPanel";
 import ClassCompletionPanel from "../components/ClassCompletionPanel";
 import { formatClassName } from "../utils/classDisplay";
@@ -122,6 +123,7 @@ export default function ClassViewPage() {
   const { user } = useAuth();
   const { data: cls, isLoading } = useClassQuery(id);
   const { mutate: deleteClass } = useDeleteClass();
+  const { mutate: updateClass } = useUpdateClass();
   const { data: schoolsData } = useAllLearningHubsQuery();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -337,6 +339,8 @@ export default function ClassViewPage() {
           setConfirmDelete(false);
           deleteClass(id, { onSuccess: () => navigate(classesListPath(user?.role, cls.schoolId)) });
         }}
+        usageCheck={() => classApi.checkRemove(id)}
+        onAlternative={cls.status === "active" ? () => { setConfirmDelete(false); updateClass({ id, data: { status: "inactive" } }); } : undefined}
         onCancel={() => setConfirmDelete(false)}
       />
     </div>

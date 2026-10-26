@@ -47,6 +47,13 @@ api.interceptors.response.use(
     // as a normal error; the router already has them locked to the suspended page.
     wrapped.code = error.response?.data?.code;
     wrapped.reason = error.response?.data?.reason;
+    // A delete refused because the record is still in use: what uses it. InUseNotice (App.jsx)
+    // shows it, so every delete in the app gets the same warning even where its dialog didn't ask
+    // first (checkDelete below).
+    wrapped.usage = error.response?.data?.usage;
+    if (wrapped.code === "IN_USE" && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("app:in-use", { detail: { message, usage: wrapped.usage } }));
+    }
 
     // The server ended this session (idle too long, or signed out elsewhere) — tell AuthContext,
     // which signs this tab out and sends it to the login page, whichever request noticed first.
@@ -57,5 +64,10 @@ api.interceptors.response.use(
     return Promise.reject(wrapped);
   }
 );
+
+// "Is this still in use?" — the same DELETE with ?check, which only answers (the server's
+// modules/usage): { inUse, usages: [{ label, count, examples }], alternative }. Delete dialogs ask
+// this before anyone confirms (ConfirmDialog's usageCheck).
+export const checkDelete = (url) => api.delete(url, { params: { check: 1 } }).then((r) => r.data.data);
 
 export default api;

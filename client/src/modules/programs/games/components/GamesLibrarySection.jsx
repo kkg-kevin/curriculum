@@ -4,6 +4,8 @@ import { useCreateGame, useDeleteGame, useGames, useUpdateGame } from "../hooks/
 import { STARTER_GAMES } from "../starterGames";
 import { GameBadge, GameIcon, SkillChips } from "./GameTile";
 import GameFormModal from "./GameFormModal";
+import { gamesApi } from "../services/gamesApi";
+import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 
 const iconBtn = { width: 30, height: 30, borderRadius: 8, border: "1.5px solid #E5E7EB", background: "#fff", color: "#6B7280", display: "grid", placeItems: "center", cursor: "pointer" };
 
@@ -33,6 +35,7 @@ export default function GamesLibrarySection() {
   const updateGame = useUpdateGame();
   const deleteGame = useDeleteGame();
   const [editing, setEditing] = useState(null); // a game, or {} for a new one
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const existingNames = new Set(games.map((game) => game.name.toLowerCase()));
   const save = (data) => {
@@ -40,12 +43,7 @@ export default function GamesLibrarySection() {
     if (editing?.id) updateGame.mutate({ id: editing.id, ...data }, done);
     else createGame.mutate(data, done);
   };
-  const remove = (game) => {
-    const warning = game.usedIn
-      ? `Delete ${game.name}? It will also be taken off ${game.usedIn} ${game.usedIn === 1 ? "bootcamp" : "bootcamps"} that include it.`
-      : `Delete ${game.name}?`;
-    if (window.confirm(warning)) deleteGame.mutate(game.id);
-  };
+  const remove = (game) => setDeleteTarget(game);
 
   return (
     <div style={{ marginTop: 32 }}>
@@ -104,6 +102,16 @@ export default function GamesLibrarySection() {
       )}
 
       {editing && <GameFormModal game={editing} saving={createGame.isPending || updateGame.isPending} onSave={save} onClose={() => setEditing(null)} />}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete game"
+        message={`${deleteTarget?.name} will be permanently deleted from the games library.`}
+        confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => { deleteGame.mutate(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => gamesApi.checkRemove(deleteTarget.id)}
+      />
     </div>
   );
 }

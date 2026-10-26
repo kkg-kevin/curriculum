@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
+import { usePortalNavigate } from "../utils/usePortalNavigate";
 import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
@@ -219,8 +220,9 @@ function TimeLimitBanner({ createdAt, timeLimitMinutes, onExpire }) {
 
 export default function AssessmentDetailPage() {
   const { issueId } = useParams();
-  const navigate = useNavigate();
-  const { cls, learner } = useOutletContext();
+  const navigate = usePortalNavigate();
+  // viewOnly: a parent looking at their child's work (parent portal) — they can see it, not do it.
+  const { cls, learner, viewOnly } = useOutletContext();
   const { data, isLoading } = useIssuedForLearner();
   // A Developmental Stage or Pathway diagnostic never shows up in useIssuedForLearner()
   // above — getIssuedRowsForLearner (server) deliberately excludes them, since the general "My
@@ -297,7 +299,7 @@ export default function AssessmentDetailPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       <button type="button" onClick={() => navigate("/learner-portal/assessments")} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 20, color: T.inkMuted, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
-        ← My Assessments
+        {viewOnly ? "← Back to profile" : "← My Assessments"}
       </button>
 
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "24px 28px", position: "relative", overflow: "hidden" }}>
@@ -314,7 +316,16 @@ export default function AssessmentDetailPage() {
 
       <MilestonesCard milestones={assessment.milestones} progress={submission?.milestoneProgress} />
 
-      {!submission || submission.status === "not_started" ? (
+      {viewOnly && (!submission || submission.status === "not_started" || submission.status === "in_progress") ? (
+        <div style={{ ...cardStyle, textAlign: "center", padding: "48px 24px" }}>
+          <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>
+            {submission?.status === "in_progress" ? `${learner?.firstName || "Your child"} has started this` : `Waiting for ${learner?.firstName || "your child"} to start`}
+          </h3>
+          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, maxWidth: 440, marginInline: "auto" }}>
+            {learner?.firstName || "They"} does this on their own login.{row.issue.dueDate ? ` It's due ${row.issue.dueDate}.` : ""} You'll see the result and feedback here once it's marked.
+          </p>
+        </div>
+      ) : !submission || submission.status === "not_started" ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
           <div style={{ width: 56, height: 56, borderRadius: 16, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: T.accent, fontSize: 24 }}><FiSend /></div>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>Ready when you are</h3>

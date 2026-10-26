@@ -9,6 +9,8 @@ const {
   linkInventoryItemSchema,
 } = require("./assessment.validation");
 const { parsePatch } = require("../../shared/validators/common.validator");
+const UsageService = require("../usage/usage.service");
+const { requiresManualGrading } = require("./submissions/grading.utils");
 
 const createAssessment = asyncHandler(async (req, res) => {
   const data = createAssessmentSchema.parse(req.body);
@@ -19,7 +21,8 @@ const createAssessment = asyncHandler(async (req, res) => {
 
 const getAllAssessments = asyncHandler(async (req, res) => {
   const { type } = req.query;
-  const assessments = await AssessmentService.getAllAssessments({ type, ownerAdminId: req.ownerAdminId });
+  const assessments = (await AssessmentService.getAllAssessments({ type, ownerAdminId: req.ownerAdminId }))
+    .map((a) => ({ ...a, autoGraded: !requiresManualGrading(a) }));
   res.json({ success: true, data: assessments, count: assessments.length });
 });
 
@@ -44,6 +47,7 @@ const deleteAssessment = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await AssessmentService.getAssessmentById(req.params.id)));
   }
+  if (await UsageService.guardDelete(req, res, "assessment", req.params.id, "This assessment")) return;
   const result = await AssessmentService.deleteAssessment(req.params.id);
   res.json({ success: true, ...result });
 });

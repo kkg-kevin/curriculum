@@ -4,6 +4,7 @@ import {
   useSystemLevels, useCreateSystemLevel, useUpdateSystemLevel, useDeleteSystemLevel, useReorderSystemLevels,
 } from "../hooks/useSystemLevels";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { systemLevelsApi } from "../services/systemLevelsApi";
 
 // One row — sequence badge, an inline-editable name, reorder arrows, delete. Kept intentionally
 // simple (no modal, no color/description) since a System Level is just a fixed position on the
@@ -147,10 +148,11 @@ export default function SystemLevelsPanel() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title="Delete System Level"
-        message={`"${deleteTarget?.name}" will be removed. If any curriculum still has a grade mapped to it, this will be blocked until that mapping is removed first.`}
+        message={`"${deleteTarget?.name}" will be removed.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { remove(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => systemLevelsApi.checkDeleteSystemLevel(deleteTarget.id)}
       />
     </div>
   );

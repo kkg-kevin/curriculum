@@ -16,6 +16,7 @@ import StatusPill, { TYPE_LABELS, TYPE_HELP, STATUS_LABELS } from "../components
 import { InvoiceSourceLine, SOURCES, sourceKey } from "../components/invoiceSource";
 import { LoadingState, EmptyState } from "../components/PageStates";
 import Pagination from "../components/Pagination";
+import { KindPill, KindSwitch, CUSTOMER_KINDS, matchesKind } from "../components/customerKind";
 import PackagesPanel from "../components/PackagesPanel";
 import MpesaPanel from "../components/MpesaPanel";
 import PaymentNoticesPanel from "../components/PaymentNoticesPanel";
@@ -92,17 +93,21 @@ function BillingPage() {
   const isLearner = user?.role === "learner";
   const isAdmin = user?.role === "admin";
   const isSchoolLogin = user?.role === "school";
-  const receiptsBasePath = isLearner ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
-  const statementBasePath = isLearner ? "/learner-portal/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
+  const receiptsBasePath = isLearner ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const statementBasePath = isLearner ? "/parent/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
   const [searchParams, setSearchParams] = useSearchParams();
   // Admin billing is split into Customers | Invoices | Payments tabs (driven by ?tab= so a link
   // from the customer page can deep-link to a tab). Other roles keep the single-view layout.
   const activeTab = isAdmin ? (ADMIN_TABS.some((t) => t.key === searchParams.get("tab")) ? searchParams.get("tab") : "customers") : null;
   const setActiveTab = (key) => setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("tab", key); if (key !== "invoices") next.delete("hub"); return next; }, { replace: true });
   const hubParam = searchParams.get("hub");
+  // Business (B2B) or Families (B2C), across Customers, Invoices and Payments (admin).
+  const kind = isAdmin && ["b2b", "b2c"].includes(searchParams.get("kind")) ? searchParams.get("kind") : "all";
+  const setKind = (next) => setSearchParams((prev) => { const p = new URLSearchParams(prev); if (next === "all") p.delete("kind"); else p.set("kind", next); return p; }, { replace: true });
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoicesQuery();
   const { data: customersData } = useCustomersQuery({ enabled: isAdmin });
-  const customers = customersData?.data || [];
+  const allCustomers = customersData?.data || [];
+  const customers = allCustomers.filter((c) => matchesKind(kind, c.kind));
   const { data: hubsData } = useAllLearningHubsQuery({ includeDrafts: true });
   const hubs = hubsData?.data || [];
   const [hubId, setHubId] = useState(hubParam || "");
@@ -143,10 +148,12 @@ function BillingPage() {
   const { mutate: createInvoice, isPending: creating } = useCreateInvoice();
   const { mutate: issueInvoice } = useIssueInvoice();
   const { mutate: cancelInvoice } = useCancelInvoice();
-  const invoices = invoicesData?.data || [];
+  const allInvoices = invoicesData?.data || [];
+  const invoices = isAdmin ? allInvoices.filter((invoice) => matchesKind(kind, invoice.customerKind)) : allInvoices;
   const { data: receiptsData } = useReceiptsQuery();
-  const recentReceipts = (receiptsData?.data || []).slice(0, RECENT_RECEIPTS_COUNT);
-  const [search, setSearch] = useState("");
+  const recentReceipts = (receiptsData?.data || []).filter((receipt) => !isAdmin || matchesKind(kind, receipt.invoice?.customerKind)).slice(0, RECENT_RECEIPTS_COUNT);
+  // ?q= prefills the search — a family customer with no login opens their invoices this way.
+  const [search, setSearch] = useState(searchParams.get("q") || "");
   const [statusFilter, setStatusFilter] = useState("all");
   // Where invoices came from (a tab per source) and which school — so a long mixed list can be
   // narrowed to, say, one hub's usage invoices.
@@ -201,7 +208,7 @@ function BillingPage() {
     return invoices.filter((invoice) => {
       const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
       const matchesSource = sourceFilter === "all" || sourceKey(invoice) === sourceFilter;
-      const matchesSearch = !query || `${invoice.invoiceNumber} ${TYPE_LABELS[invoice.invoiceType]} ${invoice.billTo?.name || ""} ${invoice.source?.from || ""}`.toLowerCase().includes(query);
+      const matchesSearch = !query || `${invoice.invoiceNumber} ${TYPE_LABELS[invoice.invoiceType]} ${invoice.billTo?.name || ""} ${invoice.billTo?.email || ""} ${invoice.source?.from || ""}`.toLowerCase().includes(query);
       return matchesStatus && matchesSource && inSchool(invoice) && matchesSearch;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -259,7 +266,20 @@ function BillingPage() {
     if (!query) return customers;
     return customers.filter((c) => `${c.name} ${c.email || ""}`.toLowerCase().includes(query));
   }, [customers, customerSearch]);
-  const allReceipts = receiptsData?.data || [];
+  const allReceipts = (receiptsData?.data || []).filter((receipt) => matchesKind(kind, receipt.invoice?.customerKind));
+  const receivedTotal = allReceipts.reduce((sum, receipt) => sum + Number(receipt.amount || 0), 0);
+  // How many of each kind the current tab lists, for the switch.
+  const kindCounts = (rows, of) => ({ all: rows.length, b2b: rows.filter((r) => of(r) === "b2b").length, b2c: rows.filter((r) => of(r) === "b2c").length });
+  const switchCounts = activeTab === "customers" ? kindCounts(allCustomers, (c) => c.kind)
+    : activeTab === "payments" ? kindCounts(receiptsData?.data || [], (r) => r.invoice?.customerKind)
+    : kindCounts(allInvoices, (i) => i.customerKind);
+  // A business opens its customer page; a family their invoices (a statement only covers invoices
+  // carrying their parent login, and a website sign-up's don't).
+  const openCustomer = (customer) => {
+    if (customer.kind === "b2b") return navigate(`/billing/customers/${customer.id}`);
+    setSearch(customer.email || customer.name || "");
+    navigate(`/billing?tab=invoices&kind=b2c&q=${encodeURIComponent(customer.email || customer.name || "")}`);
+  };
 
   const bulkRequest = () => ({ hubId: selectedHubId, scopeType: bulkScope, classId: bulkScope === "class" ? bulkClassId : null, learnerIds: [], invoiceType: bulkType, periodLabel: bulkPeriod || null });
   const previewBulkInvoices = (event) => {
@@ -291,6 +311,8 @@ function BillingPage() {
         </div>
       )}
 
+      {isAdmin && ["customers", "invoices", "payments"].includes(activeTab) && <KindSwitch value={kind} onChange={setKind} counts={switchCounts} />}
+
       {!isAdmin && (
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <Link to={`${receiptsBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><PaidIcon sx={{ fontSize: 16 }} /> Receipts</Link>
@@ -302,22 +324,22 @@ function BillingPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
             {[
-              { label: "All customers", value: customers.length, icon: <GroupsIcon fontSize="small" />, color: "#25476a" },
+              { label: kind === "all" ? "All customers" : CUSTOMER_KINDS[kind].label, value: customers.length, icon: <GroupsIcon fontSize="small" />, color: "#25476a" },
               { label: "With a balance", value: customers.filter((c) => Number(c.balance) > 0).length, icon: <AccountBalanceIcon fontSize="small" />, color: "#C2410C" },
               { label: "Total outstanding", value: formatMoney(customers.reduce((sum, c) => sum + Number(c.balance || 0), 0)), icon: <EventNoteIcon fontSize="small" />, color: "#B91C1C" },
             ].map((stat) => <div key={stat.label} style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}><div style={{ width: 36, height: 36, borderRadius: 9, background: "#F1F7FB", color: stat.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{stat.icon}</div><div><div style={{ fontSize: 18, fontWeight: 850, color: stat.color, fontVariantNumeric: "tabular-nums" }}>{stat.value}</div><div style={{ fontSize: 11, color: "#6B7280" }}>{stat.label}</div></div></div>)}
           </div>
           <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div><h2 style={{ margin: 0, fontSize: 16 }}>Customers</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredCustomers.length} of {customers.length} · learning hubs you bill</p></div>
+              <div><h2 style={{ margin: 0, fontSize: 16 }}>Customers</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{filteredCustomers.length} of {customers.length} · {kind === "b2b" ? "learning hubs and schools you bill" : kind === "b2c" ? "parents, households and website buyers" : "everyone you bill"}</p></div>
               <label style={{ position: "relative" }}><SearchIcon sx={{ position: "absolute", left: 9, top: 8, fontSize: 16, color: "#9CA3AF" }} /><input aria-label="Search customers" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Search name or email" style={{ ...inputStyle, width: 220, paddingLeft: 30 }} /></label>
             </div>
             {filteredCustomers.length === 0 ? (
-              <EmptyState icon={GroupsIcon} title={customers.length === 0 ? "No customers yet" : "No matching customers"} subtitle={customers.length === 0 ? "Learning hubs appear here once they exist." : "Try a different search term."} />
+              <EmptyState icon={GroupsIcon} title={customers.length === 0 ? "No customers yet" : "No matching customers"} subtitle={customers.length === 0 ? (kind === "b2c" ? "Families appear here once they're invoiced." : "Customers appear here once they exist.") : "Try a different search term."} />
             ) : filteredCustomers.map((customer) => (
-              <div key={customer.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`/billing/customers/${customer.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`/billing/customers/${customer.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(200px, 1.4fr) auto auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+              <div key={customer.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => openCustomer(customer)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openCustomer(customer); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(200px, 1.4fr) auto auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
                 <div style={{ minWidth: 0 }}>
-                  <strong style={{ fontSize: 13, color: "#111827" }}>{customer.name}</strong>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{customer.name}</strong><KindPill kind={customer.kind} />{customer.kind === "b2c" && customer.invoiceTypes?.length > 0 && <span style={{ fontSize: 11, color: "#6B7280" }}>{customer.invoiceTypes.map((t) => TYPE_LABELS[t] || t).join(", ")}</span>}</div>
                   <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>{customer.email || "No email"} <span style={{ color: "#CBD5E1" }}>·</span> {customer.invoiceCount} invoice{customer.invoiceCount === 1 ? "" : "s"}{customer.lastInvoiceAt && <> <span style={{ color: "#CBD5E1" }}>·</span> last {formatDate(customer.lastInvoiceAt)}</>}</div>
                 </div>
                 <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 800, color: "#25476a" }}>{formatMoney(customer.totalInvoiced)}</div><div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>invoiced</div></div>
@@ -331,14 +353,14 @@ function BillingPage() {
       {isAdmin && activeTab === "payments" && (
         <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14, overflow: "hidden" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #EEF1F5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div><h2 style={{ margin: 0, fontSize: 16 }}>Payments</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{allReceipts.length} payment{allReceipts.length === 1 ? "" : "s"} received</p></div>
+            <div><h2 style={{ margin: 0, fontSize: 16 }}>Payments</h2><p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B7280" }}>{allReceipts.length} payment{allReceipts.length === 1 ? "" : "s"} received{kind !== "all" ? ` from ${CUSTOMER_KINDS[kind].label.toLowerCase()}` : ""} · {formatMoney(receivedTotal)}</p></div>
             <Link to={receiptsBasePath} style={{ fontSize: 12, fontWeight: 700, color: "#25476a", textDecoration: "none" }}>Open receipts page →</Link>
           </div>
           {allReceipts.length === 0 ? (
             <EmptyState icon={PaidIcon} title="No payments yet" subtitle="Payments appear here once recorded against an invoice." />
           ) : allReceipts.map((receipt) => (
             <div key={receipt.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${receiptsBasePath}/${receipt.invoiceId}/${receipt.id}`); } }} style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
-              <div style={{ minWidth: 0 }}><strong style={{ fontSize: 13, color: "#111827" }}>{receipt.receiptNumber}</strong><div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{receipt.invoice?.invoiceNumber || "—"} <span style={{ color: "#CBD5E1" }}>·</span> {(receipt.paymentMethod || receipt.provider || "").replaceAll("_", " ")} <span style={{ color: "#CBD5E1" }}>·</span> {formatDate(receipt.paidAt)}</div></div>
+              <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{receipt.receiptNumber}</strong><KindPill kind={receipt.invoice?.customerKind} />{receipt.billTo?.name && <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{receipt.billTo.name}</span>}</div><div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{receipt.invoice?.invoiceNumber || "—"} <span style={{ color: "#CBD5E1" }}>·</span> {(receipt.paymentMethod || receipt.provider || "").replaceAll("_", " ")} <span style={{ color: "#CBD5E1" }}>·</span> {formatDate(receipt.paidAt)}</div></div>
               <strong style={{ fontSize: 14, fontWeight: 850, color: "#047857" }}>{formatMoney(receipt.amount, receipt.invoice?.currency)}</strong>
             </div>
           ))}
@@ -431,8 +453,8 @@ function BillingPage() {
             subtitle={invoices.length === 0 && !isLearner ? "Create a draft above to start your billing record." : "Try a different search or status filter."}
           />
         ) : pagedInvoices.map((invoice) => (
-          <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
-            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} /></div>{invoice.billTo?.name && <div style={{ fontSize: 12.5, color: "#374151", fontWeight: 600, marginTop: 3 }}>{invoice.billTo.name}</div>}{!isLearner && <InvoiceSourceLine invoice={invoice} role={user?.role} />}<div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
+          <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+            <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} />{!isLearner && <KindPill kind={invoice.customerKind} />}</div>{invoice.billTo?.name && <div style={{ fontSize: 12.5, color: "#374151", fontWeight: 600, marginTop: 3 }}>{invoice.billTo.name}</div>}{!isLearner && <InvoiceSourceLine invoice={invoice} role={user?.role} />}<div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}><div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 850, color: "#25476a" }}>{formatMoney(invoice.total, invoice.currency)}</div><div style={{ fontSize: 11, color: invoice.amountDue > 0 ? "#C2410C" : "#047857", marginTop: 3 }}>{invoice.amountDue > 0 ? `${formatMoney(invoice.amountDue, invoice.currency)} due` : "Fully paid"}</div></div>{!isLearner && <div style={{ display: "flex", gap: 7 }} onClick={(event) => event.stopPropagation()}>{invoice.status === "draft" && <button type="button" title="Issue invoice" aria-label={`Issue ${invoice.invoiceNumber}`} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, display: "inline-flex", alignItems: "center", gap: 5 }}><SendIcon sx={{ fontSize: 15 }} />Issue</button>}{["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" title="Cancel invoice" aria-label={`Cancel ${invoice.invoiceNumber}`} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, padding: "8px 10px", background: "#fff", color: "#B91C1C", border: "1px solid #FECACA" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} /></button>}</div>}</div>
           </div>
         ))}

@@ -19,6 +19,8 @@ const classRoutes = require("./modules/classes/class.routes");
 const classGroupRoutes = require("./modules/classes/groups/class-group.routes");
 const roomRoutes = require("./modules/rooms/room.routes");
 const learnerRoutes = require("./modules/learners/learner.routes");
+const parentRoutes = require("./modules/parent/parent.routes");
+const { parentOnly } = require("./modules/parent/parent.access");
 const publicLearnerProfileRoutes = require("./modules/learners/public-profile.routes");
 const courseRoutes = require("./modules/courses/course.routes");
 const attendanceRoutes = require("./modules/attendance/attendance.routes");
@@ -57,7 +59,7 @@ const checkinRoutes = require("./modules/checkins/checkin.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
-const { protect: protectBase, authorize, blockIfSuspended, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
+const { protect: protectBase, authorize, blockIfSuspended, blockHubLeadWrites, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 const { auditTrail } = require("./shared/middleware/audit.middleware");
 const { apiRateLimitKey } = require("./shared/middleware/rate-limit.middleware");
@@ -68,7 +70,8 @@ const db = require("./config/db");
 // means a suspended account keeps a read-only session everywhere but is refused every write in
 // one place, without touching each route file. `protect` is exported as `protectBase` and
 // re-exposed as this array so the existing `protect, ...` mount calls below need no change.
-const protect = [protectBase, blockIfSuspended];
+// blockHubLeadWrites does the same for an Account Manager / Training Lead's view-only hub portal.
+const protect = [protectBase, blockIfSuspended, blockHubLeadWrites];
 
 const app = express();
 
@@ -225,6 +228,8 @@ app.use("/api/classes", protect, attachOwnRecords, classRoutes);
 app.use("/api/class-groups", protect, attachOwnRecords, classGroupRoutes);
 app.use("/api/rooms", protect, attachOwnRecords, roomRoutes);
 app.use("/api/learners", protect, attachOwnRecords, learnerRoutes);
+// The parent portal — a parent login's family view across all their children (parent.service.js).
+app.use("/api/parent", protect, attachOwnRecords, parentOnly, parentRoutes);
 app.use("/api/home-learning", protect, attachOwnRecords, homeLearningRoutes);
 // Estate Tech Club memberships (website sign-ups, placement, monthly invoices) — see modules/tech-clubs/.
 app.use("/api/tech-clubs", protect, attachOwnRecords, techClubRoutes);

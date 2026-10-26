@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const ENDPOINT = "/api/assessments";
 
@@ -8,6 +8,7 @@ export const assessmentApi = {
   getById: (id) => api.get(`${ENDPOINT}/${id}`).then((r) => r.data.data),
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${ENDPOINT}/${id}`),
 
   // Assessment folders (Assessments page) — an assessment sits in at most one; deleting a folder
   // keeps its assessments.

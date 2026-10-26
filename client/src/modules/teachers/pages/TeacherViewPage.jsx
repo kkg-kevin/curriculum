@@ -14,6 +14,7 @@ import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculu
 import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { teacherApi } from "../services/teacherApi";
 
 const ACCENT = "#25476a";
 
@@ -478,6 +479,8 @@ export default function TeacherViewPage() {
             deleteTeacher(id, { onSuccess: () => navigate(teachersListPath("admin")) });
           }
         }}
+        usageCheck={isSchool ? undefined : () => teacherApi.checkRemove(id)}
+        onAlternative={!isSchool && teacher.status !== "inactive" ? () => { setConfirmDelete(false); updateTeacherStatus({ id, status: "inactive" }); } : undefined}
         onCancel={() => setConfirmDelete(false)}
       />
 

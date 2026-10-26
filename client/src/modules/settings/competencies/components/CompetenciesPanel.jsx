@@ -6,6 +6,7 @@ import {
 import { Modal, Label } from "../../components/Modal";
 import { PALETTE } from "../../palette";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { competenciesApi } from "../services/competenciesApi";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
 
@@ -399,10 +400,11 @@ export default function CompetenciesPanel() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title="Delete Competency"
-        message={`"${deleteTarget?.name}" will be permanently deleted and removed from every curriculum that uses it, including any thresholds, weights, and indicators those curricula defined for it. This cannot be undone.`}
+        message={`"${deleteTarget?.name}" will be permanently deleted. This cannot be undone.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { deleteCompetency(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => competenciesApi.checkDeleteCompetency(deleteTarget.id)}
       />
     </div>
   );

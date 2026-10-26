@@ -1,10 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-// Hub check-ins: the recurrence and the status rules — pure, no database
-// (modules/checkins/checkin.dates.js and checkin.rules.js).
+// Hub check-ins: the recurrence, where a check-in stands, the report, and turning an old A–G
+// report into highs / lows / resolutions — pure, no database (modules/checkins/checkin.dates.js,
+// checkin.rules.js and the 20261026110000 migration).
 const { occurrenceDates, addMonths, todayInKenya } = require("../src/modules/checkins/checkin.dates");
-const { deriveSessionStatus, nextActionStatus, isActionOverdue, reportProblems } = require("../src/modules/checkins/checkin.rules");
+const { sessionState, reportProblems } = require("../src/modules/checkins/checkin.rules");
+const { _convert: convertOldReport } = require("../src/db/migrations/20261026110000_simplify_hub_checkins");
 
 test("each frequency produces its own dates", () => {
   const until = "2026-12-31";
@@ -41,46 +43,38 @@ test("today is a Kenyan date whatever the server's time zone", () => {
   assert.equal(todayInKenya(new Date("2026-10-22T20:59:00Z")), "2026-10-22");
 });
 
-test("a session's status follows its date and its report", () => {
-  const today = "2026-10-22";
-  const s = (over) => ({ status: "scheduled", reportStatus: "none", scheduledDate: today, ...over });
-  assert.equal(deriveSessionStatus(s({}), today), "scheduled");
-  assert.equal(deriveSessionStatus(s({ scheduledDate: "2026-10-21" }), today), "missed", "the day passed with nothing written");
-  assert.equal(deriveSessionStatus(s({ reportStatus: "draft" }), today), "in_progress");
-  assert.equal(deriveSessionStatus(s({ reportStatus: "draft", scheduledDate: "2026-10-21" }), today), "pending_submission");
-  assert.equal(deriveSessionStatus(s({ status: "missed", reportStatus: "draft", scheduledDate: "2026-10-01" }), today), "pending_submission", "a late report takes a missed one out of Missed");
-  assert.equal(deriveSessionStatus(s({ status: "rescheduled", scheduledDate: "2026-10-30" }), today), "rescheduled");
-  assert.equal(deriveSessionStatus(s({ status: "cancelled", scheduledDate: "2026-10-01" }), today), "cancelled");
-  assert.equal(deriveSessionStatus(s({ reportStatus: "submitted", scheduledDate: "2026-10-01" }), today), "completed");
+test("a check-in is upcoming, then due from its day until its report is in", () => {
+  const today = "2026-10-26";
+  assert.equal(sessionState({ status: "open", scheduledDate: "2026-10-27" }, today), "upcoming");
+  assert.equal(sessionState({ status: "open", scheduledDate: today }, today), "due");
+  assert.equal(sessionState({ status: "open", scheduledDate: "2026-09-01" }, today), "due", "still due weeks later");
+  assert.equal(sessionState({ status: "reported", scheduledDate: "2026-09-01" }, today), "reported");
 });
 
-test("a report can't be submitted without its essentials, nor with follow-ups nobody owns", () => {
-  const complete = {
-    session: { actualDate: "2026-10-22" },
-    operations: { generalStatus: "running_well" },
-    summary: { overallStatus: "on_track", observations: "All good" },
-  };
-  assert.deepEqual(reportProblems(complete, []), []);
-  assert.equal(reportProblems({}, []).length, 4);
-  const problems = reportProblems(complete, [{ kind: "action", title: "Fix projector", assigneeId: null, dueDate: null }, { kind: "issue", title: "Leaky roof" }]);
-  assert.deepEqual(problems, ['Give the follow-up "Fix projector" a responsible person and a due date']);
+test("a report needs its highs, lows and resolutions", () => {
+  assert.deepEqual(reportProblems({ highs: "Attendance up", lows: "None", resolutions: "Keep going" }), []);
+  assert.equal(reportProblems({}).length, 3);
+  assert.deepEqual(reportProblems({ highs: "Good", lows: "  ", resolutions: "x" }), ['Write the lows (write "None" if there were none)']);
 });
 
-test("action statuses move only in sensible ways", () => {
-  const a = (over) => ({ status: "open", assigneeId: null, resolutionNotes: null, ...over });
-  assert.match(nextActionStatus(a({}), "in_progress").error, /Assign/);
-  assert.deepEqual(nextActionStatus(a({ assigneeId: "u1", status: "assigned" }), "in_progress"), { status: "in_progress" });
-  assert.match(nextActionStatus(a({ assigneeId: "u1", status: "in_progress" }), "resolved").error, /how it was resolved/);
-  assert.deepEqual(nextActionStatus(a({ assigneeId: "u1", status: "in_progress" }), "resolved", { resolutionNotes: "Replaced the bulb" }), { status: "resolved" });
-  assert.match(nextActionStatus(a({ status: "in_progress", assigneeId: "u1" }), "closed").error, /resolved action/);
-  assert.deepEqual(nextActionStatus(a({ status: "in_progress", assigneeId: "u1" }), "closed", { isManager: true }), { status: "closed" });
-  assert.deepEqual(nextActionStatus(a({ status: "resolved", assigneeId: "u1" }), "closed"), { status: "closed" });
-  assert.deepEqual(nextActionStatus(a({ status: "closed", assigneeId: "u1" }), "open"), { status: "assigned" }, "reopening goes back to its owner");
-});
-
-test("an action is overdue only while it's still outstanding", () => {
-  assert.equal(isActionOverdue({ dueDate: "2026-10-01", status: "assigned" }, "2026-10-22"), true);
-  assert.equal(isActionOverdue({ dueDate: "2026-10-01", status: "resolved" }, "2026-10-22"), false);
-  assert.equal(isActionOverdue({ dueDate: "2026-10-22", status: "open" }, "2026-10-22"), false, "due today isn't overdue yet");
-  assert.equal(isActionOverdue({ dueDate: null, status: "open" }, "2026-10-22"), false);
+test("an old A–G report keeps everything written, under highs, lows and resolutions", () => {
+  const report = convertOldReport({
+    operations: { generalStatus: "minor_issues", staffing: "One educator short" },
+    training: { challenges: "Kits arrive late" },
+    achievements: { workingWell: "Robotics club full" },
+    decisions: { nextSteps: "Order kits a month ahead" },
+    summary: { overallStatus: "needs_attention", observations: "Busy term", recommendedFollowUp: "Visit in November" },
+  }, [
+    { kind: "issue", title: "Projector broken", description: "Room 2", status: "open" },
+    { kind: "action", title: "Hire an educator", dueDate: "2026-11-01", status: "resolved", resolutionNotes: "Hired Jane" },
+  ]);
+  assert.deepEqual(report.highs.split("\n"), ["What's working well: Robotics club full", "General observations: Busy term"]);
+  assert.deepEqual(report.lows.split("\n"), [
+    "Overall: Needs attention", "Operations: Minor issues", "Staffing: One educator short", "Training challenges: Kits arrive late",
+    "Issue: Projector broken — Room 2 (open)",
+  ]);
+  assert.deepEqual(report.resolutions.split("\n"), [
+    "Next steps: Order kits a month ahead", "Recommended follow-up: Visit in November",
+    "Follow-up: Hire an educator — due 2026-11-01 (resolved)", "Resolved (Hire an educator): Hired Jane",
+  ]);
 });

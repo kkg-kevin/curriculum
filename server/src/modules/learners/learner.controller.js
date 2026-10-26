@@ -8,6 +8,7 @@ const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middlewar
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
+const UsageService = require("../usage/usage.service");
 
 // A learner has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -316,6 +317,7 @@ const updateLearnerAccountStatus = asyncHandler(async (req, res) => {
 // linked to one of their own hubs — same ownership check as every other write here.
 const deleteLearner = asyncHandler(async (req, res) => {
   assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  if (await UsageService.guardDelete(req, res, "learner", req.params.id, "This learner")) return;
   const result = await LearnerService.deleteLearner(req.params.id);
   res.json({ success: true, ...result });
 });

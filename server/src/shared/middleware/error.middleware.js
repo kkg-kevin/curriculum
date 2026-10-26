@@ -46,6 +46,8 @@ const errorHandler = (err, req, res, next) => {
     // Every problem at once, when an app-thrown 4xx lists them (e.g. what a check-in report
     // still needs before it can be submitted).
     ...(statusCode < 500 && Array.isArray(err.errors) ? { errors: err.errors } : {}),
+    // What a refused delete is still used by (code IN_USE — modules/usage/usage.service.js).
+    ...(err.code === "IN_USE" && err.usage ? { usage: err.usage } : {}),
     // An M-Pesa prompt already waiting for this invoice — the client follows it instead.
     ...(err.requestId ? { requestId: err.requestId } : {}),
   });

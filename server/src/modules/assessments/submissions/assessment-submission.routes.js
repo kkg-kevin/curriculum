@@ -23,6 +23,7 @@ const {
   reissueAssessment,
 } = require("./assessment-submission.controller");
 const { authorize } = require("../../../shared/middleware/auth.middleware");
+const { notAsParent } = require("../../parent/parent.access");
 
 const router = express.Router();
 
@@ -71,10 +72,10 @@ router.get("/learner/issued", authorize("learner"), getIssuedForLearner);
 router.get("/learner/:learnerId/issued", authorize("admin", "school"), getIssuedForLearnerAsStaff);
 // Fired client-side when a learner finishes every other section of a course session —
 // see SectionViewPage.jsx's areNonAssessmentSectionsComplete check.
-router.post("/issues/course-progress", authorize("learner"), issueOnSessionComplete);
-router.post("/submissions", authorize("learner"), getOrCreateSubmission);
-router.patch("/submissions/:id/draft", authorize("learner"), saveDraft);
-router.post("/submissions/:id/submit", authorize("learner"), submitAnswers);
+router.post("/issues/course-progress", authorize("learner"), notAsParent, issueOnSessionComplete);
+router.post("/submissions", authorize("learner"), notAsParent, getOrCreateSubmission);
+router.patch("/submissions/:id/draft", authorize("learner"), notAsParent, saveDraft);
+router.post("/submissions/:id/submit", authorize("learner"), notAsParent, submitAnswers);
 
 // Shared read — a learner reads their own submission (feedback view), a teacher/school/admin
 // reads any submission belonging to a class they own.

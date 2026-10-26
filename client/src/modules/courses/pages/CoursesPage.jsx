@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiBookOpen, FiChevronRight, FiCopy, FiEdit2, FiEye, FiFilter, FiFolder, FiFolderPlus, FiList, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
-import { useCoursesQuery, useDeleteCourse, useDuplicateCourse, useCourseFoldersQuery, useCourseFolderMutation } from "../hooks/useCourse";
+import { useCoursesQuery, useDeleteCourse, useUpdateCourse, useDuplicateCourse, useCourseFoldersQuery, useCourseFolderMutation } from "../hooks/useCourse";
 import { courseApi } from "../services/courseApi";
 import { AddItemsDialog, FolderDialog, FolderTile, MoveToFolderDialog, NewFolderTile } from "../../../components/folders/Folders";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -73,6 +73,7 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 function CourseCard({ course, onMove, folderName }) {
   const navigate = useNavigate();
   const { mutate: deleteCourse, isPending: isDeleting } = useDeleteCourse();
+  const { mutate: updateCourse } = useUpdateCourse();
   const { mutate: duplicateCourse, isPending: isDuplicating } = useDuplicateCourse();
   const isBusy = isDeleting || isDuplicating;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -205,6 +206,8 @@ function CourseCard({ course, onMove, folderName }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteCourse(course.id); }}
+        usageCheck={() => courseApi.checkRemove(course.id)}
+        onAlternative={course.status !== "archived" ? () => { setConfirmOpen(false); updateCourse({ id: course.id, data: { status: "archived" } }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

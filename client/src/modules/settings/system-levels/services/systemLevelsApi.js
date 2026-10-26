@@ -1,4 +1,4 @@
-import api from "../../../../services/api";
+import api, { checkDelete } from "../../../../services/api";
 
 const BASE = "/api/system-levels";
 
@@ -14,6 +14,7 @@ export const systemLevelsApi = {
 
   deleteSystemLevel: (id) =>
     api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkDeleteSystemLevel: (id) => checkDelete(`${BASE}/${id}`),
 
   reorderSystemLevels: (orderedIds) =>
     api.post(`${BASE}/reorder`, { orderedIds }).then((r) => r.data.data),

@@ -31,12 +31,6 @@ const modulePriceSchema = z.object({
   priceCurrency: z.string().trim().max(8).default("KES"),
 });
 
-// One pathway's own diagnostic. Mirrors server bootcamp.validation.js's pathwayDiagnosticSchema.
-const pathwayDiagnosticSchema = z.object({
-  pathwayId:    z.string().min(1),
-  assessmentId: z.string().min(1),
-});
-
 // `modulePricing` is the per-course "price by module instead" addition — a course with more than
 // one module can be broken into individually-priced modules rather than one course-wide price.
 // Mutually exclusive with this same entry's own `priceAmount` (see the schema-level superRefine
@@ -78,10 +72,6 @@ export const bootcampSchema = z
     priceNotes:    z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     highlights:    z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     coursePricing: z.array(coursePriceSchema).max(200).default([]),
-    // A diagnostic per pathway included in this bootcamp — see pathwayIds above. Whether each one
-    // can actually be offered (assessment must exist and be fully auto-gradable) is enforced
-    // server-side (bootcamp.service.js's assertPathwayDiagnosticsValid), not here.
-    pathwayDiagnostics: z.array(pathwayDiagnosticSchema).max(50).default([]),
     // Games from the Events games library this bootcamp includes, in display order, and one
     // optional line on how play fits into the day — see server bootcamp.validation.js.
     gameIds:    z.array(z.string()).max(30).default([]),
@@ -120,18 +110,6 @@ export const bootcampSchema = z
           code: z.ZodIssueCode.custom,
           path: ["coursePricing", i, "priceAmount"],
           message: "Price the whole course or its modules, not both — clear one before setting the other",
-        });
-      }
-    });
-    // At most one diagnostic per pathway — mirrors bootcamp.service.js's
-    // assertPathwayDiagnosticsValid duplicate check.
-    (d.pathwayDiagnostics || []).forEach((entry, i) => {
-      const firstIndex = (d.pathwayDiagnostics || []).findIndex((other) => other.pathwayId === entry.pathwayId);
-      if (firstIndex !== i) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["pathwayDiagnostics", i, "pathwayId"],
-          message: "Each pathway can only have one diagnostic assigned",
         });
       }
     });

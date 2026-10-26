@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
   Check as CheckIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon,
   FolderOpen as FolderOpenIcon, MedicalServices as MedicalServicesIcon,
@@ -50,6 +50,7 @@ import { Editor as RichTextEditorControlled } from "../../courses/components/Ric
 import RichContent, { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { competenciesApi } from "../services/competenciesApi";
 import { usePermissions } from "../../../hooks/usePermissions";
 
 /* ── Shared delete-confirmation helper ─────────────────────────────────────
@@ -57,7 +58,7 @@ import { usePermissions } from "../../../hooks/usePermissions";
    icon with no confirmation — used in each panel below so a mis-click can't
    silently destroy configuration. */
 function useConfirmDelete() {
-  const [target, setTarget] = useState(null); // { title, message, onConfirm }
+  const [target, setTarget] = useState(null); // { title, message, onConfirm, usageCheck? }
   const confirmDialog = (
     <ConfirmDialog
       isOpen={!!target}
@@ -67,6 +68,7 @@ function useConfirmDelete() {
       variant="danger"
       onConfirm={() => { target?.onConfirm(); setTarget(null); }}
       onCancel={() => setTarget(null)}
+      usageCheck={target?.usageCheck}
     />
   );
   return { requestDelete: setTarget, confirmDialog };
@@ -644,6 +646,14 @@ function PathwaysPanel({ curriculumId }) {
     requestDelete({
       title: `Delete "${group.name}"?`,
       message: "This pathway will be permanently removed from every developmental stage, along with its courses, advancement rules and diagnostic settings. This cannot be undone.",
+      usageCheck: async () => {
+        const results = await Promise.all(group.rows.map((r) => competenciesApi.checkDeletePathway(curriculumId, r.id)));
+        const usages = results.flatMap((result, i) => {
+          const stage = stageById.get(group.rows[i].ageCategoryId)?.name;
+          return (result?.usages || []).map((u) => ({ ...u, key: `${group.rows[i].id}:${u.key}`, label: stage && group.rows.length > 1 ? `${stage}: ${u.label}` : u.label }));
+        });
+        return { inUse: usages.length > 0, usages, alternative: null };
+      },
       onConfirm: async () => {
         const [last, ...rest] = group.rows;
         try {
@@ -888,33 +898,28 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
   function openCourses() { setCourseDraft(courses); setEditingCourses(true); }
   function saveCourses() { saveRow({ courses: courseDraft }, () => setEditingCourses(false)); }
 
-  // Quick diagnostic assign/change — its own small picker rather than a full form.
+  // A stage's two diagnostics, picked together: the learner diagnostic (issued once a learner is
+  // enrolled at this stage — any type) and the website diagnostic (taken by visitors, and by
+  // families signing up for a bootcamp on this curriculum — marked automatically, so only
+  // auto-graded assessments are offered).
   const [diagOpen, setDiagOpen] = useState(false);
   const [diagValue, setDiagValue] = useState("");
-  const [diagPublic, setDiagPublic] = useState(false);
-  // Optional override: when set, the public website serves THIS assessment instead of
-  // diagnosticAssessmentId. Left blank, the public flow reuses the internal one.
   const [diagPublicValue, setDiagPublicValue] = useState("");
+  const websiteChoices = assessments.filter((a) => a.autoGraded || a.id === row?.publicDiagnosticAssessmentId);
 
   function openDiag() {
     setDiagValue(row?.diagnosticAssessmentId || "");
-    setDiagPublic(!!row?.publicDiagnosticEnabled);
     setDiagPublicValue(row?.publicDiagnosticAssessmentId || "");
     setDiagOpen(true);
   }
   function saveDiag() {
     saveRow(
-      {
-        diagnosticAssessmentId: diagValue || null,
-        // Can only ever be true alongside an assessment.
-        publicDiagnosticEnabled: diagValue ? diagPublic : false,
-        publicDiagnosticAssessmentId: diagValue ? (diagPublicValue || null) : null,
-      },
+      { diagnosticAssessmentId: diagValue || null, publicDiagnosticAssessmentId: diagPublicValue || null },
       () => setDiagOpen(false)
     );
   }
   function clearDiag() {
-    saveRow({ diagnosticAssessmentId: null, publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null });
+    saveRow({ diagnosticAssessmentId: null, publicDiagnosticAssessmentId: null });
   }
 
   // The stage's course order is its courses list, as saved. The server keeps each course's band
@@ -1014,82 +1019,56 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
 
       <div className="cp-diag-section">
         <div className="cp-diag-header">
-          <span className="cp-diag-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><MedicalServicesIcon fontSize="inherit" /> Diagnostic Assessment</span>
+          <span className="cp-diag-title" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><MedicalServicesIcon fontSize="inherit" /> Diagnostic Assessments</span>
         </div>
 
         {diagOpen ? (
-          <div className="cp-diag-picker" style={{ flexWrap: "wrap" }}>
-            <select
-              className="cp-select" style={{ flex: 1, minWidth: "160px" }}
-              value={diagValue}
-              onChange={(e) => setDiagValue(e.target.value)}
-            >
-              <option value="">— None —</option>
-              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-            <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={saveDiag} disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-            <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => setDiagOpen(false)}>Cancel</button>
-
-            <label
-              className="cp-comp-check-row"
-              style={{ width: "100%", marginTop: "4px", opacity: diagValue ? 1 : 0.5 }}
-              title={diagValue ? undefined : "Choose a diagnostic assessment first"}
-            >
-              <input
-                type="checkbox"
-                checked={diagPublic}
-                disabled={!diagValue}
-                onChange={(e) => setDiagPublic(e.target.checked)}
-              />
-              <span style={{ fontSize: "12.5px", color: "#374151" }}>
-                Offer this diagnostic to anonymous visitors on the public website
-              </span>
+          <div className="cp-diag-picker" style={{ flexDirection: "column", alignItems: "stretch", gap: "10px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>For learners</span>
+              <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Issued once a learner is enrolled at this stage. Any type of assessment.</span>
+              <select className="cp-select" value={diagValue} onChange={(e) => setDiagValue(e.target.value)}>
+                <option value="">— None —</option>
+                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
             </label>
-
-            {diagPublic && (
-              <div style={{ width: "100%", marginTop: "6px" }}>
-                <label style={{ fontSize: "11px", color: "#9CA3AF", display: "block", marginBottom: "4px" }}>
-                  Public website diagnostic — leave blank to reuse the one above
-                </label>
-                <select
-                  className="cp-select" style={{ width: "100%", boxSizing: "border-box" }}
-                  value={diagPublicValue}
-                  onChange={(e) => setDiagPublicValue(e.target.value)}
-                >
-                  <option value="">— Same as above —</option>
-                  {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </div>
-            )}
-          </div>
-        ) : row?.diagnosticAssessmentId ? (
-          <div className="cp-diag-row">
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-              <span className="cp-diag-name">
-                {assessmentNameById[row.diagnosticAssessmentId] || "Diagnostic assigned"}
-                {row.publicDiagnosticEnabled && (
-                  <span
-                    style={{
-                      marginLeft: "8px", fontSize: "10.5px", fontWeight: 700, color: "#059669",
-                      backgroundColor: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "999px",
-                      padding: "2px 8px", verticalAlign: "middle",
-                    }}
-                    title={
-                      row.publicDiagnosticAssessmentId
-                        ? `Public visitors get a different diagnostic: ${assessmentNameById[row.publicDiagnosticAssessmentId] || "Diagnostic assigned"}`
-                        : "Public visitors get the same diagnostic as enrolled learners"
-                    }
-                  >
-                    Public{row.publicDiagnosticAssessmentId ? " · different" : ""}
-                  </span>
-                )}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>On the website</span>
+              <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
+                Taken by visitors before they sign up, including for bootcamps on this curriculum. Only assessments marked automatically can be used.
               </span>
-              {row.publicDiagnosticEnabled && row.publicDiagnosticAssessmentId && (
-                <span style={{ fontSize: "11px", color: "#6B7280" }}>
-                  Public website uses: <strong>{assessmentNameById[row.publicDiagnosticAssessmentId] || "Diagnostic assigned"}</strong>
-                </span>
+              <select className="cp-select" value={diagPublicValue} onChange={(e) => setDiagPublicValue(e.target.value)}>
+                <option value="">— None —</option>
+                {websiteChoices.map((a) => <option key={a.id} value={a.id}>{a.name}{a.autoGraded ? "" : " (marked by a teacher — can't be used)"}</option>)}
+              </select>
+              {websiteChoices.length === 0 && (
+                <span style={{ fontSize: "11px", color: "#B45309" }}>No assessment is marked automatically yet — use only auto-marked questions (multiple choice, true/false, matching, ordering, fill in the blank, can-do checks).</span>
+              )}
+            </label>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => setDiagOpen(false)}>Cancel</button>
+              <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={saveDiag} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : row?.diagnosticAssessmentId || row?.publicDiagnosticAssessmentId ? (
+          <div className="cp-diag-row">
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+              <span style={{ fontSize: "12px", color: "#6B7280" }}>
+                For learners:{" "}
+                {row.diagnosticAssessmentId
+                  ? <strong className="cp-diag-name">{assessmentNameById[row.diagnosticAssessmentId] || "Diagnostic assigned"}</strong>
+                  : <span style={{ color: "#9CA3AF" }}>none</span>}
+              </span>
+              <span style={{ fontSize: "12px", color: "#6B7280" }}>
+                On the website:{" "}
+                {row.publicDiagnosticAssessmentId
+                  ? <strong className="cp-diag-name">{assessmentNameById[row.publicDiagnosticAssessmentId] || "Diagnostic assigned"}</strong>
+                  : <span style={{ color: "#9CA3AF" }}>none</span>}
+              </span>
+              {row.publicDiagnosticAssessmentId && stage && (stage.minAge == null || stage.maxAge == null) && (
+                <span style={{ fontSize: "11px", color: "#B45309" }}>Not shown on the website until this stage has an age range.</span>
               )}
             </div>
             <div className="cp-diag-actions">
@@ -1101,7 +1080,7 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
           <div className="cp-diag-empty">
             <span className="cp-diag-hint">
               {stage
-                ? "Auto-issued once to a learner placed at this developmental stage."
+                ? "One for learners enrolled at this stage (any type), one for the website (marked automatically)."
                 : "Not issued until this is moved to a developmental stage."}
             </span>
             <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={openDiag}>+ Assign</button>
@@ -1281,6 +1260,7 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
                   <CardKebab
                     onEdit={() => openCourse(courseId)}
                     onDelete={() => removeBand(band.id)}
+                    usageCheck={() => competenciesApi.checkDeletePerformanceBand(curriculumId, band.id)}
                     disabled={deleting}
                     itemLabel={course?.name || "this course"}
                     itemType="course threshold"
@@ -1415,7 +1395,7 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
 // `itemLabel`/`itemType` (e.g. "Continuous Assessment" / "assessment type") drive the delete
 // confirmation copy — every caller of this kebab previously fired onDelete() straight from the
 // menu click with no confirmation at all, so a mis-click permanently destroyed configuration.
-function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item", message, onDuplicate, duplicateLabel, duplicateTitle, duplicateMessage }) {
+function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemType = "item", message, usageCheck, onDuplicate, duplicateLabel, duplicateTitle, duplicateMessage }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
@@ -1493,6 +1473,7 @@ function CardKebab({ onEdit, onDelete, disabled, itemLabel = "this item", itemTy
         variant="danger"
         onConfirm={() => { setConfirming(false); onDelete(); }}
         onCancel={() => setConfirming(false)}
+        usageCheck={usageCheck}
       />
 
       {onDuplicate && (
@@ -1595,7 +1576,7 @@ function AddCompetencyDropdown({ available, onAdd, isPending }) {
   );
 }
 
-function CompetencyRemoveMenu({ onRemove, competencyName }) {
+function CompetencyRemoveMenu({ onRemove, competencyName, usageCheck }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const ref = useRef(null);
@@ -1631,11 +1612,12 @@ function CompetencyRemoveMenu({ onRemove, competencyName }) {
       <ConfirmDialog
         isOpen={confirming}
         title={`Remove "${competencyName}"?`}
-        message="This competency will no longer be used in this curriculum — any Performance Band or Assessment Type configuration tied to it here will lose that link. This cannot be undone."
+        message="This competency will no longer be used in this curriculum. This cannot be undone."
         confirmLabel="Remove"
         variant="danger"
         onConfirm={() => { setConfirming(false); onRemove(); }}
         onCancel={() => setConfirming(false)}
+        usageCheck={usageCheck}
       />
     </div>
   );
@@ -1696,6 +1678,7 @@ function CompetencyPickerPanel({ curriculumId }) {
               comp={comp}
               color={COMP_PALETTE[idx % COMP_PALETTE.length]}
               onRemove={() => unlink(comp.id)}
+              usageCheck={() => competenciesApi.checkUnlinkCompetency(curriculumId, comp.id)}
             />
           ))}
         </div>
@@ -1704,7 +1687,7 @@ function CompetencyPickerPanel({ curriculumId }) {
   );
 }
 
-function LinkedCompetencyCard({ comp, color, onRemove }) {
+function LinkedCompetencyCard({ comp, color, onRemove, usageCheck }) {
   const initial = comp.name.charAt(0).toUpperCase();
   const indicators = comp.indicators || [];
   const [open, setOpen] = useState(false);
@@ -1725,7 +1708,7 @@ function LinkedCompetencyCard({ comp, color, onRemove }) {
             {comp.name}
           </p>
         </div>
-        <CompetencyRemoveMenu onRemove={onRemove} competencyName={comp.name} />
+        <CompetencyRemoveMenu onRemove={onRemove} competencyName={comp.name} usageCheck={usageCheck} />
       </div>
 
       <div style={{ flex: 1 }}>
@@ -2931,7 +2914,7 @@ function AgeCategoriesPanel({ curriculumId }) {
                       </span>
                     )}
                   </div>
-                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
+                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} usageCheck={() => competenciesApi.checkDeleteAgeCategory(curriculumId, cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
                 </div>
 
                 {overlapWarnings.has(cat.id) && (
@@ -3887,6 +3870,7 @@ function PerformanceBandsPanel({ curriculumId }) {
                           <CardKebab
                             onEdit={() => openEdit(band)}
                             onDelete={() => remove(band.id)}
+                            usageCheck={() => competenciesApi.checkDeletePerformanceBand(curriculumId, band.id)}
                             disabled={deleting}
                             itemLabel={band.name}
                             itemType="performance band"
@@ -4016,7 +4000,8 @@ export default function CompetenciesPage() {
   const navigate  = useNavigate();
   const { data: curriculum } = useCurriculumQuery(id);
 
-  const [activeNav, setActiveNav] = useState("competencies");
+  const [searchParams] = useSearchParams();
+  const [activeNav, setActiveNav] = useState(() => (searchParams.get("section") === "pathways" ? "areas" : "competencies"));
   const [arcSub,    setArcSub]    = useState("age-categories");
 
   useEffect(() => {

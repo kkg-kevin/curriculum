@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const BASE = "/api/bootcamps";
 
@@ -8,6 +8,7 @@ export const bootcampApi = {
   getById: (id)       => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   update:  (id, data) => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:  (id)       => api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${BASE}/${id}`),
 
   // Hub-offerings — "run this bootcamp at a hub". Replaces the old standalone Event-deployment
   // flow; nested under the bootcamp since an offering has no identity outside its parent.

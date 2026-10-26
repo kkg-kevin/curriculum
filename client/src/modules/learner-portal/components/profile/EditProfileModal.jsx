@@ -36,6 +36,10 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  // A learner who already signs in with a username keeps it: this form only ever sets their
+  // password. Shown, not editable — an editable box next to a password box gets filled in by the
+  // browser's saved logins, which used to rename the child's login on save.
+  const hasUsername = !!learner?.username;
 
   useEffect(() => {
     if (learner) {
@@ -70,13 +74,14 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     }
     if (formData.learnerPassword) {
       if (formData.learnerPassword.length < 8) nextErrors.learnerPassword = "Must be at least 8 characters";
-      if (!formData.username.trim()) nextErrors.username = "Username is required to set a learner-portal password";
+      if (!hasUsername && !formData.username.trim()) nextErrors.username = "Username is required to set a learner-portal password";
     }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    onSave(formData);
+    const { username, ...rest } = formData;
+    onSave(hasUsername ? rest : { ...rest, username: username.trim() });
   };
 
   return (
@@ -170,10 +175,19 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
 
           <div>
             <label style={labelStyle}>Student username</label>
-            <input name="username" value={formData.username} onChange={handleChange} placeholder="e.g. grace.wambui" style={inputStyle(errors.username)} />
-            {errors.username
-              ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.username}</p>
-              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — a login name. Without a learner-portal password below, it logs into the guardian's account; with one, it's a separate login.</p>}
+            {hasUsername ? (
+              <>
+                <div style={{ ...inputStyle(false), backgroundColor: "#F3F4F6", color: T.ink, fontWeight: 700 }}>{learner.username}</div>
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>The name this learner signs in with. Setting a new password below keeps it the same.</p>
+              </>
+            ) : (
+              <>
+                <input name="username" value={formData.username} onChange={handleChange} placeholder="e.g. grace.wambui" autoComplete="off" style={inputStyle(errors.username)} />
+                {errors.username
+                  ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.username}</p>
+                  : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — a login name. Without a learner-portal password below, it logs into the guardian's account; with one, it's a separate login.</p>}
+              </>
+            )}
           </div>
 
           <div>
@@ -199,7 +213,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
             </div>
             {errors.learnerPassword
               ? <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.learnerPassword}</p>
-              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — sets up or resets this learner's OWN separate login (not the guardian's). Leave blank to make no change.</p>}
+              : <p style={{ margin: "6px 0 0", fontSize: 12, color: T.inkMuted }}>Optional — sets up or resets this learner's OWN separate login (not the guardian's). Only the password changes. Leave blank to make no change.</p>}
           </div>
 
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>

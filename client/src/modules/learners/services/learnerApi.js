@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const BASE = "/api/learners";
 
@@ -6,10 +6,14 @@ export const learnerApi = {
   create:  (data)       => api.post(BASE, data).then((r) => r.data.data),
   bulkImport: (data)    => api.post(`${BASE}/bulk-import`, data).then((r) => r.data.data),
   getAll:  (params)     => api.get(BASE, { params }).then((r) => r.data),
+  // Parents' and learners' own logins in this workspace (Learners → Parent & learner logins).
+  logins:  ()           => api.get(`${BASE}/logins`).then((r) => r.data.data),
+  setLoginActive: (id, active) => api.patch(`${BASE}/logins/${id}`, { active }).then((r) => r.data.data),
   getById: (id)         => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   update:  (id, data)   => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   updateAccountStatus: (id, accountStatus) => api.patch(`${BASE}/${id}/account-status`, { accountStatus }).then((r) => r.data.data),
   remove:  (id)         => api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${BASE}/${id}`),
   getHubs:   (id)                  => api.get(`${BASE}/${id}/hubs/links`).then((r) => r.data.data),
   enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => r.data.data),
   updateHub: (id, hubId, data)     => api.put(`${BASE}/${id}/hubs/links/${hubId}`, data).then((r) => r.data.data),

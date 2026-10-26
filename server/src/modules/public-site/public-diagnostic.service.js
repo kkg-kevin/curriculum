@@ -94,17 +94,15 @@ async function resolveEffectiveAgeRange(pathway) {
 // Whether this pathway's diagnostic is actually offerable to an anonymous visitor right now.
 // Requires, in order:
 //   - publicDiagnosticEnabled flag on
-//   - an EFFECTIVE assessment id (publicDiagnosticAssessmentId when set, falling back to
-//     diagnosticAssessmentId — an admin can offer a different diagnostic publicly than the one
-//     auto-issued internally, or just reuse the same one) that still resolves and is fully
-//     auto-gradable (live re-check — the flag and the assessment are independently editable;
+//   - its website diagnostic (publicDiagnosticAssessmentId — separate from the learner diagnostic
+//     issued to enrolled learners) that still resolves and is fully auto-gradable (live re-check — the flag and the assessment are independently editable;
 //     competency.service.js's assertPublicDiagnosticAllowed only runs at SAVE time)
 //   - BOTH minAge and maxAge set on the pathway's own stage (see hasCompleteAgeRange). A public
 //     diagnostic with no age bounds is treated as not-yet-configured rather than "open to any
 //     age" — the anonymous path must fail safe. (The authenticated learner flow, which has a
 //     real learner + teacher, is unaffected: it never calls this.)
 async function loadOfferableAssessment(pathway) {
-  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId;
   if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return null;
   const ageRange = await resolveEffectiveAgeRange(pathway);
   if (!hasCompleteAgeRange(ageRange)) return null;

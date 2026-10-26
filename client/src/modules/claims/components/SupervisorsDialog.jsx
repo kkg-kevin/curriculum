@@ -3,6 +3,8 @@ import toast from "react-hot-toast";
 import { FiKey, FiTrash2, FiUserPlus } from "react-icons/fi";
 import { useCreateSupervisor, useRemoveSupervisor, useSupervisors, useUpdateSupervisor } from "../hooks/useClaims";
 import { Dialog, T, ghostButton, inputStyle, primaryButton } from "../shared";
+import { claimsApi } from "../services/claimsApi";
+import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const label = { display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink };
 const EMPTY = { name: "", email: "", password: "" };
@@ -17,6 +19,7 @@ export default function SupervisorsDialog({ onClose }) {
   const remove = useRemoveSupervisor();
   const [form, setForm] = useState(EMPTY);
   const [resetting, setResetting] = useState(null); // { id, password }
+  const [removeTarget, setRemoveTarget] = useState(null);
   const busy = create.isPending || update.isPending || remove.isPending;
 
   const failed = (err, fallback) => toast.error(err.errors?.[0]?.message || err.message || fallback);
@@ -44,10 +47,7 @@ export default function SupervisorsDialog({ onClose }) {
   };
 
   const onRemove = async (supervisor) => {
-    const consequence = supervisor.educators
-      ? ` Their ${supervisor.educators} ${supervisor.educators === 1 ? "educator" : "educators"} will have no supervisor, and any claims waiting on them will come to the admin instead.`
-      : "";
-    if (!window.confirm(`Remove ${supervisor.name}? They will no longer be able to sign in.${consequence}`)) return;
+    setRemoveTarget(null);
     try {
       await remove.mutateAsync(supervisor.id);
       toast.success("Supervisor removed");
@@ -72,7 +72,7 @@ export default function SupervisorsDialog({ onClose }) {
                   <p style={{ margin: "1px 0 0", fontSize: 12, color: T.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{supervisor.email} · {supervisor.educators} {supervisor.educators === 1 ? "educator" : "educators"}</p>
                 </div>
                 <button type="button" disabled={busy} onClick={() => setResetting(resetting?.id === supervisor.id ? null : { id: supervisor.id, password: "" })} style={{ ...ghostButton, padding: "7px 11px", fontSize: 12.5 }}><FiKey size={13} /> Password</button>
-                <button type="button" disabled={busy} onClick={() => onRemove(supervisor)} aria-label={`Remove ${supervisor.name}`} style={{ ...ghostButton, padding: "7px 10px", color: "#B91C1C", borderColor: "#FECACA" }}><FiTrash2 size={14} /></button>
+                <button type="button" disabled={busy} onClick={() => setRemoveTarget(supervisor)} aria-label={`Remove ${supervisor.name}`} style={{ ...ghostButton, padding: "7px 10px", color: "#B91C1C", borderColor: "#FECACA" }}><FiTrash2 size={14} /></button>
               </div>
               {resetting?.id === supervisor.id && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
@@ -106,6 +106,15 @@ export default function SupervisorsDialog({ onClose }) {
           <button type="submit" disabled={!valid || busy} style={primaryButton(!valid || busy)}><FiUserPlus size={15} /> {create.isPending ? "Creating…" : "Create supervisor"}</button>
         </div>
       </form>
+      <ConfirmDialog
+        isOpen={!!removeTarget}
+        title="Remove supervisor"
+        message={`${removeTarget?.name} will be removed and will no longer be able to sign in.`}
+        confirmLabel="Remove" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => onRemove(removeTarget)}
+        onCancel={() => setRemoveTarget(null)}
+        usageCheck={() => claimsApi.checkRemoveSupervisor(removeTarget.id)}
+      />
     </Dialog>
   );
 }

@@ -44,6 +44,11 @@ export default function EditLearningHubPage() {
         phone: hub.phone || "",
         curriculumId: hub.curriculumId || "",
         parentHubId: hub.parentHubId || "",
+        accountManagerId: hub.accountManagerId || "",
+        trainingLeadId: hub.trainingLeadId || "",
+        // Shown in the picker when the person can't be picked any more (never sent back).
+        accountManagerName: hub.accountManagerName || "",
+        trainingLeadName: hub.trainingLeadName || "",
         status: hub.status || "active",
         description: hub.description || "",
         photo: hub.photo || null,
@@ -61,8 +66,8 @@ export default function EditLearningHubPage() {
   }, [hub, reset]);
 
   const onSubmit = (data) => {
-    const { clubDetails, ...rest } = data;
-    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    const { clubDetails, accountManagerName, trainingLeadName, ...rest } = data;
+    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null, accountManagerId: data.accountManagerId || null, trainingLeadId: data.trainingLeadId || null };
     // A club's details for parents — only a non-school hub has them.
     if (data.hubType !== "school") payload.clubDetails = clubDetailsToPayload(clubDetails);
     const viewPath = `/learning-hubs/${id}/view`;

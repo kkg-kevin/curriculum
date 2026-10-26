@@ -1,9 +1,17 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 
 // Hub check-ins — labels, status looks and the small building blocks every check-ins screen
 // shares. Keys match server/src/modules/checkins/checkin.constants.js.
+
+// Where the check-ins pages live: the admin app (/checkins), or the hub portal for a hub's
+// Account Manager / Training Lead (/school-portal/checkins).
+export const checkinsBaseFor = (pathname) => (pathname.startsWith("/school-portal") ? "/school-portal/checkins" : "/checkins");
+export function useCheckinsBase() {
+  return checkinsBaseFor(useLocation().pathname);
+}
 
 export const T = { accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB", tint: "#F1F9FD" };
 export const font = "Inter, sans-serif";
@@ -15,44 +23,25 @@ export const hint = { margin: "4px 0 0", fontSize: 11.5, color: T.inkMuted, line
 export const chip = (on) => ({ padding: "6px 12px", borderRadius: 999, border: `1.5px solid ${on ? T.accent : T.border}`, background: on ? T.accent : "#fff", color: on ? "#fff" : "#374151", fontSize: 12.5, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap" });
 export const primaryBtn = (disabled = false) => ({ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", border: 0, borderRadius: 10, background: disabled ? "#9DB3C8" : T.accent, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: font, cursor: disabled ? "not-allowed" : "pointer" });
 export const ghostBtn = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1.5px solid #D6E4EF", background: "#fff", color: T.accent, fontSize: 13, fontWeight: 600, fontFamily: font, cursor: "pointer" };
-export const dangerBtn = { ...ghostBtn, color: "#B91C1C", borderColor: "#FECACA" };
 
+// The four the admin chooses from; "quarterly" and "once" only for schedules set up before 26 Oct 2026.
+export const FREQUENCY_OPTIONS = ["weekly", "monthly", "semi_annually", "annually"];
 export const FREQUENCY_LABEL = { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly", semi_annually: "Every 6 months", annually: "Yearly", once: "One-off" };
 export const FORMAT_LABEL = { online: "Online", in_person: "In person" };
 
-export const SESSION_STATUS = {
-  scheduled: { label: "Scheduled", bg: "#EFF6FF", color: "#1D4ED8" },
-  rescheduled: { label: "Rescheduled", bg: "#F5F3FF", color: "#6D28D9" },
-  in_progress: { label: "In progress", bg: "#ECFEFF", color: "#0E7490" },
-  pending_submission: { label: "Pending submission", bg: "#FFFBEB", color: "#B45309" },
-  completed: { label: "Completed", bg: "#ECFDF5", color: "#047857" },
-  missed: { label: "Missed", bg: "#FEF2F2", color: "#B91C1C" },
-  cancelled: { label: "Cancelled", bg: "#F3F4F6", color: "#6B7280" },
+// Where a check-in stands (server: checkin.rules.js's sessionState).
+export const STATE = {
+  upcoming: { label: "Upcoming", bg: "#EFF6FF", color: "#1D4ED8" },
+  due: { label: "Report due", bg: "#FFFBEB", color: "#B45309" },
+  reported: { label: "Reported", bg: "#ECFDF5", color: "#047857" },
 };
-export const OVERALL_STATUS = {
-  on_track: { label: "On track", bg: "#ECFDF5", color: "#047857" },
-  needs_attention: { label: "Needs attention", bg: "#FFFBEB", color: "#B45309" },
-  critical: { label: "Critical", bg: "#FEF2F2", color: "#B91C1C" },
-};
-export const OPERATIONAL_STATUS = { running_well: "Running well", minor_issues: "Minor issues", significant_issues: "Significant issues" };
-export const ACTION_STATUS = {
-  open: { label: "Open", bg: "#FFF7ED", color: "#C2410C" },
-  assigned: { label: "Assigned", bg: "#EFF6FF", color: "#1D4ED8" },
-  in_progress: { label: "In progress", bg: "#ECFEFF", color: "#0E7490" },
-  resolved: { label: "Resolved", bg: "#ECFDF5", color: "#047857" },
-  closed: { label: "Closed", bg: "#F3F4F6", color: "#6B7280" },
-};
-export const PRIORITY = {
-  low: { label: "Low", color: "#6B7280" },
-  medium: { label: "Medium", color: "#1D4ED8" },
-  high: { label: "High", color: "#B45309" },
-  critical: { label: "Critical", color: "#B91C1C" },
-};
-export const CATEGORY_LABEL = {
-  equipment: "Equipment", staffing: "Staffing", facilities: "Facilities", curriculum_delivery: "Curriculum delivery",
-  educator_support: "Educator support", learner_engagement: "Learner engagement", operations: "Operations", other: "Other",
-};
-export const KIND_LABEL = { issue: "Issue", action: "Follow-up" };
+
+// The report's three parts, in order.
+export const REPORT_PARTS = [
+  { key: "highs", label: "Highs", help: "What went well — progress, wins, what's working." },
+  { key: "lows", label: "Lows", help: "What didn't — problems, gaps, concerns." },
+  { key: "resolutions", label: "Resolutions", help: "What was agreed to do about them, and by whom." },
+];
 
 export function Pill({ look, children }) {
   return (
@@ -96,17 +85,6 @@ export function Empty({ title, children }) {
       <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#374151" }}>{title}</p>
       {children && <p style={{ margin: 0 }}>{children}</p>}
     </div>
-  );
-}
-
-// A person picker from the workspace's admins and staff (GET /api/checkins/people).
-export function PersonSelect({ id, value, onChange, people = [], placeholder = "Choose…", onlyCheckins = false, allowEmpty = true }) {
-  const list = onlyCheckins ? people.filter((p) => p.canUseCheckins) : people;
-  return (
-    <select id={id} value={value || ""} onChange={(e) => onChange(e.target.value || null)} style={input}>
-      {allowEmpty && <option value="">{placeholder}</option>}
-      {list.map((p) => <option key={p.id} value={p.id}>{p.name}{p.roleName ? ` — ${p.roleName}` : ""}</option>)}
-    </select>
   );
 }
 

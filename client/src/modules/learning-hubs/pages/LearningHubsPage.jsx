@@ -6,6 +6,7 @@ import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
 import { setLearningHubFilter, clearLearningHubFilters } from "../../../store/learningHubsSlice";
 import { KENYA_COUNTIES } from "../schemas/learningHub.schema";
 import { LearningHubCard } from "../components/LearningHubCard";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const selectStyle = {
   padding: "8px 32px 8px 12px",
@@ -39,11 +40,11 @@ function EmptyState({ hasFilters, onClearFilters, onCreateNew }) {
         <button type="button" onClick={onClearFilters} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "#25476a", border: "1.5px solid #25476a", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
           Clear Filters
         </button>
-      ) : (
+      ) : onCreateNew ? (
         <button type="button" onClick={onCreateNew} style={{ padding: "10px 24px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 4px 12px rgba(254,177,57,0.35)" }}>
           Go to Settings →
         </button>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -52,6 +53,9 @@ export default function LearningHubsPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const filters = useSelector((state) => state.learningHubs.filters);
+  // An Account Manager / Training Lead sees every hub but can't add or change one.
+  const { can } = usePermissions();
+  const canCreate = can("learning-hubs", "create");
 
   const { data, isLoading, isError, error } = useLearningHubsQuery();
   const { data: curriculaData } = useCurriculaQuery();
@@ -79,15 +83,15 @@ export default function LearningHubsPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
-            <button
+            {can("hub-visits", "view") && <button
               type="button"
               onClick={() => navigate("/learning-hubs/revenue")}
               style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
               title="What every non-school hub is earning from logged space visits"
             >
               Revenue
-            </button>
-            <button
+            </button>}
+            {canCreate && <button
               type="button"
               onClick={() => navigate("/settings/learning-hubs/create")}
               style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
@@ -95,7 +99,7 @@ export default function LearningHubsPage() {
             >
               <AddIcon fontSize="small" />
               Add in Settings
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -169,7 +173,7 @@ export default function LearningHubsPage() {
         <EmptyState
           hasFilters={hasFilters}
           onClearFilters={() => dispatch(clearLearningHubFilters())}
-          onCreateNew={() => navigate("/settings/learning-hubs/create")}
+          onCreateNew={canCreate ? () => navigate("/settings/learning-hubs/create") : null}
         />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>

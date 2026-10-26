@@ -63,7 +63,8 @@ const logout = asyncHandler(async (req, res) => {
 
 // `session` tells the client how long it may sit idle before signing out (SESSION_IDLE_MINUTES).
 const me = asyncHandler(async (req, res) => {
-  const user = await AuthService.getById(req.user.id, req.user.role, { withRoles: true });
+  // An Account Manager / Training Lead session runs as "school" (protect) — rebuild it as itself.
+  const user = await AuthService.getById(req.user.id, req.user.hubLead ? "hubLead" : req.user.role, { withRoles: true });
   res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
 });
 

@@ -5,6 +5,7 @@ import { useBootcampQuery, useDeleteBootcamp, useUpdateBootcamp } from "../hooks
 import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { bootcampApi } from "../services/bootcampApi";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import BootcampGames from "../../programs/games/components/BootcampGames";
@@ -359,6 +360,7 @@ export default function BootcampViewPage() {
           setConfirmDelete(false);
           deleteBootcamp(id, { onSuccess: () => navigate(backToList) });
         }}
+        usageCheck={() => bootcampApi.checkRemove(id)}
         onCancel={() => setConfirmDelete(false)}
       />
     </div>

@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const BASE = "/api/rooms";
 
@@ -8,5 +8,6 @@ export const roomApi = {
   getById: (id)       => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   update:  (id, data) => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:  (id)       => api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${BASE}/${id}`),
   getAvailability: (params) => api.get(`${BASE}/availability`, { params }).then((r) => r.data.data),
 };

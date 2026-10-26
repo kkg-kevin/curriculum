@@ -5,6 +5,7 @@ const {
   updateCompetencySchema,
 } = require("./competency.validation");
 const { parsePatch } = require("../../../shared/validators/common.validator");
+const UsageService = require("../../usage/usage.service");
 
 /* ── Competencies ────────────────────────────────────────────────────────── */
 
@@ -28,6 +29,7 @@ exports.updateCompetency = asyncHandler(async (req, res) => {
 });
 
 exports.deleteCompetency = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "competency", req.params.cId, "This competency")) return;
   await CompetencyService.deleteCompetency(req.params.cId, req.ownerAdminId);
   res.json({ success: true });
 });

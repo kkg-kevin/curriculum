@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
 import { useCertificate } from "../hooks/useCertificates";
 import CertificateViewer from "../components/CertificateViewer";
@@ -11,6 +11,8 @@ const T = { accent: "#25476a", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#
 export default function CertificateViewPage() {
   const { certificateId } = useParams();
   const navigate = useNavigate();
+  // Inside the parent portal (one child's page), Back returns there.
+  const { portalBase } = useOutletContext() || {};
   const { data: certificate, isLoading, isError } = useCertificate(certificateId);
 
   if (isLoading) {
@@ -27,10 +29,10 @@ export default function CertificateViewPage() {
       <div>
         <button
           type="button"
-          onClick={() => navigate("/learner-portal/profile")}
+          onClick={() => navigate(portalBase || "/learner-portal/profile")}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0, color: T.accent, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
         >
-          <FiArrowLeft size={15} /> Back to profile
+          <FiArrowLeft size={15} /> {portalBase ? "Back" : "Back to profile"}
         </button>
         <h1 style={{ margin: "12px 0 4px", fontSize: 22, fontWeight: 800, color: T.ink }}>Certificate of Completion</h1>
         <p style={{ margin: 0, fontSize: 14, color: T.inkMuted }}>{title}</p>

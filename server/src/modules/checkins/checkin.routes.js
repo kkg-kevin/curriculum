@@ -1,19 +1,26 @@
 const express = require("express");
-const { authorize } = require("../../shared/middleware/auth.middleware");
 const ctl = require("./checkin.controller");
 
-// Hub check-ins, mounted at /api/checkins with protect + attachOwnRecords (app.js). The workspace
-// owner, and staff whose role grants it (access.registry.js: "checkins" to take part,
-// "checkins-manage" for schedules, cancelling, reopening and the overview) — staff reach
-// authorize("admin") only once scope.middleware.js has checked their role. Which hubs and records
-// each person sees is decided per record in checkin.service.js / checkin.access.js.
-// Named routes come before "/:id" ones.
+// Hub check-ins, mounted at /api/checkins with protect + attachOwnRecords (app.js). Who gets in:
+//   - the workspace's admins, and staff whose role grants "checkins-manage" (access.registry.js —
+//     staff reach role "admin" only once scope.middleware.js has checked their role);
+//   - a hub's Account Manager / Training Lead in the hub portal (a "school" session with
+//     req.user.hubLead — see account-roles.js);
+//   - an educator's own session, for GET /due only (the teacher portal's pop-up).
+// Which hubs and check-ins each person sees is decided per record in checkin.service.js /
+// checkin.access.js; schedules are managers' only. Named routes come before "/:id" ones.
 const router = express.Router();
-router.use(authorize("admin"));
+router.use((req, res, next) => {
+  const { role, hubLead } = req.user;
+  const dueOnly = req.method === "GET" && req.path === "/due";
+  if (role === "admin" || (role === "school" && hubLead) || (role === "teacher" && dueOnly)) return next();
+  next(Object.assign(new Error("You do not have permission to perform this action"), { statusCode: 403 }));
+});
 
 router.get("/people", ctl.people);
 router.get("/hubs", ctl.hubs);
-router.get("/overview", ctl.overview);
+// The sign-in pop-up: my check-ins due (today or earlier) with no report yet.
+router.get("/due", ctl.due);
 
 router.route("/schedules").get(ctl.listSchedules).post(ctl.createSchedule);
 router.put("/schedules/:id", ctl.updateSchedule);
@@ -22,16 +29,5 @@ router.post("/schedules/:id/end", ctl.endSchedule);
 router.get("/sessions", ctl.listSessions);
 router.get("/sessions/:id", ctl.getSession);
 router.put("/sessions/:id/report", ctl.saveReport);
-router.post("/sessions/:id/submit", ctl.submitReport);
-router.post("/sessions/:id/reopen", ctl.reopenReport);
-router.post("/sessions/:id/reschedule", ctl.rescheduleSession);
-router.post("/sessions/:id/cancel", ctl.cancelSession);
-router.post("/sessions/:id/actions", ctl.createAction);
-
-router.get("/actions", ctl.listActions);
-router.route("/actions/:id").get(ctl.getAction).put(ctl.updateAction).delete(ctl.deleteAction);
-router.post("/actions/:id/status", ctl.setActionStatus);
-router.post("/actions/:id/notes", ctl.addActionNote);
-router.post("/actions/:id/escalate", ctl.escalateAction);
 
 module.exports = router;

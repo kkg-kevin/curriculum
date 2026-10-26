@@ -75,6 +75,15 @@ const DEFAULT_RUNGS = [
   { label: "Upper Secondary",  ageRange: "15–18", order: 5 },
 ];
 
+
+// A pathway stage has two diagnostics: the learner diagnostic (diagnosticAssessmentId — issued
+// once a learner is enrolled, any type) and the website diagnostic (publicDiagnosticAssessmentId —
+// taken by visitors with no teacher, so auto-graded only). The website one is offered exactly when
+// it is set; publicDiagnosticEnabled is kept in step for everything that reads it.
+function syncWebsiteDiagnostic(data) {
+  if ("publicDiagnosticAssessmentId" in data) data.publicDiagnosticEnabled = !!data.publicDiagnosticAssessmentId;
+  else if ("publicDiagnosticEnabled" in data && !data.publicDiagnosticEnabled) data.publicDiagnosticAssessmentId = null;
+}
 const CompetencyService = {
   /* ── Curriculum ↔ Competency links ───────────────────────────────────
    * Competencies are now authored globally (see server/src/modules/competencies).
@@ -212,13 +221,10 @@ const CompetencyService = {
     // The public assessment wins when set (existing-or-incoming), falling back to the internal
     // one — same "effective id" resolution every public-site resolver mirrors (see
     // public-diagnostic.service.js's loadOfferableAssessment and its two sibling copies).
-    const effectivePublicAssessmentId =
+    const effectiveAssessmentId =
       "publicDiagnosticAssessmentId" in data ? data.publicDiagnosticAssessmentId : existingPathway?.publicDiagnosticAssessmentId;
-    const effectiveInternalAssessmentId =
-      "diagnosticAssessmentId" in data ? data.diagnosticAssessmentId : existingPathway?.diagnosticAssessmentId;
-    const effectiveAssessmentId = effectivePublicAssessmentId || effectiveInternalAssessmentId;
     if (!effectiveAssessmentId) {
-      const err = new Error("Set a diagnostic assessment before offering it publicly");
+      const err = new Error("Choose the website diagnostic assessment first");
       err.statusCode = 400;
       throw err;
     }
@@ -229,7 +235,7 @@ const CompetencyService = {
       throw err;
     }
     if (requiresManualGrading(assessment)) {
-      const err = new Error("This assessment includes manually-graded items and can't be used for the public diagnostic");
+      const err = new Error("The website diagnostic must be marked automatically — this assessment has questions a teacher marks");
       err.statusCode = 400;
       throw err;
     }
@@ -253,6 +259,7 @@ const CompetencyService = {
     }
     await assertCoursesExist(data.courses);
     await assertStageExists(curriculumId, data.ageCategoryId);
+    syncWebsiteDiagnostic(data);
     await this.assertPublicDiagnosticAllowed(data, null);
     const shared = group[0]
       ? { name: group[0].name, description: group[0].description, color: group[0].color }
@@ -295,6 +302,7 @@ const CompetencyService = {
     }
     await assertCoursesExist(data.courses);
     await assertStageExists(curriculumId, data.ageCategoryId);
+    syncWebsiteDiagnostic(data);
     await this.assertPublicDiagnosticAllowed(data, pathway);
     const updated = await PathwayModel.update(id, data);
     if (data.courses !== undefined) await PerformanceBandModel.syncPathwayOrder(curriculumId, id, data.courses || []);

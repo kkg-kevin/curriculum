@@ -7,6 +7,7 @@ const { assertOwn, isOwnedByAdmin } = require("../../shared/middleware/scope.mid
 const SchoolModel = require("../learning-hubs/learning-hub.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const CourseModel = require("../courses/course.model");
+const UsageService = require("../usage/usage.service");
 
 async function getTeacherAccessibleCurriculumIds(req) {
   if (!req.ownTeacher) return [];
@@ -90,6 +91,7 @@ const deleteCurriculum = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await CurriculumService.getCurriculumById(req.params.id)));
   }
+  if (await UsageService.guardDelete(req, res, "curriculum", req.params.id, "This curriculum")) return;
   const result = await CurriculumService.deleteCurriculum(req.params.id);
   res.json({ success: true, ...result });
 });

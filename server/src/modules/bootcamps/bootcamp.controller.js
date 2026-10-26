@@ -6,6 +6,7 @@ const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { createBootcampSchema, updateBootcampSchema } = require("./bootcamp.validation");
 const { createOfferingSchema } = require("./bootcamp-hub.validation");
 const { parsePatch } = require("../../shared/validators/common.validator");
+const UsageService = require("../usage/usage.service");
 
 // This whole module is authorize("admin")-only (see app.js/bootcamp.routes.js). A bootcamp
 // carries its own ownerAdminId, so ownership is a direct match, same shape as competitions.
@@ -50,6 +51,7 @@ const updateBootcamp = asyncHandler(async (req, res) => {
 
 const deleteBootcamp = asyncHandler(async (req, res) => {
   assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
+  if (await UsageService.guardDelete(req, res, "bootcamp", req.params.id, "This bootcamp")) return;
   const result = await BootcampService.deleteBootcamp(req.params.id);
   res.json({ success: true, ...result });
 });

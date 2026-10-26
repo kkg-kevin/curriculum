@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useDeleteCurriculum, useDuplicateCurriculum } from "../hooks/useCurriculum";
 import ConfirmDialog from "./ConfirmDialog";
+import { curriculumApi } from "../services/curriculumApi";
 import { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 
 const CYCLE_LABELS = { terms: "Terms", semesters: "Semesters", custom: "Custom" };
@@ -310,6 +311,7 @@ export default function CurriculumCard({ curriculum }) {
         message={`"${curriculum.name}" will be permanently deleted. This cannot be undone.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { setConfirm(false); deleteCurriculum(curriculum.id); }}
+        usageCheck={() => curriculumApi.checkRemove(curriculum.id)}
         onCancel={() => setConfirm(false)}
       />
     </div>

@@ -5,6 +5,7 @@ import { INVOICE_TYPE_LABELS, formatMoney } from "../constants";
 import CardKebab from "./CardKebab";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { itemsApi } from "../services/itemsApi";
 
 function ServiceModal({ editTarget, onClose }) {
   const { mutate: create, isPending: creating } = useCreateItem();
@@ -191,6 +192,7 @@ export default function ServicesPanel() {
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { deleteItem(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => itemsApi.checkDeleteItem(deleteTarget.id)}
       />
     </div>
   );

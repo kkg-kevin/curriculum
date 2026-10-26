@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { isParentUser, parentPathFor } from "../modules/parent/parentPaths";
 import LearnerSidebar from "../modules/learner-portal/components/LearnerSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
@@ -12,7 +14,7 @@ import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 
 const MOBILE_BREAKPOINT = 900;
 
-function LearnerPortalLayout() {
+function LearnerPortal() {
   const scope = useLearnerPortalScope();
   const { hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
@@ -108,6 +110,15 @@ function LearnerPortalLayout() {
       />
     </div>
   );
+}
+
+// A parent has their own portal (/parent) — the learner portal is a child's own. Bookmarks and
+// notification links into it land on the same thing there.
+function LearnerPortalLayout() {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (isParentUser(user)) return <Navigate to={parentPathFor(location.pathname, location.search)} replace />;
+  return <LearnerPortal />;
 }
 
 export default LearnerPortalLayout;

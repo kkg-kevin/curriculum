@@ -13,8 +13,8 @@ export default function ReceiptsListPage() {
   const receipts = receiptsData?.data || [];
   const [search, setSearch] = useState("");
 
-  const basePath = user?.role === "learner" ? "/learner-portal" : user?.role === "school" ? "/school-portal/billing" : "/billing";
-  const receiptsPath = user?.role === "learner" ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const basePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsPath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();

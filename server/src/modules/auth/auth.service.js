@@ -14,7 +14,7 @@ const PasswordResetTokenModel = require("./password-reset-token.model");
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
 const { releaseIfLeftover, isLeftoverLogin } = require("./leftover-login");
-const { LINKABLE_ROLES, extraRolesOf, rolesOf, availableRoles } = require("./account-roles");
+const { LINKABLE_ROLES, HUB_LEAD_ROLE, extraRolesOf, rolesOf, availableRoles } = require("./account-roles");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
 
@@ -320,12 +320,18 @@ const AuthService = {
 
   // What the client gets about the signed-in user: the account, shown as the session's role, with
   // every role it can sign in as (`roles`), and that role's suspension / staff access.
+  //
+  // An Account Manager / Training Lead session (account-roles.js's HUB_LEAD_ROLE) runs in the hub
+  // portal, so it is shown as a "school" session with `hubLead: true` — every check of "is this the
+  // hub portal" keeps working — and `sessionRole` says which role it really is.
   async sessionUser(user, role, { withRoles = true } = {}) {
+    const hubLead = role === HUB_LEAD_ROLE;
     const asRole = { ...user, role };
     const suspended = await resolveSuspension(asRole);
     const pendingPayment = suspended === "payment" ? await this.getPendingPayment(asRole) : null;
     return {
       ...sanitize(asRole),
+      ...(hubLead ? { role: "school", hubLead: true, sessionRole: HUB_LEAD_ROLE } : {}),
       ...(withRoles ? { roles: await availableRoles(user) } : {}),
       suspended,
       pendingPayment,
@@ -588,7 +594,11 @@ const AuthService = {
   async updateMe(id, data, role = null) {
     const current = await UserModel.findById(id);
     await assertUserExists(current);
-    if (role !== "admin" && ["name", "phone", "jobTitle"].some((field) => field in data)) {
+    // A parent (a learner-role login with an email, no username) may keep their own name and
+    // phone up to date; job title stays admin-only.
+    const parent = role === "learner" && !!current.email && !current.username;
+    const editable = role === "admin" ? ["name", "phone", "jobTitle"] : parent ? ["name", "phone"] : [];
+    if (["name", "phone", "jobTitle"].some((field) => field in data && !editable.includes(field))) {
       const err = new Error("Only an admin can change these details here.");
       err.statusCode = 403;
       throw err;

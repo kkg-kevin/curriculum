@@ -56,7 +56,7 @@ export default function RoleSwitcher({ label, compact = false }) {
   };
 
   const choose = async (role) => {
-    if (role === user.role) { setPos(null); return; }
+    if (role === (user.sessionRole || user.role)) { setPos(null); return; }
     setBusy(role);
     try {
       await switchRole(role);
@@ -107,7 +107,8 @@ export default function RoleSwitcher({ label, compact = false }) {
           {roles.map((role) => {
             const meta = roleMeta(role);
             const Icon = meta.icon;
-            const current = role === user.role;
+            // An Account Manager / Training Lead session shows as "school" (the hub portal).
+            const current = role === (user.sessionRole || user.role);
             return (
               <button
                 key={role}
