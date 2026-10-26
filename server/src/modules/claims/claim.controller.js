@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const ClaimService = require("./claim.service");
 const SupervisorService = require("./supervisor.service");
 const { submitClaimSchema, decisionSchema, markPaidSchema, settingsSchema, createSupervisorSchema, updateSupervisorSchema, CLAIM_STATUSES } = require("./claim.validation");
+const UsageService = require("../usage/usage.service");
 
 // The educator behind this login — every educator route works off this, never off an id in the
 // request.
@@ -112,6 +113,7 @@ const updateSupervisor = asyncHandler(async (req, res) => {
 });
 
 const removeSupervisor = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "supervisor", req.params.id, "This supervisor")) return;
   res.json({ success: true, ...(await SupervisorService.remove(req.params.id, req.ownerAdminId)) });
 });
 

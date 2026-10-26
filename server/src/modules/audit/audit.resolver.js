@@ -87,7 +87,6 @@ const COLLECTIONS = {
   checkins: {
     schedules: { table: "checkin_schedules", noun: "check-in schedule" },
     sessions: { table: "checkin_sessions", noun: "hub check-in" },
-    actions: { table: "checkin_actions", noun: "check-in action" },
   },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },

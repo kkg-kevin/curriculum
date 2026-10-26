@@ -5,6 +5,8 @@ import { CheckCircle as CheckCircleIcon, Delete as DeleteIcon, Edit as EditIcon,
 import { useDeleteLearningHub, useUpdateLearningHub } from "../hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { learningHubApi } from "../services/learningHubApi";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const ACCENT = "#25476a";
 
@@ -35,6 +37,8 @@ function MenuButton({ icon, label, onClick, danger = false }) {
 
 export function LearningHubCard({ hub, curriculaMap }) {
   const navigate = useNavigate();
+  const { can } = usePermissions();
+  const canEdit = can("learning-hubs", "edit");
   const { mutate: deleteLearningHub, isPending: isDeleting } = useDeleteLearningHub();
   const { mutate: updateLearningHub } = useUpdateLearningHub();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -159,20 +163,22 @@ export function LearningHubCard({ hub, curriculaMap }) {
           </div>
           {[
             { label: "View", path: `/learning-hubs/${hub.id}/view`, icon: <VisibilityIcon fontSize="small" /> },
-            { label: "Edit", path: `/settings/learning-hubs/${hub.id}/edit`, icon: <EditIcon fontSize="small" /> },
+            ...(canEdit ? [{ label: "Edit", path: `/settings/learning-hubs/${hub.id}/edit`, icon: <EditIcon fontSize="small" /> }] : []),
           ].map(({ label, path, icon }) => (
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
-          <MenuButton
+          {canEdit && <MenuButton
             icon={hub.status === "active" ? <PauseCircleIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
             label={hub.status === "active" ? "Deactivate" : "Activate"}
             onClick={() => { setMenuOpen(false); updateLearningHub({ id: hub.id, data: { status: nextStatus } }); }}
-          />
-          <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
-          <MenuButton
-            icon={<DeleteIcon fontSize="small" />}
-            label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
-          />
+          />}
+          {can("learning-hubs", "delete") && <>
+            <div style={{ height: 1, backgroundColor: "#F3F4F6", margin: "4px 0" }} />
+            <MenuButton
+              icon={<DeleteIcon fontSize="small" />}
+              label="Delete" onClick={() => { setMenuOpen(false); setConfirmOpen(true); }} danger
+            />
+          </>}
         </div>,
         document.body
       )}
@@ -185,6 +191,8 @@ export function LearningHubCard({ hub, curriculaMap }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteLearningHub(hub.id); }}
+        usageCheck={() => learningHubApi.checkRemove(hub.id)}
+        onAlternative={hub.status === "active" ? () => { setConfirmOpen(false); updateLearningHub({ id: hub.id, data: { status: "inactive" } }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

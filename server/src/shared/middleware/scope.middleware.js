@@ -24,7 +24,23 @@ const { can } = require("../../modules/access/access.service");
 const attachOwnRecords = asyncHandler(async (req, res, next) => {
   const { role, email, id } = req.user;
 
-  if (role === "school") {
+  if (role === "school" && req.user.hubLead) {
+    // An Account Manager / Training Lead (a login named on a hub — see account-roles.js) in the
+    // hub portal: every hub of the workspace(s) whose hubs name them, to switch between and look
+    // at — view only (auth.middleware.js's blockHubLeadWrites refuses changes). Same X-Active-Hub-Id
+    // choice as a hub login's branches below. Inactive hubs are left out unless they're on it.
+    const named = await LearningHubModel.findNamingPerson(id);
+    const owners = [...new Set(named.map((h) => h.ownerAdminId).filter(Boolean))];
+    const all = [];
+    for (const ownerAdminId of owners) all.push(...(await LearningHubModel.findAll({ ownerAdminId, includeDrafts: true })));
+    const namedIds = new Set(named.map((h) => h.id));
+    req.ownSchools = all
+      .filter((h) => namedIds.has(h.id) || h.status === "active")
+      .sort((a, b) => Number(namedIds.has(b.id)) - Number(namedIds.has(a.id)) || String(a.name).localeCompare(String(b.name)));
+    const requestedId = req.headers["x-active-hub-id"];
+    req.ownSchool = (requestedId && req.ownSchools.find((h) => h.id === requestedId)) || req.ownSchools[0] || null;
+    req.ownSchoolCurriculumIds = req.ownSchool ? await LearningHubService.getEffectiveCurriculumIds(req.ownSchool.id) : [];
+  } else if (role === "school") {
     // A hub can itself be the parent of other hubs (its "branches") — the parent's own admin
     // gets access to switch into each one, exactly like a guardian switching between linked
     // learners below: req.ownSchools is every hub this login can act as (own hub first, then its

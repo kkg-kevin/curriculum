@@ -182,6 +182,9 @@ export const learningHubSchema = z
     // A hub can itself be the parent of other hubs (its "branches") — see
     // learning-hub.validation.js server-side for the same field.
     parentHubId: z.string().or(z.literal("")).nullable().default(""),
+    // Who runs this hub's check-ins — see learning-hub.validation.js server-side.
+    accountManagerId: z.string().or(z.literal("")).nullable().default(""),
+    trainingLeadId: z.string().or(z.literal("")).nullable().default(""),
     // New hubs start as "draft" — invisible everywhere outside Settings until promoted to
     // "active", at which point they appear in the Learning Hubs module and every other consumer.
     status: z.enum(["draft", "active", "inactive"]).default("draft"),

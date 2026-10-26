@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const BASE = "/api/classes";
 
@@ -9,6 +9,7 @@ export const classApi = {
   getById:     (id)         => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   update:      (id, data)   => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:      (id)         => api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${BASE}/${id}`),
 
   // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
   // Replaces the old single classTeacherId field.

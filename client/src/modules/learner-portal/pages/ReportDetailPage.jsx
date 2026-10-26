@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useParams, useOutletContext } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
+import { usePortalNavigate } from "../utils/usePortalNavigate";
 import toast from "react-hot-toast";
 import { FiAward } from "react-icons/fi";
 import { Print as PrintIcon, Download as DownloadIcon } from "@mui/icons-material";
@@ -29,7 +30,7 @@ function actionBtn(disabled) {
 
 export default function ReportDetailPage() {
   const { reportId } = useParams();
-  const navigate = useNavigate();
+  const navigate = usePortalNavigate();
   // The portal's already-resolved scope — the learner (name, photo, admission no.) and the hub
   // currently being viewed (name, logo, class). Threaded into the printable document so it can
   // carry the three marks (Digifunzi, hub, learner) without any fetch of its own.

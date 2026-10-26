@@ -6,6 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useCancelInvoice, useEmailInvoice, useInvoiceQuery, useIssueInvoice, usePayInvoice } from "../hooks/useBilling";
 import { cardStyle, buttonStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import StatusPill, { TYPE_LABELS } from "../components/StatusPill";
+import { KindPill } from "../components/customerKind";
 import { sourcePath } from "../components/invoiceSource";
 import BillToCard from "../components/BillToCard";
 import BrandMark from "../components/BrandMark";
@@ -32,8 +33,8 @@ export default function InvoiceDetailPage() {
   const [paymentNotes, setPaymentNotes] = useState("");
   const [mpesaOpen, setMpesaOpen] = useState(false);
   const queryClient = useQueryClient();
-  const basePath = user?.role === "learner" ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
-  const receiptsBasePath = user?.role === "learner" ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const basePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsBasePath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
 
   if (isLoading) return <LoadingState label="Loading invoice…" />;
   if (isError || !invoice) return <ErrorState label="Invoice could not be loaded." detail="It may have been removed, or you may not have access to it." />;
@@ -67,6 +68,7 @@ export default function InvoiceDetailPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <StatusPill status={invoice.status} />
+          {user?.role !== "learner" && <KindPill kind={invoice.customerKind} />}
           <DocumentActions kind="invoice" doc={invoice} targetId="invoice-document" filename={`${invoice.invoiceNumber}.pdf`} />
           <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             {canManage && invoice.status === "draft" && <button type="button" disabled={issuing} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B" }}><SendIcon sx={{ fontSize: 16 }} />{issuing ? "Issuing…" : "Issue invoice"}</button>}

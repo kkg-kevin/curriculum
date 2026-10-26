@@ -74,6 +74,32 @@ async function resolvePayerIdentity(invoice) {
   return null;
 }
 
+// The families (B2C customers) behind a set of person-billed invoices, one per email the invoices
+// bill (else the parent login, phone or name) — so a parent's website sign-up, packages and hub
+// visits add up to one customer whether or not each invoice carries their login.
+async function familyCustomers(invoices) {
+  const paidByInvoice = new Map();
+  const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
+  for (const p of payments) paidByInvoice.set(p.invoiceId, money((paidByInvoice.get(p.invoiceId) || 0) + Number(p.amount)));
+  const byKey = new Map();
+  for (const inv of invoices) {
+    const who = (await resolvePayerIdentity(inv).catch(() => null)) || {};
+    const email = (who.email || "").trim().toLowerCase();
+    const key = email ? `email:${email}` : inv.payerUserId ? `user:${inv.payerUserId}` : who.phone ? `phone:${who.phone}` : who.name ? `name:${who.name.trim().toLowerCase()}` : `invoice:${inv.id}`;
+    const customer = byKey.get(key) || { id: key, kind: "b2c", name: who.name || "Unnamed customer", email: who.email || null, phone: who.phone || null, payerUserId: inv.payerUserId || null, invoiceTypes: new Set(), invoiceCount: 0, totalInvoiced: 0, totalPaid: 0, lastInvoiceAt: null };
+    customer.invoiceTypes.add(inv.invoiceType);
+    customer.invoiceCount += 1;
+    customer.totalInvoiced = money(customer.totalInvoiced + Number(inv.total));
+    customer.totalPaid = money(customer.totalPaid + (paidByInvoice.get(inv.id) || 0));
+    if (inv.issuedAt && (!customer.lastInvoiceAt || String(inv.issuedAt) > String(customer.lastInvoiceAt))) customer.lastInvoiceAt = inv.issuedAt;
+    if (!customer.payerUserId && inv.payerUserId) customer.payerUserId = inv.payerUserId;
+    byKey.set(key, customer);
+  }
+  return [...byKey.values()]
+    .map((c) => ({ ...c, invoiceTypes: [...c.invoiceTypes], balance: money(c.totalInvoiced - c.totalPaid) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // Platform issuer identity for documents Digifunzi itself issues (hub-subscription invoices).
 // Static rather than env-driven — matches the "use existing data only" scope; a configurable
 // billing-profile can replace this later without changing any consumer.
@@ -156,10 +182,16 @@ async function resolveSource(invoice, items, cache = { hubs: new Map(), learners
   }
 }
 
+// Who the customer is: B2B when an organisation (a learning hub/school) is billed, B2C when a
+// person is (a parent, household or website buyer). Worked out from the payer, so it never
+// drifts from the invoice itself.
+const customerKindOf = (invoice) => (invoice.payerHubId ? "b2b" : "b2c");
+
 async function decorate(invoice, items, payments, cache) {
   const amountPaid = money(payments.filter((p) => p.status === "successful").reduce((sum, p) => sum + Number(p.amount), 0));
   return {
     ...invoice,
+    customerKind: customerKindOf(invoice),
     subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total),
     amountPaid, amountDue: money(Number(invoice.total) - amountPaid),
     items, payments,
@@ -194,6 +226,14 @@ async function guardianClubMembershipIds(req) {
 }
 
 // A parent login's household and club-membership invoices, added to the ones found by learner.
+// A parent's own invoices: every one of their children's (req.ownLearners), plus their Home
+// Learning household's and Tech Club memberships' (withGuardianInvoices below).
+async function familyInvoices(req) {
+  const childIds = (req.ownLearners || []).map((l) => l.id);
+  const own = childIds.length ? await db("billing_invoices").whereIn("learnerId", childIds).orderBy("createdAt", "desc") : [];
+  return withGuardianInvoices(req, own);
+}
+
 async function withGuardianInvoices(req, invoices) {
   const [householdIds, membershipIds] = await Promise.all([guardianHouseholdIds(req), guardianClubMembershipIds(req)]);
   const seen = new Set(invoices.map((inv) => inv.id));
@@ -226,7 +266,7 @@ async function assertAccess(req, invoice) {
     return;
   }
   if (req.user.role === "learner" && req.user.username) throw forbidden("Learner accounts cannot access invoices");
-  if (req.user.role === "learner" && invoice.learnerId === req.ownLearner?.id) return;
+  if (req.user.role === "learner" && (req.ownLearners || []).some((l) => l.id === invoice.learnerId)) return;
   // A guardian login sees its own Home Learning household's package invoices (matched on the
   // guardian email the household was registered with).
   if (req.user.role === "learner" && invoice.householdId && (await guardianHouseholdIds(req)).includes(invoice.householdId)) return;
@@ -389,12 +429,8 @@ const BillingService = {
   async listInvoices(req) {
     const filters = {};
     if (req.user.role === "school") filters.hubId = req.ownSchool?.id || "__none__";
-    if (req.user.role === "learner") {
-      if (req.user.username) return [];
-      filters.learnerId = req.ownLearner?.id || "__none__";
-    }
-    let invoices = await BillingModel.findInvoices(filters);
-    if (req.user.role === "learner") invoices = await withGuardianInvoices(req, invoices);
+    if (req.user.role === "learner" && req.user.username) return [];
+    let invoices = req.user.role === "learner" ? await familyInvoices(req) : await BillingModel.findInvoices(filters);
     // hubId inherits ownerAdminId transitively — findInvoices' filter object only takes a single
     // exact value per column (no whereIn), and an admin can own more than one hub, so this
     // resolves the admin's own hub ids first and filters in JS, same as learning-hub.model.js's
@@ -590,12 +626,8 @@ const BillingService = {
   async listReceipts(req) {
     const filters = {};
     if (req.user.role === "school") filters.hubId = req.ownSchool?.id || "__none__";
-    if (req.user.role === "learner") {
-      if (req.user.username) return [];
-      filters.learnerId = req.ownLearner?.id || "__none__";
-    }
-    let invoices = await BillingModel.findInvoices(filters);
-    if (req.user.role === "learner") invoices = await withGuardianInvoices(req, invoices);
+    if (req.user.role === "learner" && req.user.username) return [];
+    let invoices = req.user.role === "learner" ? await familyInvoices(req) : await BillingModel.findInvoices(filters);
     // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
     // transitively, and an admin can own more than one hub, so filter in JS after the fact.
     if (req.user.role === "admin") {
@@ -606,7 +638,7 @@ const BillingService = {
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
     return Promise.all(payments.map(async (payment) => {
       const invoice = invoiceById.get(payment.invoiceId);
-      return { ...payment, amount: money(payment.amount), invoice: invoice ? { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency } : null, billTo: invoice ? await resolvePayerIdentity(invoice) : null };
+      return { ...payment, amount: money(payment.amount), invoice: invoice ? { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, customerKind: customerKindOf(invoice) } : null, billTo: invoice ? await resolvePayerIdentity(invoice) : null };
     }));
   },
 
@@ -719,20 +751,24 @@ const BillingService = {
     if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
     // The Home Learning hub is never a paying customer — its families are billed per household
     // from the Home Learning page — so it's left out of the customer list.
-    const hubs = (await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).filter((h) => !h.isHomeLearning);
+    const allHubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    const hubs = allHubs.filter((h) => !h.isHomeLearning);
     const hubIds = new Set(hubs.map((h) => h.id));
-    const invoices = (await BillingModel.findInvoices({})).filter((inv) => inv.payerHubId && hubIds.has(inv.payerHubId) && RECEIVABLE_STATUSES.includes(inv.status));
+    const ownHubIds = new Set(allHubs.map((h) => h.id));
+    const receivable = (await BillingModel.findInvoices({})).filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
+    const invoices = receivable.filter((inv) => inv.payerHubId && hubIds.has(inv.payerHubId));
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
     const paidByInvoice = new Map();
     for (const p of payments) paidByInvoice.set(p.invoiceId, money((paidByInvoice.get(p.invoiceId) || 0) + Number(p.amount)));
 
-    return hubs.map((hub) => {
+    const businesses = hubs.map((hub) => {
       const hubInvoices = invoices.filter((inv) => inv.payerHubId === hub.id);
       const totalInvoiced = money(hubInvoices.reduce((sum, inv) => sum + Number(inv.total), 0));
       const totalPaid = money(hubInvoices.reduce((sum, inv) => sum + (paidByInvoice.get(inv.id) || 0), 0));
       const issuedAts = hubInvoices.map((inv) => inv.issuedAt).filter(Boolean).sort();
       return {
         id: hub.id,
+        kind: "b2b",
         name: hub.name,
         email: hub.email || null,
         phone: hub.phone || null,
@@ -745,6 +781,8 @@ const BillingService = {
         lastInvoiceAt: issuedAts.length ? issuedAts[issuedAts.length - 1] : null,
       };
     });
+    const families = await familyCustomers(receivable.filter((inv) => !inv.payerHubId && ownHubIds.has(inv.hubId)));
+    return [...businesses, ...families];
   },
 
   async getCustomer(hubId, req) {

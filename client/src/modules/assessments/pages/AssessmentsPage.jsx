@@ -294,6 +294,7 @@ function AssessmentCard({ assessment, onMove, folderName }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteAssessment(assessment.id); }}
+        usageCheck={() => assessmentApi.checkRemove(assessment.id)}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

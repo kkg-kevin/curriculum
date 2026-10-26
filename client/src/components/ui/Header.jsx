@@ -114,7 +114,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   // A staff (collaborator) account shows its staff role, e.g. "Staff · Finance".
   // A "learner" account is either a parent (signs in with email, sees all their children) or a
   // child's own login (username only) — labelled so each can see whose account they're in.
-  const roleLabel = user?.role === "teacher" ? "Educator"
+  const roleLabel = user?.hubLead ? "Account Manager / Training Lead"
+    : user?.role === "teacher" ? "Educator"
     : user?.role === "supervisor" ? "Supervisor"
     : user?.role === "collaborator" ? (user.accessRole ? `Staff · ${user.accessRole.name}` : "Staff")
     : user?.role === "learner" ? (user.username ? "Learner" : "Parent")
@@ -170,6 +171,13 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/school-portal/reports": "Reports",
     "/school-portal/profile": "My Profile",
     "/learner-portal": "My Dashboard",
+    "/parent": "My Family",
+    "/parent/timetable": "Timetable",
+    "/parent/invoices": "Payments",
+    "/parent/receipts": "Receipts",
+    "/parent/statement": "Statement",
+    "/parent/family": "Packages",
+    "/parent/account": "My Account",
     "/learner-portal/courses": "My Courses",
     "/learner-portal/assessments": "Assessments",
     "/learner-portal/progress": "Progress",
@@ -197,6 +205,12 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Payments";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))
       return "Course Content";
+    if (pathname.startsWith("/parent/children/"))
+      return "My Family";
+    if (pathname.startsWith("/parent/invoices/"))
+      return "Invoice";
+    if (pathname.startsWith("/parent/receipts/"))
+      return "Receipt";
     if (pathname.startsWith("/school-portal/classes/"))
       return "Classes";
     if (pathname.startsWith("/school-portal/teachers/"))

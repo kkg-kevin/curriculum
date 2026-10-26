@@ -6,6 +6,7 @@ import { useDeleteTeacher, useUpdateTeacherStatus } from "../hooks/useTeacher";
 import { useAuth } from "../../../context/AuthContext";
 import { teacherPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { teacherApi } from "../services/teacherApi";
 
 const ACCENT = "#25476a";
 
@@ -171,6 +172,8 @@ export function TeacherCard({ teacher }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteTeacher(teacher.id); }}
+        usageCheck={() => teacherApi.checkRemove(teacher.id)}
+        onAlternative={!isInactive ? () => { setConfirmOpen(false); updateTeacherStatus({ id: teacher.id, status: "inactive" }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
 

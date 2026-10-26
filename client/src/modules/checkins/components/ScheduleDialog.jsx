@@ -1,120 +1,93 @@
 import { useState } from "react";
-import { useCheckinHubs, useCheckinMutation, useCheckinPeople } from "../hooks/useCheckins";
+import { Link } from "react-router-dom";
+import { useCheckinHubs, useCheckinMutation } from "../hooks/useCheckins";
 import { checkinsApi } from "../services/checkinsApi";
-import { FREQUENCY_LABEL, Modal, PersonSelect, ghostBtn, hint, input, label, primaryBtn } from "../shared";
+import { FORMAT_LABEL, FREQUENCY_LABEL, FREQUENCY_OPTIONS, Modal, T, chip, ghostBtn, hint, input, label, primaryBtn } from "../shared";
 
 const today = () => new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
-const EMPTY = { hubId: "", accountManagerId: "", trainingLeadId: "", frequency: "monthly", startDate: today(), endDate: "", startTime: "10:00", durationMinutes: 60, format: "in_person", meetingLink: "", venue: "", agenda: "" };
+const EMPTY = { hubId: "", frequency: "monthly", startDate: today(), format: "in_person" };
 
-// Set up or change a check-in schedule (managers). A one-off is a schedule of one. Editing changes
-// the upcoming check-ins nobody has started; anything already written up keeps its own record.
+// Set up or change a hub's check-ins (managers): the hub, how often, the first check-in, and online
+// or in person. Its Account Manager and Training Lead are the hub's own — named on the hub
+// (Learning Hubs → the hub → Edit), and shown here. Editing changes the upcoming check-ins that
+// haven't been reported; reports already written keep their own record.
 export default function ScheduleDialog({ schedule, onClose }) {
   const { data: hubs = [] } = useCheckinHubs();
-  const { data: people = [] } = useCheckinPeople();
   const [form, setForm] = useState(() => (schedule ? {
-    ...EMPTY, ...schedule, endDate: schedule.endDate || "", meetingLink: schedule.meetingLink || "", venue: schedule.venue || "", agenda: schedule.agenda || "", durationMinutes: schedule.durationMinutes ?? "",
+    hubId: schedule.hubId,
+    // A schedule from before 26 Oct 2026 may be quarterly or one-off; editing it picks one of the four.
+    frequency: FREQUENCY_OPTIONS.includes(schedule.frequency) ? schedule.frequency : "monthly",
+    startDate: schedule.startDate, format: schedule.format,
   } : EMPTY));
   const [errors, setErrors] = useState([]);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const save = useCheckinMutation(
     (body) => (schedule ? checkinsApi.updateSchedule(schedule.id, body) : checkinsApi.createSchedule(body)),
-    (result) => (schedule ? `Schedule saved${result?.updatedSessions || result?.replacedSessions ? " — upcoming check-ins updated" : ""}` : "Check-ins scheduled"),
+    schedule ? "Schedule saved" : "Check-ins set up",
   );
+  const hub = hubs.find((h) => h.id === form.hubId) || null;
+  const missingPeople = hub && (!hub.accountManagerId || !hub.trainingLeadId);
 
   const submit = () => {
     setErrors([]);
-    const body = {
-      hubId: form.hubId, accountManagerId: form.accountManagerId, trainingLeadId: form.trainingLeadId, frequency: form.frequency,
-      startDate: form.startDate, endDate: form.frequency === "once" ? null : form.endDate || null, startTime: form.startTime,
-      durationMinutes: form.durationMinutes === "" ? null : Number(form.durationMinutes), format: form.format,
-      meetingLink: form.format === "online" ? form.meetingLink.trim() : "", venue: form.format === "in_person" ? form.venue.trim() : "", agenda: form.agenda.trim(),
-    };
-    save.mutate(body, { onSuccess: onClose, onError: (err) => setErrors((err.errors || []).map((e) => e.message)) });
+    save.mutate(form, { onSuccess: onClose, onError: (err) => setErrors((err.errors || []).map((e) => e.message)) });
   };
-  const notInModule = people.filter((p) => !p.canUseCheckins);
 
   return (
     <Modal
-      title={schedule ? "Edit check-in schedule" : "Schedule check-ins"}
+      title={schedule ? "Edit check-ins" : "Set up check-ins"}
       onClose={onClose}
-      width={640}
+      width={560}
       footer={<>
         <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
-        <button type="button" onClick={submit} disabled={save.isPending} style={primaryBtn(save.isPending)}>{save.isPending ? "Saving…" : schedule ? "Save" : "Schedule"}</button>
+        <button type="button" onClick={submit} disabled={save.isPending || missingPeople} style={primaryBtn(save.isPending || missingPeople)}>{save.isPending ? "Saving…" : schedule ? "Save" : "Set up"}</button>
       </>}
     >
-      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <label htmlFor="ci-hub" style={label}>Hub</label>
           <select id="ci-hub" value={form.hubId} onChange={(e) => set("hubId")(e.target.value)} disabled={!!schedule} style={input}>
             <option value="">Choose the hub…</option>
             {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
-          {schedule && <p style={hint}>A schedule stays with its hub. To move to another hub, end this one and set up a new one.</p>}
+          {schedule && <p style={hint}>A schedule stays with its hub. For another hub, end this one and set up a new one.</p>}
         </div>
-        <div>
-          <label htmlFor="ci-am" style={label}>Account Manager</label>
-          <PersonSelect id="ci-am" value={form.accountManagerId} onChange={set("accountManagerId")} people={people} onlyCheckins placeholder="Choose…" />
-        </div>
-        <div>
-          <label htmlFor="ci-tl" style={label}>Training Lead</label>
-          <PersonSelect id="ci-tl" value={form.trainingLeadId} onChange={set("trainingLeadId")} people={people} onlyCheckins placeholder="Choose…" />
-        </div>
-        {notInModule.length > 0 && (
-          <p style={{ ...hint, gridColumn: "1 / -1", marginTop: -6 }}>
-            Only people whose role includes Hub check-ins are listed. {notInModule.length} other staff member{notInModule.length === 1 ? "" : "s"} can be added by giving their role that permission (Settings → People & sharing → Roles).
-          </p>
+
+        {hub && (
+          <div style={{ gridColumn: "1 / -1", padding: "10px 12px", borderRadius: 10, background: missingPeople ? "#FFFBEB" : T.tint, border: `1px solid ${missingPeople ? "#FDE68A" : "#CFE6F5"}` }}>
+            {missingPeople ? (
+              <p style={{ margin: 0, fontSize: 12.5, color: "#92400E", lineHeight: 1.5 }}>
+                {hub.name} doesn&apos;t have its {!hub.accountManagerId && !hub.trainingLeadId ? "Account Manager and Training Lead" : !hub.accountManagerId ? "Account Manager" : "Training Lead"} named yet.{" "}
+                <Link to={`/settings/learning-hubs/${hub.id}/edit`} style={{ color: T.accentMid, fontWeight: 700 }}>Name them on the hub</Link>, then set up its check-ins.
+              </p>
+            ) : (
+              <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.5 }}>
+                Run by <strong>{hub.accountManagerName}</strong> (Account Manager) and <strong>{hub.trainingLeadName}</strong> (Training Lead) — the hub&apos;s own. To change them, edit the hub.
+              </p>
+            )}
+          </div>
         )}
+
         <div>
           <label htmlFor="ci-freq" style={label}>How often</label>
           <select id="ci-freq" value={form.frequency} onChange={(e) => set("frequency")(e.target.value)} style={input}>
-            {Object.entries(FREQUENCY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {FREQUENCY_OPTIONS.map((k) => <option key={k} value={k}>{FREQUENCY_LABEL[k]}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="ci-start" style={label}>{form.frequency === "once" ? "Date" : "First check-in"}</label>
+          <label htmlFor="ci-start" style={label}>First check-in</label>
           <input id="ci-start" type="date" value={form.startDate} onChange={(e) => set("startDate")(e.target.value)} style={input} />
         </div>
-        <div>
-          <label htmlFor="ci-time" style={label}>Time</label>
-          <input id="ci-time" type="time" value={form.startTime} onChange={(e) => set("startTime")(e.target.value)} style={input} />
-        </div>
-        <div>
-          <label htmlFor="ci-dur" style={label}>Duration (minutes)</label>
-          <input id="ci-dur" type="number" min="5" max="600" value={form.durationMinutes} onChange={(e) => set("durationMinutes")(e.target.value)} style={input} />
-        </div>
-        {form.frequency !== "once" && (
-          <div>
-            <label htmlFor="ci-end" style={label}>Until <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
-            <input id="ci-end" type="date" value={form.endDate} onChange={(e) => set("endDate")(e.target.value)} style={input} />
+        <div style={{ gridColumn: "1 / -1" }}>
+          <span style={label}>Held</span>
+          <div role="radiogroup" aria-label="Held" style={{ display: "flex", gap: 8 }}>
+            {Object.entries(FORMAT_LABEL).map(([key, text]) => (
+              <button key={key} type="button" role="radio" aria-checked={form.format === key} onClick={() => set("format")(key)} style={chip(form.format === key)}>{text}</button>
+            ))}
           </div>
-        )}
-        <div>
-          <label htmlFor="ci-format" style={label}>Format</label>
-          <select id="ci-format" value={form.format} onChange={(e) => set("format")(e.target.value)} style={input}>
-            <option value="in_person">In person</option>
-            <option value="online">Online</option>
-          </select>
-        </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          {form.format === "online" ? (
-            <>
-              <label htmlFor="ci-link" style={label}>Meeting link</label>
-              <input id="ci-link" value={form.meetingLink} onChange={(e) => set("meetingLink")(e.target.value)} placeholder="https://meet.google.com/…" style={input} />
-            </>
-          ) : (
-            <>
-              <label htmlFor="ci-venue" style={label}>Venue</label>
-              <input id="ci-venue" value={form.venue} onChange={(e) => set("venue")(e.target.value)} maxLength={255} placeholder="e.g. the hub's office" style={input} />
-            </>
-          )}
-        </div>
-        <div style={{ gridColumn: "1 / -1" }}>
-          <label htmlFor="ci-agenda" style={label}>Agenda / purpose</label>
-          <textarea id="ci-agenda" value={form.agenda} onChange={(e) => set("agenda")(e.target.value)} rows={3} maxLength={5000} style={{ ...input, resize: "vertical" }} />
         </div>
       </div>
-      {schedule && <p style={{ ...hint, marginTop: 12 }}>Changes apply to the upcoming check-ins nobody has started. Check-ins already written up, moved or past keep their own details. A new frequency or date replaces those upcoming check-ins with a new set.</p>}
+      {schedule && <p style={{ ...hint, marginTop: 12 }}>Changes apply to the upcoming check-ins. A new frequency or first date replaces them with a new set; reports already written stay.</p>}
       {errors.length > 1 && <ul style={{ margin: "10px 0 0", paddingLeft: 18, color: "#B91C1C", fontSize: 12.5 }}>{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
     </Modal>
   );

@@ -12,6 +12,16 @@ const { isLeftoverLogin } = require("./leftover-login");
 // still need an email of their own; admins and curriculum admins are never added to a login.
 const LINKABLE_ROLES = ["teacher", "school", "learner"];
 
+// An Account Manager / Training Lead: a login named on a learning hub as its Account Manager or
+// Training Lead (learning_hubs.accountManagerId / trainingLeadId — an educator, say). It's added
+// and taken away by naming them on hubs (modules/checkins/checkin.service.js's syncHubLeadRole),
+// never by email. A session as it runs in the hub portal: every hub of the workspace, view only,
+// plus their hub check-ins (scope.middleware.js, auth.middleware.js's blockHubLeadWrites).
+// Admins never take it — they already do all of that from the admin app.
+const HUB_LEAD_ROLE = "hubLead";
+const NO_HUB_LEAD = ["admin", "curriculumAdmin", "collaborator", "supervisor"];
+const canBeHubLead = (user) => Boolean(user) && !NO_HUB_LEAD.includes(user.role);
+
 function parseRoles(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -28,7 +38,9 @@ function parseRoles(value) {
 // The extra roles on file, without duplicates or the account's own role. A child's username-only
 // login never has any.
 const extraRolesOf = (user) =>
-  user?.email ? [...new Set(parseRoles(user.extraRoles))].filter((r) => LINKABLE_ROLES.includes(r) && r !== user.role) : [];
+  user?.email
+    ? [...new Set(parseRoles(user.extraRoles))].filter((r) => r !== user.role && (LINKABLE_ROLES.includes(r) || (r === HUB_LEAD_ROLE && canBeHubLead(user))))
+    : [];
 
 // Every role on file — cheap, no lookups. What `protect` checks a token's role against.
 const rolesOf = (user) => (user ? [user.role, ...extraRolesOf(user)] : []);
@@ -47,4 +59,4 @@ async function availableRoles(user) {
   return [user.role, ...extras];
 }
 
-module.exports = { LINKABLE_ROLES, extraRolesOf, rolesOf, availableRoles };
+module.exports = { LINKABLE_ROLES, HUB_LEAD_ROLE, canBeHubLead, extraRolesOf, rolesOf, availableRoles };

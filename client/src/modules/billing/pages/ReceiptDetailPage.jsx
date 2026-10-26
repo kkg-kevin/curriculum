@@ -14,8 +14,8 @@ export default function ReceiptDetailPage() {
   const { user } = useAuth();
   const { data: receipt, isLoading, isError } = useReceiptQuery(invoiceId, paymentId);
 
-  const receiptsPath = user?.role === "learner" ? "/learner-portal/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
-  const invoicePath = user?.role === "learner" ? "/learner-portal/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsPath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const invoicePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
 
   if (isLoading) return <LoadingState label="Loading receipt…" />;
   if (isError || !receipt) return <ErrorState label="Receipt could not be loaded." detail="It may have been removed, or you may not have access to it." />;

@@ -5,6 +5,7 @@ const {
   updateSystemLevelSchema,
   reorderSystemLevelsSchema,
 } = require("./system-level.validation");
+const UsageService = require("../../usage/usage.service");
 
 exports.getSystemLevels = asyncHandler(async (req, res) => {
   const data = await SystemLevelService.getSystemLevels(req.ownerAdminId);
@@ -24,6 +25,7 @@ exports.updateSystemLevel = asyncHandler(async (req, res) => {
 });
 
 exports.deleteSystemLevel = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "systemLevel", req.params.lId, "This level")) return;
   await SystemLevelService.deleteSystemLevel(req.params.lId, req.ownerAdminId);
   res.json({ success: true });
 });

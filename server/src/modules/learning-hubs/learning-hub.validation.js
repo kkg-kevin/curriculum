@@ -119,6 +119,10 @@ const baseLearningHubSchema = z.object({
   // a hub can't be its own parent, and a hub that already has a parentHubId can't itself be
   // chosen as a parent (no chains).
   parentHubId: z.string().or(z.literal("")).nullable().default(null),
+  // Who runs this hub's check-ins (modules/checkins): two people of the workspace who can take
+  // part in Hub check-ins — checked in the controller. Empty until named.
+  accountManagerId: z.string().max(36).or(z.literal("")).nullable().default(null),
+  trainingLeadId: z.string().max(36).or(z.literal("")).nullable().default(null),
   // New hubs start as "draft" — invisible everywhere outside Settings until an admin promotes
   // them to "active", at which point they appear in the Learning Hubs module and every other
   // consumer (Teachers/Classes/Learners pickers, curriculum view, dashboard, etc).

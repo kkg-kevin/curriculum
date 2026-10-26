@@ -24,7 +24,7 @@ export default function CreateLearningHubPage() {
       address: { street: "", city: "", county: "" },
       mapLink: "",
       contactPerson: "", email: "", password: "", phone: "",
-      curriculumId: "", parentHubId: "", status: "draft",
+      curriculumId: "", parentHubId: "", accountManagerId: "", trainingLeadId: "", status: "draft",
       description: "", photo: null, photos: [], amenities: [],
       operatingHours: { opensAt: "", closesAt: "", days: [] },
       spaces: [],
@@ -37,7 +37,7 @@ export default function CreateLearningHubPage() {
 
   const onSubmit = (data) => {
     const { clubDetails, ...rest } = data;
-    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null };
+    const payload = { ...rest, curriculumId: data.curriculumId || null, parentHubId: data.parentHubId || null, accountManagerId: data.accountManagerId || null, trainingLeadId: data.trainingLeadId || null };
     // A club's details for parents — only a non-school hub has them.
     if (data.hubType !== "school") payload.clubDetails = clubDetailsToPayload(clubDetails);
     createLearningHub(payload, {

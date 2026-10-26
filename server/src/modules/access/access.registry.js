@@ -42,11 +42,10 @@ const MODULES = [
   // payments, the session rate, and managing the supervisor accounts.
   { key: "claims", label: "Educator claims (review for a supervisor)", group: "Finance" },
   { key: "claims-approval", label: "Claim approvals & payment", group: "Finance" },
-  // Hub check-ins. "checkins" is taking part — an Account Manager or Training Lead sees the
-  // check-ins they're assigned to (and those hubs' history), writes reports and works on actions.
-  // "checkins-manage" is oversight — scheduling, every hub, the overview, cancelling and reopening.
-  { key: "checkins", label: "Hub check-ins (Account Managers & Training Leads)", group: "Workspace" },
-  { key: "checkins-manage", label: "Hub check-ins: schedules & oversight", group: "Workspace" },
+  // Hub check-ins: setting up schedules and seeing every hub's check-ins. A hub's Account Manager
+  // and Training Lead aren't staff — they're named on the hub and work in the hub portal
+  // (modules/checkins/checkin.access.js).
+  { key: "checkins-manage", label: "Hub check-ins: schedules & every hub", group: "Workspace" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -82,7 +81,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/hub-visits": "hub-visits",
   "/api/audit": "activity",
   "/api/claims": "claims",
-  "/api/checkins": "checkins",
+  "/api/checkins": "checkins-manage",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
@@ -98,12 +97,13 @@ const CATALOG_READERS = {
   // Not a catalog, but the same rule: someone who only does final approvals still has to be able
   // to read the claims they are approving.
   "/api/claims": ["claims-approval"],
-  // A check-in manager can read everything in the module.
-  "/api/checkins": ["checkins-manage"],
 };
 // The educator form offers a supervisor to pick — so the list of supervisors can also be read by
 // anyone who can view Educators.
 const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
+// The hub form offers an Account Manager and a Training Lead to pick — so that list can also be
+// read by anyone who can view Learning Hubs.
+const CHECKIN_PEOPLE_LIST = /^\/api\/checkins\/people$/;
 
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, sharing with other admins, and the cross-workspace platform
@@ -152,15 +152,12 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
-  // Hub check-ins: scheduling, the overview, cancelling and reopening are oversight.
-  { method: "GET", pattern: /^\/api\/checkins\/(schedules|overview)$/, module: "checkins-manage", action: "view" },
+  // Hub check-ins: a staff member needs "checkins-manage" for all of it; the schedules map their
+  // own actions.
+  { method: "GET", pattern: /^\/api\/checkins\/schedules$/, module: "checkins-manage", action: "view" },
   { method: "POST", pattern: /^\/api\/checkins\/schedules$/, module: "checkins-manage", action: "create" },
   { method: "PUT", pattern: /^\/api\/checkins\/schedules\/[^/]+$/, module: "checkins-manage", action: "edit" },
   { method: "POST", pattern: /^\/api\/checkins\/schedules\/[^/]+\/end$/, module: "checkins-manage", action: "edit" },
-  { method: "POST", pattern: /^\/api\/checkins\/sessions\/[^/]+\/(cancel|reopen)$/, module: "checkins-manage", action: "edit" },
-  // Writing the report, adding and working on actions, and taking back an action added by mistake
-  // are all part of taking part (a manager's role carries "checkins" too).
-  { method: "DELETE", pattern: /^\/api\/checkins\/actions\/[^/]+$/, module: "checkins", action: "edit" },
 ];
 
 // A POST that only works something out without saving it.
@@ -204,6 +201,7 @@ function resolveAccess(method, rawPath) {
   if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") {
     const catalog = Object.keys(CATALOG_READERS).find((p) => underPrefix(path, p));
     if (SUPERVISOR_LIST.test(path)) return { module, action: "view", orView: [...CATALOG_READERS[catalog], "teachers"] };
+    if (CHECKIN_PEOPLE_LIST.test(path)) return { module, action: "view", orView: ["learning-hubs"] };
     return catalog ? { module, action: "view", orView: CATALOG_READERS[catalog] } : { module, action: "view" };
   }
   if (verb === "DELETE") return { module, action: "delete" };

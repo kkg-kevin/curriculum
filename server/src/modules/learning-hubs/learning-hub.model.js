@@ -45,6 +45,11 @@ const LearningHubModel = {
     return firstOrNull(db(TABLE).where({ id }));
   },
 
+  // The hubs that name this login as their Account Manager or Training Lead (hub check-ins).
+  findNamingPerson(userId) {
+    return db(TABLE).where({ accountManagerId: userId }).orWhere({ trainingLeadId: userId });
+  },
+
   update(id, data) {
     return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },

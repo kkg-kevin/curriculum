@@ -4,6 +4,8 @@ const CurriculumModel = require("../curriculum/curriculum.model");
 const AuthService = require("../auth/auth.service");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const CheckinService = require("../checkins/checkin.service");
+const db = require("../../config/db");
 const {
   createLearningHubSchema,
   updateLearningHubSchema,
@@ -11,6 +13,7 @@ const {
   updateHubCurriculumStatusSchema,
 } = require("./learning-hub.validation");
 const { assertOwn, isOwnHub, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
+const UsageService = require("../usage/usage.service");
 
 // updateLearningHubSchema is baseLearningHubSchema.partial(), but zod still materializes a field's
 // default when its key is absent from the request body. Keep only keys actually present in the raw
@@ -25,6 +28,36 @@ function pickPresent(parsed, raw) {
       : parsed[key];
   }
   return result;
+}
+
+// A hub's Account Manager and Training Lead (they run its check-ins). Only the workspace's side
+// sets them — a hub's own login can't. "" means nobody. Only someone newly put in is checked, so a
+// hub saved with the people it already has (even ones no longer offered) still saves. Returns
+// whether either was sent.
+const CHECKIN_PEOPLE = ["accountManagerId", "trainingLeadId"];
+async function prepareCheckinPeople(req, data, existing = null) {
+  const sent = CHECKIN_PEOPLE.filter((k) => Object.prototype.hasOwnProperty.call(data, k));
+  if (req.user.role !== "admin") {
+    CHECKIN_PEOPLE.forEach((k) => delete data[k]);
+    return false;
+  }
+  if (!sent.length) return false;
+  sent.forEach((k) => { data[k] = data[k] || null; });
+  const merged = Object.fromEntries(CHECKIN_PEOPLE.map((k) => [k, sent.includes(k) ? data[k] : existing?.[k] || null]));
+  if (merged.accountManagerId && merged.accountManagerId === merged.trainingLeadId) {
+    throw Object.assign(new Error("Choose different people as Account Manager and Training Lead"), { statusCode: 400 });
+  }
+  const changed = Object.fromEntries(CHECKIN_PEOPLE.map((k) => [k, merged[k] !== (existing?.[k] || null) ? merged[k] : null]));
+  await CheckinService.assertHubPeople(req, changed);
+  return true;
+}
+
+// The names to show next to a hub's Account Manager and Training Lead.
+async function withCheckinPeople(record) {
+  const ids = [record.accountManagerId, record.trainingLeadId].filter(Boolean);
+  const users = ids.length ? await db("users").whereIn("id", ids).select("id", "name", "email") : [];
+  const nameOf = (id) => { const u = users.find((x) => x.id === id); return u ? u.name || u.email : null; };
+  return { ...record, accountManagerName: nameOf(record.accountManagerId), trainingLeadName: nameOf(record.trainingLeadId) };
 }
 
 // Same-tenant guard for attaching a hub to a curriculum (core at create/update time, or a
@@ -63,6 +96,7 @@ async function assertValidParentHub(parentHubId, ownId) {
 const createLearningHub = asyncHandler(async (req, res) => {
   const { password, ...data } = createLearningHubSchema.parse(req.body);
   await assertValidParentHub(data.parentHubId, null);
+  await prepareCheckinPeople(req, data);
   if (data.curriculumId) {
     const curriculum = await CurriculumModel.findById(data.curriculumId);
     if (!curriculum) {
@@ -80,6 +114,7 @@ const createLearningHub = asyncHandler(async (req, res) => {
   // ownerAdminId is never client-supplied — always the creating admin's own tenant id, same
   // posture as curriculum.controller.js keeping curriculumAdminId out of the general write path.
   const record = await LearningHubService.createLearningHub({ ...data, ownerAdminId: req.ownerAdminId });
+  await CheckinService.syncHubLeadRole([record.accountManagerId, record.trainingLeadId]);
   res.status(201).json({ success: true, data: record });
 });
 
@@ -94,6 +129,9 @@ const getAllLearningHubs = asyncHandler(async (req, res) => {
   const filters = { status, county, curriculumId, parentHubId, email, hubType, includeDrafts: includeDrafts === "true" };
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });
+    // An Account Manager / Training Lead's "own hub" is whichever one they're switched to (their
+    // hubs to switch between are /mine).
+    if (req.user.hubLead) return res.json({ success: true, data: [req.ownSchool], count: 1 });
     filters.email = req.ownSchool.email;
     filters.includeDrafts = true;
   }
@@ -121,7 +159,7 @@ const getLearningHubById = asyncHandler(async (req, res) => {
       : false;
     assertOwn(enrolled);
   }
-  res.json({ success: true, data: record });
+  res.json({ success: true, data: await withCheckinPeople(record) });
 });
 
 const getHubTeachers = asyncHandler(async (req, res) => {
@@ -169,7 +207,15 @@ const updateLearningHub = asyncHandler(async (req, res) => {
     }
   }
 
+  const before = await LearningHubService.getLearningHubById(req.params.id);
+  const peopleSent = await prepareCheckinPeople(req, data, before);
   const record = await LearningHubService.updateLearningHub(req.params.id, data);
+  // A new Account Manager or Training Lead takes over the hub's upcoming check-ins.
+  // Whoever is now (or no longer) named gains (or loses) the Account Manager / Training Lead sign-in.
+  if (peopleSent && (record.accountManagerId !== before.accountManagerId || record.trainingLeadId !== before.trainingLeadId)) {
+    await CheckinService.applyHubPeople(req, record.id);
+    await CheckinService.syncHubLeadRole([before.accountManagerId, before.trainingLeadId, record.accountManagerId, record.trainingLeadId]);
+  }
   if (password) {
     if (!record.email) {
       const err = new Error("An email address is required to set a password");
@@ -213,7 +259,11 @@ const deleteLearningHub = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
   }
+  if (await UsageService.guardDelete(req, res, "learningHub", req.params.id, "This learning hub")) return;
+  const named = await LearningHubService.getLearningHubById(req.params.id).catch(() => null);
   const result = await LearningHubService.deleteLearningHub(req.params.id);
+  // Its Account Manager / Training Lead may now be on no hub at all.
+  if (named) await CheckinService.syncHubLeadRole([named.accountManagerId, named.trainingLeadId]);
   res.json({ success: true, ...result });
 });
 

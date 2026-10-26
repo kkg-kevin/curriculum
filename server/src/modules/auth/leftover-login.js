@@ -23,6 +23,9 @@ async function isLeftoverLogin(user) {
       if (user.username) return !(await matches("learners", "username", user.username));
       return !(await matches("learners", "guardianEmail", user.email))
         && !(await matches("home_learning_households", "guardianEmail", user.email));
+    // An Account Manager / Training Lead (account-roles.js): still named on some hub.
+    case "hubLead":
+      return !(await db("learning_hubs").where({ accountManagerId: user.id }).orWhere({ trainingLeadId: user.id }).first("id"));
     case "collaborator":
     case "supervisor": {
       // The workspace that invited them — an admin's own id, or an organisation's key.

@@ -11,6 +11,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const ClassModel = require("../classes/class.model");
 const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+const UsageService = require("../usage/usage.service");
 
 // A teacher has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -195,6 +196,7 @@ const deleteTeacher = asyncHandler(async (req, res) => {
     const existing = await TeacherService.getTeacherById(req.params.id);
     assertOwn(await isLinkedToOwnHub(req, existing.id));
   }
+  if (await UsageService.guardDelete(req, res, "teacher", req.params.id, "This educator")) return;
   const result = await TeacherService.deleteTeacher(req.params.id);
   res.json({ success: true, ...result });
 });

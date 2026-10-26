@@ -1,4 +1,4 @@
-import api from "../../../../services/api";
+import api, { checkDelete } from "../../../../services/api";
 
 const BASE = "/api/competencies";
 
@@ -15,4 +15,5 @@ export const competenciesApi = {
 
   deleteCompetency: (id) =>
     api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkDeleteCompetency: (id) => checkDelete(`${BASE}/${id}`),
 };

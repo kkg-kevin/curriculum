@@ -274,7 +274,7 @@ class CopyRun {
 
     // Nothing arrives already on sale or already public: that is the receiving admin's call.
     if (table === "items" || table === "assessments") out.saleStatus = "internal";
-    if (table === "pathways") out.publicDiagnosticEnabled = false;
+    if (table === "pathways") Object.assign(out, { publicDiagnosticEnabled: false, publicDiagnosticAssessmentId: null });
     // A duplicate remembers its original (the "Copy" pill); one copied from another admin doesn't.
     if (table === "curricula" && (this.sameWorkspace || "copiedFromId" in row)) out.copiedFromId = this.sameWorkspace ? row.id : null;
     if (table === "pathway_templates") {

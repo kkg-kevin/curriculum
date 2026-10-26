@@ -32,6 +32,12 @@ import SchoolTimetablePage from "../modules/school-portal/pages/TimetablePage";
 import SchoolRoomsPage from "../modules/school-portal/pages/RoomsPage";
 import SchoolProfilePage from "../modules/school-portal/pages/ProfilePage";
 import LearnerPortalDashboardPage from "../modules/learner-portal/pages/DashboardPage";
+import ParentPortalLayout from "../layouts/ParentPortalLayout";
+import ParentHomePage from "../modules/parent/pages/ParentHomePage";
+import ParentChildLayout from "../modules/parent/pages/ParentChildLayout";
+import ChildLoginPage from "../modules/parent/pages/ChildLoginPage";
+import ParentTimetablePage from "../modules/parent/pages/ParentTimetablePage";
+import ParentAccountPage from "../modules/parent/pages/ParentAccountPage";
 import LearnerMyCoursesPage from "../modules/learner-portal/pages/MyCoursesPage";
 import LearnerAssessmentsPage from "../modules/learner-portal/pages/AssessmentsPage";
 import LearnerAssessmentDetailPage from "../modules/learner-portal/pages/AssessmentDetailPage";
@@ -195,7 +201,8 @@ export default function AppRoutes() {
         <Route path="billing/:id" element={<InvoiceDetailPage />} />
         {/* The activity log — who did what, when. The owner, and staff whose role grants it. */}
         <Route path="activity" element={<ActivityPage />} />
-        {/* Hub check-ins — Account Managers, Training Leads and their managers (modules/checkins). */}
+        {/* Hub check-ins — Account Managers, Training Leads and their managers (modules/checkins).
+            /checkins/actions is where older follow-up notifications link; it opens the same page. */}
         <Route path="checkins" element={<CheckinsPage />} />
         <Route path="checkins/actions" element={<CheckinsPage />} />
         <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
@@ -345,6 +352,9 @@ export default function AppRoutes() {
           <Route path="billing/statements" element={<StatementOfAccountPage />} />
           <Route path="billing/:id" element={<InvoiceDetailPage />} />
           <Route path="profile" element={<SchoolProfilePage />} />
+          {/* A hub's Account Manager / Training Lead (a hubLead session) — their check-ins. */}
+          <Route path="checkins" element={<CheckinsPage />} />
+          <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
         </Route>
       </Route>
 
@@ -363,6 +373,31 @@ export default function AppRoutes() {
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
+          <Route path="family" element={<LearnerFamilyPage />} />
+          <Route path="invoices" element={<BillingPage />} />
+          <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+          <Route path="receipts" element={<ReceiptsListPage />} />
+          <Route path="receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
+          <Route path="statement" element={<StatementOfAccountPage />} />
+        </Route>
+
+        {/* A parent's own portal — the family across all their children (see ParentPortalLayout). */}
+        <Route path="/parent" element={<ParentPortalLayout />}>
+          <Route index element={<ParentHomePage />} />
+          <Route path="children/:childId" element={<ParentChildLayout />}>
+            {/* The child's learner profile, as the learner portal shows it. Its lists open detail
+                pages below; the old list addresses fall back to the profile. */}
+            <Route index element={<LearnerProfilePage />} />
+            <Route path="assessments" element={<Navigate to=".." relative="path" replace />} />
+            <Route path="assessments/:issueId" element={<LearnerAssessmentDetailPage />} />
+            <Route path="reports" element={<Navigate to=".." relative="path" replace />} />
+            <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
+            <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
+            <Route path="progress" element={<Navigate to=".." relative="path" replace />} />
+            <Route path="login" element={<ChildLoginPage />} />
+          </Route>
+          <Route path="timetable" element={<ParentTimetablePage />} />
+          <Route path="account" element={<ParentAccountPage />} />
           <Route path="family" element={<LearnerFamilyPage />} />
           <Route path="invoices" element={<BillingPage />} />
           <Route path="invoices/:id" element={<InvoiceDetailPage />} />

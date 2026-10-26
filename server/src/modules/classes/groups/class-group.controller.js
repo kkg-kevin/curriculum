@@ -5,6 +5,7 @@ const ClassCourseTeacherLinkModel = require("../class-course-teacher-link.model"
 const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const { createGroupSchema, renameGroupSchema, addMemberSchema } = require("./class-group.validation");
+const UsageService = require("../../usage/usage.service");
 
 async function isOwnHubForAdmin(req, hubId) {
   if (!hubId) return false;
@@ -75,6 +76,7 @@ const renameGroup = asyncHandler(async (req, res) => {
 
 const deleteGroup = asyncHandler(async (req, res) => {
   await loadGroupAndAssertAccess(req);
+  if (await UsageService.guardDelete(req, res, "classGroup", req.params.id, "This group")) return;
   const result = await ClassGroupService.deleteGroup(req.params.id);
   res.json({ success: true, ...result });
 });

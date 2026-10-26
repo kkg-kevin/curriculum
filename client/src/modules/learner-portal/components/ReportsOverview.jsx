@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
+import { usePortalNavigate } from "../utils/usePortalNavigate";
 import { FiAward, FiFileText } from "react-icons/fi";
 import { useMyReports } from "../../reports/hooks/useReports";
 import { useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
@@ -77,7 +78,7 @@ function DiagnosticRow({ row, navigate }) {
 // that learner's reports are read, `learner`/`cls` come in as props, and the rows don't link into
 // the learner portal.
 export default function ReportsOverview({ limit, hubId, staffLearnerId, learner: learnerProp, cls: clsProp } = {}) {
-  const portalNavigate = useNavigate();
+  const portalNavigate = usePortalNavigate();
   const navigate = staffLearnerId ? null : portalNavigate;
   const { data, isLoading, isError } = useMyReports(hubId, staffLearnerId);
   const rows = data?.data || [];

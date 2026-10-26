@@ -3,6 +3,8 @@ import { FiCopy, FiEdit2, FiPlus, FiShield, FiTrash2 } from "react-icons/fi";
 import { Modal, Label } from "../../components/Modal";
 import PermissionMatrix, { ACTION_LABELS } from "./PermissionMatrix";
 import { useAccessModules, useAccessRoles, useCreateRole, useDeleteRole, useUpdateRole } from "../hooks/useAccessRoles";
+import { accessApi } from "../services/accessApi";
+import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 
 // "Learners: View, Add · Billing: View" — the first few modules a role covers.
 function summarise(permissions, modules) {
@@ -71,6 +73,7 @@ export default function RolesPanel({ onManageStaff }) {
   const updateRole = useUpdateRole();
   const deleteRole = useDeleteRole();
   const [editor, setEditor] = useState(null); // { mode: "create" | "edit", role }
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const modules = registry?.modules || [];
   const actions = registry?.actions || ["view", "create", "edit", "delete"];
@@ -122,7 +125,7 @@ export default function RolesPanel({ onManageStaff }) {
                   title={role.staffCount ? "Give its staff another role before deleting it" : "Delete role"}
                   disabled={role.staffCount > 0}
                   style={role.staffCount > 0 ? { opacity: 0.4, cursor: "not-allowed" } : undefined}
-                  onClick={() => { if (window.confirm(`Delete the role "${role.name}"?`)) deleteRole.mutate(role.id); }}
+                  onClick={() => setDeleteTarget(role)}
                 >
                   <FiTrash2 size={14} strokeWidth={2.2} />
                 </button>
@@ -146,6 +149,16 @@ export default function RolesPanel({ onManageStaff }) {
           onClose={() => setEditor(null)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete role"
+        message={`The role "${deleteTarget?.name}" will be permanently deleted.`}
+        confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => { deleteRole.mutate(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => accessApi.checkDeleteRole(deleteTarget.id)}
+      />
     </div>
   );
 }

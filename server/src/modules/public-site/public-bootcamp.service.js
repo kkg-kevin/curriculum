@@ -231,19 +231,15 @@ async function resolveForSaleBootcamp(idOrSlug) {
 // imported (that function isn't exported, and this is a small pure check not worth adding
 // cross-module coupling for — same posture the old bootcamp-wide diagnosticInfoFor took here).
 //
-// The bootcamp builder's pathwayDiagnostics[].assessmentId is NOT used here — a bootcamp can only
-// offer a pathway's diagnostic when that pathway's OWN diagnosticAssessmentId/
-// publicDiagnosticEnabled/age-range are independently set up as a public diagnostic (Curriculum →
-// Competency Framework). This keeps the bootcamp flow a thin picker in front of the one, already
-//-working /pathways/:slug/diagnostic flow rather than a second grading/attempt path.
+// A bootcamp has no diagnostics of its own: it offers the website diagnostic its curriculum sets
+// on each pathway stage (Curriculum → Competencies → Pathways). This keeps the bootcamp flow a thin
+// picker in front of the one /pathways/:slug/diagnostic flow rather than a second grading path.
 //
 // Returns the stage's age range ({ minAge, maxAge }) when offerable — the bootcamp "Enroll" flow
 // picks the pathway from the child's age with it — and false otherwise.
 async function pathwayDiagnosticOfferable(pathway) {
-  // publicDiagnosticAssessmentId wins when set, falling back to diagnosticAssessmentId — same
-  // "effective id" resolution public-diagnostic.service.js's loadOfferableAssessment uses, so a
-  // pathway offering a different diagnostic publicly than its internal one is reflected here too.
-  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId || pathway?.diagnosticAssessmentId;
+  // The website diagnostic only — the learner diagnostic is for enrolled learners.
+  const effectiveAssessmentId = pathway?.publicDiagnosticAssessmentId;
   if (!pathway?.publicDiagnosticEnabled || !effectiveAssessmentId) return false;
   // A pathway now belongs to exactly one Developmental Stage instead of carrying its own
   // independent minAge/maxAge — its stage's own age range is what gates public offerability
@@ -257,17 +253,17 @@ async function pathwayDiagnosticOfferable(pathway) {
   return { minAge: Number(stage.minAge), maxAge: Number(stage.maxAge) };
 }
 
-// The bootcamp's pathwayDiagnostics, resolved to what the public "Take the diagnostic" picker
-// needs: which of this bootcamp's pathways actually have an offerable public diagnostic right
-// now, with the pathway's own slug (so the picker can link straight to
-// /pathways/:slug/diagnostic) and display fields. A pathway assigned in the builder but whose OWN
-// public diagnostic isn't set up (or no longer is) is silently dropped — see
-// pathwayDiagnosticOfferable's comment for why the bootcamp's own assessmentId choice doesn't
-// override this. Kept in the bootcamp's own order, with each pathway's age range: the website's
-// Enroll button takes the first one whose range covers the child's age.
-async function resolvePathwayDiagnostics(pathwayDiagnostics) {
-  if (!pathwayDiagnostics || pathwayDiagnostics.length === 0) return [];
-  const pathways = await Promise.all(pathwayDiagnostics.map((pd) => PathwayModel.findById(pd.pathwayId)));
+// Which of the bootcamp's pathways (its pathwayIds, or every pathway of its curriculum when none
+// are picked) have a website diagnostic offerable right now, with the pathway's own slug (so the
+// picker can link straight to /pathways/:slug/diagnostic) and display fields. Kept in the
+// bootcamp's own order, with each pathway's age range: the website's Enroll button takes the first
+// one whose range covers the child's age.
+async function resolvePathwayDiagnostics(bootcamp) {
+  if (!bootcamp.curriculumId) return [];
+  const chosen = arr(bootcamp.pathwayIds);
+  const pathways = chosen.length > 0
+    ? await Promise.all(chosen.map((id) => PathwayModel.findById(id)))
+    : await PathwayModel.findByCurriculumId(bootcamp.curriculumId);
   const offerable = await Promise.all(pathways.map((p) => (p ? pathwayDiagnosticOfferable(p) : false)));
   return pathways
     .map((pathway, i) => (pathway && offerable[i] ? { pathway, ages: offerable[i] } : null))
@@ -323,7 +319,7 @@ const PublicBootcampService = {
 
     let pathwayDiagnostics = [];
     try {
-      pathwayDiagnostics = await resolvePathwayDiagnostics(arr(bootcamp.pathwayDiagnostics));
+      pathwayDiagnostics = await resolvePathwayDiagnostics(bootcamp);
     } catch {
       /* pathway/assessment lookup hiccup — leave the list empty, the page still renders */
     }
@@ -345,8 +341,8 @@ const PublicBootcampService = {
       // null when the bootcamp has no linked curriculum at all.
       curriculum,
       // Which of this bootcamp's pathways currently offer a "Take the diagnostic" step — see
-      // resolvePathwayDiagnostics. Empty when the bootcamp assigned none, or none of the assigned
-      // pathways have their own public diagnostic switched on right now.
+      // resolvePathwayDiagnostics. Empty when none of them has a website diagnostic set in the
+      // curriculum.
       pathwayDiagnostics,
     };
   },

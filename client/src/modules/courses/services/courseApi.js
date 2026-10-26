@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const ENDPOINT = "/api/courses";
 
@@ -8,6 +8,7 @@ export const courseApi = {
   getById: (id) => api.get(`${ENDPOINT}/${id}`).then((r) => r.data.data),
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${ENDPOINT}/${id}`),
   duplicate: (id) => api.post(`${ENDPOINT}/${id}/duplicate`).then((r) => r.data.data),
 
   // Course folders (Courses page) — a course sits in at most one; deleting a folder keeps its courses.
@@ -71,6 +72,7 @@ export const courseApi = {
 
   deleteSession: (courseId, sessionId) =>
     api.delete(`${ENDPOINT}/${courseId}/sessions/${sessionId}`).then((r) => r.data),
+  checkDeleteSession: (courseId, sessionId) => checkDelete(`${ENDPOINT}/${courseId}/sessions/${sessionId}`),
 
   /* Modules */
   getModules: (courseId) =>
@@ -84,4 +86,5 @@ export const courseApi = {
 
   deleteModule: (courseId, moduleId) =>
     api.delete(`${ENDPOINT}/${courseId}/modules/${moduleId}`).then((r) => r.data),
+  checkDeleteModule: (courseId, moduleId) => checkDelete(`${ENDPOINT}/${courseId}/modules/${moduleId}`),
 };

@@ -194,7 +194,30 @@ function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
   }));
 }
 
+// A class-issued submission is graded internally (status "graded") as soon as a teacher saves
+// marks, but stays hidden from the learner until the teacher separately calls publishReport (see
+// assessment-submission.service.js) — presented here as still "submitted" so every existing
+// learner-facing UI, which only ever branches on status, needs no changes to respect the gate.
+// Only ever applied for the "learner" role — admin/school/teacher always see the real state.
+function redactUnpublishedReport(submission) {
+  if (submission.status !== "graded" || submission.reportPublished) return submission;
+  return {
+    ...submission,
+    status: "submitted",
+    totalScore: null,
+    autoScore: null,
+    manualScore: null,
+    autoItemResults: [],
+    itemFeedback: [],
+    overallFeedback: "",
+    indicatorBreakdown: [],
+    gradedAt: null,
+    gradedBy: null,
+  };
+}
+
 module.exports = {
+  redactUnpublishedReport,
   AUTO_GRADABLE_KINDS,
   isAutoGradableItem,
   requiresManualGrading,

@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { FiEdit2, FiGlobe, FiPackage, FiPlus } from "react-icons/fi";
 import { billingApi } from "../services/billingApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
+import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
@@ -22,7 +23,7 @@ const PROGRAMMES = {
     intro: <>What Home Learning families sign up for and are billed monthly. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
     queryKey: ["billing", "packages"],
     refreshKeys: [["home-learning"]],
-    list: billingApi.listPackages, create: billingApi.createPackage, update: billingApi.updatePackage, remove: billingApi.deletePackage,
+    list: billingApi.listPackages, create: billingApi.createPackage, update: billingApi.updatePackage, remove: billingApi.deletePackage, checkRemove: billingApi.checkDeletePackage,
     count: (pkg) => pkg.householdCount, noun: ["household", "households"],
     featuresPlaceholder: "Weekly home visits by a Digifunzi educator\nAll learning materials\nTermly progress report",
     namePlaceholder: "e.g. Three children",
@@ -34,7 +35,7 @@ const PROGRAMMES = {
     intro: <>What families pay each month to join an Estate Tech Club. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
     queryKey: ["billing", "club-packages"],
     refreshKeys: [["tech-clubs"]],
-    list: billingApi.listClubPackages, create: billingApi.createClubPackage, update: billingApi.updateClubPackage, remove: billingApi.deleteClubPackage,
+    list: billingApi.listClubPackages, create: billingApi.createClubPackage, update: billingApi.updateClubPackage, remove: billingApi.deleteClubPackage, checkRemove: billingApi.checkDeleteClubPackage,
     count: (pkg) => pkg.membershipCount, noun: ["family", "families"],
     featuresPlaceholder: "Coding, robotics and AI sessions\nAll club materials\nTermly progress report",
     namePlaceholder: "e.g. One child",
@@ -125,6 +126,7 @@ export default function PackagesPanel({ programme = "home_learning" }) {
   const config = PROGRAMMES[programme];
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null); // package id, "new", or null
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const { data: packageRows, isLoading } = useQuery({ queryKey: config.queryKey, queryFn: config.list });
   const packages = Array.isArray(packageRows) ? packageRows : [];
   // The clubs a Tech Club package can be limited to (shares the Tech Clubs page's cache).
@@ -192,9 +194,20 @@ export default function PackagesPanel({ programme = "home_learning" }) {
               {pkg.status === "active" && <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: { isPublished: !pkg.isPublished } })} style={smallButton}><FiGlobe /> {pkg.isPublished ? "Hide from website" : "Show on website"}</button>}
               <button type="button" onClick={() => setEditingId(pkg.id)} style={smallButton}><FiEdit2 /> Edit</button>
               <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: pkg.status === "active" ? { status: "archived", isPublished: false } : { status: "active" } })} style={smallButton}>{pkg.status === "active" ? "Archive" : "Restore"}</button>
-              {config.count(pkg) === 0 && <button type="button" disabled={deleteMutation.isPending} onClick={() => { if (window.confirm(`Delete the "${pkg.name}" package?`)) deleteMutation.mutate(pkg.id); }} style={{ ...smallButton, color: "#B91C1C" }}>Delete</button>}
+              {config.count(pkg) === 0 && <button type="button" disabled={deleteMutation.isPending} onClick={() => setDeleteTarget(pkg)} style={{ ...smallButton, color: "#B91C1C" }}>Delete</button>}
             </div>
           </div>)}
       </div>}
+
+    <ConfirmDialog
+      isOpen={!!deleteTarget}
+      title="Delete package"
+      message={`The "${deleteTarget?.name}" package will be permanently deleted. This cannot be undone.`}
+      confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+      onConfirm={() => { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); }}
+      onCancel={() => setDeleteTarget(null)}
+      usageCheck={() => config.checkRemove(deleteTarget.id)}
+      onAlternative={deleteTarget?.status === "active" ? () => { quickMutation.mutate({ pkg: deleteTarget, changes: { status: "archived", isPublished: false } }); setDeleteTarget(null); } : undefined}
+    />
   </section>;
 }

@@ -1,9 +1,12 @@
 const db = require("../../config/db");
 const UserSessionModel = require("../auth/user-session.model");
 
-// Settings → People & sharing → Users: every login that belongs to one admin's workspace, what
-// kind of account it is, what it is attached to, when it was last used, and whether it is
-// switched on. Owner-only (mounted under /api/admin-tools).
+// Every login that belongs to one admin's workspace, what kind of account it is, what it is
+// attached to, when it was last used, and whether it is switched on — in two lists (GROUPS):
+//   others    Settings → People & sharing → Users: admins, staff, supervisors, curriculum
+//             admins, hubs and educators. Owner-only (mounted under /api/admin-tools).
+//   learners  Learners → Parent & learner logins: parents and learners' own logins. Under
+//             /api/learners, so staff whose role covers Learners see it too.
 //
 // `users` has no workspace column for most account types — a login is tied to its workspace
 // through the record it signs in as (the same links scope.middleware.js's attachOwnRecords and
@@ -28,6 +31,13 @@ const TYPE_LABELS = {
   teacher: "Educator",
   learner: "Learner",
   parent: "Parent",
+};
+
+const LEARNER_TYPES = ["learner", "parent"];
+const GROUPS = {
+  others: (type) => !LEARNER_TYPES.includes(type),
+  learners: (type) => LEARNER_TYPES.includes(type),
+  all: () => true,
 };
 
 const lower = (value) => String(value || "").trim().toLowerCase();
@@ -75,7 +85,8 @@ function statusOf(user, lastActiveAt, now) {
 }
 
 const WorkspaceUsersService = {
-  async list(ownerAdminId, currentUserId = ownerAdminId) {
+  async list(ownerAdminId, currentUserId = ownerAdminId, { group = "all" } = {}) {
+    const inGroup = GROUPS[group] || GROUPS.all;
     const { hubs, teachers, learners } = await workspacePeople(ownerAdminId);
     const curricula = await db("curricula").where({ ownerAdminId }).whereNotNull("curriculumAdminId").select("name", "curriculumAdminId");
     const roles = await db("access_roles").where({ ownerAdminId }).select("id", "name");
@@ -159,6 +170,7 @@ const WorkspaceUsersService = {
         } else continue;
       } else continue;
 
+      if (!inGroup(type)) continue;
       const lastActiveAt = lastActive.get(user.id) || null;
       users.push({
         id: user.id,
@@ -203,9 +215,10 @@ const WorkspaceUsersService = {
   },
 
   // Switches a login off (it can't sign in, and anywhere it is signed in is ended now) or back
-  // on. Only ever an account in this organisation, and never the acting admin's own.
-  async setActive(ownerAdminId, currentUserId, userId, active) {
-    const { users } = await this.list(ownerAdminId, currentUserId);
+  // on. Only ever an account in this organisation and in `group` (so the Learners module can
+  // only switch parents and learners), and never the acting admin's own.
+  async setActive(ownerAdminId, currentUserId, userId, active, { group = "all" } = {}) {
+    const { users } = await this.list(ownerAdminId, currentUserId, { group });
     const target = users.find((u) => u.id === userId);
     if (!target) throw fail("User not found", 404);
     if (!target.canDeactivate) throw fail("You can't deactivate your own account", 400);
@@ -213,7 +226,7 @@ const WorkspaceUsersService = {
     await db("users").where({ id: userId }).update({ deactivatedAt: active ? null : new Date() });
     if (!active) await UserSessionModel.deleteByUserId(userId);
 
-    const updated = (await this.list(ownerAdminId, currentUserId)).users.find((u) => u.id === userId);
+    const updated = (await this.list(ownerAdminId, currentUserId, { group })).users.find((u) => u.id === userId);
     return updated;
   },
 };

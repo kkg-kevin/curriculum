@@ -15,6 +15,7 @@ import {
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import ImageUploadField from "../../../../components/ImageUploadField";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
+import { useCheckinPeople } from "../../../checkins/hooks/useCheckins";
 
 const ACCENT = "#25476a";
 
@@ -47,6 +48,55 @@ const inputBaseStyle = (error) => ({
   width: "100%",
   boxSizing: "border-box",
 });
+
+// Who runs this hub's check-ins (modules/checkins): its Account Manager and Training Lead — an
+// educator with a login, or an admin. Being named here is what gives an educator the "Account
+// Manager / Training Lead" sign-in (the hub portal, view only, with their check-ins).
+function CheckinPeopleSection() {
+  const { control, watch } = useFormContext();
+  const { data: people = [], isError } = useCheckinPeople();
+  const describe = (p) => p.roleName || "";
+  const am = watch("accountManagerId");
+  const tl = watch("trainingLeadId");
+  // Controlled, so the saved person stays selected however late the list of people loads — and
+  // someone who can't be picked any more (e.g. named before this list changed) is still shown,
+  // so saving the hub never quietly clears them.
+  const select = (name, label, other) => (
+    <Field label={label}>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => {
+          const current = field.value || "";
+          const listed = people.some((p) => p.id === current);
+          const currentName = watch(name === "accountManagerId" ? "accountManagerName" : "trainingLeadName");
+          return (
+            <select value={current} onChange={(e) => field.onChange(e.target.value)} onBlur={field.onBlur} style={selectStyle}>
+              <option value="">Not named yet</option>
+              {current && !listed && <option value={current}>{currentName || "Current person"} (no longer offered)</option>}
+              {people.map((p) => (
+                <option key={p.id} value={p.id} disabled={p.id === other}>{p.name}{describe(p) ? ` — ${describe(p)}` : ""}</option>
+              ))}
+            </select>
+          );
+        }}
+      />
+    </Field>
+  );
+  return (
+    <SectionCard icon={<CorporateFareIcon fontSize="small" />} title="Hub check-ins" subtitle="The Account Manager and Training Lead who run this hub's check-ins">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "14px" }}>
+        {select("accountManagerId", "Account Manager", tl)}
+        {select("trainingLeadId", "Training Lead", am)}
+      </div>
+      <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#6B7280", lineHeight: 1.5 }}>
+        {isError
+          ? "The list of people couldn't be loaded."
+          : "Pick an educator (they need a login) or an admin. An educator named here signs in as \"Account Manager / Training Lead\" to do their check-ins and see every hub. Changing them moves this hub's upcoming check-ins to the new people."}
+      </p>
+    </SectionCard>
+  );
+}
 
 function SectionCard({ icon, title, subtitle, badge, children }) {
   return (
@@ -765,6 +815,8 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
           <Input name="phone" label="Phone Number" placeholder="+254 700 000 000" />
         </div>
       </SectionCard>
+
+      <CheckinPeopleSection />
 
       {/* An online / hybrid hub carries a joining link; a purely virtual hub has no address at
           all. A physical or hybrid hub still fills in its address. */}

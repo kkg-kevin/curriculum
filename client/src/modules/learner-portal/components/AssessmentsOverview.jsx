@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
+import { usePortalNavigate } from "../utils/usePortalNavigate";
 import { FiCheckCircle, FiClipboard, FiClock, FiSend } from "react-icons/fi";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 
@@ -73,7 +74,9 @@ const STATUS_CONFIG = {
 // `staffLearnerId`, when given, is an admin/school viewing that learner's profile: their list is
 // read instead, and the learner-portal buttons are left off.
 export default function AssessmentsOverview({ limit, classId, staffLearnerId } = {}) {
-  const navigate = useNavigate();
+  const navigate = usePortalNavigate();
+  // In the parent portal a parent follows the work but doesn't do it — every row just opens it.
+  const { viewOnly } = useOutletContext() || {};
   const { data, isLoading } = useIssuedForLearner(staffLearnerId);
   const allRows = data?.data || [];
   // Standalone issues (course-progress-triggered, and reissues — see reissueToLearner
@@ -130,7 +133,7 @@ export default function AssessmentsOverview({ limit, classId, staffLearnerId } =
                       {cfg.label}{submission.status === "graded" ? ` · ${submission.totalScore}/${submission.maxScore}` : ""}
                     </span>
                     {!staffLearnerId && <button type="button" onClick={() => navigate(`/learner-portal/assessments/${issue.id}`)} style={{ padding: "10px 14px", minWidth: 120, backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      {cfg.cta}
+                      {viewOnly ? "View" : cfg.cta}
                     </button>}
                   </div>
                 </div>

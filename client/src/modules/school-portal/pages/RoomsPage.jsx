@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useRoomsByHub, useCreateRoom, useUpdateRoom, useDeleteRoom } from "../../rooms/hooks/useRooms";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { roomApi } from "../../rooms/services/roomApi";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -172,11 +173,13 @@ export default function RoomsPage() {
       <ConfirmDialog
         isOpen={!!pendingDeleteId}
         title="Remove this room?"
-        message="Any timetable slots using this room will keep their schedule but lose the room assignment."
+        message="This room will be removed from the hub."
         confirmLabel="Remove"
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDeleteId(null)}
+        usageCheck={() => roomApi.checkRemove(pendingDeleteId)}
+        onAlternative={rooms.find((r) => r.id === pendingDeleteId)?.status !== "inactive" ? () => { updateRoom({ id: pendingDeleteId, data: { status: "inactive" } }); setPendingDeleteId(null); } : undefined}
       />
     </div>
   );

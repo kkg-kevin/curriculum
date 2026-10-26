@@ -18,6 +18,7 @@ const {
   regeneratePublicToken,
 } = require("./learner.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
+const { listLearnerLogins, setLearnerLoginStatus } = require("../admin-tools/workspace-users.controller");
 
 const router = express.Router();
 
@@ -29,6 +30,11 @@ const router = express.Router();
 router.route("/")
   .get(authorize("admin", "school", "teacher", "learner"), getAllLearners)
   .post(authorize("admin", "school"), createLearner);
+
+// Parents' and learners' own logins in this workspace — last used, and a switch to stop one
+// signing in (the rest of the workspace's logins are Settings → Users). Ahead of "/:id".
+router.get("/logins", authorize("admin"), listLearnerLogins);
+router.patch("/logins/:id", authorize("admin"), setLearnerLoginStatus);
 
 // Bulk onboarding from a spreadsheet — must stay ahead of "/:id" below, since Express would
 // otherwise match "bulk-import" as an :id on any verb the param route also defines (see

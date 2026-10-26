@@ -8,6 +8,8 @@ import {
   useAddGroupMember,
   useRemoveGroupMember,
 } from "../../classes/hooks/useClassGroups";
+import { classGroupApi } from "../../classes/services/classGroupApi";
+import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 
 const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden" };
@@ -41,6 +43,7 @@ function GroupCard({ classId, group, ungroupedLearners }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(group.name);
   const [pickerLearnerId, setPickerLearnerId] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const rename = useRenameClassGroup();
   const del = useDeleteClassGroup();
   const addMember = useAddGroupMember();
@@ -71,7 +74,7 @@ function GroupCard({ classId, group, ungroupedLearners }) {
         <span style={{ fontSize: 11, color: T.inkFaint, whiteSpace: "nowrap" }}>{group.members.length} member{group.members.length === 1 ? "" : "s"}</span>
         <button
           type="button"
-          onClick={() => { if (window.confirm(`Delete "${group.name}"?`)) del.mutate({ id: group.id, classId }); }}
+          onClick={() => setConfirmDelete(true)}
           disabled={del.isPending}
           title="Delete group"
           style={{ border: "none", background: "none", cursor: "pointer", padding: 4, display: "flex", color: "#DC2626" }}
@@ -112,6 +115,16 @@ function GroupCard({ classId, group, ungroupedLearners }) {
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title="Delete group"
+        message={`"${group.name}" will be deleted. Its learners stay in the class.`}
+        confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
+        onConfirm={() => { setConfirmDelete(false); del.mutate({ id: group.id, classId }); }}
+        onCancel={() => setConfirmDelete(false)}
+        usageCheck={() => classGroupApi.checkRemove(group.id)}
+      />
     </div>
   );
 }

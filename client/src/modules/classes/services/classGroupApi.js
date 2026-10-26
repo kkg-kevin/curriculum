@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 const BASE = "/api/class-groups";
 
@@ -9,6 +9,7 @@ export const classGroupApi = {
   getAll: (classId) => api.get(BASE, { params: { classId } }).then((r) => r.data.data),
   rename: (id, name) => api.patch(`${BASE}/${id}`, { name }).then((r) => r.data.data),
   remove: (id) => api.delete(`${BASE}/${id}`).then((r) => r.data),
+  checkRemove: (id) => checkDelete(`${BASE}/${id}`),
   addMember: (groupId, learnerId) => api.post(`${BASE}/${groupId}/members`, { learnerId }).then((r) => r.data.data),
   removeMember: (groupId, learnerId) => api.delete(`${BASE}/${groupId}/members/${learnerId}`).then((r) => r.data.data),
   getForLearner: (classId, learnerId) => api.get(`${BASE}/class/${classId}/learner/${learnerId}`).then((r) => r.data.data),

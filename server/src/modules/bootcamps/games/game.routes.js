@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const GameService = require("./game.service");
 const { createGameSchema, updateGameSchema } = require("./game.validation");
 const { parsePatch } = require("../../../shared/validators/common.validator");
+const UsageService = require("../../usage/usage.service");
 
 // The games library, mounted at /api/bootcamps/games (see bootcamp.routes.js) — admin-only like
 // the rest of the bootcamps module, and covered by the same Bootcamps staff permission.
@@ -24,6 +25,7 @@ router.put("/:gameId", asyncHandler(async (req, res) => {
 }));
 
 router.delete("/:gameId", asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "game", req.params.gameId, "This game")) return;
   res.json({ success: true, ...(await GameService.remove(req.ownerAdminId, req.params.gameId)) });
 }));
 

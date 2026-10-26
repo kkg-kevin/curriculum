@@ -8,6 +8,7 @@ const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { createClassSchema, updateClassSchema, markNotSubmittedSchema } = require("./class.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+const UsageService = require("../usage/usage.service");
 
 // A class belongs to exactly one hub (schoolId, notNullable — no M:N ambiguity, unlike learners/
 // teachers) — so "does this admin own this class" is just "is its schoolId one of my hubs".
@@ -277,6 +278,7 @@ const deleteClass = asyncHandler(async (req, res) => {
     if (req.user.role === "school") assertOwn(isOwnHub(req, existing.schoolId));
     else assertOwn(await isOwnHubForAdmin(req, existing.schoolId));
   }
+  if (await UsageService.guardDelete(req, res, "class", req.params.id, "This class")) return;
   const result = await ClassService.deleteClass(req.params.id);
   res.json({ success: true, ...result });
 });

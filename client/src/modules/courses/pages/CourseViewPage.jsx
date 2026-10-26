@@ -27,6 +27,7 @@ import CourseInventoryPanel from "../components/CourseInventoryPanel";
 import RichContent, { isEmptyHtml } from "../components/RichContent";
 import { Editor as RichTextEditorControlled } from "../components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { courseApi } from "../services/courseApi";
 import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
 import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
@@ -397,6 +398,7 @@ function SessionRow({ courseId, session, index, expanded, onToggle, onEdit, draf
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteSession(session.id); }}
+        usageCheck={() => courseApi.checkDeleteSession(courseId, session.id)}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>
@@ -587,6 +589,7 @@ function ModuleGroup({
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteModule(courseModule.id); }}
+        usageCheck={() => courseApi.checkDeleteModule(courseId, courseModule.id)}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2 } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 import EmailNotificationSettings from "./EmailNotificationSettings";
@@ -73,6 +73,8 @@ function resolveNotificationPath(n) {
       // News about the educator's own claim — that course's page in the teacher-portal.
       return p.route || "/teacher-portal/claims";
     case "checkin_assigned":
+    case "checkin_due":
+    // Types from before check-ins were simplified (26 Oct 2026), still in people's bells.
     case "checkin_upcoming":
     case "checkin_today":
     case "checkin_report_overdue":
@@ -83,7 +85,7 @@ function resolveNotificationPath(n) {
     case "checkin_action_assigned":
     case "checkin_action_overdue":
     case "checkin_action_escalated":
-      // Hub check-ins: the check-in's own page, or the action opened over the check-ins page.
+      // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
     default:
       return null;
@@ -108,6 +110,7 @@ function timeAgo(dateStr) {
 // clip a normally-positioned dropdown.
 export default function NotificationBell() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const [showEmailSettings, setShowEmailSettings] = useState(false);
@@ -124,7 +127,8 @@ export default function NotificationBell() {
     if (!n.isRead) markRead(n.id);
     setOpen(false);
     const path = resolveNotificationPath(n);
-    if (path) navigate(path);
+    // A hub's Account Manager / Training Lead does check-ins inside the hub portal.
+    if (path) navigate(path.startsWith("/checkins") && pathname.startsWith("/school-portal") ? `/school-portal${path}` : path);
   };
 
   const openPanel = () => {

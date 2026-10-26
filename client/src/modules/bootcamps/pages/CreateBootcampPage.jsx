@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ImageUploadField from "../../../components/ImageUploadField";
@@ -8,7 +8,7 @@ import CoursePricingField from "../../../components/CoursePricingField";
 import { Editor as RichTextEditorControlled } from "../../courses/components/RichTextEditor";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCurriculaQuery } from "../../curriculum/hooks/useCurriculum";
-import { usePathways } from "../../curriculum/hooks/useCompetencies";
+import { usePathways, useAgeCategories } from "../../curriculum/hooks/useCompetencies";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import GamesField from "../../programs/games/components/GamesField";
 import {
@@ -56,7 +56,6 @@ const toFormValues = (b) => ({
   priceNotes: b?.priceNotes || [],
   highlights: b?.highlights || [],
   coursePricing: b?.coursePricing || [],
-  pathwayDiagnostics: b?.pathwayDiagnostics || [],
   gameIds: b?.gameIds || [],
   gamesNote: b?.gamesNote || "",
 });
@@ -72,9 +71,6 @@ const clean = (v) => {
   // belong to.
   out.coursePricing = out.curriculumId ? out.coursePricing || [] : [];
   out.pathwayIds = out.curriculumId ? out.pathwayIds || [] : [];
-  // Same guard as pathwayIds — without a curriculum there's no pathway a diagnostic entry could
-  // validly attach to.
-  out.pathwayDiagnostics = out.curriculumId ? out.pathwayDiagnostics || [] : [];
   return out;
 };
 
@@ -196,41 +192,38 @@ function PathwaysField({ curriculumId, value, onChange }) {
   );
 }
 
-// One diagnostic assessment per pathway this bootcamp actually runs (see PathwaysField above) —
-// additive to the single bootcamp-wide diagnostic in the "Diagnostic test" card below, e.g. a
-// bootcamp bundling a Robotics pathway and a Coding pathway can offer each its own placement
-// quiz. `pathwayIds` here is the bootcamp's EFFECTIVE pathway list (selected ones, or every
-// pathway under the curriculum when none are checked — same "empty means all" rule as
-// PathwaysField), so a row shows up for every pathway the bootcamp will actually run even before
-// any are explicitly checked.
-function PathwayDiagnosticsField({ pathways, assessments, value, onChange }) {
-  const entries = value || [];
-  const setForPathway = (pathwayId, assessmentId) => {
-    const rest = entries.filter((e) => e.pathwayId !== pathwayId);
-    onChange(assessmentId ? [...rest, { pathwayId, assessmentId }] : rest);
-  };
-
-  if (!pathways || pathways.length === 0) return null;
+// The diagnostics this bootcamp uses, read only: they belong to its curriculum (Curriculum →
+// Competencies → Pathways, set per developmental stage) — the website one families take when they
+// sign up, the learner one issued once they're enrolled. `pathways` is the bootcamp's effective
+// pathway list (its picked ones, or every pathway of the curriculum when none are picked).
+function CurriculumDiagnostics({ curriculumId, pathways, assessments }) {
+  const { data: stages = [] } = useAgeCategories(curriculumId);
+  const stageName = new Map(stages.map((s) => [s.id, s.name]));
+  const nameOf = (id) => assessments.find((a) => a.id === id)?.name || "Diagnostic assigned";
+  const line = (label, id) => (
+    <span style={{ fontSize: 12, color: "#6B7280" }}>
+      {label}: {id ? <strong style={{ color: "#111827" }}>{nameOf(id)}</strong> : <span style={{ color: "#9CA3AF" }}>none</span>}
+    </span>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {pathways.map((p) => {
-        const current = entries.find((e) => e.pathwayId === p.id)?.assessmentId || "";
-        return (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {p.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: p.color, flexShrink: 0 }} />}
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827", flex: "0 0 160px" }}>{p.name}</span>
-            <select
-              style={{ ...S.select, flex: 1 }}
-              value={current}
-              onChange={(e) => setForPathway(p.id, e.target.value || null)}
-            >
-              <option value="">— None —</option>
-              {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
+      {pathways.map((p) => (
+        <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          {p.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: p.color, flexShrink: 0, marginTop: 4 }} />}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+              {p.name}
+              {p.ageCategoryId && stageName.get(p.ageCategoryId) && <span style={{ fontWeight: 400, color: "#9CA3AF" }}> · {stageName.get(p.ageCategoryId)}</span>}
+            </span>
+            {line("On the website", p.publicDiagnosticAssessmentId)}
+            {line("For learners", p.diagnosticAssessmentId)}
           </div>
-        );
-      })}
+        </div>
+      ))}
+      <Link to={`/curriculum/${curriculumId}/competencies?section=pathways`} style={{ fontSize: 12.5, fontWeight: 600, color: "#2e7db5" }}>
+        Set diagnostics in the curriculum →
+      </Link>
     </div>
   );
 }
@@ -253,11 +246,8 @@ export default function CreateBootcampPage() {
   const { data: curriculaData } = useCurriculaQuery();
   const curricula = curriculaData?.data || [];
 
-  // Teacher Observation assessments have no learner-facing "take" step (a teacher records them
-  // directly), so they can't be offered as a public diagnostic — mirrors CompetenciesPage.jsx's
-  // own filter exactly (the real enforcement is server-side, this is just the picker's hint).
+  // For the names of the curriculum's diagnostics (see CurriculumDiagnostics).
   const { data: assessmentsData } = useAssessmentsQuery();
-  const diagnosticAssessments = (assessmentsData?.data || []).filter((a) => a.type !== "observation");
 
   const { data: existing, isLoading: loadingExisting } = useBootcampQuery(id);
   const { mutate: createBootcamp, isPending: creating } = useCreateBootcamp();
@@ -643,25 +633,10 @@ export default function CreateBootcampPage() {
           {selectedCurriculumId && effectivePathways.length > 0 && (
             <div style={S.card}>
               <h3 style={S.cardTitle}>Diagnostic tests</h3>
-              <div style={S.field}>
-                <label style={S.label}>Per-pathway diagnostics <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
-                <p style={{ margin: "2px 0 8px", fontSize: 11, color: "#9CA3AF" }}>
-                  Assign a diagnostic assessment to each pathway this bootcamp runs.
-                </p>
-                {errors.pathwayDiagnostics && <span style={S.error}>{errors.pathwayDiagnostics.message}</span>}
-                <Controller
-                  control={control}
-                  name="pathwayDiagnostics"
-                  render={({ field }) => (
-                    <PathwayDiagnosticsField
-                      pathways={effectivePathways}
-                      assessments={diagnosticAssessments}
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-              </div>
+              <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>
+                From the curriculum this bootcamp runs. Families take the website one when they sign up; enrolled learners get the learner one.
+              </p>
+              <CurriculumDiagnostics curriculumId={selectedCurriculumId} pathways={effectivePathways} assessments={assessmentsData?.data || []} />
             </div>
           )}
         </form>

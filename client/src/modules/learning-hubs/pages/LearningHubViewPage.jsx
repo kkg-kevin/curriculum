@@ -8,8 +8,10 @@ import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { learningHubApi } from "../services/learningHubApi";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const ACCENT = "#25476a";
 const TEAL = "#38aae1";
@@ -123,6 +125,13 @@ function computeRunningCurricula(links, fallbackCurriculum) {
 export default function LearningHubViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Staff see what their role allows: an Account Manager / Training Lead can view every hub but
+  // change none, and only opens the records (educators, classes, learners…) their role covers.
+  const { can } = usePermissions();
+  const canEdit = can("learning-hubs", "edit");
+  const canDelete = can("learning-hubs", "delete");
+  const canSeeFinance = can("hub-visits", "view") || can("billing", "view");
+  const openIf = (module, path) => (can(module, "view") ? () => navigate(path) : undefined);
   const { data: hub, isLoading, isError } = useLearningHubQuery(id);
   const { data: curriculum } = useCurriculumQuery(hub?.curriculumId);
   const { data: curriculumLinks = [] } = useLearningHubCurriculaQuery(id);
@@ -220,10 +229,10 @@ export default function LearningHubViewPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: "10px", flexShrink: 0, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            {canEdit && <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
-            </button>
-            {canToggleStatus && (
+            </button>}
+            {canToggleStatus && canEdit && (
               <button
                 type="button"
                 onClick={() => setConfirmStatusToggle(true)}
@@ -233,9 +242,9 @@ export default function LearningHubViewPage() {
                 {deactivating ? "Deactivate Hub" : "Activate Hub"}
               </button>
             )}
-            <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            {canDelete && <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Delete
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -337,6 +346,8 @@ export default function LearningHubViewPage() {
               icon={<PhoneIcon fontSize="small" />}
               label="Phone" value={hub.phone}
             />
+            <DetailRow icon={<PersonIcon fontSize="small" />} label="Account Manager" value={hub.accountManagerName} />
+            <DetailRow icon={<PersonIcon fontSize="small" />} label="Training Lead" value={hub.trainingLeadName} />
             {!hub.contactPerson && !hub.email && !hub.phone && (
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>No contact details on file.</p>
             )}
@@ -352,7 +363,7 @@ export default function LearningHubViewPage() {
                 return (
                   <div
                     key={link.id || (link.slot + "-" + link.curriculumId)}
-                    onClick={() => link.curriculum?.id && navigate("/curriculum/" + link.curriculum.id + "/view")}
+                    onClick={() => link.curriculum?.id && can("curriculum", "view") && navigate("/curriculum/" + link.curriculum.id + "/view")}
                     style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#FAFBFF", border: "1px solid #E5E7EB", cursor: link.curriculum?.id ? "pointer" : "default" }}
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
@@ -400,7 +411,7 @@ export default function LearningHubViewPage() {
             </div>
           ) : curriculum ? (
             <div
-              onClick={() => navigate("/curriculum/" + curriculum.id + "/view")}
+              onClick={openIf("curriculum", "/curriculum/" + curriculum.id + "/view")}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: "12px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", cursor: "pointer" }}
             >
               <div>
@@ -412,9 +423,9 @@ export default function LearningHubViewPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", textAlign: "center" }}>
               <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>No curriculum assigned to this learning hub yet.</p>
-              <button type="button" onClick={() => navigate("/settings/learning-hubs/" + id + "/edit")} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              {canEdit && <button type="button" onClick={() => navigate("/settings/learning-hubs/" + id + "/edit")} style={{ padding: "8px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                 Assign Curriculum
-              </button>
+              </button>}
             </div>
           )}
         </Section>
@@ -518,7 +529,7 @@ export default function LearningHubViewPage() {
           `readOnly` — logging visits, generating charges, and deleting a visit are the hub
           operator's own actions on their own space; the admin gets visibility into the revenue
           and visit log here, not control over them. */}
-      {!isSchool && (
+      {!isSchool && canSeeFinance && (
         <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden", marginBottom: "16px" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
             <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Finance</h2>
@@ -582,13 +593,13 @@ export default function LearningHubViewPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {teachers.slice(0, 5).map((t) => (
-                <div key={t.id} onClick={() => navigate(`/teachers/${t.id}/view`)}
+                <div key={t.id} onClick={openIf("teachers", `/teachers/${t.id}/view`)}
                   style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                   {t.firstName} {t.lastName}
                 </div>
               ))}
               {teachers.length > 5 && (
-                <button type="button" onClick={() => navigate(`/teachers?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                <button type="button" hidden={!can("teachers", "view")} onClick={() => navigate(`/teachers?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                   View all {teachers.length} →
                 </button>
               )}
@@ -604,7 +615,7 @@ export default function LearningHubViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {classes.slice(0, 5).map((c) => (
-                  <div key={c.id} onClick={() => navigate(`/classes/${c.id}/view`)}
+                  <div key={c.id} onClick={openIf("classes", `/classes/${c.id}/view`)}
                     style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                     {c.gradeName}
                   </div>
@@ -619,13 +630,13 @@ export default function LearningHubViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {learners.slice(0, 5).map((l) => (
-                  <div key={l.id} onClick={() => navigate(`/learners/${l.id}/view`)}
+                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}/view`)}
                     style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                     {l.firstName} {l.lastName}
                   </div>
                 ))}
                 {learners.length > 5 && (
-                  <button type="button" onClick={() => navigate(`/learners?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                  <button type="button" hidden={!can("learners", "view")} onClick={() => navigate(`/learners?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                     View all {learners.length} →
                   </button>
                 )}
@@ -642,7 +653,7 @@ export default function LearningHubViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {learners.slice(0, 5).map((l) => (
-                  <div key={l.id} onClick={() => navigate(`/learners/${l.id}/view`)}
+                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}/view`)}
                     style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                     <span>{l.firstName} {l.lastName}</span>
                     {l.spaceId && (
@@ -653,7 +664,7 @@ export default function LearningHubViewPage() {
                   </div>
                 ))}
                 {learners.length > 5 && (
-                  <button type="button" onClick={() => navigate(`/learners?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                  <button type="button" hidden={!can("learners", "view")} onClick={() => navigate(`/learners?schoolId=${id}`)} style={{ padding: "6px", background: "none", border: "none", color: TEAL, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
                     View all {learners.length} →
                   </button>
                 )}
@@ -674,6 +685,8 @@ export default function LearningHubViewPage() {
           setConfirmDelete(false);
           deleteLearningHub(id, { onSuccess: () => navigate("/learning-hubs") });
         }}
+        usageCheck={() => learningHubApi.checkRemove(id)}
+        onAlternative={hub.status === "active" ? () => { setConfirmDelete(false); setConfirmStatusToggle(true); } : undefined}
         onCancel={() => setConfirmDelete(false)}
       />
 

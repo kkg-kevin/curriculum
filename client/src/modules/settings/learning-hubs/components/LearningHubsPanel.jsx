@@ -4,6 +4,7 @@ import { FiChevronDown, FiChevronRight, FiCheckCircle, FiEdit2, FiMapPin, FiPaus
 import { useAllLearningHubsQuery, useDeleteLearningHub, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../../../learning-hubs/schemas/learningHub.schema";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { learningHubApi } from "../../../learning-hubs/services/learningHubApi";
 
 const ACCENT = "#25476a";
 
@@ -237,6 +238,8 @@ export default function LearningHubsPanel() {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { deleteHub(deleteHubTarget.id); setDeleteHubTarget(null); }}
+        usageCheck={() => learningHubApi.checkRemove(deleteHubTarget.id)}
+        onAlternative={deleteHubTarget?.status === "active" ? () => { setStatusTarget(deleteHubTarget); setDeleteHubTarget(null); } : undefined}
         onCancel={() => setDeleteHubTarget(null)}
       />
     </div>

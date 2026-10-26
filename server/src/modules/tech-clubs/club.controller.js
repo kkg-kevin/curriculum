@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const ClubService = require("./club.service");
 const ClubSignupService = require("./club-signup.service");
 const { can } = require("../access/access.service");
+const UsageService = require("../usage/usage.service");
 
 // Same rule as home-learning.controller.js: raising a club invoice creates a billing invoice, so
 // staff need Billing → Create (access.registry.js maps these routes to it; repeated here so the
@@ -19,7 +20,10 @@ const listClubs = asyncHandler(async (req, res) => ok(res, await ClubService.lis
 const listPackages = asyncHandler(async (req, res) => ok(res, await ClubService.listPackages(req.ownerAdminId)));
 const createPackage = asyncHandler(async (req, res) => ok(res, await ClubService.createPackage(req.ownerAdminId, req.body), 201));
 const updatePackage = asyncHandler(async (req, res) => ok(res, await ClubService.updatePackage(req.ownerAdminId, req.params.packageId, req.body)));
-const deletePackage = asyncHandler(async (req, res) => ok(res, await ClubService.deletePackage(req.ownerAdminId, req.params.packageId)));
+const deletePackage = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "clubPackage", req.params.packageId, "This package")) return;
+  ok(res, await ClubService.deletePackage(req.ownerAdminId, req.params.packageId));
+});
 const update = asyncHandler(async (req, res) => ok(res, await ClubService.update(req.ownerAdminId, req.params.id, req.body)));
 const placeChild = asyncHandler(async (req, res) => ok(res, await ClubService.placeChild(req.ownerAdminId, req.params.id, req.params.learnerId, req.body)));
 const removeChild = asyncHandler(async (req, res) => ok(res, await ClubService.removeChild(req.ownerAdminId, req.params.id, req.params.learnerId)));

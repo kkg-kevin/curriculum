@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const AccessService = require("./access.service");
+const UsageService = require("../usage/usage.service");
 
 // Mounted owner-only (authorize("admin") + blockIfCollaboratorRestricted in app.js): staff can
 // never see or change roles, including their own.
@@ -21,6 +22,7 @@ const updateRole = asyncHandler(async (req, res) => {
 });
 
 const deleteRole = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "accessRole", req.params.id, "This role")) return;
   res.json({ success: true, ...(await AccessService.deleteRole(req.ownerAdminId, req.params.id)) });
 });
 

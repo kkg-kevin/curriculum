@@ -19,6 +19,7 @@ const {
   linkPathwaySchema,
   linkInventoryItemSchema,
 } = require("./course.validation");
+const UsageService = require("../usage/usage.service");
 
 // A course is reusable across curricula/hubs (see curriculum.service.js's model comment), so
 // "can this caller see this course" can't be answered from the course record alone — it has to
@@ -107,6 +108,7 @@ const updateCourse = asyncHandler(async (req, res) => {
 
 const deleteCourse = asyncHandler(async (req, res) => {
   await assertCourseAccess(req, req.params.id);
+  if (await UsageService.guardDelete(req, res, "course", req.params.id, "This course")) return;
   const result = await CourseService.deleteCourse(req.params.id);
   res.json({ success: true, ...result });
 });
@@ -216,6 +218,7 @@ const updateSession = asyncHandler(async (req, res) => {
 });
 
 const deleteSession = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "courseSession", req.params.sessionId, "This session")) return;
   await CourseService.deleteSession(req.params.id, req.params.sessionId);
   res.json({ success: true });
 });
@@ -241,6 +244,7 @@ const updateModule = asyncHandler(async (req, res) => {
 });
 
 const deleteModule = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "courseModule", req.params.moduleId, "This module")) return;
   await CourseService.deleteModule(req.params.id, req.params.moduleId);
   res.json({ success: true });
 });

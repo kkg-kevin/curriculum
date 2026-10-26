@@ -3,12 +3,42 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { School as SchoolIcon, Close as CloseIcon } from "@mui/icons-material";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
-import { useAllLearnersQuery } from "../hooks/useLearners";
+import { useAllLearnersQuery, useLearnerLogins, useSetLearnerLoginActive } from "../hooks/useLearners";
 import { learnerApi } from "../services/learnerApi";
 import { LearnerCard } from "../components/LearnerCard";
+import UsersTable from "../../settings/users/components/UsersTable";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 const inputStyle  = { padding: "8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", minWidth: 200 };
+
+const tabStyle = (on) => ({ padding: "7px 16px", borderRadius: 999, border: `1.5px solid ${on ? "#25476a" : "#E5E7EB"}`, background: on ? "#25476a" : "#fff", color: on ? "#fff" : "#374151", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" });
+
+// Parents' and learners' own logins — the kind of account, which child or hub, last used, and the
+// sign-in switch (Settings → Users lists the workspace's other logins). Switching needs Learners
+// → Edit for staff.
+function LearnerLoginsPanel() {
+  const { can } = usePermissions();
+  const { data, isLoading, isError } = useLearnerLogins();
+  const { mutate: setActive, isPending } = useSetLearnerLoginActive();
+  return (
+    <div style={{ backgroundColor: "#fff", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <UsersTable
+        data={data}
+        isLoading={isLoading}
+        isError={isError}
+        setActive={setActive}
+        isPending={isPending}
+        canSwitch={can("learners", "edit")}
+        heading="Parent & learner logins"
+        description="Every parent and learner who can sign in — a parent with their email (and sees all their children), a learner with their own username."
+        searchPlaceholder="Search name, email, username, child or hub"
+        csvName="parent-and-learner-logins.csv"
+        noun="logins"
+      />
+    </div>
+  );
+}
 
 function SkeletonCard() {
   return (
@@ -27,7 +57,14 @@ function SkeletonCard() {
 
 export default function LearnersPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?tab=logins — Parent & learner logins (where Settings → Users points for those accounts).
+  const tab = searchParams.get("tab") === "logins" ? "logins" : "learners";
+  const setTab = (next) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "logins") params.set("tab", "logins"); else params.delete("tab");
+    setSearchParams(params, { replace: true });
+  };
 
   const [search, setSearch] = useState("");
   const [schoolFilter, setSchoolFilter] = useState(searchParams.get("schoolId") || "");
@@ -93,6 +130,12 @@ export default function LearnersPage() {
         </div>
       </div>
 
+      <div role="tablist" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        <button type="button" role="tab" aria-selected={tab === "learners"} onClick={() => setTab("learners")} style={tabStyle(tab === "learners")}>Learners</button>
+        <button type="button" role="tab" aria-selected={tab === "logins"} onClick={() => setTab("logins")} style={tabStyle(tab === "logins")}>Parent &amp; learner logins</button>
+      </div>
+
+      {tab === "logins" ? <LearnerLoginsPanel /> : (<>
       {/* Filter bar */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         <input
@@ -140,6 +183,7 @@ export default function LearnersPage() {
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
 import CardKebab from "./CardKebab";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { itemsApi } from "../services/itemsApi";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
@@ -516,10 +517,11 @@ export default function GoodsPanel() {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title="Delete Goods Item"
-        message={`"${deleteTarget?.name}" will be permanently deleted and removed from every course and project that currently lists it${deleteTarget?.saleStatus === "for_sale" ? ", and taken off the website Store" : ""}. This cannot be undone.`}
+        message={`"${deleteTarget?.name}" will be permanently deleted${deleteTarget?.saleStatus === "for_sale" ? " and taken off the website Store" : ""}. This cannot be undone.`}
         confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
         onConfirm={() => { deleteItem(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
+        usageCheck={() => itemsApi.checkDeleteItem(deleteTarget.id)}
       />
     </div>
   );

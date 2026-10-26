@@ -3,6 +3,7 @@ const RoomService = require("./room.service");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { createRoomSchema, updateRoomSchema } = require("./room.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
+const UsageService = require("../usage/usage.service");
 
 // A room belongs to exactly one hub (hubId, notNullable) — same "no owner column of its own,
 // scope via the owning hub" shape as classes.
@@ -111,6 +112,7 @@ const deleteRoom = asyncHandler(async (req, res) => {
     if (req.user.role === "school") assertOwn(isOwnHub(req, existing.hubId));
     else assertOwn(await isOwnHubForAdmin(req, existing.hubId));
   }
+  if (await UsageService.guardDelete(req, res, "room", req.params.id, "This room")) return;
   const result = await RoomService.deleteRoom(req.params.id);
   res.json({ success: true, ...result });
 });

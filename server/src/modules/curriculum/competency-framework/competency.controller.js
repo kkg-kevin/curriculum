@@ -33,6 +33,7 @@ const {
   placeLearnerSchema,
   assignLearnerPathwaySchema,
 } = require("./competency.validation");
+const UsageService = require("../../usage/usage.service");
 
 // A `.partial()` schema still applies each field's own `.default(...)` when that field is
 // entirely absent from the request body — so `schema.parse({})` on a partial schema comes
@@ -67,6 +68,7 @@ exports.linkCompetency = asyncHandler(async (req, res) => {
 });
 
 exports.unlinkCompetency = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "curriculumCompetency", `${req.params.id}:${req.params.competencyId}`, "This competency")) return;
   const data = await CompetencyService.unlinkCompetency(req.params.id, req.params.competencyId);
   res.json({ success: true, data });
 });
@@ -97,6 +99,7 @@ exports.updateCompetencyIndicator = asyncHandler(async (req, res) => {
 });
 
 exports.deleteCompetencyIndicator = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "curriculumIndicator", req.params.indicatorId, "This indicator")) return;
   await CompetencyService.deleteCompetencyIndicator(req.params.id, req.params.competencyId, req.params.indicatorId);
   res.json({ success: true });
 });
@@ -121,6 +124,7 @@ exports.updatePathway = asyncHandler(async (req, res) => {
 });
 
 exports.deletePathway = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "pathway", req.params.aId, "This pathway")) return;
   await CompetencyService.deletePathway(req.params.id, req.params.aId);
   res.json({ success: true });
 });
@@ -164,6 +168,7 @@ exports.updateAgeCategory = asyncHandler(async (req, res) => {
 });
 
 exports.deleteAgeCategory = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "ageCategory", req.params.acId, "This stage")) return;
   await CompetencyService.deleteAgeCategory(req.params.id, req.params.acId);
   res.json({ success: true });
 });
@@ -283,6 +288,7 @@ exports.updatePerformanceBand = asyncHandler(async (req, res) => {
 });
 
 exports.deletePerformanceBand = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "performanceBand", req.params.bandId, "This performance band")) return;
   await CompetencyService.deletePerformanceBand(req.params.id, req.params.bandId);
   res.json({ success: true });
 });

@@ -18,6 +18,7 @@ import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import { useDiagnosticForLearner, usePathwayDiagnosticsForLearner, useGradeSubmission, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { learnerApi } from "../services/learnerApi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath, schoolViewPath } from "../../../routes/portalPaths";
 import { formatClassName } from "../../classes/utils/classDisplay";
@@ -928,6 +929,8 @@ export default function LearnerViewPage() {
             deleteLearner(id, { onSuccess: () => navigate(learnersListPath(user?.role)) });
           }
         }}
+        usageCheck={isSchool ? undefined : () => learnerApi.checkRemove(id)}
+        onAlternative={!isSchool && accountStatus === "active" ? () => { setConfirmDelete(false); updateLearnerAccount({ id, accountStatus: "inactive" }); } : undefined}
         onCancel={() => setConfirmDelete(false)}
       />
 

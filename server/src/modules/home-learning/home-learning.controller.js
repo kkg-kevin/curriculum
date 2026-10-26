@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const HomeLearningService = require("./home-learning.service");
 const { can } = require("../access/access.service");
 const HomeLearningSignupService = require("./home-learning-signup.service");
+const UsageService = require("../usage/usage.service");
 
 // Staff are aliased to "admin" by scope.middleware.js. Raising a Home Learning invoice creates a
 // billing invoice, so it needs the Billing → Create permission (access.registry.js maps these
@@ -30,6 +31,7 @@ const updatePackage = asyncHandler(async (req, res) => {
 });
 
 const deletePackage = asyncHandler(async (req, res) => {
+  if (await UsageService.guardDelete(req, res, "homeLearningPackage", req.params.packageId, "This package")) return;
   res.json({ success: true, data: await HomeLearningService.deletePackage(req.ownerAdminId, req.params.packageId) });
 });
 

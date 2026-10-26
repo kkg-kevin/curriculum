@@ -139,6 +139,7 @@ function summarise({ ctx, label, parentLabel, linkedLabel, body, requestBody }) 
   const path = ctx.path;
   if (path === "/api/auth/me") return "Updated their own profile";
   if (path === "/api/auth/change-password") return "Changed their own password";
+  if (/^\/api\/parent\/children\/[^/]+\/login$/.test(path)) return `Set their child's login${body?.data?.username ? ` (${body.data.username})` : ""}`;
   if (path === "/api/admin-tools/reassign-owner") return `Moved a ${requestBody?.entityType || "record"}${quote(label)} to another admin${requestBody?.targetAdminEmail ? ` (${requestBody.targetAdminEmail})` : ""}`;
   if (/^\/api\/sharing\/connections\/[^/]+\/copy$/.test(path)) return `Copied ${body?.data?.label || requestBody?.kind || "content"} from another admin${body?.data?.alsoCreated?.length ? `, with ${body.data.alsoCreated.join(", ")}` : ""}`;
   if (/^\/api\/sharing\/connections\/[^/]+\/accept$/.test(path)) return `Accepted a sharing request${body?.data?.admin?.name ? ` from ${body.data.admin.name}` : ""}`;
@@ -205,6 +206,8 @@ const AuditService = {
   // After the response has gone: write the entry. `body` is what the handler answered with.
   async finish(req, res, started, body) {
     if (!started) return;
+    // A delete dialog asking "is this in use?" (?check — modules/usage) changed nothing.
+    if (req.usageCheckOnly) return;
     const status = res.statusCode;
     // Only what happened (2xx), what was refused (403), and what broke (5xx). A form sent back
     // for a typo, or a record that wasn't found, changed nothing and says nothing about anyone.

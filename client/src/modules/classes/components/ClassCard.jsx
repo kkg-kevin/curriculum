@@ -2,7 +2,8 @@
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiBookOpen, FiEdit2, FiEye, FiMoreVertical, FiTrash2, FiUserCheck, FiUsers } from "react-icons/fi";
-import { useDeleteClass, useClassCourseTeachers } from "../hooks/useClasses";
+import { useDeleteClass, useUpdateClass, useClassCourseTeachers } from "../hooks/useClasses";
+import { classApi } from "../services/classApi";
 import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
@@ -42,6 +43,7 @@ export function ClassCard({ cls }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteClass, isPending: isDeleting } = useDeleteClass();
+  const { mutate: updateClass } = useUpdateClass();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
   const [hovered, setHovered]         = useState(false);
@@ -175,6 +177,8 @@ export function ClassCard({ cls }) {
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => { setConfirmOpen(false); deleteClass(cls.id); }}
+        usageCheck={() => classApi.checkRemove(cls.id)}
+        onAlternative={cls.status === "active" ? () => { setConfirmOpen(false); updateClass({ id: cls.id, data: { status: "inactive" } }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>

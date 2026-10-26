@@ -192,3 +192,22 @@ export function usePublicLearnerProfile(token) {
     retryDelay: 800,
   });
 }
+
+// Parents' and learners' own logins — last used, and the sign-in switch (the rest of the
+// workspace's logins are Settings → Users).
+const LOGINS_KEY = ["learners", "logins"];
+export function useLearnerLogins({ enabled = true } = {}) {
+  return useQuery({ queryKey: LOGINS_KEY, queryFn: learnerApi.logins, enabled });
+}
+
+export function useSetLearnerLoginActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, active }) => learnerApi.setLoginActive(id, active),
+    onSuccess: (user, { active }) => {
+      queryClient.invalidateQueries({ queryKey: LOGINS_KEY });
+      toast.success(active ? `${user?.name || "Account"} can sign in again` : `${user?.name || "Account"} deactivated`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update the account"),
+  });
+}

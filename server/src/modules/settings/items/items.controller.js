@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const ItemsService = require("./items.service");
 const { createItemSchema, updateItemSchema, listItemsQuerySchema } = require("./items.validation");
+const UsageService = require("../../usage/usage.service");
 
 // One controller for both mounts (see items.routes.js):
 //   /api/items      — the whole catalog. `?kind=goods|service` filters; a create with no `kind`
@@ -30,6 +31,7 @@ function makeItemsController({ onlyKind = null, defaultKind = "service" } = {}) 
     }),
 
     deleteItem: asyncHandler(async (req, res) => {
+      if (await UsageService.guardDelete(req, res, "item", req.params.itemId, "This item")) return;
       await ItemsService.deleteItem(req.params.itemId, req.ownerAdminId, { onlyKind });
       res.json({ success: true });
     }),
