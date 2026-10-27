@@ -18,6 +18,8 @@ const noticeLimiter = rateLimit({
   message: { success: false, message: "Too many attempts from here. Please try again later." },
 });
 publicRouter.post("/:token/notices", noticeLimiter, Controller.submitForLink);
+// Choosing how to pay it: one of the plans offered (part payments), or the whole amount at once.
+publicRouter.post("/:token/plan", noticeLimiter, Controller.choosePlanForLink);
 
 // Settings → Payments → How families can pay. Owner only — mounted in app.js with the same
 // guards as the rest of /api/payment-settings.

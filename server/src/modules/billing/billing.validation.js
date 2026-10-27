@@ -49,6 +49,20 @@ const recordPaymentSchema = z.object({
   notes: z.string().max(255).optional().nullable(),
 });
 
+// An invoice's payment schedule (billing.instalments.js): a plan by its key (from `startDate`), the
+// parts typed by hand, or neither to remove it. The parts must add up to the total (checked in the
+// service, where the total is known).
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date");
+const setInstalmentsSchema = z.object({
+  planKey: z.string().trim().max(40).optional().nullable(),
+  startDate: isoDate.optional().nullable(),
+  instalments: z.array(z.object({
+    label: z.string().trim().max(80).optional().default(""),
+    amount: z.coerce.number().positive("Each payment needs an amount above 0"),
+    dueDate: isoDate,
+  })).max(24, "A schedule has at most 24 payments").optional().default([]),
+});
+
 const statementQuerySchema = z.object({
   from: z.string().optional().nullable(),
   to: z.string().optional().nullable(),
@@ -70,4 +84,4 @@ const bulkInvoiceCreateSchema = bulkInvoicePreviewSchema.extend({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-module.exports = { invoiceTypes, invoiceStatus, createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema };
+module.exports = { invoiceTypes, invoiceStatus, createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, setInstalmentsSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema };

@@ -399,6 +399,18 @@ async function ownTransaction(id, req) {
   return tx;
 }
 
+// A payment link's part-payment view: the plans a family may still choose (before anything is
+// paid), the one chosen, the schedule with each part's state, and the next part to pay.
+async function linkPlanView(invoice) {
+  const doc = await BillingService.getInvoiceDocument(invoice.id);
+  return {
+    plans: await BillingService.offeredPlans(invoice),
+    chosenPlan: invoice.paymentPlanKey || null,
+    schedule: (doc?.instalments || []).map((p) => ({ sequence: p.sequence, label: p.label, amount: p.amount, dueDate: p.dueDate, remaining: p.remaining, state: p.state })),
+    next: doc?.paymentPlan?.next || null,
+  };
+}
+
 const MpesaService = {
   // For the client: whether to show the M-Pesa buttons, and what to tell people paying by hand —
   // for the caller's own workspace.
@@ -457,6 +469,9 @@ const MpesaService = {
       mpesa: payBy ? { enabled: true, ...payBy } : { enabled: false },
       // Every way to pay it (payment-options.js) and the "I've paid" notices sent for it.
       methods: payable ? await PaymentOptions.forInvoice(invoice) : [],
+      // Part payments: the plans the family may still choose (before anything is paid), the one
+      // chosen, and the schedule with the next part to pay (billing.instalments.js).
+      ...(await linkPlanView(invoice)),
       notices: await require("../payment-notices.service").listForInvoice(invoice.id),
     };
   },

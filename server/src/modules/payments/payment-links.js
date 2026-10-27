@@ -48,6 +48,8 @@ const PaymentLinks = {
       return {
         token: await PaymentLinks.issue(invoice.id, purpose, ttlHours ? { ttlHours } : undefined),
         methods,
+        // Part payments: plans the family may choose instead of paying it all now (empty when off).
+        plans: await require("../billing/billing.service").offeredPlans(invoice).catch(() => []),
         // The phone prompt (MpesaPayNow on the website) — only while Daraja is set up.
         ...(paybill?.prompt ? { paybill: paybill.paybill, account: paybill.account, accountLabel: paybill.accountName } : {}),
       };
