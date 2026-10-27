@@ -10,6 +10,7 @@ import EmailsPanel from "../emails/components/EmailsPanel";
 import CertificateSettingsPanel from "../certificates/components/CertificateSettingsPanel";
 import PaymentsPanel from "../payments/PaymentsPanel";
 import PaymentMethodsSection from "../payments/PaymentMethodsSection";
+import EnquirySettingsPanel from "../../leads/components/EnquirySettingsPanel";
 import PartPaymentsSection from "../payments/PartPaymentsSection";
 import { SettingsPage as SettingsLayoutPage } from "../components/SettingsLayout";
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
@@ -33,6 +34,7 @@ const ALL_TABS = [
   { key: "people", label: "People & sharing" },
   // Which emails the workspace sends, and which the admin receives — see EmailsPanel.
   { key: "emails", label: "Emails" },
+  { key: "enquiries", label: "Enquiries" },
   // Who signs the workspace's certificates of completion — see CertificateSettingsPanel.
   { key: "certificates", label: "Certificates" },
   // How families can pay at the end of a website sign-up (PaymentMethodsSection), and the
@@ -43,7 +45,7 @@ const ALL_TABS = [
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
-const OWNER_ONLY_TABS = ["people", "emails", "certificates", "payments"];
+const OWNER_ONLY_TABS = ["people", "emails", "enquiries", "certificates", "payments"];
 
 // Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
 // sharing notifications, bookmarks) open the matching section of People & sharing.
@@ -109,6 +111,7 @@ export default function SettingsPage() {
         {activeTab === "learning-hubs" && <LearningHubsPanel />}
         {activeTab === "people" && <TeamPanel section={teamSection} onSectionChange={setTeamSection} />}
         {activeTab === "emails" && <EmailsPanel />}
+        {activeTab === "enquiries" && <EnquirySettingsPanel />}
         {activeTab === "certificates" && <CertificateSettingsPanel />}
         {activeTab === "payments" && (
           <SettingsLayoutPage title="Payments" description="How families pay their invoices, paying in parts, and the M-Pesa connection that confirms Paybill payments automatically.">

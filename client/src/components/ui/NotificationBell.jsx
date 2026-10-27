@@ -14,6 +14,7 @@ const ICONS = {
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
   payment_reminder: { Icon: FiFileText, color: "#B45309" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
+  enquiries_waiting: { Icon: FiMail, color: "#B45309" },
   share_request: { Icon: FiShare2, color: "#25476a" },
   share_accepted: { Icon: FiShare2, color: "#059669" },
   claim_submitted: { Icon: FiFileText, color: "#B45309" },
@@ -46,6 +47,8 @@ function resolveNotificationPath(n) {
     case "invoice_issued":
     case "payment_reminder":
       return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
+    case "enquiries_waiting":
+      return "/enquiries?status=new";
     case "lead_submitted":
       // The admin Enquiries page — ?lead= scrolls to and highlights the row (see EnquiriesListPage).
       return p.leadId ? `/enquiries?lead=${p.leadId}` : (p.route || "/enquiries");

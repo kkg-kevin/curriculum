@@ -207,7 +207,7 @@ const PaymentNotices = {
     await db(TABLE).where({ id }).update({ status: "rejected", dedupeKey: null, reviewedBy: req.user.id, reviewedAt: new Date(), reviewNote: reason, updatedAt: new Date() });
     const invoice = await BillingModel.findInvoiceById(notice.invoiceId);
     if (invoice?.payerUserId) {
-      await NotificationService._notify(invoice.payerUserId, {
+      await NotificationService.notifyPerson(invoice.payerUserId, {
         type: "payment_notice_rejected",
         title: "We couldn't confirm your payment",
         message: `Your ${PaymentOptions.METHODS[notice.method]?.label || "payment"} of ${formatKes(notice.amount)} for ${invoice.invoiceNumber}${notice.reference ? ` (${notice.reference})` : ""} couldn't be confirmed: ${reason}`,

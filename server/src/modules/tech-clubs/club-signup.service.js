@@ -85,7 +85,9 @@ async function activateMembership(membershipId, ownerAdminId, { amount, currency
         title: "Your account is active",
         message: "Your Tech Club payment has been confirmed. Welcome!",
         payload: { route: "/learner-portal" },
-        dedupeKey: `tech_club_activated:${learner.id}`,
+        // One per membership: a parent with several children gets it once (each child's own login
+        // gets its own copy — a different recipient).
+        dedupeKey: `tech_club_activated:${membership.id}`,
       }).catch(() => {});
     }
   }

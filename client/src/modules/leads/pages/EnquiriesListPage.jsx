@@ -292,7 +292,14 @@ function LeadRow({ lead, highlighted, rowRef }) {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(200px, 1.6fr) minmax(160px, 1fr) auto auto auto", alignItems: "start", gap: 16 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <strong style={{ fontSize: 13, color: "#111827" }}>{lead.name}</strong>
+            <strong style={{ fontSize: 13, color: lead.anonymisedAt ? "#9CA3AF" : "#111827" }}>{lead.name}</strong>
+            {/* Settings → Enquiries housekeeping (server: leads/lead.housekeeping.js). */}
+            {lead.status === "closed" && lead.autoClosedAt && !lead.anonymisedAt && (
+              <span title="Nobody had touched it for a long time — change its status to reopen it" style={{ fontSize: 10.5, fontWeight: 700, padding: "1px 7px", borderRadius: 999, background: "#F3F4F6", color: "#6B7280" }}>Closed automatically</span>
+            )}
+            {lead.anonymisedAt && (
+              <span title="Personal details removed for data protection" style={{ fontSize: 10.5, fontWeight: 700, padding: "1px 7px", borderRadius: 999, background: "#F3F4F6", color: "#6B7280" }}>Details removed</span>
+            )}
             <span style={{ fontSize: 11, color: "#6B7280" }}>· {SOURCE_LABELS[lead.source] || lead.source}</span>
           </div>
           <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
@@ -396,7 +403,11 @@ function LeadRow({ lead, highlighted, rowRef }) {
 }
 
 export default function EnquiriesListPage() {
-  const [status, setStatus] = useState("");
+  // ?status=new — from the daily "enquiries still New" reminder.
+  const [status, setStatus] = useState(() => {
+    const wanted = new URLSearchParams(window.location.search).get("status") || "";
+    return STATUS_TABS.some((t) => t.value === wanted) ? wanted : "";
+  });
   const { data: leads = [], isLoading, isError, error } = useLeadsQuery(status ? { status } : {});
 
   // ?lead=<id> — set when arriving from a "New enquiry" notification. Scroll that row into view

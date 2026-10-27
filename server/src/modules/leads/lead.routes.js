@@ -1,5 +1,7 @@
 const express = require("express");
 const {
+  getEnquirySettings,
+  saveEnquirySettings,
   getAllLeads,
   updateLeadStatus,
   getLeadTimeline,
@@ -19,6 +21,8 @@ const { markLeadPaid } = require("../bootcamp-enrollment/bootcamp-enrollment.con
 const router = express.Router();
 
 router.get("/", getAllLeads);
+// Settings → Enquiries. Registered before "/:id" routes.
+router.route("/settings").get(getEnquirySettings).put(saveEnquirySettings);
 router.patch("/:id/status", updateLeadStatus);
 router.get("/:id/timeline", getLeadTimeline);
 router.post("/:id/reply", replyToLead);
