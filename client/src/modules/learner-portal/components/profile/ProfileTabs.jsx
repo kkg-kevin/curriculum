@@ -2,10 +2,10 @@ import { T } from "./theme";
 
 export const PROFILE_TABS = ["Overview", "Competencies", "Pathway", "Assessments", "Reports"];
 
-export default function ProfileTabs({ active, onChange }) {
+export default function ProfileTabs({ active, onChange, tabs = PROFILE_TABS }) {
   return (
     <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${T.border}`, overflowX: "auto" }}>
-      {PROFILE_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab === active;
         return (
           <button

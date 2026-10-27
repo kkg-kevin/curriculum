@@ -79,7 +79,7 @@ function TextInput({ name, placeholder, type = "text", label, required, hint, au
 
 // A learner is an independent identity, same as a teacher — no school/class field lives here.
 // Enrollment (which hub, which class, admission number, status) is managed separately, per
-// hub, from the learner's own detail page (see the "Learning Hubs" section on LearnerViewPage).
+// hub, from the learner's own detail page (see the "Learning Hubs" section on LearnerPage).
 export default function LearnerForm() {
   const { register, control, watch, formState: { errors } } = useFormContext();
   const age = computeAge(watch("dateOfBirth"));

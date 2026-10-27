@@ -2,7 +2,7 @@ import { T, cardStyle, sectionHeaderStyle } from "./theme";
 import { usePathway, usePathways } from "../../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
 
-// Read-only counterpart to LearnerViewPage.jsx's PathwayCard (admin) — the same pathways (their
+// Read-only counterpart to the staff learner page's PathwayManagerCard — the same pathways (their
 // stage's one, plus any staff added by hand) and placement status, just without the stage
 // selector or add/remove controls, since a learner should never be able to re-place themselves.
 function JourneyRow({ row, courseNameById }) {

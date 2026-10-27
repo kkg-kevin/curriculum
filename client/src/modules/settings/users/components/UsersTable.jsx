@@ -22,7 +22,7 @@ const STATUS = {
 const RECORD_PATH = {
   hub: (id) => `/learning-hubs/${id}/view`,
   educator: (id) => `/teachers/${id}/view`,
-  learner: (id) => `/learners/${id}/view`,
+  learner: (id) => `/learners/${id}`,
 };
 
 const selectStyle = { padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", background: "#fff", color: "#374151" };

@@ -121,6 +121,8 @@ const EMAIL_TYPES = {
   // Hub check-ins (modules/checkins/checkin.notifications.js).
   checkin_assigned: { label: "You're put on a hub check-in", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Hub check-in" }, path: checkinPath },
   checkin_due: { label: "A hub check-in of yours is due — write its report", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Hub check-in" }, path: checkinPath },
+  checkin_task_assigned: { label: "You're given a task from a hub check-in", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Check-in task" }, path: checkinPath },
+  checkin_task_due: { label: "A check-in task of yours is due", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Check-in task" }, path: checkinPath },
   claim_submitted: {
     label: "An educator submits a claim for you to review",
     roles: CLAIM_REVIEWER_ROLES,

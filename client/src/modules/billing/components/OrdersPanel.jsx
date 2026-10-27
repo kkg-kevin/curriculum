@@ -119,7 +119,7 @@ function OrderDetail({ id }) {
           <div>
             <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 800, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Projects for</p>
             <div>
-              {order.learner ? <Link to={`/learners/${order.learner.id}/view`} style={{ color: "#25476a", fontWeight: 700, textDecoration: "none" }}>{order.childName}</Link> : order.childName}
+              {order.learner ? <Link to={`/learners/${order.learner.id}`} style={{ color: "#25476a", fontWeight: 700, textDecoration: "none" }}>{order.childName}</Link> : order.childName}
               {order.learner?.username ? <span style={{ color: "#6B7280" }}> · @{order.learner.username}</span> : null}
             </div>
             <div style={{ color: "#6B7280" }}>{order.status === "awaiting_payment" ? "Given to the child once the order is paid." : "Given to the child — they're in their learner portal."}</div>

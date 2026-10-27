@@ -790,7 +790,7 @@ export default function DashboardPage() {
                       badgeColor={sc.color}
                       badgeBg={sc.bg}
                       badgeBorder={sc.border}
-                      onClick={() => navigate(`/learners/${l.id}/view`)}
+                      onClick={() => navigate(`/learners/${l.id}`)}
                     />
                   );
                 })}

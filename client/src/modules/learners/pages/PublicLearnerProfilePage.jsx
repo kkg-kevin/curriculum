@@ -568,7 +568,7 @@ function HubPanel({ hub }) {
   );
 }
 
-// The scan destination for a learner's "Share Profile" QR code (see LearnerViewPage.jsx's
+// The scan destination for a learner's "Share Profile" QR code (see LearnerPage.jsx's
 // ShareProfileCard) — deliberately reachable with no login. Renders whatever
 // learner.service.js's getPublicProfile chose to expose: identity, the guardian's name, and one
 // section per hub with that hub's teachers, levels, competencies, pathways, courses and attendance. Never

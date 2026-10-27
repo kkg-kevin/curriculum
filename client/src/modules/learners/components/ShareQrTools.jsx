@@ -49,9 +49,8 @@ function printBadge({ dataUrl, name, registrationNumber }) {
   else img.onload = print;
 }
 
-// Saving or printing a Share Profile card's QR code. Shared by the admin/school card
-// (LearnerViewPage) and the learner portal's own (ShareProfileCard), which each keep their own
-// surrounding layout.
+// Saving or printing a Share Profile card's QR code (ShareProfileCard — the learner portal's
+// profile and the staff learner page both use it).
 export default function ShareQrTools({ learner, publicUrl }) {
   const canvasRef = useRef(null);
   const name = `${learner?.firstName || ""} ${learner?.lastName || ""}`.trim() || "Learner";

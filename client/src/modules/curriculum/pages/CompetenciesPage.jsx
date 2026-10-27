@@ -159,7 +159,7 @@ const CSS = `
   }
   .cp-course-meta { font-size:10.5px; font-weight:600; color:#9CA3AF; flex-shrink:0; white-space:nowrap; }
 
-  /* Diagnostic Assessment section (Pathways) — violet accent, matches LearnerViewPage */
+  /* Diagnostic Assessment section (Pathways) — violet accent, matches LearnerPage */
   .cp-diag-section {
     margin-top:10px; padding:11px 12px; border-radius:10px;
     background:#FAF8FF; border:1px solid #E9DFFC;

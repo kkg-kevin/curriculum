@@ -74,6 +74,8 @@ function resolveNotificationPath(n) {
       return p.route || "/teacher-portal/claims";
     case "checkin_assigned":
     case "checkin_due":
+    case "checkin_task_assigned":
+    case "checkin_task_due":
     // Types from before check-ins were simplified (26 Oct 2026), still in people's bells.
     case "checkin_upcoming":
     case "checkin_today":

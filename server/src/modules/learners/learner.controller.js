@@ -190,8 +190,10 @@ const getAllLearners = asyncHandler(async (req, res) => {
     if (!req.ownTeacher || !(await classTaughtByTeacher(classId, req.ownTeacher.id))) {
       return res.json({ success: true, data: [], count: 0 });
     }
-  } else if (req.user.role === "admin") {
-    const ownHubIds = await adminOwnedHubIds(req);
+  }
+  let ownHubIds = null;
+  if (req.user.role === "admin") {
+    ownHubIds = await adminOwnedHubIds(req);
     if (schoolId) {
       // A specific schoolId was requested directly (e.g. a hub's own learner-roster page) —
       // confirm it's actually one of this admin's own hubs rather than trusting the query param,
@@ -221,7 +223,13 @@ const getAllLearners = asyncHandler(async (req, res) => {
     if (req.user.username) filters.ids = [req.ownLearner.id];
     else filters.guardianEmail = req.ownLearner.guardianEmail;
   }
-  const records = await LearnerService.getAllLearners(filters);
+  let records = await LearnerService.getAllLearners(filters);
+  // A learner of this workspace may also be enrolled at another workspace's hub — that one isn't
+  // named here.
+  if (ownHubIds && !schoolId && !classId) {
+    const own = new Set(ownHubIds);
+    records = records.map((r) => ({ ...r, hubIds: (r.hubIds || []).filter((id) => own.has(id)) }));
+  }
   res.json({ success: true, data: records, count: records.length });
 });
 

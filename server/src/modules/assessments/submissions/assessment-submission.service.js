@@ -429,13 +429,13 @@ const AssessmentSubmissionService = {
   },
 
   // This learner's most recent auto-issued diagnostic, if any — drives the "Diagnostic
-  // Assessment" card on LearnerViewPage. Filtered to ageCategoryId specifically, since a
+  // Assessment" card on LearnerPage. Filtered to ageCategoryId specifically, since a
   // learner can now also hold course-progress-triggered standalone issues (see
   // issueOnSessionComplete above) that share the same learnerId-keyed issue shape. Optional
   // curriculumId narrows to the one belonging to that curriculum — a learner enrolled at
   // several hubs can hold a Stage diagnostic from each; the learner-portal's first-login gate
   // needs only the one for the hub it's currently gating (see FirstLoginDiagnosticGate.jsx).
-  // Omitted, this preserves the old unscoped "first one found" behavior for LearnerViewPage's
+  // Omitted, this preserves the old unscoped "first one found" behavior for LearnerPage's
   // admin card, which only ever shows one hub's context anyway.
   async getDiagnosticForLearner(learnerId, curriculumId = null) {
     const standalone = await AssessmentSubmissionService.getStandaloneIssuedAssessments(learnerId);

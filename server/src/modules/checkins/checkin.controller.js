@@ -30,4 +30,10 @@ module.exports = {
   listSessions: asyncHandler(async (req, res) => ok(res, await CheckinService.listSessions(req, parse(V.listSessionsSchema, req.query)))),
   getSession: asyncHandler(async (req, res) => ok(res, await CheckinService.getSession(req, req.params.id))),
   saveReport: asyncHandler(async (req, res) => ok(res, await CheckinService.saveReport(req, req.params.id, parse(V.reportSchema, req.body)))),
+
+  listTasks: asyncHandler(async (req, res) => ok(res, await CheckinService.listTasks(req, parse(V.listTasksSchema, req.query)))),
+  createTask: asyncHandler(async (req, res) => ok(res, await CheckinService.createTask(req, req.params.id, parse(V.taskSchema, req.body)), 201)),
+  updateTask: asyncHandler(async (req, res) => ok(res, await CheckinService.updateTask(req, req.params.id, parse(V.taskSchema, req.body)))),
+  setTaskStatus: asyncHandler(async (req, res) => ok(res, await CheckinService.setTaskStatus(req, req.params.id, parse(V.taskStatusSchema, req.body).status))),
+  deleteTask: asyncHandler(async (req, res) => ok(res, await CheckinService.deleteTask(req, req.params.id))),
 };

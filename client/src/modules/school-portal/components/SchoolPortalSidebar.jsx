@@ -36,6 +36,9 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     { name: "Attendance",  path: "/school-portal/attendance",             end: false, enabled: !!schoolId, icon: FiCheckSquare },
     { name: "Timetable",   path: "/school-portal/timetable",              end: false, enabled: true, icon: FiCalendar },
     { name: "Reports",     path: "/school-portal/reports", end: false, enabled: true, icon: FiBarChart2 },
+    // The hub's own login reads its check-ins' reports (an Account Manager / Training Lead has
+    // "Hub Check-ins" at the top instead).
+    ...(hubLead ? [] : [{ name: "Check-ins", path: "/school-portal/checkins", end: false, enabled: true, icon: FiClipboard }]),
     { name: "Billing",     path: "/school-portal/billing", end: false, enabled: true, icon: FiDollarSign },
     { name: "Profile",     path: "/school-portal/profile", end: false, enabled: true, icon: FiUser },
   ].filter((item) => !hubLead || !["Rooms", "Billing", "Profile"].includes(item.name));

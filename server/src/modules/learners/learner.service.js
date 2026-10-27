@@ -372,12 +372,14 @@ const LearnerService = {
       // compute here, and lets the flat cross-hub card show something more honest than
       // "no ID" for a learner who simply isn't scoped to one hub in this view. This is the
       // genuinely unbounded case (no hub/class to narrow it) — limit/offset matter most here.
+      // hubIds — which hubs, so the Learners page can group learners by hub (a learner at two
+      // hubs is listed under both). The controller trims it to the caller's own hubs.
       const learners = await LearnerModel.findAll({ guardianEmail, ids, limit, offset });
       return Promise.all(
-        learners.map(async (l) => ({
-          ...l,
-          hubCount: (await LearnerHubLinkModel.findByLearnerId(l.id)).length,
-        }))
+        learners.map(async (l) => {
+          const links = await LearnerHubLinkModel.findByLearnerId(l.id);
+          return { ...l, hubCount: links.length, hubIds: links.map((link) => link.hubId) };
+        })
       );
     }
     let links = classId ? await LearnerHubLinkModel.findByClassId(classId) : await LearnerHubLinkModel.findByHubId(schoolId);
@@ -688,7 +690,7 @@ const LearnerService = {
       throw err;
     }
     const links = await LearnerHubLinkModel.findByLearnerId(record.id);
-    // Same "first active enrollment" fallback LearnerViewPage.jsx uses as its "current" context.
+    // Same "first active enrollment" fallback LearnerPage.jsx uses as its "current" context.
     const primaryLink = links.find((l) => l.status === "active") || links[0] || null;
     const issuedRows = links.some((l) => l.classId) ? await AssessmentSubmissionService.getIssuedRowsForLearner(record.id) : [];
     const hubs = await Promise.all(links.map((link) => buildPublicHubSection(record, link, link === primaryLink, issuedRows)));

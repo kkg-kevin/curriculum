@@ -54,7 +54,9 @@ function computeAge(dateOfBirth) {
 // why it read as visually flat next to every other section repeating the same card style.
 // Current Level Summary reads exactly like the Progress Arc card below: the level the learner
 // is in, and what's left to unlock the next (currentLevelName / levelCaption in bandJourney.js).
-export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit }) {
+// No `onEdit`, no pencil (staff previewing the learner's view). `extraMeta` — [{ label, value }]
+// added after the learner's own rows; the staff learner page's record details.
+export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit, extraMeta = [] }) {
   const age = computeAge(learner.dateOfBirth);
 
   return (
@@ -64,7 +66,7 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start", position: "relative" }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
           <Avatar firstName={learner.firstName} lastName={learner.lastName} photo={learner.photo} size={88} borderColor="rgba(255,255,255,0.3)" />
-          <button
+          {onEdit && <button
             type="button"
             onClick={onEdit}
             aria-label="Edit profile"
@@ -76,7 +78,7 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
             }}
           >
             <FiEdit2 size={12} />
-          </button>
+          </button>}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -90,6 +92,9 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
             <HeroMetaRow label="Nationality" value={learner.nationality || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
             <HeroMetaRow label="Languages" value={learner.languages || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
             <HeroMetaRow label="Username" value={learner.username || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
+            {extraMeta.map((m) => (
+              <HeroMetaRow key={m.label} label={m.label} value={m.value || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
+            ))}
           </div>
         </div>
       </div>

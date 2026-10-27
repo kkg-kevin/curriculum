@@ -135,7 +135,7 @@ function ChildRow({ membership, child, classes, actions, pending, canRestore }) 
       </div>
     </div>
     {!placing && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {child.learner && <Link to={`/learners/${child.learnerId}/view`} style={{ ...secondaryButton, textDecoration: "none" }}>Profile</Link>}
+      {child.learner && <Link to={`/learners/${child.learnerId}`} style={{ ...secondaryButton, textDecoration: "none" }}>Profile</Link>}
       {removed
         ? <button type="button" disabled={!canRestore || pending.child} title={canRestore ? "" : "No free places in this package"} onClick={() => actions.restoreChild(membership.id, child.learnerId)} style={secondaryButton}>Add back</button>
         : <>

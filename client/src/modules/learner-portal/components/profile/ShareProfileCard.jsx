@@ -6,9 +6,9 @@ import { usePublicToken, useRegeneratePublicToken } from "../../../learners/hook
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import ShareQrTools from "../../../learners/components/ShareQrTools";
 
-// The learner/guardian-side counterpart to LearnerViewPage.jsx's own ShareProfileCard (admin/
-// school-portal) — same token, same server endpoints, same deliberately narrow public view (see
-// learner.service.js's getPublicProfile). Lets a guardian pull up or reprint their own child's
+// The learner's no-login share link — on their own profile, and on the staff learner page
+// (LearnerPage.jsx, admin/school-portal): same token, same server endpoints, same deliberately
+// narrow public view (see learner.service.js's getPublicProfile). Lets a guardian pull up or reprint their own child's
 // QR without needing a staff member to do it, e.g. to show at pickup or hand to reception.
 // Deliberately compact — QR + link sit side-by-side rather than stacked, so this doesn't dominate
 // the page next to Guardian Profile/Portfolio Snapshot's own much shorter cards.

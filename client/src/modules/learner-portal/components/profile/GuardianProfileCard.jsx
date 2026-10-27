@@ -16,7 +16,7 @@ export default function GuardianProfileCard({ learner, onEdit }) {
           </div>
           <p style={sectionHeaderStyle()}>Guardian Profile</p>
         </div>
-        <button
+        {onEdit && <button
           type="button"
           onClick={onEdit}
           aria-label="Edit guardian profile"
@@ -28,7 +28,7 @@ export default function GuardianProfileCard({ learner, onEdit }) {
           }}
         >
           <FiEdit2 size={12} />
-        </button>
+        </button>}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

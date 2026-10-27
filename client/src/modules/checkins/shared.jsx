@@ -43,6 +43,27 @@ export const REPORT_PARTS = [
   { key: "resolutions", label: "Resolutions", help: "What was agreed to do about them, and by whom." },
 ];
 
+// Where a task from the resolutions stands (server: checkin.rules.js's taskState).
+export const TASK_STATE = {
+  open: { label: "Open", bg: "#EFF6FF", color: "#1D4ED8" },
+  due: { label: "Due today", bg: "#FFFBEB", color: "#B45309" },
+  overdue: { label: "Overdue", bg: "#FEF2F2", color: "#B91C1C" },
+  done: { label: "Done", bg: "#ECFDF5", color: "#047857" },
+};
+
+// The hub's own login in the hub portal (not as its Account Manager / Training Lead): it reads its
+// own check-ins and their reports, and writes nothing.
+export const isHubViewer = (user) => user?.role === "school" && !user?.hubLead;
+
+// A report part as HTML. Parts are rich text since 27 Oct 2026; earlier ones are plain text, whose
+// line breaks become paragraphs here (for showing, and for opening in the editor).
+export function reportHtml(value) {
+  const text = String(value || "");
+  if (!text.trim() || /<\/?[a-z][^>]*>/i.test(text)) return text;
+  const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return text.split(/\n{2,}/).map((block) => `<p>${escape(block).replace(/\n/g, "<br>")}</p>`).join("");
+}
+
 export function Pill({ look, children }) {
   return (
     <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, background: look?.bg || "#F3F4F6", color: look?.color || T.inkMuted, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>
