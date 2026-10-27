@@ -51,7 +51,18 @@ const addLeadNoteSchema = z.object({
   body: z.string().trim().min(1, "Note is required").max(2000),
 });
 
+// Settings → Enquiries (lead.housekeeping.js): the reminder, auto-close and anonymise rules.
+const enquirySettingsSchema = z.object({
+  remindersOn: z.boolean().default(true),
+  remindAfterDays: z.coerce.number().int().min(1, "At least 1 day").max(60).default(2),
+  autoCloseOn: z.boolean().default(true),
+  autoCloseDays: z.coerce.number().int().min(7, "At least 7 days").max(730).default(60),
+  anonymiseOn: z.boolean().default(false),
+  anonymiseMonths: z.coerce.number().int().min(1, "At least 1 month").max(120).default(12),
+});
+
 module.exports = {
+  enquirySettingsSchema,
   createLeadSchema,
   createContactSchema,
   updateLeadStatusSchema,

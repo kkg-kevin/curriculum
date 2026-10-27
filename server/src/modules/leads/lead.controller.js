@@ -7,7 +7,9 @@ const {
   updateLeadStatusSchema,
   replyLeadSchema,
   addLeadNoteSchema,
+  enquirySettingsSchema,
 } = require("./lead.validation");
+const Housekeeping = require("./lead.housekeeping");
 
 // Public — POST /api/public/leads. digifunzi-landing's EnrollForm (and ContactForm, when
 // useLeadsEndpoint is set) both post here. Nothing here creates a login — see lead.service.js.
@@ -80,7 +82,18 @@ const convertHomeLearningLead = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: household });
 });
 
+// Settings → Enquiries — the reminder, auto-close and anonymise rules (lead.housekeeping.js).
+const getEnquirySettings = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await Housekeeping.getSettings() });
+});
+const saveEnquirySettings = asyncHandler(async (req, res) => {
+  const data = enquirySettingsSchema.parse(req.body);
+  res.json({ success: true, data: await Housekeeping.saveSettings(data, req.user?.id) });
+});
+
 module.exports = {
+  getEnquirySettings,
+  saveEnquirySettings,
   submitLead,
   submitContact,
   getAllLeads,

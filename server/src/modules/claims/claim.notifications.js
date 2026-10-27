@@ -38,12 +38,12 @@ async function toReviewers(claim, module, event) {
 
 // The supervisor the claim was sent to — they review in their own portal.
 async function toSupervisor(claim, event) {
-  await NotificationService._notify(claim.supervisorId, { ...event, ownerAdminId: claim.ownerAdminId, payload: { claimId: claim.id, route: `/supervisor-portal?claim=${claim.id}` } });
+  await NotificationService.notifyPerson(claim.supervisorId, { ...event, ownerAdminId: claim.ownerAdminId, payload: { claimId: claim.id, route: `/supervisor-portal?claim=${claim.id}` } });
 }
 
 async function toEducator(claim, event) {
   const payload = { claimId: claim.id, route: `/teacher-portal/claims/${claim.classId}/${claim.courseId}` };
-  await NotificationService._notify(await educatorUserId(claim), { ...event, ownerAdminId: claim.ownerAdminId, payload });
+  await NotificationService.notifyPerson(await educatorUserId(claim), { ...event, ownerAdminId: claim.ownerAdminId, payload });
 }
 
 const guarded = (fn) => async (...args) => {

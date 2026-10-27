@@ -19,7 +19,8 @@ const day = (date) => new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", 
 
 async function send(recipientIds, event, ownerAdminId) {
   const ids = [...new Set(recipientIds.filter(Boolean))];
-  await Promise.all(ids.map((id) => NotificationService._notify(id, { ...event, ownerAdminId, dedupeKey: `${event.dedupeKey}:${id}` }).catch((err) => {
+  // Each named person only (an admin who is an Account Manager isn't "every admin").
+  await Promise.all(ids.map((id) => NotificationService.notifyPerson(id, { ...event, ownerAdminId, dedupeKey: `${event.dedupeKey}:${id}` }).catch((err) => {
     console.error("[checkins] could not send a notification:", err.message);
   })));
 }

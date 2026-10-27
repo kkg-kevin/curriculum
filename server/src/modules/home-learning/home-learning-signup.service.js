@@ -86,7 +86,9 @@ async function activateHousehold(householdId, ownerAdminId, { amount, currency, 
         title: "Your account is active",
         message: "Your Home Learning payment has been confirmed. Welcome!",
         payload: { route: "/learner-portal" },
-        dedupeKey: `home_learning_activated:${learner.id}`,
+        // One per household: a parent with several children gets it once (each child's own login
+        // gets its own copy — a different recipient).
+        dedupeKey: `home_learning_activated:${household.id}`,
       }).catch(() => {});
     }
   }

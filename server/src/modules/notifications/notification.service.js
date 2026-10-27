@@ -28,7 +28,7 @@ const NotificationService = {
   },
 
   async invoiceIssued(invoice) {
-    return NotificationService._notify(invoice.payerUserId, {
+    return NotificationService.notifyPerson(invoice.payerUserId, {
       type: "invoice_issued",
       title: "New invoice issued",
       message: `${invoice.invoiceNumber} is ready. Amount due: ${invoice.currency} ${invoice.amountDue}.`,
@@ -55,6 +55,14 @@ const NotificationService = {
       return sent[0];
     }
     return this._deliver(recipientId, event);
+  },
+
+  // One specific person — a parent, a learner, an educator, a supervisor, a payer — never fanned
+  // out to an organisation's admins the way _notify fans out "the admin". An admin who is also an
+  // educator or a parent (one login, several roles — account-roles.js) is that organisation's
+  // key, so _notify would hand their own notifications to every admin.
+  notifyPerson(userId, event) {
+    return NotificationService._deliver(userId, event);
   },
 
   async _deliver(recipientId, { type, title, message, payload = null, dedupeKey = null, ownerAdminId = null }) {
@@ -116,7 +124,7 @@ const NotificationService = {
       const learnerUser = await UserModel.findByUsername(learner.username);
       if (learnerUser) recipientIds.push(learnerUser.id);
     }
-    await Promise.all(recipientIds.map((id) => NotificationService._notify(id, event)));
+    await Promise.all([...new Set(recipientIds)].map((id) => NotificationService.notifyPerson(id, event)));
   },
 
   // The educator of record for a (class, course) pair — see class-course-teacher-link.model.js's
@@ -130,7 +138,7 @@ const NotificationService = {
     const teacher = await TeacherModel.findById(link.teacherId);
     if (!teacher?.email) return;
     const user = await UserModel.findByEmail(teacher.email);
-    await NotificationService._notify(user?.id, event);
+    await NotificationService.notifyPerson(user?.id, event);
   },
 
   // Fired once a submission reaches "graded" — either instantly (fully auto-gradable, see

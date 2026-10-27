@@ -14,6 +14,7 @@ const HomeLearningPackageModel = require("../home-learning/home-learning-package
 const { priceForPackage } = require("../home-learning/home-learning.pricing");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const env = require("../../config/env");
+const { adminIdsOf } = require("../../shared/utils/organisation");
 const { slugify } = require("../../shared/utils/slugify");
 const { sendLeadAcknowledgement, sendLeadReply } = require("./lead.emails");
 
@@ -56,12 +57,17 @@ const LeadService = {
     return record;
   },
 
-  // Every admin login gets an in-app notification (see NotificationBell) — no email yet, this
-  // just reuses the existing notifications table/UI so a new enquiry is impossible to miss on
-  // next login without needing SMTP credentials set up.
+  // The admins of the workspace the lead belongs to — its hub's, else the website's
+  // (PUBLIC_CONTENT_ADMIN_ID) — each notified once (NotificationBell, and emailed where they
+  // allow it). Only an installation with neither falls back to every admin, still once each.
+  // (Before 27 Oct 2026 every admin was looped over AND each organisation's key fanned out to its
+  // admins, so an organisation's other admins got every lead twice — and other workspaces got it.)
   async _notifyAdmins(lead) {
-    const admins = await UserModel.findAll();
-    const adminIds = admins.filter((u) => u.role === "admin").map((u) => u.id);
+    const hub = lead.hubId ? await LearningHubModel.findById(lead.hubId) : null;
+    const owner = hub?.ownerAdminId || env.PUBLIC_CONTENT_ADMIN_ID || null;
+    const adminIds = owner
+      ? await adminIdsOf(owner)
+      : (await UserModel.findAll()).filter((u) => u.role === "admin").map((u) => u.id);
     const LABEL = {
       enroll: "New enrolment interest",
       contact: "New contact message",
@@ -87,12 +93,14 @@ const LeadService = {
       message = `${lead.name} sent a message via the contact form.`;
     }
     await Promise.all(
-      adminIds.map((recipientId) =>
-        NotificationService._notify(recipientId, {
+      [...new Set(adminIds.length ? adminIds : [owner].filter(Boolean))].map((recipientId) =>
+        NotificationService.notifyPerson(recipientId, {
           type: "lead_submitted",
           title: label,
           message,
           payload: { leadId: lead.id, source: lead.source, route: "/enquiries" },
+          dedupeKey: `lead_submitted:${lead.id}`,
+          ownerAdminId: owner,
         })
       )
     );

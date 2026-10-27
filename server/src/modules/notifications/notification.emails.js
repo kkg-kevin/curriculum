@@ -65,6 +65,14 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "check", eyebrow: "Account" },
     path: () => "/learner-portal",
   },
+  // The daily "N enquiries are still New" reminder (leads/lead.housekeeping.js).
+  enquiries_waiting: {
+    label: "Enquiries are waiting for a reply (daily reminder)",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "envelope", eyebrow: "Enquiries" },
+    path: () => "/enquiries?status=new",
+  },
   lead_submitted: {
     label: "A new enquiry arrives from the website",
     roles: ADMIN_ROLES,

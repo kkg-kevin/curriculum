@@ -1,6 +1,18 @@
 # Deployment Guide — Digifunzi Curriculum — Capable environment
 
-**Status: backend and portal rebuilt (26 Oct 2026, afternoon) — ready to upload, together; take a database backup first (one migration drops the old check-in tables).** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (26 Oct 2026, afternoon)":
+**Status: backend and portal rebuilt (27 Oct 2026) — ready to upload, together; take a database backup first.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (27 Oct 2026)":
+- **One page per learner for staff** — the learner's own profile with every staff action (activate, edit in place, full form, remove, hubs, pathway, history, Preview as learner).
+- **Learners opens on the hubs** (a learner at two hubs under both).
+- **Hub check-ins** — rich-text reports, the hub reads its own, **tasks** from the resolutions with deadlines.
+- **Surveys built freely** (structured and open questions, sections, nothing marked).
+- **A safer learner bulk import** (dates, phones, duplicates, the template row; existing parents keep their password).
+- **Part payments** — payment schedules on invoices, reminders, and pausing a late family until paid (Settings → Payments → Part payments). The website plan choice doesn't apply — Capable has no website; staff split invoices from the invoice page.
+- **No duplicate notification emails** — personal notices reach only that person; "account active" once per family.
+- **Enquiry housekeeping** (Settings → Enquiries) — Capable has no website, so there are no enquiries to tidy; harmless.
+
+Three new migrations, applied on Restart, all additive: `20261027100000_create_checkin_tasks.js`, `20261028090000_create_billing_instalments.js` and `20261028100000_add_enquiry_housekeeping.js`. Check `SHOW TABLES LIKE 'billing_invoice_instalments';` and run Run JS script → `db:migrate` if it's missing. **New cron job, needed: `npm run billing:process` hourly** (reminders and pauses only happen through it). No new environment variable or npm package; backend and portal uploaded together (portal `index-BdOi2ye6.js`). Not yet tried on the hosting — follow "Verify" in those notes on Dev first.
+
+Below it, "This release (26 Oct 2026, afternoon)":
 - **Parent portal** at `/parent` — My family (every child at a glance, what needs the parent), each child's profile view-only from the sidebar, the child's login (username, new password), family timetable, payments for all the children, My account. Parents can't do the child's work.
 - **Setting a learner's password never changes their username.**
 - **Hub check-ins, simplified** — Account Manager and Training Lead named on the hub; a schedule per hub; due → pop-up → report (Highs, Lows, Resolutions). Old reports carried over.

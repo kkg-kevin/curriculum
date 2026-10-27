@@ -15,4 +15,7 @@ export const leadApi = {
   // bootcamp-enrollment.service.js's markLeadPaid).
   markPaid: (id, data) => api.post(`${BASE}/${id}/mark-paid`, data).then((r) => r.data.data),
   convertHomeLearning: (id) => api.post(`${BASE}/${id}/home-learning-household`).then((r) => r.data.data),
+  // Settings → Enquiries (reminder, auto-close, removing old personal details).
+  getSettings: () => api.get(`${BASE}/settings`).then((r) => r.data.data),
+  saveSettings: (data) => api.put(`${BASE}/settings`, data).then((r) => r.data.data),
 };
