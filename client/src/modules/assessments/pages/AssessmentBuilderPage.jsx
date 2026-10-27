@@ -22,9 +22,9 @@ import RichTextEditor from "../components/RichTextEditor";
 import RichContent, { stripHtml, isEmptyHtml } from "../components/RichContent";
 import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField";
 import {
-  STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_LABELS, ITEM_GROUP_COLORS,
+  STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE, CAN_DO_LEVELS,
+  BUILDER_REGISTRY, kindLabel, groupLabel, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE, CAN_DO_LEVELS,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation", survey: "Survey" };
@@ -738,15 +738,17 @@ function entryLabel(entry) {
 
 function ItemPalette({ type, structureType, onAdd }) {
   const registry = BUILDER_REGISTRY[type] || {};
-  // A type that narrows its groups to a few kinds (a project's or survey's Structured Items are
-  // just the can-do check) always shows them, whatever the structure type.
-  const groups = registry.onlyKinds
-    ? (registry.itemGroups || [])
+  // The Structure setting picks the groups: structured questions (a survey's own "survey" group
+  // counts as structured), open/unstructured ones and uploads, or both. A project's only items
+  // are can-do checks, so it always shows them, whatever the structure type.
+  const all = registry.itemGroups || [];
+  const groups = registry.canDoOnly
+    ? all
     : structureType === "structured"
-      ? (registry.itemGroups || []).filter((g) => g === "structured")
+      ? all.filter((g) => g === "structured" || g === "survey")
       : structureType === "unstructured"
-        ? (registry.itemGroups || []).filter((g) => g === "unstructured" || g === "submission")
-        : (registry.itemGroups || []);
+        ? all.filter((g) => g === "unstructured" || g === "submission")
+        : all;
   const kindsOf = (group) => registry.onlyKinds?.[group] || ITEM_GROUPS[group];
 
   // Groups always start collapsed on a fresh create/edit visit — opt-in (not opt-out) so any
@@ -767,7 +769,7 @@ function ItemPalette({ type, structureType, onAdd }) {
         return (
           <div key={group} className="tb-palette-group">
             <button type="button" className="tb-palette-group-toggle" onClick={() => toggle(group)}>
-              <span className="tb-palette-group-label" style={{ color: ITEM_GROUP_COLORS[group], margin: 0 }}>{ITEM_GROUP_LABELS[group]}</span>
+              <span className="tb-palette-group-label" style={{ color: ITEM_GROUP_COLORS[group], margin: 0 }}>{groupLabel(type, group)}</span>
               <svg className={`tb-palette-chevron${isOpen ? " open" : ""}`} width="11" height="11" viewBox="0 0 24 24" fill="none">
                 <path d="M6 9l6 6 6-6" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -775,7 +777,7 @@ function ItemPalette({ type, structureType, onAdd }) {
             {isOpen && kindsOf(group).map((kind) => (
               <button key={kind} type="button" className="tb-palette-btn" onClick={() => onAdd(kind)}>
                 <span className="tb-palette-dot" style={{ backgroundColor: ITEM_GROUP_COLORS[group] }} />
-                {ITEM_KIND_LABELS[kind]}
+                {kindLabel(type, kind)}
               </button>
             ))}
           </div>
@@ -871,7 +873,7 @@ function StructureCanvas({ type, sections, entries, focusedSectionId, selectedId
         <div className="tb-entry-meta">
           <span className="tb-entry-num">{num}.</span>
           <span className="tb-entry-badge" style={{ color: badgeColor, backgroundColor: `${badgeColor}15`, border: `1px solid ${badgeColor}40` }}>
-            {ITEM_KIND_LABELS[entry.kind]}
+            {kindLabel(type, entry.kind)}
           </span>
           {type !== "survey" && <span className="tb-entry-points">{entryMarks(entry)} pt{entryMarks(entry) !== 1 ? "s" : ""}</span>}
           <div className="tb-entry-actions">
@@ -911,7 +913,8 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
 // the learner's submitted response against this same string. Since correctness is tracked by
 // text rather than by a stable id, editing/removing an option that's marked correct keeps
 // `correctAnswer` in sync so the link doesn't silently break.
-function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCorrectAnswerChange }) {
+// `scored` false (a survey): just the choices — no correct answer to mark.
+function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCorrectAnswerChange, scored = true }) {
   const correctSet = kind === "mcqMultiple" ? (correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
   const isCorrect = (v) => (kind === "mcqSingle" ? v !== "" && v === correctAnswer : correctSet.includes(v));
 
@@ -939,22 +942,28 @@ function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCor
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       {options.map((v, i) => (
         <div key={i} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input
-            type={kind === "mcqSingle" ? "radio" : "checkbox"}
-            name={`mcq-correct-${kind}`}
-            checked={isCorrect(v)}
-            disabled={!v.trim()}
-            onChange={() => toggleCorrect(v)}
-            title="Mark as correct answer"
-            style={{ flexShrink: 0, cursor: v.trim() ? "pointer" : "not-allowed" }}
-          />
+          {scored ? (
+            <input
+              type={kind === "mcqSingle" ? "radio" : "checkbox"}
+              name={`mcq-correct-${kind}`}
+              checked={isCorrect(v)}
+              disabled={!v.trim()}
+              onChange={() => toggleCorrect(v)}
+              title="Mark as correct answer"
+              style={{ flexShrink: 0, cursor: v.trim() ? "pointer" : "not-allowed" }}
+            />
+          ) : (
+            <input type={kind === "mcqSingle" ? "radio" : "checkbox"} disabled aria-hidden="true" tabIndex={-1} style={{ flexShrink: 0 }} />
+          )}
           <input className="tb-input" placeholder={`Option ${i + 1}`} value={v} onChange={(e) => set(i, e.target.value)} />
           {options.length > 2 && <button type="button" className="tb-icon-btn danger" onClick={() => remove(i)}><FiX size={13} /></button>}
         </div>
       ))}
       <button type="button" className="tb-add-item-btn" onClick={add}>+ Add</button>
       <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
-        {kind === "mcqSingle" ? "Select the radio next to the correct option." : "Check every correct option."}
+        {!scored
+          ? (kind === "mcqSingle" ? "The learner picks one. There's no right answer in a survey." : "The learner ticks all that apply. There's no right answer in a survey.")
+          : kind === "mcqSingle" ? "Select the radio next to the correct option." : "Check every correct option."}
       </p>
     </div>
   );
@@ -1004,6 +1013,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
             correctAnswer={entry.correctAnswer}
             onOptionsChange={(v) => set("options", v)}
             onCorrectAnswerChange={(v) => set("correctAnswer", v)}
+            scored={type !== "survey"}
           />
         </div>
       )}
@@ -1052,7 +1062,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         </div>
       )}
 
-      {entry.kind === "shortAnswer" && (
+      {entry.kind === "shortAnswer" && type !== "survey" && (
         <div>
           <Label>Model Answer (optional)</Label>
           <input className="tb-input" value={entry.correctAnswer} onChange={(e) => set("correctAnswer", e.target.value)} />
@@ -1063,7 +1073,11 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
         <div>
           <Label>Scale</Label>
           <ListEditor values={entry.ratingScale} onChange={(v) => set("ratingScale", v)} placeholder="Point" minItems={2} />
-          <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>The learner picks one point on this scale — there's no right or wrong answer, so it's reviewed manually rather than auto-graded.</p>
+          <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#9CA3AF" }}>
+            {type === "survey"
+              ? "Word the points however you like — e.g. Never … Always, or 1 to 5. The learner picks one."
+              : "The learner picks one point on this scale — there's no right or wrong answer, so it's reviewed manually rather than auto-graded."}
+          </p>
         </div>
       )}
 
@@ -1512,7 +1526,7 @@ function PreviewModal({ form, entries, onClose }) {
               <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "#25476a" }}>{section.name}</p>
               {entries.filter((e) => e.sectionId === section.id).map((entry) => (
                 <div key={entry.id} style={{ padding: "8px 10px", fontSize: "12.5px", color: "#374151", background: "#F9FAFB", borderRadius: "8px", marginBottom: "5px" }}>
-                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
+                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {kindLabel(form.type, entry.kind)}</span>
                 </div>
               ))}
             </div>
@@ -1522,7 +1536,7 @@ function PreviewModal({ form, entries, onClose }) {
               <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "#9CA3AF" }}>Unsectioned</p>
               {entries.filter((e) => !e.sectionId).map((entry) => (
                 <div key={entry.id} style={{ padding: "8px 10px", fontSize: "12.5px", color: "#374151", background: "#F9FAFB", borderRadius: "8px", marginBottom: "5px" }}>
-                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {ITEM_KIND_LABELS[entry.kind]}</span>
+                  {stripHtml(entryLabel(entry)) || <em style={{ color: "#D1D5DB" }}>Untitled item</em>} <span style={{ color: "#9CA3AF" }}>· {kindLabel(form.type, entry.kind)}</span>
                 </div>
               ))}
             </div>

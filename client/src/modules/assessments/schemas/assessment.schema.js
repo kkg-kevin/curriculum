@@ -10,9 +10,13 @@ export const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse",
 export const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
 export const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
 export const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
-// A survey assessment's own palette group — just the self-rating "survey" item kind, scoped
-// down so a survey's builder offers nothing but flat rating questions.
-export const SURVEY_ITEM_KINDS = ["survey"];
+// A survey's own questions (27 Oct 2026: surveys are built freely, like a form) — mirrors the
+// server's builder.constants.js. Structured: a rating scale (its points worded per question),
+// single choice, multiple choice (tick all that apply), short text and the can-do check. Open
+// (unstructured): open-ended, long text and reflection. Nothing in a survey is marked, so a choice
+// question has no correct answer.
+export const SURVEY_ITEM_KINDS = ["survey", "mcqSingle", "mcqMultiple", "shortAnswer", "canDo"];
+export const SURVEY_OPEN_KINDS = ["openEnded", "longAnswer", "reflection"];
 // A "can-do" self-assessment (one of the structured items): the learner reads a statement and
 // says how well they can do it. Marked automatically from the level picked — offered in every
 // assessment type (in a Survey it carries no marks, like everything else there). Mirrors the
@@ -77,11 +81,28 @@ export const BUILDER_REGISTRY = {
   // A project's work is its deliverables, milestones and rubric; its only questions are can-do checks.
   project:     { label: "Project", itemGroups: ["structured"], onlyKinds: { structured: ["canDo"] }, canDoOnly: true, supportsDeliverables: true, supportsMilestones: true, supportsRubric: true, supportsInventory: true, supportsQuestionRubric: true },
   observation: { label: "Teacher Observation", itemGroups: ["structured", "unstructured", "observation"], supportsSections: true, supportsQuestionRubric: true },
-  // Ungraded self-reflection — a learner rates their own understanding of a concept on a scale.
-  // Flat list of questions (no sections), never scored (see grading.utils.js), but its
-  // questions can still be tagged to competency indicators like any other assessment type.
-  survey:      { label: "Survey", itemGroups: ["survey", "structured"], onlyKinds: { structured: ["canDo"] }, supportsSections: false },
+  // Ungraded — the author's own questions, structured and/or open (the Structure setting picks
+  // which the palette offers), in sections if they like. Never scored (see grading.utils.js), but
+  // its questions can still be tagged to competency indicators like any other assessment type.
+  // `groupLabels` / `kindLabels` word the palette for a survey.
+  survey:      {
+    label: "Survey", itemGroups: ["survey", "unstructured"], onlyKinds: { unstructured: SURVEY_OPEN_KINDS }, supportsSections: true,
+    groupLabels: { survey: "Structured Questions", unstructured: "Open Questions" },
+    kindLabels: {
+      survey: "Rating Scale", mcqSingle: "Single Choice", mcqMultiple: "Multiple Choice (tick all that apply)", shortAnswer: "Short Text",
+      canDo: "Can-do Check (I can…)", openEnded: "Open-ended Question", longAnswer: "Long Text", reflection: "Reflection",
+    },
+  },
 };
+
+// What a question type / palette group is called in this assessment type (a survey words some
+// differently — "Single Choice" rather than "Multiple Choice (Single)").
+export function kindLabel(type, kind) {
+  return BUILDER_REGISTRY[type]?.kindLabels?.[kind] || ITEM_KIND_LABELS[kind] || kind;
+}
+export function groupLabel(type, group) {
+  return BUILDER_REGISTRY[type]?.groupLabels?.[group] || ITEM_GROUP_LABELS[group] || group;
+}
 
 // Legacy items authored before the Builder existed used `questionType` with a smaller kind set.
 // Normalize them so the Builder can still open/edit older assessments.
