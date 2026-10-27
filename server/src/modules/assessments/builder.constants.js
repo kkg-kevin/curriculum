@@ -7,10 +7,12 @@ const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "match
 const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
 const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
 const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
-// A survey assessment's own palette group — just the self-rating "survey" item kind (already
-// usable as one structured-item kind among many inside a quiz/exam), scoped down to be the ONLY
-// kind a survey's builder offers, since a survey is nothing but a flat list of rating questions.
-const SURVEY_ITEM_KINDS = ["survey"];
+// A survey's own questions (27 Oct 2026: surveys are built freely, like a form). Structured — a
+// rating scale (its points worded per question), single choice, multiple choice (tick all that
+// apply), short text, and the can-do check; open (unstructured) — open-ended, long text and
+// reflection. Nothing in a survey is marked, so a choice question has no correct answer.
+const SURVEY_ITEM_KINDS = ["survey", "mcqSingle", "mcqMultiple", "shortAnswer", "canDo"];
+const SURVEY_OPEN_KINDS = ["openEnded", "longAnswer", "reflection"];
 // "canDo" (a structured item): the learner reads a statement ("I can write a loop that repeats
 // 5 times") and says how well they can do it. Unlike a Survey (Scale) question it is marked —
 // automatically, from the level picked (see grading.utils.js). Offered in every assessment type.
@@ -37,10 +39,9 @@ const BUILDER_REGISTRY = {
   assignment:  { itemGroups: ["unstructured", "submission", "structured"], supportsSections: true, supportsTasks: true },
   project:     { itemGroups: ["structured"], onlyKinds: { structured: ["canDo"] }, supportsDeliverables: true, supportsMilestones: true, supportsInventory: true },
   observation: { itemGroups: ["structured", "unstructured", "observation"], supportsSections: true },
-  // Ungraded self-reflection — a flat list of "rate your understanding" questions, no sections.
-  // See grading.utils.js's requiresManualGrading/computeMaxScore for why it's never scored; a
-  // can-do check in a survey shows its levels but carries no marks either.
-  survey:      { itemGroups: ["survey", "structured"], onlyKinds: { structured: ["canDo"] }, supportsSections: false },
+  // Ungraded — the author's own questions, structured and/or open, in sections if they like.
+  // See grading.utils.js's requiresManualGrading/computeMaxScore for why it's never scored.
+  survey:      { itemGroups: ["survey", "unstructured"], onlyKinds: { unstructured: SURVEY_OPEN_KINDS }, supportsSections: true },
 };
 
 module.exports = {
@@ -50,6 +51,7 @@ module.exports = {
   SUBMISSION_ITEM_KINDS,
   OBSERVATION_ITEM_KINDS,
   SURVEY_ITEM_KINDS,
+  SURVEY_OPEN_KINDS,
   CAN_DO_LEVELS,
   ITEM_KINDS,
   TASK_TYPES,

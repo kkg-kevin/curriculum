@@ -92,8 +92,20 @@ function MilestonesCard({ milestones, progress }) {
   );
 }
 
-function FeedbackRow({ index, item, response, autoResult, feedback }) {
+function FeedbackRow({ index, item, response, autoResult, feedback, survey = false }) {
   if (item.kind === "canDo") return <CanDoFeedbackRow index={index} item={item} response={response} autoResult={autoResult} />;
+  // A survey isn't marked: just what they answered.
+  if (survey) {
+    return (
+      <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+          <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
+        </div>
+        <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted, whiteSpace: "pre-wrap" }}>Your answer: {formatResponse(response)}</p>
+      </div>
+    );
+  }
   const isAuto = AUTO_GRADABLE_KINDS.includes(item.kind);
   const marks = isAuto ? (autoResult?.marksAwarded ?? 0) : (feedback?.marks ?? 0);
   const max = isAuto ? (autoResult?.maxMarks ?? entryMarks(item)) : entryMarks(item);
@@ -447,6 +459,7 @@ export default function AssessmentDetailPage() {
                   response={answersByItem.get(item.id)}
                   autoResult={autoByItem.get(item.id)}
                   feedback={feedbackByKey.get(item.id)}
+                  survey={row?.assessment?.type === "survey"}
                 />
               ))}
             </div>

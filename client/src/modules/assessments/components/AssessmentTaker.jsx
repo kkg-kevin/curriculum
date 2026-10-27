@@ -328,12 +328,32 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
     );
   }
 
+  // A survey built in sections is answered section by section, in the builder's order, each
+  // under its heading (other types keep their single list).
+  const sections = assessment.type === "survey" ? [...(assessment.sections || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
+  const known = new Set(sections.map((s) => s.id));
+  const groups = sections.length
+    ? [
+        ...sections.map((s) => ({ id: s.id, name: s.name, items: items.filter((it) => it.sectionId === s.id) })),
+        { id: "none", name: null, items: items.filter((it) => !it.sectionId || !known.has(it.sectionId)) },
+      ].filter((g) => g.items.length)
+    : [{ id: "all", name: null, items }];
+  let n = 0;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {items.map((item, i) => (
-        <QuestionShell key={item.id} index={i} item={item}>
-          <ItemField item={item} value={answers.get(item.id)} onChange={(v) => setResponse(item.id, v)} />
-        </QuestionShell>
+      {groups.map((g) => (
+        <div key={g.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {g.name && <h3 style={{ margin: "8px 0 0", fontSize: 15, fontWeight: 800, color: T.accent }}>{g.name}</h3>}
+          {g.items.map((item) => {
+            const i = n++;
+            return (
+              <QuestionShell key={item.id} index={i} item={item}>
+                <ItemField item={item} value={answers.get(item.id)} onChange={(v) => setResponse(item.id, v)} />
+              </QuestionShell>
+            );
+          })}
+        </div>
       ))}
       {deliverables.map((d, i) => (
         <DeliverableShell key={d.id} index={items.length + i} deliverable={d}>

@@ -9,6 +9,8 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const UsageService = require("../usage/usage.service");
+const UserModel = require("../auth/user.model");
+const { cleanImportRow, sameLearner } = require("./learner.import");
 
 // A learner has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -111,6 +113,12 @@ const createLearner = asyncHandler(async (req, res) => {
 // mismatched/forged classId still fails safely per-row via enrollInHub's own
 // class-belongs-to-hub check, it just never falls back to "first active class" the way a single
 // manual enrollment does.
+//
+// Each row is tidied first (learner.import.js: phone, date of birth, gender; the template's
+// example row refused). A learner already on record — at this hub, or created by this workspace
+// — or one earlier in the same file isn't added again. A guardian email that already has a login
+// keeps its own password: the shared password only ever sets up NEW parent logins; an existing
+// login of another kind (an educator, an admin) takes the parent role instead (account-roles.js).
 const bulkImportLearners = asyncHandler(async (req, res) => {
   const { hubId: bodyHubId, classId, defaultPassword, learners } = bulkImportLearnersSchema.parse(req.body);
   let hubId = bodyHubId || undefined;
@@ -119,24 +127,45 @@ const bulkImportLearners = asyncHandler(async (req, res) => {
     assertOwn((await adminOwnedHubIds(req)).includes(hubId));
   }
 
+  // Who's already on record here, to catch the same child imported twice.
+  const knownIds = new Set(hubId ? (await LearnerHubLinkModel.findByHubId(hubId)).map((l) => l.learnerId) : []);
+  if (req.user.role === "admin") (await LearnerModel.findIdsCreatedByAdmin(req.ownerAdminId)).forEach((id) => knownIds.add(id));
+  const known = knownIds.size ? await LearnerModel.findAll({ ids: [...knownIds] }) : [];
+  const seenInFile = [];
+
   const results = [];
   for (let i = 0; i < learners.length; i++) {
     const raw = learners[i];
     const name = `${raw.firstName || ""} ${raw.lastName || ""}`.trim() || `Row ${i + 1}`;
     try {
+      const cleaned = cleanImportRow(raw);
+      if (cleaned.errors.length) throw new Error(cleaned.errors.join("; "));
       // Parsed per-row, inside the try — a malformed row (bad gender, missing guardian phone,
       // etc.) throws here and is caught as this row's own failure, same as any other error
       // below, instead of ever reaching bulkImportLearnersSchema and rejecting the whole batch.
-      const row = bulkImportRowSchema.parse(raw);
-      if (defaultPassword && row.guardianEmail) {
-        await AuthService.setOrCreatePassword({ name: row.guardianName, email: row.guardianEmail, password: defaultPassword, role: "learner" });
+      const row = bulkImportRowSchema.parse(cleaned.row);
+      const existing = known.find((l) => sameLearner(row, l));
+      if (existing) throw new Error(`Already on record as ${existing.firstName} ${existing.lastName}${existing.registrationNumber ? ` (${existing.registrationNumber})` : ""} — not added again`);
+      if (seenInFile.some((r) => sameLearner(row, r))) throw new Error("The same learner is on an earlier row of this file — not added twice");
+      seenInFile.push(row);
+
+      let parentLogin = null;
+      if (row.guardianEmail) {
+        const login = await UserModel.findByEmail(row.guardianEmail);
+        if (!login && defaultPassword) {
+          await AuthService.setOrCreatePassword({ name: row.guardianName, email: row.guardianEmail, password: defaultPassword, role: "learner" });
+          parentLogin = "created";
+        } else if (login) {
+          // Never reset: a parent (or an educator/admin who is also a parent) keeps their password.
+          parentLogin = (await AuthService.linkExistingLogin(row.guardianEmail, "learner")) ? "linked" : "kept";
+        }
       }
       const record = await LearnerService.createLearner(req.user.role === "admin" ? { ...row, createdByAdminId: req.ownerAdminId } : row);
       if (defaultPassword && row.username) {
         await AuthService.setOrCreatePasswordByUsername({ name, username: record.username, password: defaultPassword, role: "learner" });
       }
       await LearnerService.enrollInHub(record.id, { hubId, classId, status: "active" });
-      results.push({ row: i, name, success: true, learnerId: record.id });
+      results.push({ row: i, name, success: true, learnerId: record.id, parentLogin });
     } catch (err) {
       const error = Array.isArray(err.issues) ? err.issues.map((issue) => issue.message).join("; ") : err.message;
       results.push({ row: i, name, success: false, error });

@@ -65,6 +65,49 @@ function AutoGradedRow({ index, item, response, autoResult }) {
   );
 }
 
+// One answer in a survey, as given — nothing to mark.
+function ResponseRow({ index, item, response }) {
+  return (
+    <div style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
+      </div>
+      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.ink, whiteSpace: "pre-wrap" }}>{formatResponse(response)}</p>
+    </div>
+  );
+}
+
+// A survey submission: every answer, under its section — a survey is never marked
+// (grading.utils.js), so there's nothing to grade or save.
+function SurveyResponses({ assessment, items, answersByItem }) {
+  const sections = [...(assessment.sections || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const known = new Set(sections.map((s) => s.id));
+  const groups = [
+    ...sections.map((s) => ({ id: s.id, name: s.name, items: items.filter((i) => i.sectionId === s.id) })),
+    { id: "none", name: sections.length ? "Other questions" : null, items: items.filter((i) => !i.sectionId || !known.has(i.sectionId)) },
+  ].filter((g) => g.items.length);
+  let n = 0;
+  const row = (item) => {
+    const index = n++;
+    return item.kind === "canDo"
+      ? <CanDoRow key={item.id} index={index} item={item} response={answersByItem.get(item.id)} autoResult={null} />
+      : <ResponseRow key={item.id} index={index} item={item} response={answersByItem.get(item.id)} />;
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Responses · a survey isn't marked</p>
+      {groups.map((g) => (
+        <div key={g.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {g.name && <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: T.accent }}>{g.name}</p>}
+          {g.items.map(row)}
+        </div>
+      ))}
+      {items.length === 0 && <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>This survey has no questions.</p>}
+    </div>
+  );
+}
+
 // A question's rubric, shown as a checklist during grading — checking a criterion adds its
 // points to the marks awarded. Replaces the flat number input entirely for entries authored
 // with scoringCriteria (see ScoringCriteriaEditor in AssessmentBuilderPage.jsx); the checked
@@ -298,6 +341,8 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     return map;
   });
   const [overallFeedback, setOverallFeedback] = useState(submission.overallFeedback || "");
+
+  if (assessment.type === "survey") return <SurveyResponses assessment={assessment} items={items} answersByItem={answersByItem} />;
 
   const setFeedback = (itemId, feedback) => {
     const next = new Map(itemFeedback);
