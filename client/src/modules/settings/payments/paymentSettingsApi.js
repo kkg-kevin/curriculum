@@ -48,8 +48,8 @@ export function useTestPaymentKeys() {
 
 const OPTIONS_KEY = ["payment-settings", "options"];
 
-export function usePaymentOptions() {
-  return useQuery({ queryKey: OPTIONS_KEY, queryFn: paymentSettingsApi.getOptions });
+export function usePaymentOptions({ enabled = true } = {}) {
+  return useQuery({ queryKey: OPTIONS_KEY, queryFn: paymentSettingsApi.getOptions, enabled });
 }
 
 export function useSavePaymentOptions() {

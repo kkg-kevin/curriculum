@@ -39,6 +39,24 @@ const DEFAULTS = {
   // workspace's in-person hubs, and/or delivered for a flat fee.
   pickup: { enabled: true, note: "" },
   delivery: { enabled: false, fee: 0, note: "" },
+  // Part payments (Settings → Payments → "Part payments"; billing.instalments.js). Any invoice can
+  // be paid in parts, and any payment switches a website sign-up's accounts on unless
+  // `minimumPercent` asks for more. `plans` are what a family can choose when paying a sign-up
+  // online (for the invoice types in `planTypes`); staff can set any schedule on any invoice.
+  // When a part is overdue: reminders, and after `graceDays` the family's learner accounts pause
+  // (`pauseAccess`) until it's paid. Hubs are reminded, never paused.
+  partPayments: {
+    enabled: true,
+    minimumPercent: 0,
+    plans: [
+      { key: "two_payments", label: "Two payments, a month apart", count: 2, intervalMonths: 1, depositPercent: 50 },
+      { key: "three_monthly", label: "Three monthly payments", count: 3, intervalMonths: 1, depositPercent: null },
+    ],
+    planTypes: ["home_learning", "tech_club", "bootcamp"],
+    remindDaysBefore: 3,
+    graceDays: 7,
+    pauseAccess: true,
+  },
 };
 
 // Saved options over the defaults, field by field, so a method added later starts from its default.
@@ -52,9 +70,15 @@ async function forOwner(ownerAdminId) {
   return { options: withDefaults(row?.options), updatedAt: row?.updatedAt || null };
 }
 
+// A workspace's part-payment rules (the defaults above, with what it saved).
+async function partPaymentsFor(ownerAdminId) {
+  return (await forOwner(ownerAdminId)).options.partPayments;
+}
+
 const PaymentOptions = {
   METHODS,
   forOwner,
+  partPaymentsFor,
 
   // Settings → Payments: what's saved, and whether this workspace's M-Pesa (Daraja) is live, which
   // decides where the Paybill number comes from.
@@ -66,7 +90,11 @@ const PaymentOptions = {
 
   async save(req, options) {
     const existing = await db(TABLE).where({ ownerAdminId: req.ownerAdminId }).first();
-    const patch = { options: toJson(withDefaults(options)), updatedBy: req.user.id, updatedAt: new Date() };
+    // A section the save leaves out (an older screen that doesn't know "Part payments") keeps
+    // what was saved before.
+    const kept = withDefaults(existing?.options);
+    const merged = Object.fromEntries(Object.keys(DEFAULTS).map((key) => [key, options?.[key] ?? kept[key]]));
+    const patch = { options: toJson(withDefaults(merged)), updatedBy: req.user.id, updatedAt: new Date() };
     if (existing) await db(TABLE).where({ id: existing.id }).update(patch);
     else await db(TABLE).insert({ ...patch, id: crypto.randomUUID(), ownerAdminId: req.ownerAdminId, createdAt: new Date() });
     return PaymentOptions.get(req);

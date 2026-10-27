@@ -1,4 +1,6 @@
 const asyncHandler = require("express-async-handler");
+const { z } = require("zod");
+const PaymentLinks = require("./payment-links");
 const PaymentNotices = require("./payment-notices.service");
 const PaymentOptions = require("./payment-options");
 const {
@@ -13,6 +15,17 @@ function parse(schema, input) {
 }
 
 // ---- Website: the Payment step (payment link) ----
+
+// A family choosing a payment plan for the invoice behind a payment link (or `planKey: null` for
+// the whole amount at once); answers with the link's page again.
+const choosePlanSchema = z.object({ planKey: z.string().trim().min(1).max(40).nullable().optional().default(null) });
+const choosePlanForLink = asyncHandler(async (req, res) => {
+  const { planKey } = parse(choosePlanSchema, req.body);
+  const link = await PaymentLinks.resolve(req.params.token);
+  await require("../billing/billing.service").choosePlanForFamily(link.invoiceId, planKey);
+  PaymentLinks.touch(link.id);
+  res.json({ success: true, data: await require("./mpesa/mpesa.service").linkSummary(req.params.token) });
+});
 
 const submitForLink = asyncHandler(async (req, res) => {
   const data = parse(submitNoticeSchema, req.body);
@@ -47,4 +60,4 @@ const saveOptions = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await PaymentOptions.save(req, data) });
 });
 
-module.exports = { submitForLink, list, confirm, reject, getOptions, saveOptions };
+module.exports = { choosePlanForLink, submitForLink, list, confirm, reject, getOptions, saveOptions };

@@ -11,16 +11,19 @@ import { buttonStyle, inputStyle, formatMoney } from "./shared";
 //   start({ phone, amount }) → the prompt (from billingApi.mpesaPay / mpesaPayPending)
 //   onPaid()                 → called once the money has arrived
 //   requestMode              → staff sending the prompt to someone else's phone (different copy)
+//   suggestedAmount          → what the amount starts at (e.g. the next part of a payment plan);
+//                              the payer can change it, up to what's due
 
 const POLL_MS = 3000;
 const GIVE_UP_MS = 150 * 1000;
 
 const wholeShillings = (amount) => Math.max(0, Math.ceil(Number(amount || 0) - 1e-9));
 
-export default function MpesaPayDialog({ open, onClose, amountDue, currency = "KES", defaultPhone = "", start, onPaid, requestMode = false, title }) {
+export default function MpesaPayDialog({ open, onClose, amountDue, currency = "KES", defaultPhone = "", start, onPaid, requestMode = false, title, suggestedAmount = null }) {
   const max = wholeShillings(amountDue);
+  const initial = suggestedAmount ? Math.min(max, wholeShillings(suggestedAmount)) : max;
   const [phone, setPhone] = useState(defaultPhone || "");
-  const [amount, setAmount] = useState(String(max || ""));
+  const [amount, setAmount] = useState(String(initial || ""));
   const [stage, setStage] = useState("form"); // form | sending | waiting | done
   const [request, setRequest] = useState(null);
   const [error, setError] = useState("");
@@ -30,11 +33,11 @@ export default function MpesaPayDialog({ open, onClose, amountDue, currency = "K
   useEffect(() => {
     if (!open) return;
     setPhone(defaultPhone || "");
-    setAmount(String(max || ""));
+    setAmount(String(initial || ""));
     setStage("form");
     setRequest(null);
     setError("");
-  }, [open, defaultPhone, max]);
+  }, [open, defaultPhone, initial]);
 
   // Follow the prompt until it's answered (or we stop waiting).
   useEffect(() => {

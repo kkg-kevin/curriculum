@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const BillingService = require("./billing.service");
-const { createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema } = require("./billing.validation");
+const { createInvoiceSchema, updateInvoiceSchema, recordPaymentSchema, setInstalmentsSchema, bulkInvoicePreviewSchema, bulkInvoiceCreateSchema, statementQuerySchema } = require("./billing.validation");
 
 const listBatches = asyncHandler(async (req, res) => {
   const data = await BillingService.listBatches(req);
@@ -53,6 +53,12 @@ const recordPayment = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.recordPayment(req.params.id, data, req) });
 });
 
+// An invoice's payment schedule — a plan, parts typed by hand, or none.
+const setInstalments = asyncHandler(async (req, res) => {
+  const data = setInstalmentsSchema.parse(req.body);
+  res.json({ success: true, data: await BillingService.setInstalments(req.params.id, data, req) });
+});
+
 const listReceipts = asyncHandler(async (req, res) => {
   const data = await BillingService.listReceipts(req);
   res.json({ success: true, data, count: data.length });
@@ -76,4 +82,5 @@ const getCustomer = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await BillingService.getCustomer(req.params.hubId, req) });
 });
 
-module.exports = { listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer };
+module.exports = {
+  setInstalments, listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer };

@@ -5,8 +5,32 @@ const text = (max) => z.string().trim().max(max).optional().default("");
 const kenyanPhone = (message) => z.string().trim().max(20).optional().default("")
   .refine((value) => !value || Boolean(normalisePhone(value)), message);
 
-// Settings → Payments → "How families can pay". The whole object is sent on every save.
+// Settings → Payments → "Part payments" (payment-options.js's partPayments). A plan is what a
+// family can choose when paying a sign-up online: how many payments, how far apart, and the first
+// one's share (none: equal parts).
+const PLAN_INVOICE_TYPES = ["home_learning", "tech_club", "bootcamp", "learner_term", "course_module", "hub_usage", "hub_subscription"];
+const planSchema = z.object({
+  key: z.string().trim().min(1).max(40).regex(/^[a-z0-9_-]+$/, "A plan's key is lower-case letters, numbers, - and _"),
+  label: z.string().trim().min(1, "Name each plan").max(80),
+  count: z.coerce.number().int().min(2, "A plan has at least 2 payments").max(12, "A plan has at most 12 payments"),
+  intervalMonths: z.coerce.number().int().min(1, "Payments are at least a month apart").max(12),
+  depositPercent: z.coerce.number().min(1, "The first payment is at least 1%").max(99, "The first payment is under 100%").nullable().optional().default(null),
+});
+const partPaymentsSchema = z.object({
+  enabled: z.boolean().default(true),
+  minimumPercent: z.coerce.number().min(0).max(100, "At most 100%").default(0),
+  plans: z.array(planSchema).max(6, "At most 6 plans").default([])
+    .refine((plans) => new Set(plans.map((p) => p.key)).size === plans.length, "Each plan needs its own key"),
+  planTypes: z.array(z.enum(PLAN_INVOICE_TYPES)).default(["home_learning", "tech_club", "bootcamp"]),
+  remindDaysBefore: z.coerce.number().int().min(0).max(30).default(3),
+  graceDays: z.coerce.number().int().min(0).max(90).default(7),
+  pauseAccess: z.boolean().default(true),
+});
+
+// Settings → Payments → "How families can pay" (and "Part payments"). A section left out of a save
+// keeps what was saved before (payment-options.js's save).
 const paymentOptionsSchema = z.object({
+  partPayments: partPaymentsSchema.optional(),
   paybill: z.object({ enabled: z.boolean().default(false), number: z.string().trim().regex(/^\d{0,10}$/, "The Paybill number is digits only").default(""), accountName: text(100) }).prefault({}),
   sendMoney: z.object({ enabled: z.boolean().default(false), phone: kenyanPhone("Enter the Send Money number as a Kenyan mobile number, e.g. 0712 345 678"), name: text(100) }).prefault({}),
   bank: z.object({ enabled: z.boolean().default(false), bankName: text(100), accountName: text(150), accountNumber: text(40), branch: text(100), instructions: text(300) }).prefault({}),
@@ -48,4 +72,4 @@ const rejectNoticeSchema = z.object({
   reason: z.string().trim().min(3, "Say why, so the family knows what to do").max(500),
 });
 
-module.exports = { paymentOptionsSchema, submitNoticeSchema, noticeQuerySchema, confirmNoticeSchema, rejectNoticeSchema };
+module.exports = { PLAN_INVOICE_TYPES, paymentOptionsSchema, submitNoticeSchema, noticeQuerySchema, confirmNoticeSchema, rejectNoticeSchema };

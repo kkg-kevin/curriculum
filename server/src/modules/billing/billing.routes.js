@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer,
+  listInvoices, getInvoice, createInvoice, updateInvoice, issueInvoice, emailInvoice, cancelInvoice, recordPayment, setInstalments, listBatches, previewBulkInvoices, createBulkInvoices, listReceipts, getReceipt, getStatement, listCustomers, getCustomer,
 } = require("./billing.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 const MpesaController = require("../payments/mpesa/mpesa.controller");
@@ -40,6 +40,8 @@ router.post("/:id/issue", authorize("admin", "school"), issueInvoice);
 router.post("/:id/email", authorize("admin", "school"), emailInvoice);
 router.post("/:id/cancel", authorize("admin", "school"), cancelInvoice);
 router.post("/:id/payments", authorize("admin", "school"), recordPayment);
+// Part payments: the invoice's payment schedule (a plan, parts typed by hand, or none).
+router.put("/:id/instalments", authorize("admin", "school"), setInstalments);
 // Pay with M-Pesa (a parent, on their own invoice) and Request payment (staff) — both send the
 // "enter your PIN" prompt to a phone. See modules/payments/mpesa/.
 router.post("/:id/mpesa", authorize("admin", "school", "learner"), MpesaController.initiateForInvoice);

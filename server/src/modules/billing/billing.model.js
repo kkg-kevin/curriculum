@@ -7,6 +7,7 @@ const PAYMENTS = "billing_payments";
 const BATCHES = "billing_invoice_batches";
 const AUDIT = "billing_audit_events";
 const SEQUENCES = "billing_number_sequences";
+const INSTALMENTS = "billing_invoice_instalments";
 
 const BillingModel = {
   createInvoice(data, connection = db) { return createRecord(connection, INVOICES, data); },
@@ -73,6 +74,20 @@ const BillingModel = {
   findAuditEvents(invoiceId) { return db(AUDIT).where({ invoiceId }).orderBy("createdAt", "asc"); },
   updateInvoice(id, data, connection = db) { return updateRecord(connection, INVOICES, id, data); },
   updateBatch(id, data, connection = db) { return updateRecord(connection, BATCHES, id, data); },
+  // An invoice's payment schedule (billing.instalments.js), in order.
+  async findInstalments(invoiceId, connection = db) {
+    const rows = await connection(INSTALMENTS).where({ invoiceId }).orderBy("sequence", "asc");
+    return rows.map((r) => ({ ...r, amount: Number(r.amount), dueDate: String(r.dueDate).slice(0, 10) }));
+  },
+  // Replaces it (an empty list removes it).
+  async replaceInstalments(invoiceId, rows, connection = db) {
+    await connection(INSTALMENTS).where({ invoiceId }).del();
+    if (!rows.length) return;
+    const now = new Date();
+    await connection(INSTALMENTS).insert(rows.map((r, i) => ({
+      id: generateId(), invoiceId, sequence: i + 1, label: String(r.label || `Payment ${i + 1}`).slice(0, 80), amount: r.amount, dueDate: r.dueDate, createdAt: now, updatedAt: now,
+    })));
+  },
   sumSuccessfulPayments(invoiceId, connection = db) {
     return connection(PAYMENTS).where({ invoiceId, status: "successful" }).sum({ total: "amount" }).first();
   },

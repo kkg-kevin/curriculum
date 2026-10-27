@@ -12,6 +12,8 @@ export const billingApi = {
   // Emails (or re-emails) an issued invoice to its payer — see billing.service.js's emailInvoice.
   email: (id) => api.post(`${BASE}/${id}/email`).then((r) => r.data.data),
   pay: (id, data) => api.post(`${BASE}/${id}/payments`, data).then((r) => r.data.data),
+  // Part payments: the invoice's payment schedule — { planKey } | { instalments: [...] } | {} to remove.
+  setInstalments: (id, data) => api.put(`${BASE}/${id}/instalments`, data).then((r) => r.data.data),
   previewBulk: (data) => api.post(`${BASE}/batches/preview`, data).then((r) => r.data.data),
   createBulk: (data) => api.post(`${BASE}/batches`, data).then((r) => r.data.data),
   listBatches: () => api.get(`${BASE}/batches`).then((r) => r.data),

@@ -27,6 +27,16 @@ const COPY_BY_REASON = {
     contactTitle: "Complete your payment",
     contactBody: "Your account unlocks automatically as soon as your payment is confirmed. Contact the school if you've already paid and this hasn't updated yet.",
   },
+  // Paused because a payment of a plan is overdue past the grace days (server: billing.access.js).
+  paymentOverdue: {
+    who: "your account",
+    heading: "your account is paused",
+    badge: "Payment overdue",
+    intro: "is paused until an overdue payment is made.",
+    dataBody: "Everything is saved — paying switches it straight back on.",
+    contactTitle: "Pay what's overdue",
+    contactBody: "Access comes back automatically as soon as the payment is received. Contact the school if you've already paid and this hasn't updated yet.",
+  },
   teacher: {
     who: "your educator account",
     dataBody: "Your classes, learners, assessments, and reports are all untouched.",
@@ -155,7 +165,12 @@ function PendingPaymentPanel({ pendingPayment }) {
           </p>
           {/* A Home Learning or Tech Club website sign-up (kind "home_learning" / "tech_club") is paid
               to the team, not at a hub, and the admin approves it — so its copy says so. */}
-          {pendingPayment.kind === "home_learning" || pendingPayment.kind === "tech_club" ? (
+          {pendingPayment.kind === "overdue" ? (
+            <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
+              Overdue{pendingPayment.overdueSince ? ` since ${new Date(`${pendingPayment.overdueSince}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""} on invoice {pendingPayment.invoiceNumber}.
+              {pendingPayment.payBy ? " Pay it by M-Pesa below and access comes back straight away." : " Pay it to the school — access comes back as soon as it's recorded."}
+            </p>
+          ) : pendingPayment.kind === "home_learning" || pendingPayment.kind === "tech_club" ? (
             <p style={{ margin: 0, fontSize: 12.5, color: "#374151", lineHeight: 1.55 }}>
               First month for {pendingPayment.itemName}{pendingPayment.invoiceNumber ? ` (invoice ${pendingPayment.invoiceNumber})` : ""}.
               {pendingPayment.invoiceId
@@ -210,7 +225,7 @@ export default function AccountSuspendedScreen({ reason, pendingPayment }) {
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const copy = COPY_BY_REASON[reason] || COPY_BY_REASON.learner;
+  const copy = (reason === "payment" && pendingPayment?.kind === "overdue" ? COPY_BY_REASON.paymentOverdue : COPY_BY_REASON[reason]) || COPY_BY_REASON.learner;
   // Greet a person by first name — but a "hub" suspension is an organisation, not a person,
   // so don't address it by a chopped-up hub name.
   const firstName =

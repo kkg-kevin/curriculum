@@ -10,6 +10,7 @@ import EmailsPanel from "../emails/components/EmailsPanel";
 import CertificateSettingsPanel from "../certificates/components/CertificateSettingsPanel";
 import PaymentsPanel from "../payments/PaymentsPanel";
 import PaymentMethodsSection from "../payments/PaymentMethodsSection";
+import PartPaymentsSection from "../payments/PartPaymentsSection";
 import { SettingsPage as SettingsLayoutPage } from "../components/SettingsLayout";
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
 import { can } from "../../../hooks/usePermissions";
@@ -110,8 +111,9 @@ export default function SettingsPage() {
         {activeTab === "emails" && <EmailsPanel />}
         {activeTab === "certificates" && <CertificateSettingsPanel />}
         {activeTab === "payments" && (
-          <SettingsLayoutPage title="Payments" description="How families pay their invoices, and the M-Pesa connection that confirms Paybill payments automatically.">
+          <SettingsLayoutPage title="Payments" description="How families pay their invoices, paying in parts, and the M-Pesa connection that confirms Paybill payments automatically.">
             <PaymentMethodsSection />
+            <PartPaymentsSection />
             <PaymentsPanel />
           </SettingsLayoutPage>
         )}

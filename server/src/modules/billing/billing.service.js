@@ -7,7 +7,10 @@ const UserModel = require("../auth/user.model");
 const NotificationService = require("../notifications/notification.service");
 const ClassModel = require("../classes/class.model");
 const { sendInvoiceEmail, sendPaymentReceiptEmail } = require("./billing.emails");
-const { runInvoicePaidHooks } = require("./billing.paid-hooks");
+const { runInvoiceActivationHooks, runInvoicePaidHooks } = require("./billing.paid-hooks");
+const { paymentPosition, scheduleFromPlan, scheduleProblems } = require("./billing.instalments");
+const BillingAccess = require("./billing.access");
+const { todayInKenya } = require("../checkins/checkin.dates");
 const { paymentInstructions } = require("../payments/mpesa/mpesa.instructions");
 
 const RECEIVABLE_STATUSES = ["issued", "partially_paid", "paid", "overdue"];
@@ -22,6 +25,13 @@ function forbidden(message) { const err = new Error(message); err.statusCode = 4
 // invoice" to anyone auditing the sequence. Drafts get this placeholder instead; issueInvoice
 // assigns the real INV-YYYY-000001 number at the moment it becomes a real document. 38 chars,
 // fits the column's 40-char limit.
+// The workspace's part-payment rules for an invoice (payment-options.js's partPayments). Required
+// when needed: payment-options requires the M-Pesa modules, which require this one.
+async function partPaymentsOf(invoice) {
+  const { invoiceOwnerId } = require("../payments/mpesa/mpesa.instructions");
+  return require("../payments/payment-options").partPaymentsFor(await invoiceOwnerId(invoice));
+}
+
 function draftInvoiceNumber() { return `DRAFT-${BillingModel.generateId().replace(/-/g, "")}`; }
 async function nextInvoiceNumber(trx) { const year = new Date().getFullYear(); return `INV-${year}-${String(await BillingModel.nextNumber("invoice", year, trx)).padStart(6, "0")}`; }
 async function nextReceiptNumber(trx) { const year = new Date().getFullYear(); return `RCT-${year}-${String(await BillingModel.nextNumber("receipt", year, trx)).padStart(6, "0")}`; }
@@ -189,12 +199,24 @@ const customerKindOf = (invoice) => (invoice.payerHubId ? "b2b" : "b2c");
 
 async function decorate(invoice, items, payments, cache) {
   const amountPaid = money(payments.filter((p) => p.status === "successful").reduce((sum, p) => sum + Number(p.amount), 0));
+  // Part payments: the schedule with each part's state, the next part to pay, what's overdue
+  // (billing.instalments.js). Nothing is owed on a paid, cancelled or draft invoice.
+  const owing = PAYABLE_STATUSES.includes(invoice.status) && Number(invoice.total) - amountPaid > 0;
+  const position = paymentPosition(invoice, await BillingModel.findInstalments(invoice.id), amountPaid);
   return {
     ...invoice,
     customerKind: customerKindOf(invoice),
     subtotal: money(invoice.subtotal), discount: money(invoice.discount), total: money(invoice.total),
     amountPaid, amountDue: money(Number(invoice.total) - amountPaid),
     items, payments,
+    instalments: position.hasSchedule ? position.parts : [],
+    paymentPlan: {
+      key: invoice.paymentPlanKey || null,
+      next: owing ? position.next : null,
+      overdueAmount: owing ? position.overdueAmount : 0,
+      overdueSince: owing ? position.overdueSince : null,
+      daysOverdue: owing ? position.daysOverdue : 0,
+    },
     // "Pay via M-Pesa: Paybill …, Account …" while something is still owed (null when M-Pesa is off).
     payBy: PAYABLE_STATUSES.includes(invoice.status) && Number(invoice.total) - amountPaid > 0 ? await paymentInstructions(invoice).catch(() => null) : null,
     billTo: await resolvePayerIdentity(invoice),
@@ -275,7 +297,101 @@ async function assertAccess(req, invoice) {
   throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
 }
 
+// What a payment switches on (billing.paid-hooks.js): a sign-up, once enough is paid (any payment
+// unless the workspace asks for a share); a Store order and closing "I've paid" notices, once it's
+// paid in full; and a family paused for being late, once nothing is overdue (billing.access.js).
+async function afterPayment(full, { previousStatus = null, amount = null, paidByUserId = null } = {}) {
+  const settings = await partPaymentsOf(full).catch(() => ({ minimumPercent: 0 }));
+  const share = Number(full.total) > 0 ? (Number(full.amountPaid) / Number(full.total)) * 100 : 100;
+  if (Number(full.amountPaid) > 0 && (full.status === "paid" || share >= Number(settings.minimumPercent || 0))) {
+    await runInvoiceActivationHooks(full, { amount, paidByUserId });
+  }
+  if (full.status === "paid" && previousStatus !== "paid") await runInvoicePaidHooks(full);
+  if (!full.paymentPlan?.overdueAmount) await BillingAccess.resumeForInvoice(full).catch((err) => console.error("[billing] could not switch a family back on:", err.message));
+}
+
+// After a schedule changes: the invoice's status follows (overdue or not), and a family paused for
+// being late is switched back on once nothing is.
+async function settleAfterScheduleChange(invoiceId) {
+  const invoice = await BillingModel.findInvoiceById(invoiceId);
+  const full = await decorate(invoice, await BillingModel.findItems(invoiceId), await BillingModel.findPayments(invoiceId));
+  if (PAYABLE_STATUSES.includes(invoice.status)) {
+    const want = full.paymentPlan.overdueAmount > 0 ? "overdue" : full.amountPaid > 0 ? "partially_paid" : "issued";
+    if (want !== invoice.status) await BillingModel.updateInvoice(invoiceId, { status: want });
+  }
+  if (!full.paymentPlan.overdueAmount) await BillingAccess.resumeForInvoice(full).catch(() => {});
+  return decorate(await BillingModel.findInvoiceById(invoiceId), full.items, full.payments);
+}
+
+// The plans a family may choose for this invoice when paying it online (a sign-up's Payment step,
+// a payment link): only before anything is paid, for the invoice types the workspace allows, each
+// with its parts worked out from today. Empty when part payments are off.
+async function offeredPlans(invoice) {
+  if (!invoice || !["issued", "overdue"].includes(invoice.status) || Number(invoice.amountPaid || 0) > 0) return [];
+  const settings = await partPaymentsOf(invoice);
+  if (!settings?.enabled || !(settings.planTypes || []).includes(invoice.invoiceType)) return [];
+  const start = todayInKenya();
+  return (settings.plans || [])
+    .map((plan) => ({ key: plan.key, label: plan.label, parts: scheduleFromPlan(invoice.total, plan, start) }))
+    .filter((plan) => plan.parts);
+}
+
 const BillingService = {
+  offeredPlans,
+  afterPayment,
+
+  // Staff setting an invoice's payment schedule: one of the workspace's plans (`planKey`, parts
+  // worked out from `startDate`, default today), parts typed by hand (`instalments`), or neither
+  // to remove it. Payments already made count towards the first parts.
+  async setInstalments(id, data, req) {
+    const invoice = await BillingModel.findInvoiceById(id);
+    if (!invoice) throw notFound("Invoice not found");
+    if (req.user.role !== "admin" && !(req.user.role === "school" && invoice.issuerHubId === req.ownSchool?.id)) throw forbidden("You do not have permission to change this invoice's payments");
+    await assertAccess(req, invoice);
+    if (!["draft", "issued", "partially_paid", "overdue"].includes(invoice.status)) throw badRequest("A paid or cancelled invoice's payment schedule can't change");
+    let rows = [];
+    let planKey = null;
+    if (data.instalments?.length) {
+      const problems = scheduleProblems(data.instalments, invoice.total);
+      if (problems.length) throw Object.assign(badRequest(problems[0]), { errors: problems.map((message) => ({ message })) });
+      rows = data.instalments;
+      planKey = data.planKey || "custom";
+    } else if (data.planKey) {
+      const plan = ((await partPaymentsOf(invoice)).plans || []).find((p) => p.key === data.planKey);
+      if (!plan) throw badRequest("That plan isn't one of this workspace's — see Settings → Payments → Part payments");
+      rows = scheduleFromPlan(invoice.total, plan, data.startDate || todayInKenya());
+      if (!rows) throw badRequest("This invoice is too small to split that way");
+      planKey = plan.key;
+    }
+    await BillingModel.transaction(async (trx) => {
+      await BillingModel.replaceInstalments(id, rows, trx);
+      await BillingModel.updateInvoice(id, { paymentPlanKey: planKey }, trx);
+      await BillingModel.createAuditEvent({ invoiceId: id, actorUserId: req.user.id, eventType: rows.length ? "schedule_set" : "schedule_removed", amount: invoice.total, metadata: { planKey, parts: rows.length } }, trx);
+    });
+    return settleAfterScheduleChange(id);
+  },
+
+  // A family choosing how to pay a sign-up's invoice online (a payment link — no sign-in): one of
+  // the plans offered, or null for the whole amount at once. Only before anything is paid.
+  async choosePlanForFamily(invoiceId, planKey) {
+    const invoice = await BillingModel.findInvoiceById(invoiceId);
+    if (!invoice) throw notFound("Invoice not found");
+    let rows = [];
+    if (planKey) {
+      const plan = (await offeredPlans(invoice)).find((p) => p.key === planKey);
+      if (!plan) throw badRequest("That payment plan isn't available for this invoice any more");
+      rows = plan.parts;
+    } else if (Number(invoice.amountPaid || 0) > 0) {
+      throw badRequest("A payment has already been made — the plan can't change now");
+    }
+    await BillingModel.transaction(async (trx) => {
+      await BillingModel.replaceInstalments(invoiceId, rows, trx);
+      await BillingModel.updateInvoice(invoiceId, { paymentPlanKey: planKey || null }, trx);
+      await BillingModel.createAuditEvent({ invoiceId, eventType: rows.length ? "schedule_set" : "schedule_removed", amount: invoice.total, metadata: { planKey: planKey || null, parts: rows.length, by: "family" } }, trx);
+    });
+    return settleAfterScheduleChange(invoiceId);
+  },
+
   async resolveBulkLearners(data, req) {
     if (req.user.role === "school" && data.hubId !== req.ownSchool?.id) throw forbidden("You can only invoice your own learning hub");
     if (req.user.role === "admin") {
@@ -591,7 +707,13 @@ const BillingService = {
       }
       if (credit <= 0) throw badRequest("This invoice has nothing left to pay");
       const newPaid = money(currentPaid + credit);
-      const newStatus = newPaid >= money(lockedInvoice.total) ? "paid" : "partially_paid";
+      // Still owing: "overdue" while a part of the schedule (or the whole invoice, past its due date)
+      // is late, otherwise partly paid.
+      let newStatus = "paid";
+      if (newPaid < money(lockedInvoice.total)) {
+        const late = paymentPosition(lockedInvoice, await BillingModel.findInstalments(invoiceId, trx), newPaid).overdueAmount > 0;
+        newStatus = late ? "overdue" : "partially_paid";
+      }
       payment = await BillingModel.createPayment({ invoiceId, payerUserId: payerUserId || lockedInvoice.payerUserId || null, recordedBy, idempotencyKey, provider, providerReference, receiptNumber: await nextReceiptNumber(trx), amount: credit, currency: lockedInvoice.currency, status: "successful", paymentMethod, paymentDate: paidAt, paidAt, notes, metadata }, trx);
       updated = await BillingModel.updateInvoice(invoiceId, { amountPaid: newPaid, status: newStatus, paidAt: newStatus === "paid" ? new Date() : null }, trx);
       await BillingModel.createAuditEvent({ invoiceId, paymentId: payment.id, batchId: lockedInvoice.batchId || null, actorUserId: recordedBy, eventType: "payment_recorded", previousStatus: lockedInvoice.status, newStatus, amount: credit, metadata: { paymentMethod, provider, receiptNumber: payment.receiptNumber, ...(providerReference ? { providerReference } : {}), ...(excess ? { excess } : {}) } }, trx);
@@ -600,9 +722,7 @@ const BillingService = {
     if (!duplicate) {
       // Sent once per payment (see its dedupeKey), so an idempotent retry is harmless.
       sendPaymentReceiptEmail(full, payment).catch(() => {});
-      if (full.status === "paid" && previousStatus !== "paid") {
-        await runInvoicePaidHooks(full, { amount: money(amount), paidByUserId: recordedBy });
-      }
+      await afterPayment(full, { previousStatus, amount: money(amount), paidByUserId: recordedBy });
     }
     return { invoice: full, payment, excess, duplicate };
   },
@@ -616,7 +736,7 @@ const BillingService = {
     return {
       ...payment,
       amount: money(payment.amount),
-      invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, total: money(invoice.total) },
+      invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceType: invoice.invoiceType, currency: invoice.currency, total: money(invoice.total), amountDue: money(Number(invoice.total) - Number(invoice.amountPaid || 0)), status: invoice.status },
       billTo: await resolvePayerIdentity(invoice),
       issuedBy: await resolveIssuerIdentity(invoice),
       learner: await resolveDocumentLearner(invoice.learnerId),

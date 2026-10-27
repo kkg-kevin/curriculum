@@ -14,6 +14,7 @@ const { JWT_SECRET } = require("../../config/env");
 const BILLING_EMAIL_TYPES = {
   invoice_issued: { label: "An invoice is issued", group: "Parents and hubs you bill" },
   payment_receipt: { label: "A payment is recorded (receipt)", group: "Parents and hubs you bill" },
+  payment_reminder: { label: "A payment is coming up, due or overdue (reminder)", group: "Parents and hubs you bill" },
 };
 
 async function adminOfHub(hubId) {

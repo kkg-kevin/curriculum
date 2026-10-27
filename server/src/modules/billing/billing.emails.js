@@ -125,4 +125,57 @@ async function sendPaymentReceiptEmail(invoice, payment) {
   });
 }
 
-module.exports = { sendInvoiceEmail, sendPaymentReceiptEmail };
+// A payment reminder for one part of an invoice (billing.process.js): "upcoming" (a few days
+// ahead), "due" (today), "overdue" (yesterday) or "final" (the grace days have run out — a family's
+// access pauses now, when the workspace has that on). `part` is from billing.instalments.js; with
+// no schedule it's the whole invoice. Sent once per part, deadline and kind (the dedupe key).
+const REMINDER = {
+  upcoming: { tone: "info", eyebrow: "Payment reminder", heading: (p) => `${p} is due soon` },
+  due: { tone: "info", eyebrow: "Payment due today", heading: (p) => `${p} is due today` },
+  overdue: { tone: "warning", eyebrow: "Payment overdue", heading: (p) => `${p} is overdue` },
+  final: { tone: "warning", eyebrow: "Payment overdue", heading: (p) => `${p} is still overdue` },
+};
+
+async function sendPaymentReminderEmail(invoice, part, kind, { pauses = false } = {}) {
+  const to = invoice.billTo?.email;
+  const look = REMINDER[kind];
+  if (!to || !look) return null;
+  if (!(await workspaceSends(invoice, "payment_reminder"))) return null;
+  const { issuerName, fromName, replyTo, look: brand } = sender(invoice);
+  const what = part.whole ? `Invoice ${invoice.invoiceNumber}` : `${part.label} on invoice ${invoice.invoiceNumber}`;
+  const amount = formatMoney(part.remaining, invoice.currency);
+  const due = formatDate(`${part.dueDate}T00:00:00Z`);
+  const lines = {
+    upcoming: `${amount} is due on ${due}.`,
+    due: `${amount} is due today.`,
+    overdue: `${amount} was due on ${due} and hasn't been paid yet.`,
+    final: `${amount} was due on ${due} and is still unpaid.${pauses ? " Your family's access to the learning portal is paused until it's paid — paying switches it straight back on." : ""}`,
+  };
+  const { html, text } = renderEmail({
+    ...brand,
+    tone: look.tone, icon: kind === "upcoming" || kind === "due" ? "document" : "alert", eyebrow: look.eyebrow,
+    preview: `${what}: ${amount}${kind === "upcoming" ? ` due ${due}` : kind === "due" ? " due today" : " overdue"}`,
+    person: learnerOf(invoice),
+    highlight: { label: kind === "upcoming" || kind === "due" ? "Amount due" : "Overdue", value: amount, note: `Due ${due}` },
+    heading: look.heading(what),
+    greeting: `Hi ${firstName(invoice.billTo.name)},`,
+    paragraphs: [`${lines[kind]} If you've already paid, thank you — you can ignore this.`],
+    rows: [
+      ["Invoice", invoice.invoiceNumber],
+      ...(part.whole ? [] : [["Payment", part.label]]),
+      ["Amount", amount],
+      ["Due date", due],
+      ["Invoice balance", formatMoney(invoice.amountDue, invoice.currency)],
+      ...(invoice.payBy ? [["Pay by M-Pesa", `Paybill ${invoice.payBy.paybill}`], ["Account number", invoice.payBy.account]] : []),
+    ],
+    button: { label: "View invoice", url: invoiceUrl(invoice) },
+    footerNote: `You're receiving this email because ${issuerName} has this address on file for billing.`,
+  });
+  return queueMail({
+    to, subject: `${look.heading(what)} — ${issuerName}`, html, text, fromName, replyTo,
+    template: "payment_reminder", userId: invoice.payerUserId || null,
+    dedupeKey: `payment_reminder:${invoice.id}:${part.sequence}:${part.dueDate}:${kind}`,
+  });
+}
+
+module.exports = { sendInvoiceEmail, sendPaymentReceiptEmail, sendPaymentReminderEmail };

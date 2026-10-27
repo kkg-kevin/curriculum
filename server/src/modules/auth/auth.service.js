@@ -548,6 +548,23 @@ const AuthService = {
     }
     if (!learnerId) return null;
 
+    // Paused because a payment is overdue (billing.access.js): what's overdue on that invoice.
+    // Required lazily: billing requires this module.
+    const pausedInvoiceId = await require("../billing/billing.access").pausedInvoiceId(learnerId);
+    if (pausedInvoiceId) {
+      const doc = await require("../billing/billing.service").getInvoiceDocument(pausedInvoiceId);
+      if (doc && doc.paymentPlan?.overdueAmount > 0) {
+        return {
+          kind: "overdue",
+          amount: doc.paymentPlan.overdueAmount,
+          currency: doc.currency || "KES",
+          overdueSince: doc.paymentPlan.overdueSince,
+          invoiceId: doc.id,
+          invoiceNumber: doc.invoiceNumber,
+        };
+      }
+    }
+
     const lead = await LeadModel.findByLearnerId(learnerId);
     if (!lead || lead.paidAt || !lead.bootcampId) {
       // Not an unpaid bootcamp — maybe a Home Learning or Tech Club website sign-up awaiting

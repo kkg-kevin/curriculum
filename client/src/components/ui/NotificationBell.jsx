@@ -12,6 +12,7 @@ const ICONS = {
   level_up: { Icon: FiAward, color: "#feb139" },
   certificate_issued: { Icon: FiAward, color: "#B45309" },
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
+  payment_reminder: { Icon: FiFileText, color: "#B45309" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
   share_request: { Icon: FiShare2, color: "#25476a" },
   share_accepted: { Icon: FiShare2, color: "#059669" },
@@ -43,6 +44,7 @@ function resolveNotificationPath(n) {
     case "level_up":
       return p.learnerId ? `/learner-portal?child=${p.learnerId}` : "/learner-portal";
     case "invoice_issued":
+    case "payment_reminder":
       return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
     case "lead_submitted":
       // The admin Enquiries page — ?lead= scrolls to and highlights the row (see EnquiriesListPage).
