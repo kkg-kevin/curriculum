@@ -630,7 +630,7 @@ export default function LearningHubViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {learners.slice(0, 5).map((l) => (
-                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}/view`)}
+                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}`)}
                     style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                     {l.firstName} {l.lastName}
                   </div>
@@ -653,7 +653,7 @@ export default function LearningHubViewPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {learners.slice(0, 5).map((l) => (
-                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}/view`)}
+                  <div key={l.id} onClick={openIf("learners", `/learners/${l.id}`)}
                     style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 13, color: "#111827" }}>
                     <span>{l.firstName} {l.lastName}</span>
                     {l.spaceId && (

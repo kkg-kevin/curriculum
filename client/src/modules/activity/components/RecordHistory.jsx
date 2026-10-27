@@ -11,11 +11,15 @@ import ActivityEntry from "./ActivityEntry";
 // `entityType` is the table the record lives in (what the log stores). Shown only to people who
 // may read the activity log: the workspace owner, and staff whose role grants Activity log → View.
 // Loads nothing until it is opened.
-export default function RecordHistory({ entityType, entityId }) {
+export function canSeeRecordHistory(user) {
+  return user?.role === "admin" || (user?.role === "collaborator" && can(user, "activity", "view"));
+}
+
+export default function RecordHistory({ entityType, entityId, defaultOpen = false }) {
   const { user } = useAuth();
   // The record pages are shared with the hub and educator portals, whose logins can't read the log.
-  const allowed = user?.role === "admin" || (user?.role === "collaborator" && can(user, "activity", "view"));
-  const [open, setOpen] = useState(false);
+  const allowed = canSeeRecordHistory(user);
+  const [open, setOpen] = useState(defaultOpen);
   const filters = useMemo(() => ({ entityType, entityId }), [entityType, entityId]);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useActivity(filters, { enabled: allowed && open && Boolean(entityId) });
   const entries = (data?.pages || []).flatMap((page) => page.items);

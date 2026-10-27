@@ -18,4 +18,11 @@ export const checkinsApi = {
   sessions: (params) => api.get(`${BASE}/sessions`, { params }).then(data),
   session: (id) => api.get(`${BASE}/sessions/${id}`).then(data),
   saveReport: (id, report) => api.put(`${BASE}/sessions/${id}/report`, report).then(data),
+
+  // Tasks from a check-in's resolutions. Adding, changing or removing one answers the check-in.
+  tasks: (params) => api.get(`${BASE}/tasks`, { params }).then(data),
+  createTask: (sessionId, body) => api.post(`${BASE}/sessions/${sessionId}/tasks`, body).then(data),
+  updateTask: (id, body) => api.put(`${BASE}/tasks/${id}`, body).then(data),
+  setTaskStatus: (id, status) => api.put(`${BASE}/tasks/${id}/status`, { status }).then(data),
+  deleteTask: (id) => api.delete(`${BASE}/tasks/${id}`).then(data),
 };

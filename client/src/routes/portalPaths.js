@@ -28,7 +28,10 @@ export function learnersListPath(role, schoolId) {
   return role === "school" ? `/school-portal/learners/${schoolId}` : "/learners";
 }
 
+// A learner's page is /learners/:id ("view"); in the hub portal it stays …/:id/view, since
+// /school-portal/learners/:id is the hub's learner list.
 export function learnerPath(role, id, action) {
+  if (role !== "school" && action === "view") return `/learners/${id}`;
   return role === "school" ? `/school-portal/learners/${id}/${action}` : `/learners/${id}/${action}`;
 }
 

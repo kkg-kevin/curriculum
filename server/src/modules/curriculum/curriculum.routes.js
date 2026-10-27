@@ -113,7 +113,7 @@ const router = express.Router();
 // this whole module. A school inherits its classes and courses from whatever curriculum it's
 // assigned, so it needs to read that curriculum's name/structure/periods and the courses live
 // right now for it; teacher/learner need the latter too, scoped to one grade. A school also
-// manages where its own learners sit on the curriculum's Pathway (see LearnerViewPage)
+// manages where its own learners sit on the curriculum's Pathway (see LearnerPage)
 // — that needs the ladder, pathways, age categories, and the per-learner pathway itself,
 // read AND (for placement) write. All ownership-checked (ownSchool's curriculumId must match).
 // A learner also needs its own curriculum's competency names and age-categories for the

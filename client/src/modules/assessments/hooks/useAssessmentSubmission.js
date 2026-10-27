@@ -171,7 +171,7 @@ export function useSubmitAssessment() {
 }
 
 // A specific learner's auto-issued Stage diagnostic (standalone, no class involved) — drives
-// the Diagnostic Assessment card on LearnerViewPage (unscoped there, matching its single-hub
+// the Diagnostic Assessment card on LearnerPage (unscoped there, matching its single-hub
 // view), and the learner-portal's first-login gate (curriculumId passed so a Stage diagnostic
 // from a different hub never leaks into the wrong hub's gate).
 export function useDiagnosticForLearner(learnerId, curriculumId = null) {
@@ -183,7 +183,7 @@ export function useDiagnosticForLearner(learnerId, curriculumId = null) {
 }
 
 // Plural counterpart — every Pathway diagnostic this learner currently holds, drives the
-// per-area diagnostic cards on LearnerViewPage.
+// per-area diagnostic cards on LearnerPage.
 export function usePathwayDiagnosticsForLearner(learnerId) {
   return useQuery({
     queryKey: KEYS.pathwayDiagnostics(learnerId),
@@ -228,7 +228,7 @@ export function useGradeSubmission() {
       qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
       // A graded diagnostic may have just set this learner's currentStageId/currentBandId
       // server-side (see CompetencyService.placeLearnerFromDiagnostic) — refresh their record
-      // so LearnerViewPage reflects the new placement without a manual reload.
+      // so LearnerPage reflects the new placement without a manual reload.
       if (submission.learnerId) qc.invalidateQueries({ queryKey: ["learners", "detail", submission.learnerId] });
       // A graded Pathway diagnostic may have just placed this learner at a starting
       // course (see CompetencyService.placeLearnerFromPathwayDiagnostic) — no cheap way to

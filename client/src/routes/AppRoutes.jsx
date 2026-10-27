@@ -83,9 +83,8 @@ import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
 import SchoolLearnersPage from "../modules/learners/pages/SchoolLearnersPage";
 import CreateLearnerPage from "../modules/learners/pages/CreateLearnerPage";
 import EditLearnerPage from "../modules/learners/pages/EditLearnerPage";
-import LearnerViewPage from "../modules/learners/pages/LearnerViewPage";
+import LearnerPage from "../modules/learners/pages/LearnerPage";
 import PublicLearnerProfilePage from "../modules/learners/pages/PublicLearnerProfilePage";
-import LearnerProfileViewPage from "../modules/learners/pages/LearnerProfileViewPage";
 import VerifyCertificatePage from "../modules/certificates/pages/VerifyCertificatePage";
 import LearnerCertificateViewPage from "../modules/certificates/pages/CertificateViewPage";
 import CertificatesListPage from "../modules/certificates/pages/CertificatesListPage";
@@ -140,7 +139,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Unauthenticated by design — the scan destination for a learner's "Share Profile" QR
-          code (see LearnerViewPage.jsx's ShareProfileCard). No RoleRoute/ProtectedRoute/
+          code (see ShareProfileCard). No RoleRoute/ProtectedRoute/
           MainLayout wrapper on purpose: someone scanning a printed badge on their own phone is
           never expected to be logged in. */}
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
@@ -263,9 +262,11 @@ export default function AppRoutes() {
           <Route path="bulk-import" element={<AdminBulkImportPage />} />
           <Route path="create" element={<CreateLearnerPage />} />
           <Route path=":id/edit" element={<EditLearnerPage />} />
-          <Route path=":id/view" element={<LearnerViewPage />} />
-          {/* The learner's own profile, as they see it in the learner portal. */}
-          <Route path=":id/profile" element={<LearnerProfileViewPage />} />
+          {/* One page per learner: their profile as they see it, plus every staff action. The
+              old record (/view) and profile (/profile) addresses lead to it. */}
+          <Route path=":id" element={<LearnerPage />} />
+          <Route path=":id/view" element={<Navigate to=".." relative="path" replace />} />
+          <Route path=":id/profile" element={<Navigate to=".." relative="path" replace />} />
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
@@ -338,8 +339,9 @@ export default function AppRoutes() {
           <Route path="teachers/:id/edit" element={<EditTeacherPage />} />
           <Route path="learners/:schoolId" element={<SchoolLearnersPage />} />
           <Route path="learners/create" element={<CreateLearnerPage />} />
-          <Route path="learners/:id/view" element={<LearnerViewPage />} />
-          <Route path="learners/:id/profile" element={<LearnerProfileViewPage />} />
+          {/* Stays at /view here: /school-portal/learners/:id is the hub's learner list. */}
+          <Route path="learners/:id/view" element={<LearnerPage />} />
+          <Route path="learners/:id/profile" element={<Navigate to="../view" relative="path" replace />} />
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="attendance" element={<SchoolAttendancePage />} />
           <Route path="timetable" element={<SchoolTimetablePage />} />

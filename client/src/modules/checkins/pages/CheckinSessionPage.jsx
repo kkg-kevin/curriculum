@@ -3,19 +3,22 @@ import { Link, useParams } from "react-router-dom";
 import { FiArrowLeft, FiMapPin, FiVideo } from "react-icons/fi";
 import { useCheckinMutation, useCheckinSession } from "../hooks/useCheckins";
 import { checkinsApi } from "../services/checkinsApi";
-import { FORMAT_LABEL, FREQUENCY_LABEL, Pill, REPORT_PARTS, STATE, T, card, font, formatDate, formatDateTime, hint, input, label, primaryBtn, useCheckinsBase } from "../shared";
+import RichTextEditor from "../../assessments/components/RichTextEditor";
+import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
+import { SessionTasks } from "../components/Tasks";
+import { FORMAT_LABEL, FREQUENCY_LABEL, Pill, REPORT_PARTS, STATE, T, card, font, formatDate, formatDateTime, hint, label, primaryBtn, reportHtml, useCheckinsBase } from "../shared";
 
 const EMPTY = { highs: "", lows: "", resolutions: "" };
-const toForm = (report) => ({ highs: report?.highs || "", lows: report?.lows || "", resolutions: report?.resolutions || "" });
+const toForm = (report) => ({ highs: reportHtml(report?.highs), lows: reportHtml(report?.lows), resolutions: reportHtml(report?.resolutions) });
 
 // A report's three parts, read-only.
 function ReportView({ report }) {
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ display: "grid", gap: 14 }}>
       {REPORT_PARTS.map((part) => (
         <div key={part.key}>
-          <p style={{ ...label, marginBottom: 3 }}>{part.label}</p>
-          <p style={{ margin: 0, fontSize: 13.5, color: report?.[part.key] ? "#374151" : T.inkFaint, whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{report?.[part.key] || "—"}</p>
+          <p style={{ ...label, marginBottom: 4 }}>{part.label}</p>
+          <RichContent html={reportHtml(report?.[part.key])} emptyText="—" />
         </div>
       ))}
     </div>
@@ -54,7 +57,7 @@ export default function CheckinSessionPage() {
   const reported = session.state === "reported";
   const showForm = permissions.canWriteReport && (!reported || editing);
   const submit = () => {
-    const missing = REPORT_PARTS.filter((p) => !form[p.key].trim()).map((p) => p.label.toLowerCase());
+    const missing = REPORT_PARTS.filter((p) => isEmptyHtml(form[p.key])).map((p) => p.label.toLowerCase());
     if (missing.length) {
       setProblems([`Write the ${missing.join(", ")} — write "None" if there were none.`]);
       return;
@@ -64,7 +67,7 @@ export default function CheckinSessionPage() {
   };
 
   return (
-    <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, maxWidth: 860 }}>
+    <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
       <Link to={base} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: T.accentMid, textDecoration: "none", alignSelf: "flex-start" }}><FiArrowLeft size={14} /> Hub Check-ins</Link>
 
       <section style={{ ...card, padding: "18px 20px" }}>
@@ -95,15 +98,13 @@ export default function CheckinSessionPage() {
           <div style={{ display: "grid", gap: 14 }}>
             {REPORT_PARTS.map((part) => (
               <div key={part.key}>
-                <label htmlFor={`ci-${part.key}`} style={label}>{part.label}</label>
+                <p style={label}>{part.label}</p>
                 <p style={{ ...hint, margin: "0 0 6px" }}>{part.help}</p>
-                <textarea
-                  id={`ci-${part.key}`}
+                <RichTextEditor
                   value={form[part.key]}
-                  onChange={(e) => { setEditing(true); setForm((f) => ({ ...f, [part.key]: e.target.value })); }}
-                  rows={4}
-                  maxLength={6000}
-                  style={{ ...input, resize: "vertical", lineHeight: 1.5 }}
+                  onChange={(html) => { setEditing(true); setForm((f) => ({ ...f, [part.key]: html })); }}
+                  minHeight={110}
+                  maxHeight={360}
                 />
               </div>
             ))}
@@ -124,6 +125,12 @@ export default function CheckinSessionPage() {
           <p style={{ ...hint, fontSize: 13 }}>Waiting for {[session.accountManagerName, session.trainingLeadName].filter(Boolean).join(" or ") || "the check-in's Account Manager or Training Lead"} to write the report.</p>
         ) : null}
       </section>
+
+      {(permissions.canManageTasks || session.tasks?.length > 0) && (
+        <section style={{ ...card, overflow: "hidden" }}>
+          <SessionTasks session={session} />
+        </section>
+      )}
 
       {session.earlierReports?.length > 0 && (
         <section style={{ ...card, overflow: "hidden" }}>

@@ -158,7 +158,7 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
       </div>
     </div>
     {!editing && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {item.learner && <Link to={`/learners/${item.learnerId}/view`} style={{ ...secondaryButton, textDecoration: "none" }}>Profile</Link>}
+      {item.learner && <Link to={`/learners/${item.learnerId}`} style={{ ...secondaryButton, textDecoration: "none" }}>Profile</Link>}
       {removed
         ? <button type="button" disabled={!canAddActive} title={canAddActive ? "" : "No free places in this package"} onClick={() => startEdit("active")} style={secondaryButton}>Re-add</button>
         : <>

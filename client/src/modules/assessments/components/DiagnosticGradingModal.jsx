@@ -2,7 +2,7 @@ import { FiX } from "react-icons/fi";
 import GradingPanel from "./GradingPanel";
 
 // Shared "grade this diagnostic" overlay — the same GradingPanel wrapped in an identical modal
-// shell used to appear separately in LearnerViewPage.jsx's two diagnostic cards and the teacher
+// shell used to appear separately in the staff learner page's two diagnostic cards and the teacher
 // portal's Needs Grading queue. Diagnostics are single-learner issues (no class roster to open
 // instead), so grading always happens inline like this rather than via a roster page.
 export default function DiagnosticGradingModal({ title, assessment, submission, isSaving, onSave, onClose }) {

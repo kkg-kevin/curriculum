@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 // report into highs / lows / resolutions — pure, no database (modules/checkins/checkin.dates.js,
 // checkin.rules.js and the 20261026110000 migration).
 const { occurrenceDates, addMonths, todayInKenya } = require("../src/modules/checkins/checkin.dates");
-const { sessionState, reportProblems } = require("../src/modules/checkins/checkin.rules");
+const { sessionState, reportProblems, taskState } = require("../src/modules/checkins/checkin.rules");
 const { _convert: convertOldReport } = require("../src/db/migrations/20261026110000_simplify_hub_checkins");
 
 test("each frequency produces its own dates", () => {
@@ -55,6 +55,21 @@ test("a report needs its highs, lows and resolutions", () => {
   assert.deepEqual(reportProblems({ highs: "Attendance up", lows: "None", resolutions: "Keep going" }), []);
   assert.equal(reportProblems({}).length, 3);
   assert.deepEqual(reportProblems({ highs: "Good", lows: "  ", resolutions: "x" }), ['Write the lows (write "None" if there were none)']);
+});
+
+test("a rich-text report part counts only when it says something", () => {
+  assert.deepEqual(reportProblems({ highs: "<p><strong>Attendance</strong> up</p>", lows: "<p>None</p>", resolutions: '<p><img src="/u/a.png"></p>' }), []);
+  assert.deepEqual(reportProblems({ highs: "<p></p>", lows: "<p>&nbsp;</p>", resolutions: "<ul><li><p>Call parents</p></li></ul>" }), [
+    'Write the highs (write "None" if there were none)',
+    'Write the lows (write "None" if there were none)',
+  ]);
+});
+
+test("a task is open before its deadline, due on it, overdue after — or done", () => {
+  assert.equal(taskState({ status: "open", dueDate: "2026-11-05" }, "2026-11-01"), "open");
+  assert.equal(taskState({ status: "open", dueDate: "2026-11-05" }, "2026-11-05"), "due");
+  assert.equal(taskState({ status: "open", dueDate: "2026-11-05" }, "2026-11-06"), "overdue");
+  assert.equal(taskState({ status: "done", dueDate: "2026-11-05" }, "2026-11-20"), "done");
 });
 
 test("an old A–G report keeps everything written, under highs, lows and resolutions", () => {

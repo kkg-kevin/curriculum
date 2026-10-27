@@ -400,7 +400,7 @@ function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
 // Cross-cutting queue of every submitted-but-ungraded submission across the teacher's classes —
 // so pending work is visible without opening each assessment's roster individually to find it.
 // Rows tagged isDiagnostic (see AssessmentsPage's diagnosticNeedsGradingRows) have no class
-// roster to jump into — those grade inline via the same DiagnosticGradingModal LearnerViewPage.jsx
+// roster to jump into — those grade inline via the same DiagnosticGradingModal LearnerPage.jsx
 // uses, instead of navigating to /teacher-portal/assessments/:issueId.
 function NeedsGradingSection({ rows, navigate }) {
   const { mutate: grade, isPending: grading } = useGradeSubmission();

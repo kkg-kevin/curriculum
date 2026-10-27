@@ -28,7 +28,7 @@ export function sourcePath(ref, role) {
       club_membership: `/tech-clubs?membership=${ref.id}`,
       hub: `/learning-hubs/${ref.id}/view`,
       customer: `/billing/customers/${ref.id}`,
-      learner: `/learners/${ref.id}/view`,
+      learner: `/learners/${ref.id}`,
     }[ref.type] || null;
   }
   if (role === "school" && ref.type === "learner") return `/school-portal/learners/${ref.id}/view`;

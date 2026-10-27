@@ -193,7 +193,7 @@ const getIssuedForLearnerAsStaff = asyncHandler(async (req, res) => {
 });
 
 // Admin/school-facing: this learner's auto-issued diagnostic (if any), for the Diagnostic
-// Assessment card on LearnerViewPage. Also learner-facing (own record only) — the learner-
+// Assessment card on LearnerPage. Also learner-facing (own record only) — the learner-
 // portal's first-login diagnostic gate reads this directly, scoped to its own curriculum via
 // ?curriculumId, so a learner's Stage diagnostic from a different hub never leaks in.
 const getDiagnosticForLearner = asyncHandler(async (req, res) => {
@@ -207,7 +207,7 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
 });
 
 // Same access shape as getDiagnosticForLearner, plural — this learner's Pathway
-// diagnostics, for the Pathway section of LearnerViewPage. Also readable by the
+// diagnostics, for the Pathway section of LearnerPage. Also readable by the
 // learner themselves (their own record only) — the learner-portal's first-login diagnostic
 // gate uses this same endpoint rather than a separate one.
 const getPathwayDiagnosticsForLearner = asyncHandler(async (req, res) => {

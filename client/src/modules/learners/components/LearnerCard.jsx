@@ -158,7 +158,7 @@ export function LearnerCard({ learner, classMap }) {
             <MenuButton key={path} icon={icon} label={label} onClick={() => { setMenuOpen(false); navigate(path); }} />
           ))}
           {/* Delete is admin-only server-side (learner.routes.js) — school gets "Remove
-              from Hub" instead, from LearnerViewPage, so this menu shouldn't offer an action that's
+              from Hub" instead, from LearnerPage, so this menu shouldn't offer an action that's
               guaranteed to 403 for them. */}
           {user?.role === "admin" && (
             <>

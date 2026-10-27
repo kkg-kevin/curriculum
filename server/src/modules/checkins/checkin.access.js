@@ -11,10 +11,24 @@ const { adminIdsOf } = require("../../shared/utils/organisation");
 //             account-roles.js) — and see only the hubs they're on: those hubs' check-ins and
 //             earlier reports. An educator's own session (the teacher portal) can only ask what's
 //             due, for the sign-in pop-up.
+//   the hub   itself (its own login in the hub portal): its own check-ins and reports, read only.
 //
 // A check-in's report is written by its Account Manager or Training Lead, or a manager.
 
 function contextOf(req) {
+  // The hub's own login (the hub portal, not as an Account Manager / Training Lead): its own
+  // check-ins and their reports, read only — the hub it's working in (req.ownSchool).
+  if (req.user.role === "school" && !req.user.hubLead) {
+    return {
+      userId: req.user.id,
+      ownerAdminId: req.ownSchool?.ownerAdminId || null,
+      hubId: req.ownSchool?.id || null,
+      isHub: true,
+      isStaff: false,
+      isManager: false,
+      canManageSchedules: false,
+    };
+  }
   // An Account Manager / Training Lead in the hub portal, or an educator in the teacher portal.
   if (req.user.hubLead || req.user.role === "teacher") {
     return {

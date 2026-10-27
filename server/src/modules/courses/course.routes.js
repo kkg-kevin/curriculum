@@ -38,7 +38,7 @@ const router = express.Router();
 // Course authoring (builder pages, links, sessions, modules) is admin-only. Teacher/learner/
 // school portals only ever open a specific course they already know the id of (reached via the
 // curriculum's current-courses list) to read its content — never the bare catalog list, which
-// spans every school's curriculum. "school" does need the bare list too — LearnerViewPage's
+// spans every school's curriculum. "school" does need the bare list too — LearnerPage's
 // Pathway card resolves course names for a learner's placement options from it.
 // getCourseById/getSessions/getModules additionally verify ownership via assertCourseAccess
 // (course.controller.js) — a course is reusable across curricula, so the role check alone isn't

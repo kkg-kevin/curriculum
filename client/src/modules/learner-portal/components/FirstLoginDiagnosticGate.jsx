@@ -187,7 +187,7 @@ export default function FirstLoginDiagnosticGate({ learner, hub, cls, onComplete
   }, [hub?.id, cls?.id]);
 
   // usePathwayDiagnosticsForLearner aggregates outstanding diagnostics across every hub
-  // the learner is active at, not just this one (the admin-facing LearnerViewPage wants that
+  // the learner is active at, not just this one (the admin-facing LearnerPage wants that
   // full picture) — filtered down here to just the areas belonging to the CURRENTLY SELECTED
   // hub's curriculum, so a learner gated for this hub only ever sees this hub's diagnostics,
   // never one left outstanding at a different hub they haven't switched to yet.

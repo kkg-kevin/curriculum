@@ -104,6 +104,11 @@ async function blockIfSuspended(req, res, next) {
 // own notifications get through.
 const HUB_LEAD_WRITES = [
   /^\/api\/checkins\/sessions\/[^/]+\/report$/,
+  // Tasks from a check-in's resolutions: setting them, and ticking off their own.
+  /^\/api\/checkins\/sessions\/[^/]+\/tasks$/,
+  /^\/api\/checkins\/tasks\/[^/]+(\/status)?$/,
+  // A picture in a check-in report (the report editor's image button).
+  /^\/api\/uploads\/image$/,
   /^\/api\/auth\//,
   /^\/api\/notifications(\/|$)/,
 ];

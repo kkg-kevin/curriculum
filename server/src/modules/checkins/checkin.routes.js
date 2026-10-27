@@ -6,14 +6,16 @@ const ctl = require("./checkin.controller");
 //     staff reach role "admin" only once scope.middleware.js has checked their role);
 //   - a hub's Account Manager / Training Lead in the hub portal (a "school" session with
 //     req.user.hubLead — see account-roles.js);
-//   - an educator's own session, for GET /due only (the teacher portal's pop-up).
+//   - an educator's own session, for GET /due only (the teacher portal's pop-up);
+//   - the hub's own login (the hub portal), reading its own check-ins and reports only.
 // Which hubs and check-ins each person sees is decided per record in checkin.service.js /
 // checkin.access.js; schedules are managers' only. Named routes come before "/:id" ones.
 const router = express.Router();
 router.use((req, res, next) => {
   const { role, hubLead } = req.user;
   const dueOnly = req.method === "GET" && req.path === "/due";
-  if (role === "admin" || (role === "school" && hubLead) || (role === "teacher" && dueOnly)) return next();
+  const readingSessions = req.method === "GET" && /^\/sessions(\/[^/]+)?$/.test(req.path);
+  if (role === "admin" || (role === "school" && (hubLead || readingSessions)) || (role === "teacher" && dueOnly)) return next();
   next(Object.assign(new Error("You do not have permission to perform this action"), { statusCode: 403 }));
 });
 
@@ -29,5 +31,12 @@ router.post("/schedules/:id/end", ctl.endSchedule);
 router.get("/sessions", ctl.listSessions);
 router.get("/sessions/:id", ctl.getSession);
 router.put("/sessions/:id/report", ctl.saveReport);
+
+// Tasks from a check-in's resolutions.
+router.get("/tasks", ctl.listTasks);
+router.post("/sessions/:id/tasks", ctl.createTask);
+router.put("/tasks/:id", ctl.updateTask);
+router.put("/tasks/:id/status", ctl.setTaskStatus);
+router.delete("/tasks/:id", ctl.deleteTask);
 
 module.exports = router;
