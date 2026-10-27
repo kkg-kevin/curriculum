@@ -102,6 +102,160 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (27 Oct 2026) — one learner page for staff; Learners by hub; check-in reports in rich text, read by the hub, with tasks; surveys built freely; a safer bulk import; part payments; no duplicate notification emails; enquiry housekeeping
+
+**Backend and portal** from `curriculum` (branch `modules`) at `e884959`; **website** from
+`curriculum-web` (branch `new`) at `333af5a` — both websites rebuilt. Includes everything in
+"This release (26 Oct 2026, afternoon)" below — if that wasn't uploaded yet, upload this one
+instead. **Take a database backup first**, **upload the backend first**, then the portal, then the
+website.
+
+### What changed — portal
+
+- **One page per learner for staff.** Learners → a learner opens the learner's own profile (as
+  they see it) with everything staff do on it: a bar with Account active/inactive, **Preview as
+  learner**, **Activate / Deactivate** (admins), **Full form** (the old Edit page) and **Remove**
+  (a hub: Remove from hub). Edit the learner's details and the guardian's in place (the pencils on
+  the photo and the Guardian card — passwords too). Hub enrolments (class, status, transfer,
+  unlink, enrol at another hub) sit in the side panel; stage, pathways, diagnostics and placement
+  on the **Pathway** tab; the activity log on a **History** tab. Old `/learners/:id/view` and
+  `/profile` links lead there.
+- **Learners opens on the hubs** — a tile per hub with its learner count, plus "Not in a hub yet"
+  and "All learners"; a learner at two hubs is listed under both. Enroll Learner and Bulk Import
+  sit side by side.
+- **Hub check-ins:** Highs, Lows and Resolutions are **rich text** (old reports still read); a
+  hub's own login gets **Check-ins** in its sidebar to read its check-ins and reports (read only);
+  the check-in page fills the screen. **Tasks from the resolutions** — what, who (the check-in's
+  Account Manager, Training Lead or an admin) and a deadline, written in rich text; the person is
+  notified and reminded on the deadline and ticks it done; **My tasks** / **All tasks** tabs. Account
+  Managers / Training Leads can now add pictures to reports.
+- **Surveys built freely** — Structured Questions (Rating Scale worded your way, Single Choice,
+  Multiple Choice, Short Text, Can-do) and Open Questions (Open-ended, Long Text, Reflection); the
+  Structured / Unstructured / Mixed setting picks which; sections allowed and shown to learners;
+  no right answers, nothing marked; teachers see the responses read only.
+- **A safer learner bulk import** — dates of birth read in common forms (2015-03-12, 12/03/2015,
+  12 Mar 2015, Excel dates) and checked; phones saved as +2547…; M/F/Boy/Girl; nationality and
+  languages matched to the lists; the template's example row refused; a learner already on record
+  (or twice in the file) isn't added again; **a parent who already has a login keeps their own
+  password**; preview warnings and a downloadable CSV of rows to fix.
+- **Part payments.** Any invoice can carry a **payment schedule** (invoice page → Payment schedule
+  → Split into payments: one of your plans, equal monthly payments, or typed by hand); payments
+  count towards the earliest part first. **Any payment switches a website sign-up's accounts on.**
+  Payers are reminded before each part, on the day, the day after and when the grace days run out;
+  after the grace days a **family's** learners see a "Payment overdue" screen with Pay by M-Pesa
+  until it's paid (hubs are reminded, never paused). **Settings → Payments → Part payments**: the
+  share that switches a sign-up on, the plans families can choose, reminder and grace days,
+  pausing on/off. Settings → Emails has a new "payment reminder" switch. Receipts show the
+  invoice's balance.
+- **No more duplicate notification emails.** A website enquiry now reaches the admins of its own
+  workspace once each (an organisation's other admins used to get every enquiry twice, and other
+  workspaces got it too); Home Learning / Tech Club "Your account is active" reaches a parent once
+  per family, not once per child; a personal notice to someone who is also an admin (a parent or
+  educator with an admin login) reaches only them, not every admin.
+- **Enquiry housekeeping** (Settings → Enquiries, owner only; nothing is ever deleted): a daily
+  reminder about enquiries still **New** after 2 days; a New or Contacted enquiry untouched for 60
+  days is **Closed automatically** (with a note; reopen it by changing its status; enquiries that
+  led to a sign-up, invoice or payment are left alone); and — **off** until switched on — a Closed
+  enquiry untouched for 12 months has its **personal details removed** (data protection). Each
+  switchable, the days and months adjustable.
+
+### What changed — website
+
+- **Pay in full or in parts** on the Payment step after a Home Learning, Tech Club or Bootcamp
+  sign-up, and on `/pay/…`: the plans you offer are listed ("KSh 6,000 now, then KSh 6,000 on
+  27 Nov"); the M-Pesa prompt, the instructions and "I've paid" use the amount due now.
+
+### Three new migrations, applied on Restart — all additive
+
+- `20261027100000_create_checkin_tasks.js` — `checkin_tasks`.
+- `20261028090000_create_billing_instalments.js` — `billing_invoice_instalments`,
+  `billing_access_pauses` and `billing_invoices.paymentPlanKey`.
+- `20261028100000_add_enquiry_housekeeping.js` — `leads.autoClosedAt`, `leads.anonymisedAt` and
+  `enquiry_settings`.
+
+No new environment variable, no new npm package. New endpoints: `PUT /api/billing/:id/instalments`,
+`POST /api/public/payments/:token/plan`, `/api/checkins/tasks…`, `GET`/`PUT /api/leads/settings`.
+
+### Two new cron jobs (needed)
+
+From the backend's application root (cPanel → Cron Jobs, the same way as `checkins:process`):
+
+- `npm run billing:process`, **hourly** — marks invoices overdue, sends payment reminders, and
+  pauses / switches back on families who are late. **Without it no reminders go out and nobody is
+  paused** — it deliberately doesn't run when someone opens Billing, because it sends emails.
+- `npm run enquiries:process`, **once a day, in the morning** (e.g. 7:00) — the "enquiries still
+  New" reminder, auto-closing, and (if switched on) removing old personal details. The first run
+  reports today's backlog of New enquiries.
+
+### Backend (`backend-deploy.zip`)
+
+From `e884959`, byte-identical in Dev, Live and Capable; 584 entries, 144 migrations, the newest
+`20261028100000_add_enquiry_housekeeping.js`.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-blUEaYSL.js` |
+| Live | `npm run build:live` | `index-C9P8QIm4.js` |
+| Capable | `npm run build:capable` | `index-BdOi2ye6.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://africa.digifunzi.com (Dev) | `npm run deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` (2933 KB) | 40 of 40 pre-rendered with content |
+| https://digifunzi.co.ke (Live) | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2803 KB) | 26 of 26 pre-rendered with content |
+
+Both checked: built site (no dev-server files), each calling its own API, `.htaccess` sending
+`/pay/…` to the app. Live has no projects or competitions to list (its API returns none), so their
+detail pages aren't in its sitemap.
+
+### Checked so far
+
+Server tests pass, every build passes, website lint and tests (97) pass. Against the local
+database, with emails and notifications captured rather than sent: check-in tasks (22 checks —
+who may set, tick and see them, reminders once per deadline), the bulk import (9 — tidying,
+duplicates, the template row, an existing parent's password kept), part payments (15 — a plan
+chosen, a part payment switching a sign-up on, reminders, overdue, pause and switch back on, staff
+schedules), the payment-link plan flow, enquiry alerts (each admin of the workspace once) and
+enquiry housekeeping (an untouched plain enquiry closed with a note, one with a sign-up left alone,
+an old closed one's details removed, recent ones untouched, the reminder counting what's still
+New). **Not yet clicked through in a browser, and nothing tried on the hosting** — follow "Verify"
+below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check
+   `SHOW TABLES LIKE 'billing_invoice_instalments';` and `SHOW TABLES LIKE 'checkin_tasks';` each
+   return one row. If not, Run JS script → `db:migrate`.
+3. **Cron:** add `npm run billing:process` hourly and `npm run enquiries:process` daily (see above).
+4. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+5. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+6. **Verify:**
+   - Learners: the hub tiles; open a learner — the bar, edit the guardian with the pencil,
+     Preview as learner, the Pathway and History tabs.
+   - A survey with a Single Choice and an Open-ended question in two sections: a learner answers it;
+     the teacher sees the responses, no marks.
+   - Bulk import a small CSV with `12/03/2015`, `0712345678`, `M` and the template's example row: the
+     example row is refused, the rest imported as 2015-03-12 / +254712345678 / male.
+   - A check-in report in rich text; a task for the Training Lead with a deadline; the hub's own
+     login reads the report under Check-ins.
+   - Settings → Payments → Part payments shows the two default plans. On a sign-up's invoice, Split
+     into payments → save; pay the first part — the sign-up switches on.
+   - The website's Payment step after a sign-up lists Pay in full and the plans.
+   - Settings → Enquiries shows the three switches (removing details off). Send a test enquiry from
+     the website: each admin gets one notification, not two.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips (from
+commit `252c57d`).
+
+---
+
 ## This release (26 Oct 2026, afternoon) — parent portal; hub check-ins simplified; no deleting what's in use; bootcamp diagnostics from the curriculum; Business / Families billing
 
 **Backend and portal** from `curriculum` (branch `modules`) at `3cd016d`. **No website change** —
