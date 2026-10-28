@@ -64,10 +64,12 @@ const settingsSchema = z
   .refine((d) => d.basePlusSessionRate === undefined || !d.commissionRate || d.basePlusSessionRate, { message: "Set the Base plus session rate too", path: ["basePlusSessionRate"] })
   .refine((d) => !d.basePlusSessionRate || d.commissionRate, { message: "Set the Base plus commission per learner too", path: ["commissionRate"] });
 
+// No password needed when the email already signs in (an educator, staff) — they keep their one
+// login (AuthService.addWorkspaceRole).
 const createSupervisorSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(150),
   email: z.string().trim().email("Enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8, "Password must be at least 8 characters").optional()),
 });
 
 // Renaming, or setting a new password — either or both.

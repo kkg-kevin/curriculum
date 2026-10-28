@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FiPlus } from "react-icons/fi";
+import { FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useCheckinMutation } from "../hooks/useCheckins";
 import { checkinsApi } from "../services/checkinsApi";
 import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml, stripHtml } from "../../assessments/components/RichContent";
-import { Pill, TASK_STATE, T, control, formatDate, ghostBtn, hint, label, primaryBtn, useCheckinsBase } from "../shared";
+import { Pill, TASK_STATE, T, btn, control, formatDate, hint, label, useCheckinsBase } from "../shared";
 
 // A task is rich text; where it has to be one line (a confirm box, a screen reader label), plain.
 const shortText = (html, max = 80) => {
@@ -48,9 +48,9 @@ export function TaskRow({ task, onEdit, onRemove, showCheckin = false }) {
         </div>
       </div>
       {(onEdit || onRemove) && (
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          {onEdit && <button type="button" onClick={onEdit} style={{ ...ghostBtn, padding: "5px 10px", fontSize: 12 }}>Edit</button>}
-          {onRemove && <button type="button" onClick={onRemove} style={{ ...ghostBtn, padding: "5px 10px", fontSize: 12, color: "#B91C1C", borderColor: "#FECACA" }}>Remove</button>}
+        <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {onEdit && <button type="button" className="ci-btn" onClick={onEdit} style={btn("secondary", { size: "sm" })}><FiEdit2 size={12} /> Edit</button>}
+          {onRemove && <button type="button" className="ci-btn" onClick={onRemove} style={btn("danger", { size: "sm" })}><FiTrash2 size={12} /> Remove</button>}
         </div>
       )}
     </div>
@@ -88,18 +88,18 @@ function TaskForm({ session, initial, onDone }) {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
           <label htmlFor={`task-who-${initial?.id || "new"}`} style={label}>Who</label>
-          <select id={`task-who-${initial?.id || "new"}`} value={form.assigneeId} onChange={set("assigneeId")} style={{ ...control, width: "100%", padding: "9px 11px" }}>
+          <select id={`task-who-${initial?.id || "new"}`} value={form.assigneeId} onChange={set("assigneeId")} style={{ ...control, width: "100%", height: 36, padding: "0 11px" }}>
             <option value="">Choose who does it…</option>
             {(session.taskAssignees || []).map((a) => <option key={a.id} value={a.id}>{a.name} — {a.roleName}</option>)}
           </select>
         </div>
         <div style={{ flex: "0 1 180px" }}>
           <label htmlFor={`task-due-${initial?.id || "new"}`} style={label}>Deadline</label>
-          <input id={`task-due-${initial?.id || "new"}`} type="date" value={form.dueDate} min={session.scheduledDate} onChange={set("dueDate")} style={{ ...control, width: "100%", padding: "8px 11px" }} />
+          <input id={`task-due-${initial?.id || "new"}`} type="date" value={form.dueDate} min={session.scheduledDate} onChange={set("dueDate")} style={{ ...control, width: "100%", height: 36, padding: "0 11px" }} />
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {editing && <button type="button" onClick={onDone} style={ghostBtn}>Cancel</button>}
-          <button type="submit" disabled={save.isPending} style={primaryBtn(save.isPending)}>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+          {editing && <button type="button" className="ci-btn" onClick={onDone} style={btn("secondary")}>Cancel</button>}
+          <button type="submit" className="ci-btn" disabled={save.isPending} style={btn("primary", { disabled: save.isPending })}>
             {editing ? (save.isPending ? "Saving…" : "Save") : <><FiPlus size={14} /> {save.isPending ? "Adding…" : "Add task"}</>}
           </button>
         </div>

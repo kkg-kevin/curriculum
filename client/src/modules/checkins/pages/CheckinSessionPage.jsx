@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { FiArrowLeft, FiMapPin, FiVideo } from "react-icons/fi";
+import { FiArrowLeft, FiChevronDown, FiEdit2, FiMapPin, FiSend, FiVideo } from "react-icons/fi";
 import { useCheckinMutation, useCheckinSession } from "../hooks/useCheckins";
 import { checkinsApi } from "../services/checkinsApi";
 import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
 import { SessionTasks } from "../components/Tasks";
-import { FORMAT_LABEL, FREQUENCY_LABEL, Pill, REPORT_PARTS, STATE, T, card, font, formatDate, formatDateTime, hint, label, primaryBtn, reportHtml, useCheckinsBase } from "../shared";
+import { CheckinStyles, FORMAT_LABEL, FREQUENCY_LABEL, Pill, REPORT_PARTS, STATE, T, btn, card, font, formatDate, formatDateTime, hint, label, reportHtml, useCheckinsBase } from "../shared";
 
 const EMPTY = { highs: "", lows: "", resolutions: "" };
 const toForm = (report) => ({ highs: reportHtml(report?.highs), lows: reportHtml(report?.lows), resolutions: reportHtml(report?.resolutions) });
@@ -68,6 +68,7 @@ export default function CheckinSessionPage() {
 
   return (
     <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
+      <CheckinStyles />
       <Link to={base} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: T.accentMid, textDecoration: "none", alignSelf: "flex-start" }}><FiArrowLeft size={14} /> Hub Check-ins</Link>
 
       <section style={{ ...card, padding: "18px 20px" }}>
@@ -86,8 +87,13 @@ export default function CheckinSessionPage() {
 
       <section style={{ ...card, padding: "18px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>Report</h2>
-          {reported && <span style={{ fontSize: 12, color: T.inkMuted }}>Sent {formatDateTime(session.reportSubmittedAt)}{session.reportSubmittedByName ? ` by ${session.reportSubmittedByName}` : ""}</span>}
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>Report</h2>
+            {reported && <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>Sent {formatDateTime(session.reportSubmittedAt)}{session.reportSubmittedByName ? ` by ${session.reportSubmittedByName}` : ""}</p>}
+          </div>
+          {reported && !showForm && permissions.canWriteReport && (
+            <button type="button" className="ci-btn" onClick={() => setEditing(true)} style={btn("secondary")}><FiEdit2 size={14} /> Correct the report</button>
+          )}
         </div>
 
         {session.state === "upcoming" && (
@@ -109,18 +115,15 @@ export default function CheckinSessionPage() {
               </div>
             ))}
             {problems.length > 0 && <div style={{ color: "#B91C1C", fontSize: 12.5 }}>{problems.map((p) => <p key={p} style={{ margin: 0 }}>{p}</p>)}</div>}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              {reported && <button type="button" onClick={() => { setEditing(false); setProblems([]); setForm(toForm(session.report)); }} style={{ ...primaryBtn(), background: "#fff", color: T.accent, border: "1.5px solid #D6E4EF" }}>Cancel</button>}
-              <button type="button" onClick={submit} disabled={save.isPending} style={primaryBtn(save.isPending)}>{save.isPending ? "Sending…" : reported ? "Save changes" : "Send report"}</button>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap", paddingTop: 14, borderTop: "1px solid #F3F4F6" }}>
+              {reported && <button type="button" className="ci-btn" onClick={() => { setEditing(false); setProblems([]); setForm(toForm(session.report)); }} style={btn("secondary")}>Cancel</button>}
+              <button type="button" className="ci-btn" onClick={submit} disabled={save.isPending} style={btn("primary", { disabled: save.isPending })}>
+                {!reported && <FiSend size={14} />}{save.isPending ? "Sending…" : reported ? "Save changes" : "Send report"}
+              </button>
             </div>
           </div>
         ) : reported ? (
-          <>
-            <ReportView report={session.report} />
-            {permissions.canWriteReport && (
-              <button type="button" onClick={() => setEditing(true)} style={{ ...primaryBtn(), marginTop: 14, background: "#fff", color: T.accent, border: "1.5px solid #D6E4EF" }}>Correct the report</button>
-            )}
-          </>
+          <ReportView report={session.report} />
         ) : session.state === "due" ? (
           <p style={{ ...hint, fontSize: 13 }}>Waiting for {[session.accountManagerName, session.trainingLeadName].filter(Boolean).join(" or ") || "the check-in's Account Manager or Training Lead"} to write the report.</p>
         ) : null}
@@ -137,9 +140,12 @@ export default function CheckinSessionPage() {
           <h2 style={{ margin: 0, padding: "16px 20px 6px", fontSize: 15, fontWeight: 800, color: T.ink }}>Earlier reports for {session.hubName}</h2>
           {session.earlierReports.map((r) => (
             <div key={r.id} style={{ borderTop: "1px solid #F3F4F6" }}>
-              <button type="button" onClick={() => setOpenEarlier(openEarlier === r.id ? null : r.id)} aria-expanded={openEarlier === r.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, width: "100%", padding: "12px 20px", border: 0, background: "transparent", cursor: "pointer", fontFamily: font, fontSize: 13, color: T.ink, textAlign: "left" }}>
+              <button type="button" className="ci-tab" onClick={() => setOpenEarlier(openEarlier === r.id ? null : r.id)} aria-expanded={openEarlier === r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, width: "100%", minHeight: 46, padding: "0 20px", border: 0, background: "transparent", cursor: "pointer", fontFamily: font, fontSize: 13, color: T.ink, textAlign: "left" }}>
                 <span><strong>{formatDate(r.scheduledDate)}</strong> · {FORMAT_LABEL[r.format]}</span>
-                <span style={{ color: T.accentMid, fontWeight: 700 }}>{openEarlier === r.id ? "Hide" : "Show"}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: T.accentMid, fontWeight: 700, fontSize: 12.5 }}>
+                  {openEarlier === r.id ? "Hide" : "Show"}
+                  <FiChevronDown size={15} style={{ transform: openEarlier === r.id ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }} />
+                </span>
               </button>
               {openEarlier === r.id && <div style={{ padding: "0 20px 16px" }}><ReportView report={r.report} /></div>}
             </div>

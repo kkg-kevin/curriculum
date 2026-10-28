@@ -71,7 +71,8 @@ async function workspaceOf(req) {
   const role = user.actualRole || user.role;
   if (role === "admin") return user.organisationId || user.id;
   if (role === "collaborator" || role === "supervisor") return user.invitedByAdminId || null;
-  const cached = workspaceCache.get(user.id);
+  const cacheKey = `${user.id}:${role}`;
+  const cached = workspaceCache.get(cacheKey);
   if (cached && cached.at > Date.now() - 10 * 60 * 1000) return cached.ownerAdminId;
 
   let ownerAdminId = null;
@@ -98,7 +99,7 @@ async function workspaceOf(req) {
   } catch {
     ownerAdminId = null;
   }
-  workspaceCache.set(user.id, { ownerAdminId, at: Date.now() });
+  workspaceCache.set(cacheKey, { ownerAdminId, at: Date.now() });
   return ownerAdminId;
 }
 
@@ -110,7 +111,7 @@ async function actorOf(user) {
   let accessRole = null;
   try {
     account = await db("users").where({ id: user.id }).select("name", "email", "username", "role", "roleId").first();
-    if (account?.role === "collaborator" && account.roleId) accessRole = (await db("access_roles").where({ id: account.roleId }).select("name").first())?.name || null;
+    if ((user.actualRole || user.role) === "collaborator" && account?.roleId) accessRole = (await db("access_roles").where({ id: account.roleId }).select("name").first())?.name || null;
   } catch {
     account = null;
   }
@@ -118,7 +119,7 @@ async function actorOf(user) {
     actorUserId: user.id,
     actorName: clip(account?.name || user.email || user.username || "Unknown", 150),
     actorEmail: clip(account?.email || user.email || account?.username || user.username, 190),
-    actorRole: account?.role || user.actualRole || user.role || null,
+    actorRole: user.actualRole || user.role || account?.role || null,
     actorAccessRole: clip(accessRole, 100),
   };
 }

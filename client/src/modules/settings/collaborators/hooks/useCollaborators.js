@@ -15,7 +15,8 @@ export function useInviteCollaborator() {
     onSuccess: (collaborator) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["access-roles"] });
-      toast.success(`Invited ${collaborator.email}`);
+      if (collaborator.linked) toast.success(`${collaborator.email} already had a login — it now has the Staff role too, with the same password.`, { duration: 7000 });
+      else toast.success(`Invited ${collaborator.email}`);
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to invite collaborator"),
   });

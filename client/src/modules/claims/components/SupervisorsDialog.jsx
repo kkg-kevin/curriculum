@@ -23,13 +23,15 @@ export default function SupervisorsDialog({ onClose }) {
   const busy = create.isPending || update.isPending || remove.isPending;
 
   const failed = (err, fallback) => toast.error(err.errors?.[0]?.message || err.message || fallback);
-  const valid = form.name.trim() && /\S+@\S+\.\S+/.test(form.email.trim()) && form.password.length >= 8;
+  // The password is needed only for a new login — the server asks for one if the email has none.
+  const valid = form.name.trim() && /\S+@\S+\.\S+/.test(form.email.trim()) && (!form.password || form.password.length >= 8);
 
   const add = async (event) => {
     event.preventDefault();
     try {
-      await create.mutateAsync({ name: form.name.trim(), email: form.email.trim(), password: form.password });
-      toast.success("Supervisor account created — share the email and password with them");
+      const created = await create.mutateAsync({ name: form.name.trim(), email: form.email.trim(), password: form.password || undefined });
+      if (created?.linked) toast.success(`${created.email} already had a login — it now has the Supervisor role too, with the same password.`, { duration: 7000 });
+      else toast.success("Supervisor account created — share the email and password with them");
       setForm(EMPTY);
     } catch (err) {
       failed(err, "Could not create the supervisor");
@@ -98,11 +100,11 @@ export default function SupervisorsDialog({ onClose }) {
           </div>
           <div>
             <label htmlFor="supervisor-password" style={label}>Password</label>
-            <input id="supervisor-password" type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="off" placeholder="8 characters or more" style={inputStyle} />
+            <input id="supervisor-password" type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="off" placeholder="Only for a new login" style={inputStyle} />
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 14, flexWrap: "wrap" }}>
-          <p style={{ margin: 0, fontSize: 12, color: T.inkMuted, lineHeight: 1.5, flex: "1 1 240px" }}>The email must not already be used by an educator, staff member or anyone else — a supervisor has a login of their own.</p>
+          <p style={{ margin: 0, fontSize: 12, color: T.inkMuted, lineHeight: 1.5, flex: "1 1 240px" }}>Someone who already signs in (an educator, staff) keeps their one login and password — leave the password blank. A password typed here replaces theirs for every role.</p>
           <button type="submit" disabled={!valid || busy} style={primaryButton(!valid || busy)}><FiUserPlus size={15} /> {create.isPending ? "Creating…" : "Create supervisor"}</button>
         </div>
       </form>

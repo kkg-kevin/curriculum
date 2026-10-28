@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const UserSessionModel = require("../auth/user-session.model");
+const { rolesOf, WORKSPACE_ROLES } = require("../auth/account-roles");
 
 // Every login that belongs to one admin's workspace, what kind of account it is, what it is
 // attached to, when it was last used, and whether it is switched on — in two lists (GROUPS):
@@ -111,7 +112,7 @@ const WorkspaceUsersService = {
       .orWhereIn("id", curriculumAdminIds)
       .orWhere((q) => q.whereIn("role", ["school", "teacher", "learner"]).whereIn(db.raw("LOWER(email)"), emails.length ? emails : [""]))
       .orWhere((q) => q.where({ role: "learner" }).whereIn(db.raw("LOWER(username)"), usernames.length ? usernames : [""]))
-      .select("id", "name", "email", "username", "role", "roleId", "photo", "createdAt", "deactivatedAt", "invitedByAdminId", "organisationId");
+      .select("id", "name", "email", "username", "role", "extraRoles", "roleId", "photo", "createdAt", "deactivatedAt", "invitedByAdminId", "organisationId");
 
     // Last time each account did anything the activity log records (a sign-in included). Failed
     // sign-in attempts aren't the account being used.
@@ -171,6 +172,9 @@ const WorkspaceUsersService = {
       } else continue;
 
       if (!inGroup(type)) continue;
+      // Staff / supervisor held here on top of the login's own role (one login, several roles).
+      const alsoHere = user.invitedByAdminId === ownerAdminId ? WORKSPACE_ROLES.filter((r) => r !== user.role && rolesOf(user).includes(r)) : [];
+      const isStaffHere = user.invitedByAdminId === ownerAdminId && rolesOf(user).includes("collaborator");
       const lastActiveAt = lastActive.get(user.id) || null;
       users.push({
         id: user.id,
@@ -179,8 +183,8 @@ const WorkspaceUsersService = {
         username: user.username || "",
         photo: user.photo || null,
         type,
-        typeLabel: TYPE_LABELS[type] || type,
-        accessRole: user.role === "collaborator" ? roleNameById.get(user.roleId) || "No role" : null,
+        typeLabel: [TYPE_LABELS[type] || type, ...alsoHere.map((r) => TYPE_LABELS[r])].join(" · "),
+        accessRole: isStaffHere ? roleNameById.get(user.roleId) || "No role" : null,
         attachedTo,
         record,
         suspended,

@@ -39,8 +39,8 @@ export default function ScheduleDialog({ schedule, onClose }) {
       onClose={onClose}
       width={560}
       footer={<>
-        <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
-        <button type="button" onClick={submit} disabled={save.isPending || missingPeople} style={primaryBtn(save.isPending || missingPeople)}>{save.isPending ? "Saving…" : schedule ? "Save" : "Set up"}</button>
+        <button type="button" className="ci-btn" onClick={onClose} style={ghostBtn}>Cancel</button>
+        <button type="button" className="ci-btn" onClick={submit} disabled={save.isPending || missingPeople} style={primaryBtn(save.isPending || missingPeople)}>{save.isPending ? "Saving…" : schedule ? "Save" : "Set up"}</button>
       </>}
     >
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>

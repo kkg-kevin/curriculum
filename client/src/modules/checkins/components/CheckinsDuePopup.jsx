@@ -5,7 +5,7 @@ import { FiArrowRight, FiCalendar, FiCheckCircle, FiClipboard, FiMapPin, FiTrend
 import { useAuth } from "../../../context/AuthContext";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useDueCheckins } from "../hooks/useCheckins";
-import { FORMAT_LABEL, FREQUENCY_LABEL, font, formatDate } from "../shared";
+import { CheckinStyles, FORMAT_LABEL, FREQUENCY_LABEL, btn, font, formatDate } from "../shared";
 
 // Shown when a hub's Account Manager or Training Lead signs in and has check-ins whose day has
 // come with no report yet (GET /api/checkins/due). "Remind me later" hides it until they next
@@ -102,6 +102,7 @@ export default function CheckinsDuePopup() {
 
   return createPortal(
     <div role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }} className="ci-due-backdrop" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: font }}>
+      <CheckinStyles />
       <style>{`
         @keyframes ciDueIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
         @keyframes ciDueFade { from { opacity: 0; } to { opacity: 1; } }
@@ -192,11 +193,11 @@ export default function CheckinsDuePopup() {
 
         {/* Footer */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "14px 20px 18px", background: "#F8FAFC", borderTop: "1px solid #EEF2F6" }}>
-          <button type="button" onClick={close} style={{ border: "none", background: "none", color: "#6B7280", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font, padding: "8px 4px" }}>
+          <button type="button" className="ci-btn" onClick={close} style={btn("quiet")}>
             Remind me later
           </button>
-          <button type="button" onClick={() => open(base)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 11, border: "1.5px solid #D6E4EF", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: font }}>
-            Open my check-ins
+          <button type="button" className="ci-btn" onClick={() => open(base)} style={btn("secondary")}>
+            Open my check-ins <FiArrowRight size={14} />
           </button>
         </div>
       </div>

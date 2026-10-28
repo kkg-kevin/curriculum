@@ -53,9 +53,14 @@ export default function EditTeacherPage() {
     const viewPath = teacherPath(user?.role, id, "view");
     updateTeacher({ id, data }, {
       onSuccess: (saved) => {
-        // Their email already signs in as something else: no new password was set.
+        // Their email already signs in as something else: one login, now with the Educator role too.
         if (saved?.loginLinked) {
-          toast("This email already has a Digifunzi login, so it now has the Educator role too. They sign in with their own password and choose Educator.", { duration: 8000 });
+          toast(
+            saved.passwordSet
+              ? "This email already has a Digifunzi login, so it now has the Educator role too. The password you set is now its password for every role."
+              : "This email already has a Digifunzi login, so it now has the Educator role too. They sign in with their existing password and choose Educator.",
+            { duration: 8000 },
+          );
           navigate(viewPath);
         } else if (data.password) {
           setPasswordReveal({ password: data.password, name: `${teacher.firstName} ${teacher.lastName}`, navigateTo: viewPath });
