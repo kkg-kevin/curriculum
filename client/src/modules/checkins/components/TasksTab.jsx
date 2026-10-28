@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCheckinTasks } from "../hooks/useCheckins";
 import { TaskRow } from "./Tasks";
-import { Empty, Pager, card, chip, hint } from "../shared";
+import { Empty, Pager, Segmented, card, hint, toolbar } from "../shared";
 
 const VIEWS = [
   { key: "open", label: "To do" },
@@ -19,12 +19,13 @@ export default function TasksTab({ scope }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {VIEWS.map((v) => (
-          <button key={v.key} type="button" onClick={() => { setView(v.key); setPage(1); }} style={chip(view === v.key)}>
-            {v.label}{counts[v.key] ? ` · ${counts[v.key]}` : ""}
-          </button>
-        ))}
+      <div style={toolbar}>
+        <Segmented
+          label="Show"
+          options={VIEWS.map((v) => ({ ...v, count: counts[v.key] }))}
+          value={view}
+          onChange={(key) => { setView(key); setPage(1); }}
+        />
       </div>
       <section style={{ ...card, overflow: "hidden" }}>
         {isLoading && <p style={{ ...hint, padding: 18 }}>Loading…</p>}

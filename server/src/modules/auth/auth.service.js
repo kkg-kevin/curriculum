@@ -14,7 +14,7 @@ const PasswordResetTokenModel = require("./password-reset-token.model");
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
 const { releaseIfLeftover, isLeftoverLogin } = require("./leftover-login");
-const { LINKABLE_ROLES, HUB_LEAD_ROLE, extraRolesOf, rolesOf, availableRoles } = require("./account-roles");
+const { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, extraRolesOf, rolesOf, availableRoles, withoutRole } = require("./account-roles");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
 
@@ -172,37 +172,86 @@ const AuthService = {
     return this.createUser({ name, email, password, role });
   },
 
-  // Used by learning-hub.controller.js when an admin sets/resets a school-type learning hub's
-  // portal password from the learning hub form itself. If an account with that email already exists, its
-  // password is reset (only when the role matches — never silently repurpose an unrelated
-  // admin/teacher/learner account onto a new role by reusing their email). Otherwise a fresh
-  // account is created, same as self-signup. A leftover login of another kind (see
-  // leftover-login.js — its record was deleted) gives its email up rather than refusing.
+  // Sets the password of the login with this email for `role` — an educator, hub, parent (or
+  // curriculum admin, supervisor) form — creating the login when there's none. A leftover login of
+  // another kind (see leftover-login.js — its record was deleted) gives its email up first.
   //
-  // An existing login of another role takes an educator, hub or parent role as an extra role
-  // instead (account-roles.js): the person signs in with their own password and chooses which
-  // role. Its password is never touched that way — whoever adds the role doesn't get to set the
-  // password of someone else's login. The result then carries `linked: true`.
+  // One person, one login, one password (account-roles.js): an existing login of another role
+  // takes an educator, hub or parent role as an extra role, and the password typed here becomes
+  // that login's password for every role it holds. The one exception is an admin's or curriculum
+  // admin's own login — someone else's form never changes their password (they do it in My
+  // profile); it still gains the role, and the result says `passwordKept`. `linked` is true
+  // whenever the login already existed with another role of its own.
   async setOrCreatePassword({ name, email, password, role }) {
     const existing = await UserModel.findByEmail(email);
-    if (existing) {
-      if (existing.role !== role && await releaseIfLeftover(existing)) {
-        return this.createUser({ name, email, password, role });
-      }
-      if (existing.role !== role && LINKABLE_ROLES.includes(role) && existing.email) {
-        const extraRoles = extraRolesOf(existing);
-        const updated = extraRoles.includes(role) ? existing : await UserModel.update(existing.id, { extraRoles: [...extraRoles, role] });
-        return { ...sanitize(updated), linked: true };
-      }
-      if (existing.role !== role) {
-        const err = new Error(`This email is already registered as a ${existing.role} account`);
-        err.statusCode = 409;
-        throw err;
-      }
-      const passwordHash = await passwords.hash(password, SALT_ROUNDS);
-      return sanitize(await UserModel.update(existing.id, { passwordHash }));
+    if (!existing) return this.createUser({ name, email, password, role });
+    const holdsRole = rolesOf(existing).includes(role);
+    if (!holdsRole && await releaseIfLeftover(existing)) {
+      return this.createUser({ name, email, password, role });
     }
-    return this.createUser({ name, email, password, role });
+    if (!holdsRole && !(LINKABLE_ROLES.includes(role) && existing.email)) {
+      const err = new Error(`This email is already registered as a ${existing.role} account`);
+      err.statusCode = 409;
+      throw err;
+    }
+    const linked = existing.role !== role;
+    const passwordKept = linked && OWN_ONLY_ROLES.includes(existing.role);
+    const patch = holdsRole ? {} : { extraRoles: [...extraRolesOf(existing), role] };
+    if (password && !passwordKept) patch.passwordHash = await passwords.hash(password, SALT_ROUNDS);
+    const updated = Object.keys(patch).length ? await UserModel.update(existing.id, patch) : existing;
+    return { ...sanitize(updated), ...(linked ? { linked: true } : {}), ...(passwordKept ? { passwordKept: true } : {}) };
+  },
+
+  // Makes the login with this email staff or a claims supervisor (account-roles.js's
+  // WORKSPACE_ROLES) of `ownerAdminId`'s workspace. A login that already exists — an educator, a
+  // parent, the workspace's own supervisor — simply takes the role and keeps its password, unless
+  // a new one is given (then it's that login's password for every role). Without a login, one is
+  // created and a password is required. Refused: an admin's / curriculum admin's login, and a
+  // login that is still staff or a supervisor of another workspace (the workspace sits on the
+  // login). `created` is true for a brand-new login.
+  async addWorkspaceRole({ name, email, password, role, ownerAdminId }) {
+    const fail = (message, statusCode = 409) => { throw Object.assign(new Error(message), { statusCode }); };
+    let existing = await UserModel.findByEmail(email);
+    const alreadyHere = existing && rolesOf(existing).includes(role) && existing.invitedByAdminId === ownerAdminId;
+    if (existing && !alreadyHere && await releaseIfLeftover(existing)) existing = null;
+
+    if (!existing) {
+      if (!password) fail("This email has no login yet — set a password for it", 400);
+      const user = await this.createUser({ name, email, password, role });
+      return { ...sanitize(await UserModel.update(user.id, { invitedByAdminId: ownerAdminId })), created: true };
+    }
+    if (OWN_ONLY_ROLES.includes(existing.role)) {
+      fail(`This email is ${existing.role === "admin" ? "an admin" : "a curriculum admin"} login — they already run a workspace, so they can't also be ${role === "supervisor" ? "a supervisor" : "staff"}`);
+    }
+
+    // Staff / supervisor of another workspace: refused while that workspace still exists, cleared
+    // first when it's gone (its roles are leftovers).
+    let user = existing;
+    const elsewhere = user.invitedByAdminId && user.invitedByAdminId !== ownerAdminId
+      ? WORKSPACE_ROLES.filter((r) => rolesOf(user).includes(r))
+      : [];
+    for (const r of elsewhere) {
+      if (!(await isLeftoverLogin({ ...user, role: r }))) fail("This email is already staff or a claims supervisor in another workspace");
+    }
+    for (const r of elsewhere) user = await UserModel.update(user.id, withoutRole(user, r));
+
+    const patch = { invitedByAdminId: ownerAdminId };
+    if (!rolesOf(user).includes(role)) patch.extraRoles = [...extraRolesOf(user), role];
+    if (password) patch.passwordHash = await passwords.hash(password, SALT_ROUNDS);
+    return { ...sanitize(await UserModel.update(user.id, patch)), created: false };
+  },
+
+  // Takes `role` off a login (removing a staff member or supervisor): the login stays for the
+  // other roles it holds, its own role passing on when that's the one going (withoutRole). With no
+  // role left, the login and its sessions go. Returns the updated login, or null when deleted.
+  async dropRole(user, role) {
+    const patch = withoutRole(user, role);
+    if (!patch) {
+      await UserSessionModel.deleteByUserId(user.id);
+      await UserModel.delete(user.id);
+      return null;
+    }
+    return sanitize(await UserModel.update(user.id, patch));
   },
 
   // Mints/resets a learner's OWN dedicated portal login — distinct from setOrCreatePassword

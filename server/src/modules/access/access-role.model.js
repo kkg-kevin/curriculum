@@ -36,7 +36,7 @@ const AccessRoleModel = {
   // Staff per role, for the role list and the "can't delete a role in use" check.
   async countStaff(roleIds) {
     if (!roleIds.length) return new Map();
-    const rows = await db("users").whereIn("roleId", roleIds).where({ role: "collaborator" }).groupBy("roleId").select("roleId").count({ count: "*" });
+    const rows = await db("users").whereIn("roleId", roleIds).groupBy("roleId").select("roleId").count({ count: "*" });
     return new Map(rows.map((row) => [row.roleId, Number(row.count)]));
   },
 };

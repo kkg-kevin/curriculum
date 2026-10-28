@@ -81,7 +81,8 @@ const createTeacher = asyncHandler(async (req, res) => {
   // Create the login first — if it fails (e.g. the email already belongs to a different-role
   // account), nothing is written at all, rather than leaving a teacher record with no login.
   // `loginLinked`: their email already signs in as something else (e.g. the admin adding
-  // themselves), so that login gains the educator role and keeps its own password.
+  // themselves), so that login gains the educator role. `passwordSet`: a password typed here is
+  // now that one login's password for every role (never an admin's — see setOrCreatePassword).
   const login = password
     ? await AuthService.setOrCreatePassword({ name: `${data.firstName} ${data.lastName}`, email: data.email, password, role: "teacher" })
     : await AuthService.linkExistingLogin(data.email, "teacher");
@@ -91,7 +92,7 @@ const createTeacher = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") data.createdByAdminId = req.ownerAdminId;
   const teacher = await TeacherService.createTeacher(data);
   if (linkHubId) await TeacherService.linkHub(teacher.id, linkHubId);
-  res.status(201).json({ success: true, data: { ...teacher, loginLinked } });
+  res.status(201).json({ success: true, data: { ...teacher, loginLinked, passwordSet: Boolean(password && !login?.passwordKept) } });
 });
 
 const getAllTeachers = asyncHandler(async (req, res) => {
@@ -165,7 +166,7 @@ const updateTeacher = asyncHandler(async (req, res) => {
       throw err;
     }
     const login = await AuthService.setOrCreatePassword({ name: `${teacher.firstName} ${teacher.lastName}`, email: teacher.email, password, role: "teacher" });
-    return res.json({ success: true, data: { ...teacher, loginLinked: Boolean(login?.linked) } });
+    return res.json({ success: true, data: { ...teacher, loginLinked: Boolean(login?.linked), passwordSet: !login?.passwordKept } });
   }
   const linked = await AuthService.linkExistingLogin(teacher.email, "teacher");
   res.json({ success: true, data: { ...teacher, loginLinked: Boolean(linked) } });

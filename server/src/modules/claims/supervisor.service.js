@@ -1,8 +1,7 @@
 const db = require("../../config/db");
 const UserModel = require("../auth/user.model");
-const UserSessionModel = require("../auth/user-session.model");
 const AuthService = require("../auth/auth.service");
-const { releaseIfLeftover } = require("../auth/leftover-login");
+const { rolesOf } = require("../auth/account-roles");
 
 // Claim supervisors: accounts that exist only to review the claims of the educators assigned to
 // them (see the 20261008090000 migration). Created and managed by the workspace's admin; an
@@ -12,11 +11,13 @@ function fail(message, statusCode = 400) {
   throw Object.assign(new Error(message), { statusCode });
 }
 
+const isSupervisor = (user) => Boolean(user) && rolesOf(user).includes("supervisor");
+
 const publicShape = (user, educators = 0) => ({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt, educators });
 
 const SupervisorService = {
   async list(ownerAdminId) {
-    const users = (await UserModel.findAll({ invitedByAdminId: ownerAdminId })).filter((u) => u.role === "supervisor");
+    const users = (await UserModel.findAll({ invitedByAdminId: ownerAdminId })).filter(isSupervisor);
     if (!users.length) return [];
     const rows = await db("teachers").whereIn("supervisorId", users.map((u) => u.id)).select("supervisorId").count({ count: "*" }).groupBy("supervisorId");
     const counts = new Map(rows.map((r) => [r.supervisorId, Number(r.count)]));
@@ -27,18 +28,17 @@ const SupervisorService = {
   // supervisor can never be reached from another workspace.
   async getOwned(id, ownerAdminId) {
     const user = id ? await UserModel.findById(id) : null;
-    if (!user || user.role !== "supervisor" || user.invitedByAdminId !== ownerAdminId) fail("Supervisor not found", 404);
+    if (!isSupervisor(user) || user.invitedByAdminId !== ownerAdminId) fail("Supervisor not found", 404);
     return user;
   },
 
-  // A supervisor login is its own account: an email already used by an educator, staff member or
-  // anyone else can't double as one.
+  // An email that already signs in (an educator, a staff member of this workspace) keeps its one
+  // login and password and gains the Supervisor role; a password is needed only for a new login.
   async create(ownerAdminId, { name, email, password }) {
-    let existing = await UserModel.findByEmail(email);
-    if (existing && await releaseIfLeftover(existing)) existing = null;
-    if (existing) fail(existing.role === "supervisor" ? "A supervisor with this email already exists" : `This email is already registered as a ${existing.role} account — a supervisor needs an email of their own`, 409);
-    const user = await AuthService.createUser({ name, email, password, role: "supervisor" });
-    return publicShape(await UserModel.update(user.id, { invitedByAdminId: ownerAdminId }));
+    const existing = await UserModel.findByEmail(email);
+    if (existing && isSupervisor(existing) && existing.invitedByAdminId === ownerAdminId) fail("A supervisor with this email already exists", 409);
+    const user = await AuthService.addWorkspaceRole({ name, email, password, role: "supervisor", ownerAdminId });
+    return { ...publicShape(user), linked: !user.created };
   },
 
   async update(id, ownerAdminId, { name, password }) {
@@ -54,8 +54,8 @@ const SupervisorService = {
     await SupervisorService.getOwned(id, ownerAdminId);
     await db("teachers").where({ supervisorId: id }).update({ supervisorId: null, updatedAt: new Date() });
     await db("teacher_claims").where({ supervisorId: id, status: "pending_supervisor" }).update({ status: "pending_admin", supervisorId: null, supervisorName: null, updatedAt: new Date() });
-    await UserSessionModel.deleteByUserId(id);
-    await UserModel.delete(id);
+    // Only the Supervisor role goes — a login that is also an educator or staff stays for those.
+    await AuthService.dropRole(await UserModel.findById(id), "supervisor");
     return { message: "Supervisor removed" };
   },
 };

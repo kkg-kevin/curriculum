@@ -300,7 +300,7 @@ const CHECKS = {
     name: "access_roles",
     alternative: null,
     uses: (id) => [
-      usage("staff", ["staff member with it", "staff members with it"], db("users").where({ roleId: id, role: "collaborator" }), { table: "users" }),
+      usage("staff", ["staff member with it", "staff members with it"], db("users").where({ roleId: id }), { table: "users" }),
     ],
   },
 

@@ -5,12 +5,18 @@ const { isLeftoverLogin } = require("./leftover-login");
 // auth.service.js's signToken and auth.middleware.js's protect), so everything downstream still
 // sees a single req.user.role.
 //
-// Only roles whose access comes from a record found by the login's email can be added this way:
-// an educator (teachers.email), a learning hub (learning_hubs.email) and a parent
-// (learners/home_learning_households.guardianEmail). Staff and supervisors carry their workspace
-// on the login itself (invitedByAdminId, roleId), which would clash with an admin's own, so they
-// still need an email of their own; admins and curriculum admins are never added to a login.
+// Roles added to a login found by its email: an educator (teachers.email), a learning hub
+// (learning_hubs.email) and a parent (learners/home_learning_households.guardianEmail).
 const LINKABLE_ROLES = ["teacher", "school", "learner"];
+
+// Staff and claim supervisors: added to a login by inviting its email (AuthService.addWorkspaceRole).
+// Their workspace sits on the login itself (invitedByAdminId, and roleId for staff), so a login is
+// staff / supervisor of one workspace only.
+const WORKSPACE_ROLES = ["collaborator", "supervisor"];
+
+// Admins and curriculum admins keep a login of their own: never added to another login, and never
+// given staff / supervisor on top (they already run their workspace).
+const OWN_ONLY_ROLES = ["admin", "curriculumAdmin"];
 
 // An Account Manager / Training Lead: a login named on a learning hub as its Account Manager or
 // Training Lead (learning_hubs.accountManagerId / trainingLeadId — an educator, say). It's added
@@ -19,7 +25,7 @@ const LINKABLE_ROLES = ["teacher", "school", "learner"];
 // plus their hub check-ins (scope.middleware.js, auth.middleware.js's blockHubLeadWrites).
 // Admins never take it — they already do all of that from the admin app.
 const HUB_LEAD_ROLE = "hubLead";
-const NO_HUB_LEAD = ["admin", "curriculumAdmin", "collaborator", "supervisor"];
+const NO_HUB_LEAD = OWN_ONLY_ROLES;
 const canBeHubLead = (user) => Boolean(user) && !NO_HUB_LEAD.includes(user.role);
 
 function parseRoles(value) {
@@ -39,7 +45,11 @@ function parseRoles(value) {
 // login never has any.
 const extraRolesOf = (user) =>
   user?.email
-    ? [...new Set(parseRoles(user.extraRoles))].filter((r) => r !== user.role && (LINKABLE_ROLES.includes(r) || (r === HUB_LEAD_ROLE && canBeHubLead(user))))
+    ? [...new Set(parseRoles(user.extraRoles))].filter((r) => r !== user.role && (
+      LINKABLE_ROLES.includes(r)
+      || (WORKSPACE_ROLES.includes(r) && !OWN_ONLY_ROLES.includes(user.role))
+      || (r === HUB_LEAD_ROLE && canBeHubLead(user))
+    ))
     : [];
 
 // Every role on file — cheap, no lookups. What `protect` checks a token's role against.
@@ -59,4 +69,17 @@ async function availableRoles(user) {
   return [user.role, ...extras];
 }
 
-module.exports = { LINKABLE_ROLES, HUB_LEAD_ROLE, canBeHubLead, extraRolesOf, rolesOf, availableRoles };
+// The login without `role`: { role, extraRoles } to save, its own role passing to the next role it
+// holds when that's the one going — or null when it has no other role left (the login goes).
+// Losing its last staff / supervisor role also clears the workspace that came with it.
+function withoutRole(user, role) {
+  const rest = rolesOf(user).filter((r) => r !== role);
+  const ownRole = user.role === role ? rest.find((r) => r !== HUB_LEAD_ROLE) : user.role;
+  if (!ownRole) return null;
+  const patch = { role: ownRole, extraRoles: rest.filter((r) => r !== ownRole) };
+  if (role === "collaborator") Object.assign(patch, { roleId: null, allowedModules: null });
+  if (WORKSPACE_ROLES.includes(role) && !rest.some((r) => WORKSPACE_ROLES.includes(r))) patch.invitedByAdminId = null;
+  return patch;
+}
+
+module.exports = { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, canBeHubLead, extraRolesOf, rolesOf, availableRoles, withoutRole };

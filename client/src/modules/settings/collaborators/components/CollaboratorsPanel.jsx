@@ -58,7 +58,8 @@ export default function CollaboratorsPanel({ onManageRoles }) {
     const next = {};
     if (!form.name.trim()) next.name = "Name is required";
     if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = "Enter a valid email address";
-    if (form.password.length < 8) next.password = "Password must be at least 8 characters";
+    // Blank is fine for an email that already signs in — the server asks for one if it doesn't.
+    if (form.password && form.password.length < 8) next.password = "Password must be at least 8 characters";
     if (!form.roleId) next.roleId = "Choose a role";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -155,7 +156,7 @@ export default function CollaboratorsPanel({ onManageRoles }) {
       {open && (
         <Modal
           title="Invite staff member"
-          subtitle="They'll get their own login, with the access their role gives them."
+          subtitle="They get the access their role gives them. Someone who already signs in (an educator, a parent) keeps their one login and password."
           onClose={() => { setOpen(false); setErrors({}); }}
           footer={(
             <>
@@ -170,7 +171,7 @@ export default function CollaboratorsPanel({ onManageRoles }) {
             <div>
               <PersonPickerField onPick={({ name, email }) => setForm((f) => ({ ...f, name, email }))} />
               <p style={{ margin: "6px 0 0", fontSize: "11.5px", color: "#9CA3AF", lineHeight: "1.5" }}>
-                Picking someone here just fills in their name and email below — they'll still get a brand-new, separate staff login (their existing teacher/portal login is unaffected).
+                Picking someone fills in their name and email. If they already sign in, Staff is added to that same login — they choose Staff or their other role when signing in.
               </p>
             </div>
             <div>
@@ -182,14 +183,14 @@ export default function CollaboratorsPanel({ onManageRoles }) {
               <Label>Email</Label>
               <input className="stg-input" type="email" value={form.email} onChange={set("email")} placeholder="name@example.com" />
               {errors.email && <p style={{ margin: "5px 0 0", fontSize: "12px", color: "#DC2626" }}>{errors.email}</p>}
-              <p style={{ margin: "5px 0 0", fontSize: "11px", color: "#9CA3AF" }}>
-                Using the same email as an existing teacher/hub login will fail — staff need their own address.
-              </p>
             </div>
             <div>
               <Label>Password</Label>
               <input className="stg-input" type="password" value={form.password} onChange={set("password")} placeholder="At least 8 characters" />
               {errors.password && <p style={{ margin: "5px 0 0", fontSize: "12px", color: "#DC2626" }}>{errors.password}</p>}
+              <p style={{ margin: "5px 0 0", fontSize: "11px", color: "#9CA3AF", lineHeight: 1.5 }}>
+                Needed only for a new login. Leave it blank for someone who already signs in — a password typed here replaces theirs for every role.
+              </p>
             </div>
             <div>
               <Label>Role</Label>

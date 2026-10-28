@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
-import { FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiX } from "react-icons/fi";
 
 // Hub check-ins — labels, status looks and the small building blocks every check-ins screen
 // shares. Keys match server/src/modules/checkins/checkin.constants.js.
@@ -20,9 +20,88 @@ export const control = { padding: "8px 10px", borderRadius: 9, border: "1.5px so
 export const input = { ...control, width: "100%", padding: "9px 11px" };
 export const label = { display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 5 };
 export const hint = { margin: "4px 0 0", fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5 };
-export const chip = (on) => ({ padding: "6px 12px", borderRadius: 999, border: `1.5px solid ${on ? T.accent : T.border}`, background: on ? T.accent : "#fff", color: on ? "#fff" : "#374151", fontSize: 12.5, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap" });
-export const primaryBtn = (disabled = false) => ({ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", border: 0, borderRadius: 10, background: disabled ? "#9DB3C8" : T.accent, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: font, cursor: disabled ? "not-allowed" : "pointer" });
-export const ghostBtn = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1.5px solid #D6E4EF", background: "#fff", color: T.accent, fontSize: 13, fontWeight: 600, fontFamily: font, cursor: "pointer" };
+export const chip = (on) => ({ display: "inline-flex", alignItems: "center", height: 32, padding: "0 13px", boxSizing: "border-box", borderRadius: 999, border: `1.5px solid ${on ? T.accent : T.border}`, background: on ? T.accent : "#fff", color: on ? "#fff" : "#374151", fontSize: 12.5, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap" });
+
+// Buttons — one size scale for every check-ins screen: "md" (36px) for a page's or dialog's
+// actions, "sm" (30px) inside a list row. primary is the one main action of a place; secondary
+// the others; danger ends or removes something. Hover / focus come from CheckinStyles (.ci-btn).
+const BTN_SIZE = {
+  md: { height: 36, padding: "0 16px", fontSize: 13, borderRadius: 10, gap: 7 },
+  sm: { height: 30, padding: "0 11px", fontSize: 12.5, borderRadius: 8, gap: 5 },
+};
+const BTN_LOOK = {
+  primary: { background: T.accent, color: "#fff", border: `1.5px solid ${T.accent}` },
+  secondary: { background: "#fff", color: T.accent, border: "1.5px solid #D6E4EF" },
+  danger: { background: "#fff", color: "#B91C1C", border: "1.5px solid #FECACA" },
+  quiet: { background: "transparent", color: T.inkMuted, border: "1.5px solid transparent" },
+};
+export const btn = (variant = "secondary", { size = "md", disabled = false } = {}) => ({
+  display: "inline-flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box", whiteSpace: "nowrap", flexShrink: 0,
+  fontFamily: font, fontWeight: 700, lineHeight: 1, cursor: disabled ? "not-allowed" : "pointer",
+  ...BTN_SIZE[size], ...BTN_LOOK[variant], ...(disabled ? { opacity: 0.55 } : {}),
+});
+export const primaryBtn = (disabled = false) => btn("primary", { disabled });
+export const ghostBtn = btn("secondary");
+
+// Hover and keyboard focus for the buttons above (inline styles can't have them). Rendered once
+// by each check-ins screen.
+export function CheckinStyles() {
+  return (
+    <style>{`
+      .ci-btn { transition: filter 120ms ease, box-shadow 120ms ease, background-color 120ms ease; }
+      .ci-btn:hover:not(:disabled) { filter: brightness(0.96); box-shadow: 0 2px 8px rgba(37,71,106,0.12); }
+      .ci-btn:focus-visible, .ci-tab:focus-visible { outline: 2px solid #2e7db5; outline-offset: 2px; }
+      .ci-tab:hover:not([aria-selected="true"]):not([aria-pressed="true"]) { background-color: rgba(37,71,106,0.06) !important; }
+      .ci-scroll { scrollbar-width: none; } .ci-scroll::-webkit-scrollbar { display: none; }
+      @media (prefers-reduced-motion: reduce) { .ci-btn { transition: none; } }
+    `}</style>
+  );
+}
+
+function CountBadge({ on, children }) {
+  return (
+    <span style={{ minWidth: 18, height: 18, padding: "0 5px", boxSizing: "border-box", borderRadius: 999, background: on ? "rgba(255,255,255,0.22)" : "#E2E8F0", color: on ? "#fff" : "#475569", fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {children}
+    </span>
+  );
+}
+
+// The page's main tabs: a white bar, the open tab filled. Scrolls sideways on a phone.
+export function Tabs({ tabs, value, onChange, label }) {
+  return (
+    <div role="tablist" aria-label={label} className="ci-scroll" style={{ ...card, display: "flex", gap: 4, padding: 4, borderRadius: 12, overflowX: "auto", maxWidth: "100%", width: "fit-content", boxSizing: "border-box" }}>
+      {tabs.map(({ key, label: text, icon: Icon }) => {
+        const on = key === value;
+        return (
+          <button key={key} type="button" role="tab" aria-selected={on} className="ci-tab" onClick={() => onChange(key)} style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px", border: 0, borderRadius: 9, background: on ? T.accent : "transparent", color: on ? "#fff" : "#4B5563", fontSize: 13, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+            {Icon && <Icon size={14} />}{text}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// A filter inside a tab (Report due / Upcoming / …): a grey track, the chosen one raised white —
+// lighter than the tabs above it, with its count as a badge.
+export function Segmented({ options, value, onChange, label }) {
+  return (
+    <div role="group" aria-label={label} className="ci-scroll" style={{ display: "inline-flex", gap: 2, padding: 3, background: "#EEF2F6", borderRadius: 10, overflowX: "auto", maxWidth: "100%", boxSizing: "border-box" }}>
+      {options.map((o) => {
+        const on = o.key === value;
+        return (
+          <button key={o.key} type="button" aria-pressed={on} className="ci-tab" onClick={() => onChange(o.key)} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", border: 0, borderRadius: 8, background: on ? "#fff" : "transparent", color: on ? T.ink : T.inkMuted, boxShadow: on ? "0 1px 3px rgba(15,23,42,0.12)" : "none", fontSize: 12.5, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+            {o.label}{o.count ? <CountBadge>{o.count}</CountBadge> : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// The row above a list: its filter on the left, other controls on the right; wraps on a phone.
+export const toolbar = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" };
+export const toolbarSelect = { ...control, height: 36, padding: "0 10px", maxWidth: "100%" };
 
 // The four the admin chooses from; "quarterly" and "once" only for schedules set up before 26 Oct 2026.
 export const FREQUENCY_OPTIONS = ["weekly", "monthly", "semi_annually", "annually"];
@@ -90,7 +169,7 @@ export function Modal({ title, onClose, children, footer, width = 560 }) {
       <div role="dialog" aria-modal="true" aria-label={title} style={{ width: "100%", maxWidth: width, maxHeight: "90vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 16, boxShadow: "0 20px 50px rgba(0,0,0,0.25)", fontFamily: font }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px 10px" }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.ink }}>{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ border: "none", background: "#F3F4F6", width: 30, height: 30, borderRadius: 8, cursor: "pointer", color: T.inkMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><FiX size={15} /></button>
+          <button type="button" className="ci-btn" onClick={onClose} aria-label="Close" style={{ border: "none", background: "#F3F4F6", width: 32, height: 32, flexShrink: 0, borderRadius: 8, cursor: "pointer", color: T.inkMuted, display: "flex", alignItems: "center", justifyContent: "center" }}><FiX size={15} /></button>
         </div>
         <div style={{ padding: "6px 20px 16px", overflowY: "auto" }}>{children}</div>
         {footer && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", padding: "12px 20px 18px", borderTop: "1px solid #F3F4F6" }}>{footer}</div>}
@@ -113,10 +192,12 @@ export function Pager({ page, limit, total, onPage }) {
   if (total <= limit) return null;
   const last = Math.ceil(total / limit);
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "12px 16px", fontSize: 12.5, color: T.inkMuted }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "12px 18px", borderTop: "1px solid #F3F4F6", fontSize: 12.5, color: T.inkMuted }}>
       <span>Page {page} of {last} · {total} in all</span>
-      <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} style={{ ...ghostBtn, padding: "5px 10px", opacity: page <= 1 ? 0.5 : 1 }}>Previous</button>
-      <button type="button" disabled={page >= last} onClick={() => onPage(page + 1)} style={{ ...ghostBtn, padding: "5px 10px", opacity: page >= last ? 0.5 : 1 }}>Next</button>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button type="button" className="ci-btn" disabled={page <= 1} onClick={() => onPage(page - 1)} style={btn("secondary", { size: "sm", disabled: page <= 1 })}><FiChevronLeft size={14} /> Previous</button>
+        <button type="button" className="ci-btn" disabled={page >= last} onClick={() => onPage(page + 1)} style={btn("secondary", { size: "sm", disabled: page >= last })}>Next <FiChevronRight size={14} /></button>
+      </div>
     </div>
   );
 }

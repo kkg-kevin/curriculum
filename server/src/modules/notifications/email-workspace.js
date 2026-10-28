@@ -3,6 +3,7 @@
 // and billing.emails.js.
 const crypto = require("crypto");
 const UserModel = require("../auth/user.model");
+const { WORKSPACE_ROLES } = require("../auth/account-roles");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -35,7 +36,9 @@ async function adminOfLearner(learner) {
 async function workspaceOf(user, { learnerId } = {}) {
   if (!user) return null;
   if (user.role === "admin") return user.organisationId || user.id;
-  if (user.invitedByAdminId) return user.invitedByAdminId; // staff and supervisors
+  // Staff and supervisors. Only when that is the login's own role: an educator or parent who is
+  // also staff somewhere (account-roles.js) is still emailed as the educator or parent.
+  if (WORKSPACE_ROLES.includes(user.role) && user.invitedByAdminId) return user.invitedByAdminId;
   if (user.role === "learner") {
     if (learnerId) return adminOfLearner(await LearnerModel.findById(learnerId));
     if (user.username) return adminOfLearner(await LearnerModel.findByUsername(user.username));

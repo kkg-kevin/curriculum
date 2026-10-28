@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCheckinHubs, useCheckinPeople, useCheckinSessions } from "../hooks/useCheckins";
 import { SessionRow } from "./Rows";
-import { Empty, Pager, card, chip, control, hint } from "../shared";
+import { Empty, Pager, Segmented, card, hint, toolbar, toolbarSelect } from "../shared";
 
 const VIEWS = [
   { key: "due", label: "Report due" },
@@ -42,19 +42,20 @@ export default function CheckinList({ scope, hubView = false, hubId = "" }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-        {views.map((v) => (
-          <button key={v.key} type="button" onClick={() => { setView(v.key); setPage(1); }} style={chip(view === v.key)}>
-            {v.label}{counts[v.key] ? ` · ${counts[v.key]}` : ""}
-          </button>
-        ))}
-        {!hubView && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginLeft: "auto" }}>
-          <select value={filters.hubId} onChange={setFilter("hubId")} aria-label="Hub" style={control}>
+      <div style={toolbar}>
+        <Segmented
+          label="Show"
+          options={views.map((v) => ({ ...v, count: counts[v.key] }))}
+          value={view}
+          onChange={(key) => { setView(key); setPage(1); }}
+        />
+        {!hubView && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select value={filters.hubId} onChange={setFilter("hubId")} aria-label="Hub" style={toolbarSelect}>
             <option value="">All hubs</option>
             {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
           {scope === "all" && (
-            <select value={filters.staffId} onChange={setFilter("staffId")} aria-label="Person" style={control}>
+            <select value={filters.staffId} onChange={setFilter("staffId")} aria-label="Person" style={toolbarSelect}>
               <option value="">Everyone</option>
               {people.filter((p) => p.canUseCheckins).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>

@@ -10,10 +10,12 @@ const moduleListSchema = z.array(z.enum(MODULE_KEYS)).max(MODULE_KEYS.length);
 
 // A staff member's access comes from their role (roleId — see modules/access/). allowedModules is
 // the pre-roles way and is still accepted for direct API callers.
+// No password needed when the email already signs in (an educator, a parent) — they keep their one
+// login (AuthService.addWorkspaceRole).
 const inviteSchema = z.object({
   name: z.string().min(1, "Name is required").max(150),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8, "Password must be at least 8 characters").optional()),
   roleId: z.string().min(1).optional(),
   allowedModules: moduleListSchema.optional(),
 });

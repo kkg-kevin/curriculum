@@ -10,6 +10,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const TeacherModel = require("../teachers/teacher.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
 const UserModel = require("../auth/user.model");
+const { rolesOf } = require("../auth/account-roles");
 const AttendanceModel = require("../attendance/attendance.model");
 const TimetableModel = require("../timetable/timetable.model");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
@@ -87,7 +88,7 @@ function hoursBetween(startTime, endTime) {
 async function supervisorOf(teacher) {
   if (!teacher?.supervisorId) return null;
   const user = await UserModel.findById(teacher.supervisorId);
-  return user && user.role === "supervisor" ? { id: user.id, name: user.name } : null;
+  return user && rolesOf(user).includes("supervisor") ? { id: user.id, name: user.name } : null;
 }
 
 const classLabel = (cls) => [cls?.gradeName, cls?.streamName].filter(Boolean).join(" ").trim() || null;

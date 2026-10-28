@@ -3,6 +3,7 @@ const UserModel = require("../auth/user.model");
 const TeacherModel = require("../teachers/teacher.model");
 const AccessService = require("../access/access.service");
 const { can } = require("../access/access.service");
+const { rolesOf } = require("../auth/account-roles");
 
 // In-app notifications for a claim's journey. Where each one opens is decided client-side from
 // its payload — see NotificationBell.jsx's resolveNotificationPath.
@@ -19,8 +20,8 @@ async function reviewerIds(ownerAdminId, module) {
   const staff = await UserModel.findAll({ invitedByAdminId: ownerAdminId });
   const allowed = [];
   for (const user of staff) {
-    if (user.role !== "collaborator") continue;
-    if (can(await AccessService.permissionsFor(user), module, "edit")) allowed.push(user.id);
+    if (!rolesOf(user).includes("collaborator")) continue;
+    if (can(await AccessService.permissionsFor({ ...user, role: "collaborator" }), module, "edit")) allowed.push(user.id);
   }
   return [ownerAdminId, ...allowed];
 }
