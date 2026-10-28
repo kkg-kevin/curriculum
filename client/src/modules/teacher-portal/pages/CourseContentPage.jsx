@@ -7,6 +7,7 @@ import { classApi } from "../../classes/services/classApi";
 import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseHomePath } from "../../../routes/portalPaths";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
+import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 
 const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
@@ -54,7 +55,7 @@ function CourseMiniRow({ course, navigate }) {
   );
 }
 
-function ClassCard({ cls, courses, teacherName, isOpen, onToggleOpen, showFullCatalog, onToggleFullCatalog, navigate }) {
+function ClassCard({ cls, hub, courses, teacherName, isOpen, onToggleOpen, showFullCatalog, onToggleFullCatalog, navigate }) {
   return (
     <div style={{ ...cardStyle(), overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
@@ -77,6 +78,8 @@ function ClassCard({ cls, courses, teacherName, isOpen, onToggleOpen, showFullCa
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FiUsers size={13} /> {cls.learnerCount ?? 0} learner{(cls.learnerCount ?? 0) !== 1 ? "s" : ""}</span>
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FiUser size={13} /> {teacherName}</span>
         </div>
+
+        <OnlineClassStrip who="teacher" hub={hub} classId={cls.id} compact />
 
         <button
           type="button"
@@ -202,6 +205,7 @@ export default function CourseContentPage() {
               <ClassCard
                 key={cls.id}
                 cls={cls}
+                hub={selectedHub}
                 courses={coursesByGrade?.get(cls.gradeId) || []}
                 teacherName={teacherName}
                 isOpen={openClassIds.has(cls.id)}

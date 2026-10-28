@@ -1,5 +1,6 @@
 import { FiHome, FiMapPin, FiUser, FiUsers, FiMessageCircle } from "react-icons/fi";
 import { T, tintCardStyle, sectionHeaderStyle, EmptyState } from "./profile/theme";
+import { OnlineTag } from "../../timetable/components/OnlineClass";
 
 const HUB_ICONS = [FiHome, FiMapPin, FiHome, FiMapPin];
 
@@ -49,7 +50,7 @@ export default function SideRail({ hubs, mentors, hubsLoading, mentorsLoading, h
                   )}
                   <div style={{ minWidth: 0 }}>
                     <p style={{ margin: "0 0 1px", fontSize: 13.5, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{hub.class?.gradeName || hub.code || "—"}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{hub.class?.gradeName || hub.code || "—"}<OnlineTag hub={hub} /></p>
                   </div>
                 </div>
               );

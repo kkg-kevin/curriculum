@@ -17,6 +17,7 @@ import { useCurriculumCoursesByGrade, useCurriculumCurrentCoursesForGrades } fro
 import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
 import { attendanceApi } from "../../attendance/services/attendanceApi";
 import Avatar from "../../../components/ui/Avatar";
+import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
 
 const ACCENT = "#25476a";
 const T = {
@@ -141,6 +142,8 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          <NextOnlineClassCard who="teacher" resolveCourseName={(id) => allMyCourses?.find((c) => c.id === id)?.name} />
+
           {!attendanceChecksLoading && unmarkedClasses.length > 0 && (
             <div style={{ ...cardStyle, padding: 20 }}>
               <h2 style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, color: T.accentMid, textTransform: "uppercase", letterSpacing: "0.07em" }}>Needs Your Attention</h2>

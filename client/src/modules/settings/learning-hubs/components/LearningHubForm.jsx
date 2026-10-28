@@ -830,7 +830,9 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
             name="meetingLink"
             label="Meeting link"
             placeholder="https://meet.google.com/... or https://zoom.us/j/..."
-            hint={isVirtual ? "Sent to enrolled learners." : "The online option for this hybrid hub."}
+            hint={isVirtual
+              ? "Educators, learners and parents in this hub's classes get a Join button on their timetable and dashboard."
+              : "The online option for this hybrid hub — a Join button on its classes' timetables and dashboards."}
           />
         </SectionCard>
       )}

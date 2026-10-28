@@ -11,6 +11,7 @@ import Avatar from "../../../components/ui/Avatar";
 import SideRail from "../components/SideRail";
 import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
 import ProgressArcCard from "../components/ProgressArcCard";
+import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
 
 const T = {
   accent: "#25476a",
@@ -184,6 +185,8 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <NextOnlineClassCard who="learner" resolveCourseName={(id) => courses.find((c) => c.id === id)?.name} />
+
           {/* Progress Arc — the gamified progress ladder, given the most prominent spot on the
               page (full width, right under the hero) since motivating the learner to keep moving
               up it is the whole point of showing it here rather than only buried in Profile. */}

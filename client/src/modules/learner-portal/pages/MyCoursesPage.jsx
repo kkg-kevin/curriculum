@@ -5,6 +5,7 @@ import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
+import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 
 const T = {
   accent: "#25476a",
@@ -32,7 +33,7 @@ function StatTile({ icon, value, label }) {
 }
 
 export default function MyCoursesPage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
+  const { user, learner, isLoading, hubs, hubsLoading, selectedHub, cls, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
   const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
   const { data: courses, isLoading: coursesLoading } = useLearnerCourses(curriculumId, cls?.gradeId, learner?.id);
 
@@ -54,6 +55,8 @@ export default function MyCoursesPage() {
           </p>
         </div>
       </div>
+
+      {learner && <OnlineClassStrip who="learner" hub={selectedHub} classId={cls?.id} style={{ marginBottom: 16 }} />}
 
       {isLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>

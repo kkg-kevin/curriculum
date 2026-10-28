@@ -1,9 +1,10 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiAlertTriangle } from "react-icons/fi";
 import { useCourseQuery, useSessions, useModules, useCoursePathways } from "../hooks/useCourse";
 import { sessionLabel, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseCatalogPath, sectionPath } from "../../../routes/portalPaths";
+import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 
 const ACCENT = "#25476a";
 
@@ -18,6 +19,10 @@ export default function CourseContentLandingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const role = user?.role;
+  // The educator / learner (or parent's child) portal's current hub — its online class, if it
+  // teaches online, sits under the course header. Other portals render this page without one.
+  const portal = useOutletContext() || {};
+  const onlineWho = role === "teacher" ? "teacher" : role === "learner" ? "learner" : null;
 
   const { data: course, isLoading: courseLoading } = useCourseQuery(courseId);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(courseId);
@@ -72,6 +77,13 @@ export default function CourseContentLandingPage() {
           )}
         </div>
       </div>
+
+      {onlineWho && (
+        <OnlineClassStrip
+          who={onlineWho} hub={portal.selectedHub} courseId={courseId}
+          classId={onlineWho === "learner" ? portal.cls?.id : undefined} style={{ marginBottom: 16 }}
+        />
+      )}
 
       {sessions.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
