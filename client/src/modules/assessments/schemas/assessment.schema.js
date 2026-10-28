@@ -111,6 +111,15 @@ const LEGACY_KIND_MAP = {
   shortAnswer: "shortAnswer", essay: "essay", fileUpload: "documentUpload", mediaResponse: "videoUpload", linkSubmission: "externalLink",
 };
 
+// A Multiple Choice (Multiple) question's correct options, as trimmed option texts. Saved as a
+// list since 28 Oct 2026, so an option may contain a comma; before that as one comma-joined
+// string, still read that way. Mirrors the server's grading.utils.js correctOptionsOf.
+export function correctOptionsOf(item) {
+  const value = item?.correctAnswer;
+  const list = Array.isArray(value) ? value : String(value || "").split(",");
+  return [...new Set(list.map((s) => String(s).trim()).filter(Boolean))];
+}
+
 export function normalizeLegacyItem(item) {
   if (item.kind) return item;
   const kind = LEGACY_KIND_MAP[item.questionType] || "shortAnswer";

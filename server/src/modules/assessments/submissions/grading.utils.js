@@ -7,6 +7,15 @@ const { CAN_DO_LEVELS } = require("../builder.constants");
 // a human to score it.
 const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
 
+// A Multiple Choice (Multiple) question's correct options, as trimmed option texts. Saved as a
+// list since 28 Oct 2026, so an option may contain a comma; before that as one comma-joined
+// string, still read that way.
+function correctOptionsOf(item) {
+  const value = item?.correctAnswer;
+  const list = Array.isArray(value) ? value : String(value || "").split(",");
+  return [...new Set(list.map((s) => String(s).trim()).filter(Boolean))];
+}
+
 function isAutoGradableItem(item) {
   return AUTO_GRADABLE_KINDS.includes(item.kind);
 }
@@ -42,11 +51,10 @@ function gradeItem(item, response) {
       correct = typeof response === "string" && response.trim() === (item.correctAnswer || "").trim();
       break;
     case "mcqMultiple": {
-      // Stored as a comma-joined string of every right option (see McqField in
-      // AssessmentTaker.jsx) — correct only if the learner picked exactly that set, order
-      // notwithstanding.
-      const correctSet = (item.correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean);
-      const answerSet = (Array.isArray(response) ? response : []).map((s) => s.trim());
+      // Correct only if the learner picked exactly the right options (correctOptionsOf),
+      // order notwithstanding.
+      const correctSet = correctOptionsOf(item);
+      const answerSet = [...new Set((Array.isArray(response) ? response : []).map((s) => String(s).trim()))];
       correct = correctSet.length > 0 && answerSet.length === correctSet.length
         && correctSet.every((c) => answerSet.includes(c));
       break;
@@ -220,6 +228,7 @@ module.exports = {
   redactUnpublishedReport,
   AUTO_GRADABLE_KINDS,
   isAutoGradableItem,
+  correctOptionsOf,
   requiresManualGrading,
   gradeItem,
   computeAutoScore,

@@ -37,7 +37,7 @@ const items = [
     question: "<p>Which of these are sensors a robot might use? (choose all that apply)</p>",
     points: 2,
     options: ["Ultrasonic sensor", "Light bulb", "Line sensor", "Speaker"],
-    correctAnswer: "Ultrasonic sensor,Line sensor",
+    correctAnswer: ["Ultrasonic sensor", "Line sensor"],
   },
   {
     id: "item-4",

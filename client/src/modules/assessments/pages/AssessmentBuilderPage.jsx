@@ -24,7 +24,7 @@ import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField"
 import {
   STRUCTURE_MODES, STRUCTURE_MODE_LABELS, ITEM_GROUPS, ITEM_GROUP_COLORS,
   ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS, TASK_TYPES, TASK_TYPE_LABELS, SUBMISSION_ITEM_KINDS,
-  BUILDER_REGISTRY, kindLabel, groupLabel, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE, CAN_DO_LEVELS,
+  BUILDER_REGISTRY, kindLabel, groupLabel, normalizeLegacyItem, entryMarks, roundMarks, marksInput, splitMarks, DEFAULT_SURVEY_SCALE, CAN_DO_LEVELS, correctOptionsOf,
 } from "../schemas/assessment.schema";
 
 const TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation", survey: "Survey" };
@@ -907,34 +907,45 @@ function ListEditor({ values, onChange, placeholder, minItems = 1, numbered = tr
 }
 
 // Options list for mcqSingle/mcqMultiple, each row pairing its text with a radio (single) or
-// checkbox (multiple) marking it correct. `correctAnswer` stores the correct option(s) by their
-// literal text (comma-joined for mcqMultiple) — see grading.utils.js#gradeItem, which compares
-// the learner's submitted response against this same string. Since correctness is tracked by
-// text rather than by a stable id, editing/removing an option that's marked correct keeps
-// `correctAnswer` in sync so the link doesn't silently break.
+// checkbox (multiple) marking it correct. `correctAnswer` holds the correct option by its text
+// (mcqSingle), or the list of correct options' texts, trimmed (mcqMultiple — correctOptionsOf
+// also reads the comma-joined string saved before 28 Oct 2026); grading.utils.js#gradeItem
+// compares the learner's answer against it. Since correctness is tracked by text rather than by
+// a stable id, editing/removing an option that's marked correct keeps `correctAnswer` in step —
+// in the same `onChange({ options, correctAnswer })`, so neither change overwrites the other.
 // `scored` false (a survey): just the choices — no correct answer to mark.
-function McqOptionsEditor({ kind, options, correctAnswer, onOptionsChange, onCorrectAnswerChange, scored = true }) {
-  const correctSet = kind === "mcqMultiple" ? (correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
-  const isCorrect = (v) => (kind === "mcqSingle" ? v !== "" && v === correctAnswer : correctSet.includes(v));
+function McqOptionsEditor({ kind, options, correctAnswer, onChange, scored = true }) {
+  const multiple = kind === "mcqMultiple";
+  const correctList = multiple ? correctOptionsOf({ correctAnswer }) : [];
+  const isCorrect = (v) => (multiple ? v.trim() !== "" && correctList.includes(v.trim()) : v !== "" && v === correctAnswer);
 
   const set = (i, v) => {
     const prev = options[i];
-    onOptionsChange(options.map((o, idx) => (idx === i ? v : o)));
-    if (isCorrect(prev)) {
-      onCorrectAnswerChange(kind === "mcqSingle" ? v : correctSet.map((c) => (c === prev ? v : c)).join(","));
-    }
+    const nextOptions = options.map((o, idx) => (idx === i ? v : o));
+    if (!isCorrect(prev)) return onChange({ options: nextOptions });
+    onChange({
+      options: nextOptions,
+      correctAnswer: multiple
+        ? correctList.map((c) => (c === prev.trim() ? v.trim() : c)).filter(Boolean)
+        : v,
+    });
   };
-  const add = () => onOptionsChange([...options, ""]);
+  const add = () => onChange({ options: [...options, ""] });
   const remove = (i) => {
     const removed = options[i];
-    onOptionsChange(options.filter((_, idx) => idx !== i));
-    if (isCorrect(removed)) {
-      onCorrectAnswerChange(kind === "mcqSingle" ? "" : correctSet.filter((c) => c !== removed).join(","));
-    }
+    const nextOptions = options.filter((_, idx) => idx !== i);
+    if (!isCorrect(removed)) return onChange({ options: nextOptions });
+    // Another option with the same text keeps it correct.
+    const stillThere = nextOptions.some((o) => o.trim() === removed.trim());
+    onChange({
+      options: nextOptions,
+      correctAnswer: multiple ? (stillThere ? correctList : correctList.filter((c) => c !== removed.trim())) : (stillThere ? correctAnswer : ""),
+    });
   };
   const toggleCorrect = (v) => {
-    if (kind === "mcqSingle") onCorrectAnswerChange(v);
-    else onCorrectAnswerChange((correctSet.includes(v) ? correctSet.filter((c) => c !== v) : [...correctSet, v]).join(","));
+    if (!multiple) return onChange({ correctAnswer: v });
+    const text = v.trim();
+    onChange({ correctAnswer: correctList.includes(text) ? correctList.filter((c) => c !== text) : [...correctList, text] });
   };
 
   return (
@@ -1010,8 +1021,7 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
             kind={entry.kind}
             options={entry.options}
             correctAnswer={entry.correctAnswer}
-            onOptionsChange={(v) => set("options", v)}
-            onCorrectAnswerChange={(v) => set("correctAnswer", v)}
+            onChange={(patch) => onChange({ ...entry, ...patch })}
             scored={type !== "survey"}
           />
         </div>

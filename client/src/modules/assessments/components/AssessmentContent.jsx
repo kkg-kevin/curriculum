@@ -3,7 +3,7 @@ import { FiCheck, FiAlertTriangle, FiPackage, FiFlag } from "react-icons/fi";
 import { useAssessmentQuery, useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory } from "../hooks/useAssessment";
 import {
   BUILDER_REGISTRY, STRUCTURE_MODE_LABELS, ITEM_KIND_LABELS, OBSERVATION_ITEM_KINDS,
-  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks, roundMarks, canDoLevels,
+  TASK_TYPE_LABELS, normalizeLegacyItem, entryMarks, roundMarks, canDoLevels, correctOptionsOf,
 } from "../schemas/assessment.schema";
 import { INVENTORY_CATEGORY_COLORS, INVENTORY_CATEGORY_ICONS } from "../../settings/items/constants";
 import RichContent, { isEmptyHtml } from "./RichContent";
@@ -52,18 +52,15 @@ function ItemDetail({ item, scored = true }) {
       {(item.kind === "mcqSingle" || item.kind === "mcqMultiple") && item.options?.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginTop: "8px" }}>
           {(() => {
-            // mcqMultiple stores every correct option as a comma-joined string (see
-            // grading.utils.js#gradeItem) — mcqSingle stores just the one string.
-            const correctSet = item.kind === "mcqMultiple"
-              ? (item.correctAnswer || "").split(",").map((s) => s.trim()).filter(Boolean)
-              : [item.correctAnswer];
+            // mcqMultiple: every correct option (correctOptionsOf) — mcqSingle: just the one.
+            const correct = (o) => (item.kind === "mcqMultiple" ? correctOptionsOf(item).includes(String(o).trim()) : o === item.correctAnswer);
             return item.options.map((o, i) => {
-              const correct = correctSet.includes(o);
+              const isRight = correct(o);
               return (
-                <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: correct ? "#059669" : "#374151", fontWeight: correct ? 700 : 400 }}>
+                <div key={o} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: isRight ? "#059669" : "#374151", fontWeight: isRight ? 700 : 400 }}>
                   <span style={{ color: "#9CA3AF", fontWeight: 700, width: "16px", flexShrink: 0 }}>{String.fromCharCode(65 + i)}.</span>
                   <span>{o}</span>
-                  {correct && <span style={{ display: "inline-flex" }}><FiCheck size={13} /></span>}
+                  {isRight && <span style={{ display: "inline-flex" }}><FiCheck size={13} /></span>}
                 </div>
               );
             });
