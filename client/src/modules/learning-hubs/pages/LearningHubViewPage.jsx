@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, MenuBook as MenuBookIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
+import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
 import { useLearningHubQuery, useLearningHubCurriculaQuery, useDeleteLearningHub, useUpdateLearningHubStatus, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
@@ -13,7 +13,6 @@ import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { usePermissions } from "../../../hooks/usePermissions";
 
-const ACCENT = "#25476a";
 const TEAL = "#38aae1";
 
 function Section({ title, count, children }) {

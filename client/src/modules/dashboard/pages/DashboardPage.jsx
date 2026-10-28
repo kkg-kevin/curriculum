@@ -2,20 +2,11 @@
 import { BRAND_NAME } from "../../../branding";
 import {
   Apartment as ApartmentIcon,
-  Assessment as AssessmentIcon,
-  Assignment as AssignmentIcon,
-  AutoStories as AutoStoriesIcon,
   BarChart as BarChartIcon,
-  Book as BookIcon,
-  Class as ClassIcon,
-  Dashboard as DashboardIcon,
-  Groups as GroupsIcon,
   MenuBook as MenuBookIcon,
   PeopleAlt as PeopleAltIcon,
   Person as PersonIcon,
   School as SchoolIcon,
-  SchoolOutlined as SchoolOutlinedIcon,
-  TableChart as TableChartIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CheckinsReminder from "../../checkins/components/CheckinsReminder";

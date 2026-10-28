@@ -45,7 +45,7 @@ Routing: `client/src/routes/AppRoutes.jsx` — all routes nest under `MainLayout
 API: a single Axios instance in `client/src/services/api.js` reads `VITE_API_URL` from the client `.env`. All feature-level API files (`modules/<feature>/services/<feature>Api.js`) import from this shared instance.  
 State: React Context for auth (`client/src/context/AuthContext.jsx`). Redux Toolkit + TanStack Query are installed but not yet wired up — use Redux for global UI state and React Query for server state as features are built.  
 Forms: react-hook-form + Zod resolvers.  
-Charts: Recharts. Rich text: TipTap. Drag-and-drop: dnd-kit.
+Charts: Recharts. Rich text: TipTap.
 
 **Planned module structure** (not yet scaffolded — stub pages exist only in `AppRoutes.jsx`):
 ```

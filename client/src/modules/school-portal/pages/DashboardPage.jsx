@@ -1,6 +1,6 @@
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiAlertTriangle, FiBookOpen, FiCalendar, FiMail, FiBook, FiBriefcase, FiUsers, FiUserCheck, FiLayers, FiChevronRight, FiAward, FiHome, FiClipboard } from "react-icons/fi";
+import { FiAlertTriangle, FiBookOpen, FiCalendar, FiMail, FiBook, FiUserCheck, FiLayers, FiAward, FiHome } from "react-icons/fi";
 import { useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";

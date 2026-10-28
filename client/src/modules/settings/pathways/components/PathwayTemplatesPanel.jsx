@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiBookOpen, FiChevronDown, FiEdit2, FiFolder, FiMoreVertical, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiBookOpen, FiChevronDown, FiEdit2, FiFolder, FiSearch, FiTrash2 } from "react-icons/fi";
 import {
   usePathwayTemplates, useCreatePathwayTemplate, useUpdatePathwayTemplate, useDeletePathwayTemplate,
 } from "../hooks/usePathwayTemplates";

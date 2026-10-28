@@ -6,7 +6,6 @@ import { classApi } from "../services/classApi";
 import { ClassCard } from "../components/ClassCard";
 import { classesListPath, classCreatePath } from "../../../routes/portalPaths";
 
-const ACCENT    = "#25476a";
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
 

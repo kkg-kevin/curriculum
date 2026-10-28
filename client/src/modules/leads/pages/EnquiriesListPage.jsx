@@ -18,7 +18,6 @@ import {
   useConvertHomeLearningLead,
 } from "../hooks/useLeads";
 
-const cardStyle = { background: "#fff", border: "1px solid #E5E7EB", borderRadius: 14 };
 const inputStyle = { padding: "8px 10px", border: "1px solid #D7DEE8", borderRadius: 8, fontSize: 13, fontFamily: "inherit" };
 
 function formatDateTime(value) {

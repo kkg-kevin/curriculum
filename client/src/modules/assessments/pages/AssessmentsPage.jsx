@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiFolder, FiFolderPlus, FiMoreVertical, FiPlus, FiSearch, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiAlertTriangle, FiBarChart2, FiBookOpen, FiChevronRight, FiClipboard, FiEdit2, FiEye, FiFileText, FiFolder, FiFolderPlus, FiMoreVertical, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { useAssessmentsQuery, useDeleteAssessment, useAssessmentFoldersQuery, useAssessmentFolderMutation } from "../hooks/useAssessment";
 import { assessmentApi } from "../services/assessmentApi";
 import { AddItemsDialog, FolderDialog, FolderTile, MoveToFolderDialog, NewFolderTile } from "../../../components/folders/Folders";

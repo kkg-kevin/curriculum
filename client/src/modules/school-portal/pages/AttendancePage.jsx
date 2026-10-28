@@ -133,8 +133,6 @@ export default function AttendancePage() {
     if (!selectedClassId && classes.length > 0) setSelectedClassId(classes[0].id);
   }, [classes, selectedClassId]);
 
-  const selectedClass = classes.find((c) => c.id === selectedClassId) || null;
-
   const { data: learnersData, isLoading: learnersLoading } = useQuery({
     queryKey: ["learners", "byClass", selectedClassId],
     queryFn: () => learnerApi.getAll({ classId: selectedClassId }),

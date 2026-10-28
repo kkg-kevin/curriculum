@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiDollarSign, FiFileText, FiInfo, FiUsers } from "react-icons/fi";
 import { useMyClaimCourse, useWithdrawClaim } from "../../claims/hooks/useClaims";
-import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, formatRate, primaryButton, rateDetail, unitsLabel } from "../../claims/shared";
+import { CourseStagePill, LocationChip, ProgressRing, T, cardStyle, formatMoney, primaryButton, rateDetail, unitsLabel } from "../../claims/shared";
 import SessionEvidence from "../../claims/components/SessionEvidence";
 import ClaimCard from "../../claims/components/ClaimCard";
 import RequestPaymentModal from "../../claims/components/RequestPaymentModal";

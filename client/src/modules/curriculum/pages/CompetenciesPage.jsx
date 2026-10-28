@@ -1121,7 +1121,7 @@ function PathwayCourseLadderSection({ curriculumId, pathway, color, orderedCours
     ...allGlobalCompetencies.map((c) => [c.id, c]),
     ...adoptedCompetencies.map((c) => [c.id, c]),
   ]);
-  const { requestDelete, confirmDialog } = useConfirmDelete();
+  const { confirmDialog } = useConfirmDelete();
 
   const [openCourseId, setOpenCourseId] = useState(null);
   const [competencyIds, setCompetencyIds] = useState([]);
