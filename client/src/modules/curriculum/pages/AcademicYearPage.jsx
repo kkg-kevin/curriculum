@@ -388,7 +388,7 @@ function CreateGroupForm({ curriculum, publishedGroup, onSave, onCancel, isPendi
 
 function EditVersionForm({ curriculum, sourceVersion, group, nextVersionNumber, onSave, onCancel, isPending }) {
   const [periods, setPeriods] = useState(() => buildPeriods(curriculum?.periods, sourceVersion?.periods));
-  const [errors,  setErrors]  = useState({});
+  const [errors] = useState({});
 
   const submit = (e) => {
     e.preventDefault();

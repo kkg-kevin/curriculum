@@ -23,6 +23,22 @@ export const LEARNING_HUB_TYPES = [
 
 // How a hub is delivered — orthogonal to type. A `virtual` hub has no physical address and
 // carries a `meetingLink` instead; `hybrid` has both.
+// A Google Meet link must carry a real meeting code (meet.google.com/abc-defg-hij) — anything
+// else opens Meet's "Invalid video call name" page. Other services (Zoom, Teams…) pass as any URL.
+const isUsableMeetingLink = (value) => {
+  try {
+    const url = new URL(value);
+    if (url.hostname !== "meet.google.com") return true;
+    return /^\/([a-z]{3}-[a-z]{4}-[a-z]{3}|lookup\/[\w-]+)\/?$/.test(url.pathname);
+  } catch {
+    return false;
+  }
+};
+const meetingLinkSchema = z
+  .string()
+  .url("Enter a valid URL")
+  .refine(isUsableMeetingLink, "That Google Meet link has no meeting code — copy it from the meeting, e.g. https://meet.google.com/abc-defg-hij")
+  .or(z.literal(""));
 export const DELIVERY_MODES = [
   { value: "in_person", label: "In person" },
   { value: "virtual",   label: "Online" },
@@ -164,7 +180,7 @@ export const learningHubSchema = z
     name: z.string().min(1, "Learning hub name is required").max(150, "Max 150 characters"),
     hubType: z.enum(LEARNING_HUB_TYPES.map((t) => t.value), { errorMap: () => ({ message: "Select a valid learning hub type" }) }).default("school"),
     deliveryMode: z.enum(DELIVERY_MODES.map((d) => d.value), { errorMap: () => ({ message: "Select a delivery mode" }) }).default("in_person"),
-    meetingLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
+    meetingLink: meetingLinkSchema.default(""),
     code: z
       .string()
       .max(20, "Max 20 characters")

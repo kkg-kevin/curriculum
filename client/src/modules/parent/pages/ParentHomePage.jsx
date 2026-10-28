@@ -4,6 +4,7 @@ import Avatar from "../../../components/ui/Avatar";
 import { T, cardStyle } from "../../learner-portal/components/profile/theme";
 import { childColor } from "../components/childColors";
 import { childPath } from "../parentPaths";
+import { JoinOnlineButton, isLive } from "../../timetable/components/OnlineClass";
 import { formatDay, formatMoney, plural, relativeDay } from "../format";
 
 function SummaryPill({ icon, value, label }) {
@@ -92,6 +93,11 @@ function ChildCard({ child, index }) {
             {child.nextSession
               ? `${relativeDay(child.nextSession.date)}${child.nextSession.startTime ? `, ${child.nextSession.startTime.slice(0, 5)}` : ""}${child.nextSession.courseName ? ` · ${child.nextSession.courseName}` : ""}`
               : "Nothing in the next 2 weeks"}
+            {child.nextSession?.meetingLink && (
+              <div style={{ marginTop: 6 }}>
+                <JoinOnlineButton href={child.nextSession.meetingLink} live={isLive(child.nextSession)} size="sm" label="Join online class" />
+              </div>
+            )}
           </Fact>
           <Fact icon={<FiUserCheck />} label="Attendance (30 days)">
             {child.attendance ? `${child.attendance.percent}% of ${plural(child.attendance.sessions, "session")}` : "Not recorded yet"}

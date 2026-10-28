@@ -3,7 +3,6 @@ const UserModel = require("../auth/user.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const LearningHubCurriculumLinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
 const ClassModel = require("../classes/class.model");
-const ClassService = require("../classes/class.service");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const CompetitionModel = require("../competitions/competition.model");
 const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.model");

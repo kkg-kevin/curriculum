@@ -117,6 +117,7 @@ async function childSummary(learner, today) {
       endTime: upcoming[0].endTime || null,
       courseName: names.get(upcoming[0].courseId) || null,
       sessionTitle: upcoming[0].sessionTitle || null,
+      meetingLink: upcoming[0].meetingLink || null,
     },
     attendance: marked.length ? { percent: Math.round((present / marked.length) * 100), sessions: marked.length } : null,
   };

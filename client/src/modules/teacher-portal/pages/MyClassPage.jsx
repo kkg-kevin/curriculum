@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiAlertTriangle, FiClipboard } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
@@ -7,6 +7,7 @@ import { formatClassName } from "../../classes/utils/classDisplay";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import ClassGroupsPanel from "../components/ClassGroupsPanel";
+import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 
 const LEARNER_STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
@@ -49,6 +50,7 @@ export default function MyClassPage() {
   const { classId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hubs = [] } = useOutletContext() || {};
 
   const { data: cls, isLoading: classLoading } = useClassQuery(classId);
 
@@ -114,6 +116,8 @@ export default function MyClassPage() {
           <FiClipboard size={14} /> Take Attendance
         </button>
       </div>
+
+      <OnlineClassStrip who="teacher" hub={hubs.find((h) => h.id === cls.schoolId)} classId={classId} style={{ marginBottom: 20 }} />
 
       <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
         {learnersLoading ? (

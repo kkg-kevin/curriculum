@@ -34,7 +34,6 @@ function fail(message, statusCode = 400) {
   throw Object.assign(new Error(message), { statusCode });
 }
 
-const same = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 const fullName = (child) => `${child.firstName} ${child.lastName}`.trim();
 const PAYABLE = ["issued", "partially_paid", "overdue"];
 

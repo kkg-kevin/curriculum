@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip, useOccurrenceAction } from "../hooks/useTimetable";
 import { useAuth } from "../../../context/AuthContext";
 import { sectionPath } from "../../../routes/portalPaths";
+import { JoinOnlineButton, isLive } from "./OnlineClass";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
@@ -442,7 +443,10 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                       {health && health !== "neutral" && (
                         <StatusDot health={health} title={health === "attention" ? "Needs attention" : health === "warning" ? "Grading in progress" : "All good"} />
                       )}
-                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: color.text, whiteSpace: "nowrap" }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
+                        {e.meetingLink && <JoinOnlineButton href={e.meetingLink} live={isLive(e)} size="sm" label="Join" />}
+                      </div>
                       <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: color.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {resolveCourseName(e.courseId)}{e.merged && <span title="Combined with another session"> · 2 sessions</span>}{e.moved && <span title="Moved from another date"> · moved</span>}
                       </p>
@@ -825,12 +829,15 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
                 <span><strong style={{ color: T.ink }}>Class:</strong> {summary.class.gradeName}{summary.class.streamName ? ` — ${summary.class.streamName}` : ""}</span>
                 <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}</span>
               </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {event.meetingLink && <JoinOnlineButton href={event.meetingLink} live={isLive(event)} label="Join online class" />}
               <button
                 type="button" onClick={openCourseContent}
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0 }}
               >
                 Open Course Content →
               </button>
+              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>

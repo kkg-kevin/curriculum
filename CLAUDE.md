@@ -45,7 +45,7 @@ Routing: `client/src/routes/AppRoutes.jsx` — all routes nest under `MainLayout
 API: a single Axios instance in `client/src/services/api.js` reads `VITE_API_URL` from the client `.env`. All feature-level API files (`modules/<feature>/services/<feature>Api.js`) import from this shared instance.  
 State: React Context for auth (`client/src/context/AuthContext.jsx`). Redux Toolkit + TanStack Query are installed but not yet wired up — use Redux for global UI state and React Query for server state as features are built.  
 Forms: react-hook-form + Zod resolvers.  
-Charts: Recharts. Rich text: TipTap. Drag-and-drop: dnd-kit.
+Charts: Recharts. Rich text: TipTap.
 
 **Planned module structure** (not yet scaffolded — stub pages exist only in `AppRoutes.jsx`):
 ```
@@ -178,6 +178,10 @@ One page per learner for staff: `client/src/modules/learners/pages/LearnerPage.j
 ### Part payments
 
 Any invoice can be paid in parts (`BillingService.applyPayment` → `partially_paid`). On top of that (28 Oct 2026): an invoice may have a payment schedule (`billing_invoice_instalments`, rules in `billing/billing.instalments.js` — payments count towards the earliest part first; each part's state is worked out, never stored). Staff set one on the invoice page (`PUT /api/billing/:id/instalments`: a plan, parts typed by hand, or none); families choose one of the workspace's plans on the website Payment step / `/pay/:token` before anything is paid (`POST /api/public/payments/:token/plan`). Rules per workspace are `payment_options.options.partPayments` (Settings → Payments → Part payments): plans, `minimumPercent` that switches a sign-up on (0 = any payment — `billing.paid-hooks.js`'s `runInvoiceActivationHooks`; Store orders and closing notices still wait for full payment), reminder days, grace days, `pauseAccess`. Cron: `npm run billing:process` hourly (`billing.process.js`) — overdue status, reminder emails (`payment_reminder`, switchable in Settings → Emails) and bell notices, and pausing a family's learners (accountStatus `pending_payment`, tracked in `billing_access_pauses` by `billing.access.js`) after the grace days; paying switches them back on. Hubs are reminded, never paused.
+
+### Online hubs (Join buttons)
+
+A hub with `deliveryMode` `virtual` or `hybrid` and a `meetingLink` (Google Meet, Zoom…, set on the hub form) teaches online. `TimetableService.resolveCalendar` puts that link on each of its classes' calendar events (`onlineLinkForClass`), so every calendar (educator, learner, parent, hub) carries it — never the public site. Client: `modules/timetable/components/OnlineClass.jsx` — Join on timetable cards and the session pop-up, a "Next online class" card on the educator / learner dashboards, an "Online class" strip on My Courses, each course page, Course Content class cards and My Class, a Join under the parent's "Next session", an Online tag in hub lists; green ("live") from 15 minutes before a session until it ends. Meet opens in a new tab (it can't be embedded). A Google Meet link must carry a meeting code (`abc-defg-hij`) — the hub form refuses one without. One link per hub (no per-class link yet); no Google API — meetings are made by hand from a (preferably Workspace) account.
 
 ### Enquiry housekeeping
 

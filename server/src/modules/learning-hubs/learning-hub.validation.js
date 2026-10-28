@@ -22,6 +22,23 @@ const LEARNING_HUB_TYPES = [
 // existing hub is `in_person`.
 const DELIVERY_MODES = ["in_person", "virtual", "hybrid"];
 
+// A Google Meet link must carry a real meeting code (meet.google.com/abc-defg-hij) — anything
+// else opens Meet's "Invalid video call name" page. Other services (Zoom, Teams…) pass as any URL.
+const isUsableMeetingLink = (value) => {
+  try {
+    const url = new URL(value);
+    if (url.hostname !== "meet.google.com") return true;
+    return /^\/([a-z]{3}-[a-z]{4}-[a-z]{3}|lookup\/[\w-]+)\/?$/.test(url.pathname);
+  } catch {
+    return false;
+  }
+};
+const meetingLinkSchema = z
+  .string()
+  .url("Enter a valid URL")
+  .refine(isUsableMeetingLink, "That Google Meet link has no meeting code — copy it from the meeting, e.g. https://meet.google.com/abc-defg-hij")
+  .or(z.literal(""));
+
 // county is required for a physical presence (in_person / hybrid) and optional — "" allowed —
 // for a purely virtual hub. The conditional check runs in the schema's superRefine so it can
 // see deliveryMode.
@@ -95,7 +112,7 @@ const baseLearningHubSchema = z.object({
   deliveryMode: z.enum(DELIVERY_MODES, { errorMap: () => ({ message: "Select a valid delivery mode" }) }).default("in_person"),
   // The join link for a virtual / hybrid hub (Zoom, Meet, …). Optional here — a hub can be
   // marked virtual before the link is sorted; the portal form nudges for it.
-  meetingLink: z.string().url("Enter a valid URL").or(z.literal("")).default(""),
+  meetingLink: meetingLinkSchema.default(""),
   code: z
     .string()
     .max(20, "Max 20 characters")

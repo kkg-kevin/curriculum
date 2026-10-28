@@ -102,6 +102,110 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (28 Oct 2026) — online hubs: Join buttons for educators, learners and parents; Google Meet links checked on the hub form
+
+**Backend and portal** from `curriculum` (branch `modules`) at `b965c95`; **website** from
+`curriculum-web` (branch `new`) at `333af5a` — no website code change, both websites re-rendered.
+Includes everything in "This release (27 Oct 2026)" below — if that wasn't uploaded yet, upload
+this one instead. **Take a database backup first**, **upload the backend first**, then the portal,
+then the website.
+
+### What changed — portal
+
+- **Online hubs get Join buttons.** A hub set to **Online** or **Hybrid** with a **Meeting link**
+  (Google Meet, Zoom…, on the hub form) now shows that link to the people in its classes — it used
+  to sit only on the staff hub page:
+  - **Educator:** a "Next online class" card on the dashboard (**Start online class**), **Join** on
+    each online session in My Timetable and in the session pop-up, an "Online · Next: …" line with
+    **Start** on each class card in Course Content, and a strip under the class name in My Class
+    and on each course page.
+  - **Learner:** a "Next online class" card on the dashboard, an "Online class" strip on My Courses
+    and on each course page (**Join online class**), **Join** on the timetable, and an **Online** /
+    **Hybrid** tag beside the hub in the side panel.
+  - **Parent:** **Join online class** under each child's "Next session" on My family, Join on the
+    family timetable, and the same card and strips on each child's pages.
+  - The button turns **green ("Live now") from 15 minutes before a session until it ends**; it works
+    at any time. Meet opens in a new tab (Google doesn't allow it inside the portal). The link is
+    never shown on the website.
+- **The hub form checks Google Meet links.** A `meet.google.com` link must carry the meeting code
+  (`https://meet.google.com/abc-defg-hij`); one without (e.g. a placeholder like
+  `https://meet.google.com/demo-link`) is refused with a message saying so, because it opens Meet's
+  "Invalid video call name" page. Zoom, Teams and other links are accepted as any web address.
+- **Clean-up:** unused files, imports and packages removed — nothing changes on screen.
+
+### Before you verify — replace placeholder meeting links
+
+Hubs saved earlier may still hold a placeholder link. In phpMyAdmin:
+
+```sql
+SELECT id, name, deliveryMode, meetingLink FROM learning_hubs
+WHERE deliveryMode IN ('virtual', 'hybrid') OR (meetingLink IS NOT NULL AND meetingLink <> '');
+```
+
+For each online hub, create a meeting (meet.google.com → New meeting → Create a meeting for later,
+from the account that will host the classes — preferably a Google Workspace account, so learners
+without Google accounts can ask to join and calls aren't cut at 60 minutes), then paste its link in
+the hub's **Edit → Meeting link** and save. A hub with a placeholder link can't be saved until it's
+replaced.
+
+### No migrations, no new cron job, no new environment variable
+
+The backend reads the existing `learning_hubs.deliveryMode` / `meetingLink`. One unused npm package
+(`uuid`) dropped from `package.json` — nothing to install.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `b965c95` — 583 files, 144 migrations (none new). Same zip in Dev, Live
+and Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-3vgxpPdq.js` |
+| Live | `npm run build:live` | `index-Das_mdSZ.js` |
+| Capable | `npm run build:capable` | `index-B41FvXK3.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` (2803 KB) | 25 pages (the same set as last release), all with content |
+
+Checked: built site (no dev-server files, entry `index-CwdYXsrY.js`), calling its own API, `.htaccess` in place.
+
+### Checked so far
+
+Server tests pass (72, 2 skipped); every build passes. Against the local database: the hub link
+reaches calendar events only for online / hybrid hubs; the Meet-link check refuses
+`meet.google.com/demo-link` and accepts a real code (with or without `?authuser=0`), a Zoom link and
+an empty field. The local online hubs have no timetable, so the Join buttons haven't yet been seen
+on a real session — follow "Verify" below.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart.
+3. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+5. **Replace placeholder meeting links** (see above).
+6. **Verify:** give a class of an online hub a timetable slot today and a course start date, then:
+   - the educator's dashboard shows "Next online class" with **Start online class**; Course Content's
+     class card and My Class show the Online line; the timetable card has **Join**;
+   - the learner's dashboard, My Courses and the course page show the strip; **Join online class**
+     opens the meeting in a new tab; the hub in the side panel is tagged **Online**;
+   - a parent of that learner sees **Join online class** under "Next session";
+   - within 15 minutes of the start time the buttons turn green;
+   - an in-person hub's pages look exactly as before.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips (from
+commit `207b47c`).
+
+---
+
 ## This release (27 Oct 2026) — one learner page for staff; Learners by hub; check-in reports in rich text, read by the hub, with tasks; surveys built freely; a safer bulk import; part payments; no duplicate notification emails; enquiry housekeeping
 
 **Backend and portal** from `curriculum` (branch `modules`) at `e884959`; **website** from

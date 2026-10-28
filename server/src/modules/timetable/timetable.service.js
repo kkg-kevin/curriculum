@@ -5,6 +5,7 @@ const RoomModel = require("../rooms/room.model");
 const SessionModel = require("../courses/session.model");
 const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const TeacherAvailabilityModel = require("../teachers/teacher-availability.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
@@ -329,6 +330,16 @@ function skippedSessionsInRange(skipRows, from, to) {
     .map((s) => ({ id: s.id, classId: s.classId, courseId: s.courseId, date: s.date, sessionId: s.sessionId, mode: s.mode, reason: s.reason || "" }));
 }
 
+// An online / hybrid hub's joining link (learning_hubs.meetingLink) rides on each of its classes'
+// events, so every calendar built from them — educator, learner, parent, hub — can offer "Join".
+// Only people already scoped to that class's calendar ever receive it; the public site never does.
+async function onlineLinkForClass(classId) {
+  const cls = await ClassModel.findById(classId);
+  const hub = cls && (await LearningHubModel.findById(cls.schoolId));
+  if (!hub?.meetingLink || !["virtual", "hybrid"].includes(hub.deliveryMode)) return null;
+  return hub.meetingLink;
+}
+
 const TimetableService = {
   async listForClass(classId) {
     return TimetableModel.findAll({ classId });
@@ -374,7 +385,8 @@ const TimetableService = {
         skipsByDate: skipsByCourse[anchor.courseId] || {}, roomNameById,
       });
     }));
-    const events = eventLists.flat();
+    const meetingLink = await onlineLinkForClass(classId);
+    const events = eventLists.flat().map((e) => (meetingLink ? { ...e, meetingLink } : e));
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
       breaks: breaksInRange(periods, from, to, classId),

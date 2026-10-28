@@ -1,7 +1,6 @@
 const db = require("../../config/db");
 const ClubMembershipModel = require("./club.model");
 const ClubPackageModel = require("./club-package.model");
-const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearnerService = require("../learners/learner.service");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");

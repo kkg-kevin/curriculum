@@ -528,7 +528,6 @@ function IndicatorPicker({ options, selectedIds, onChange }) {
    criterion left without an indicator (a rubric built before criteria were assigned, or one whose
    indicator was untagged) is shared evenly across the tagged indicators, so no marks go missing. */
 
-const linkBtnStyle = { background: "none", border: "none", padding: 0, fontSize: "11.5px", fontWeight: 600, color: "#38aae1", cursor: "pointer" };
 
 // Each tagged indicator's marks, worked out from the rubric's criteria (see above).
 function indicatorMarksFromCriteria(indicatorMarks, criteria) {
