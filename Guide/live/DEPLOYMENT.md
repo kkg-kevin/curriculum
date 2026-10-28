@@ -102,6 +102,95 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (28 Oct 2026, evening) — one login and one password for every role (staff and supervisors too); tidier Hub Check-ins buttons
+
+**Backend and portal** from `curriculum` (branch `modules`) at `ca7d20a`. No website change — the
+website zip from "This release (28 Oct 2026)" below is still current. Includes everything in
+"This release (28 Oct 2026)" below — if that wasn't uploaded yet, upload this one instead.
+**Take a database backup first**, **upload the backend first**, then the portal.
+
+### What changed — portal and backend
+
+- **One person, one login, one password.** Someone who already signs in (as an educator, a hub, a
+  parent, staff or a supervisor) keeps that one login when given another role:
+  - **Staff and Supervisors can now be added to an existing login.** Settings → People & sharing →
+    Staff → Invite, and Educator Claims → Supervisors → Add, used to refuse an email that already
+    signed in ("staff need an email of their own"). Now that login simply gains the role, and the
+    password field can be left blank — it's needed only for a brand-new login. The person picks
+    the role at sign-in, or switches from the top bar.
+  - **A password set anywhere is the password for every role.** Setting it on the educator, hub,
+    parent, staff or supervisor form — or the person changing it in their profile or by a reset
+    link — changes it for all their roles. (Before, a password typed on the educator form for
+    someone who was also staff was quietly ignored.) The one exception: an **admin's or curriculum
+    admin's** own password is never changed from someone else's form — only in their My profile.
+  - **Removing someone from Staff or Supervisors takes only that role away.** Their login stays for
+    their other roles, with the same password; it's deleted only when it has no role left.
+  - Admins and curriculum admins can't be made staff or a supervisor (they already run the
+    workspace), and a login is staff / supervisor of **one workspace only**.
+  - Settings → Users shows every role a login holds here, e.g. "Educator · Staff".
+- **Hub Check-ins buttons tidied.** The main tabs (My check-ins, My tasks, All check-ins, All tasks,
+  Schedules) sit in one bar with icons; the filters under them (Report due / Upcoming / Reported /
+  All, To do / Done, Active / Ended) are a lighter switch with counts as badges, the hub and person
+  filters on the right. Buttons come in two sizes — page and dialog actions, and a smaller one in
+  list rows (Edit / End / Remove, with icons; End and Remove in red). On a check-in, **Correct the
+  report** sits beside the Report heading, Send / Cancel in one row under the form, and earlier
+  reports open with an arrow. Previous / Next have arrows; the sign-in pop-up's two buttons match.
+  Everything wraps or scrolls sideways on a phone.
+
+### No migrations, no new cron job, no new environment variable
+
+Roles are kept in the existing `users.role` / `users.extraRoles` / `users.invitedByAdminId`
+columns. Nothing to install.
+
+**Existing accounts change nothing by themselves.** A login that is staff and also an educator
+(like one where the educator was added after the staff invite) carries on as it is; removing it from
+Staff after this upload leaves a plain educator login, so no SQL is needed for that any more.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `ca7d20a` — 583 files, 144 migrations (none new). Same zip in Dev,
+Live and Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DfDnnhRm.js` |
+| Live | `npm run build:live` | `index-DJpdPzBU.js` |
+| Capable | `npm run build:capable` | `index-Bq40vWs6.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Checked so far
+
+Server tests pass (76, 2 skipped); every build passes. Against the local database, with a throwaway
+account deleted afterwards: an educator invited as staff and as a supervisor with no password keeps
+their password and is offered all three roles at sign-in; another workspace can't make them staff;
+a password set on the educator form, and one changed from Supervisors, works for every role;
+removing staff, then the supervisor, leaves a plain educator login; a brand-new staff login needs a
+password; staff first then educator also shares one password; an admin's password is left alone. The
+Hub Check-ins screens haven't been looked at in a browser yet.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart.
+3. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+4. **Verify:**
+   - Staff → Invite an educator's email with the password blank → "already had a login — it now
+     has the Staff role too"; signing in as them offers Educator and Staff; their password is
+     unchanged.
+   - Set a new password on that educator's form → it works for both roles.
+   - Staff → remove them → they still sign in as the educator.
+   - Hub Check-ins: the tab bar, the filter switch and the row buttons look even, on a desktop and on
+     a phone.
+
+**Rolling back:** restore the backup, then upload the earlier backend and portal zips (from commit
+`90ec41f`).
+
+---
+
 ## This release (28 Oct 2026) — online hubs: Join buttons for educators, learners and parents; Google Meet links checked on the hub form
 
 **Backend and portal** from `curriculum` (branch `modules`) at `b965c95`; **website** from
