@@ -36,3 +36,17 @@ export function Initials({ name = "", photo, size = 44 }) {
   if (photo) return <img src={photo} alt="" style={{ ...box, objectFit: "cover" }} />;
   return <div aria-hidden style={{ ...box, display: "grid", placeItems: "center", background: "#E8F5FB", color: "#25476a", fontWeight: 800, fontSize: Math.round(size * 0.36) }}>{initials}</div>;
 }
+
+// The status filter's choices: each status with its colour dot, and how many there are.
+export function statusFilterOptions(keys, counts) {
+  return keys.map((key) => {
+    const tone = HOUSEHOLD_STATUS[key];
+    return {
+      key,
+      count: counts[key] || 0,
+      label: tone
+        ? <><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: tone.color }} />{tone.label}</>
+        : "All",
+    };
+  });
+}

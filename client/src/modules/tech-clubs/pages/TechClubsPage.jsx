@@ -7,7 +7,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { can } from "../../../hooks/usePermissions";
 import { techClubApi } from "../services/techClubApi";
 import MembershipCard from "../components/MembershipCard";
-import { HOUSEHOLD_STATUS, errorMessage, inputStyle, panelStyle, primaryButton, thisMonth } from "../../home-learning/components/ui";
+import { errorMessage, inputStyle, panelStyle, primaryButton, statusFilterOptions, thisMonth } from "../../home-learning/components/ui";
+import { Segmented } from "../../../components/ui/TabBar";
 
 const STATUS_FILTERS = ["all", "pending", "active", "paused", "cancelled"];
 
@@ -86,7 +87,6 @@ export default function TechClubsPage() {
     declining: declineMutation.isPending && declineMutation.variables === id,
   });
 
-  const chip = (selected) => ({ border: `1px solid ${selected ? "#25476a" : "#E5E7EB"}`, background: selected ? "#25476a" : "#fff", color: selected ? "#fff" : "#374151", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 });
 
   return <div style={{ width: "100%", fontFamily: "Inter, sans-serif", color: "#111827" }}>
     <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
@@ -126,14 +126,8 @@ export default function TechClubsPage() {
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {STATUS_FILTERS.map((key) => {
-          const tone = HOUSEHOLD_STATUS[key];
-          return <button key={key} type="button" onClick={() => setStatusFilter(key)} style={chip(statusFilter === key)}>
-            {tone && <span style={{ width: 8, height: 8, borderRadius: "50%", background: tone.color }} />}
-            {tone ? tone.label : "All"} <span style={{ opacity: 0.7 }}>{statusCounts[key] || 0}</span>
-          </button>;
-        })}
+      <div>
+        <Segmented label="Status" options={statusFilterOptions(STATUS_FILTERS, statusCounts)} value={statusFilter} onChange={setStatusFilter} />
       </div>
       {isLoading
         ? <div style={{ ...panelStyle, color: "#6B7280" }}>Loading members…</div>

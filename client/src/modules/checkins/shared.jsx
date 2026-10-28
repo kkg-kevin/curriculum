@@ -51,53 +51,14 @@ export function CheckinStyles() {
       .ci-btn { transition: filter 120ms ease, box-shadow 120ms ease, background-color 120ms ease; }
       .ci-btn:hover:not(:disabled) { filter: brightness(0.96); box-shadow: 0 2px 8px rgba(37,71,106,0.12); }
       .ci-btn:focus-visible, .ci-tab:focus-visible { outline: 2px solid #2e7db5; outline-offset: 2px; }
-      .ci-tab:hover:not([aria-selected="true"]):not([aria-pressed="true"]) { background-color: rgba(37,71,106,0.06) !important; }
-      .ci-scroll { scrollbar-width: none; } .ci-scroll::-webkit-scrollbar { display: none; }
+      .ci-tab:hover { background-color: rgba(37,71,106,0.06) !important; }
       @media (prefers-reduced-motion: reduce) { .ci-btn { transition: none; } }
     `}</style>
   );
 }
 
-function CountBadge({ on, children }) {
-  return (
-    <span style={{ minWidth: 18, height: 18, padding: "0 5px", boxSizing: "border-box", borderRadius: 999, background: on ? "rgba(255,255,255,0.22)" : "#E2E8F0", color: on ? "#fff" : "#475569", fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-      {children}
-    </span>
-  );
-}
-
-// The page's main tabs: a white bar, the open tab filled. Scrolls sideways on a phone.
-export function Tabs({ tabs, value, onChange, label }) {
-  return (
-    <div role="tablist" aria-label={label} className="ci-scroll" style={{ ...card, display: "flex", gap: 4, padding: 4, borderRadius: 12, overflowX: "auto", maxWidth: "100%", width: "fit-content", boxSizing: "border-box" }}>
-      {tabs.map(({ key, label: text, icon: Icon }) => {
-        const on = key === value;
-        return (
-          <button key={key} type="button" role="tab" aria-selected={on} className="ci-tab" onClick={() => onChange(key)} style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px", border: 0, borderRadius: 9, background: on ? T.accent : "transparent", color: on ? "#fff" : "#4B5563", fontSize: 13, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-            {Icon && <Icon size={14} />}{text}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// A filter inside a tab (Report due / Upcoming / …): a grey track, the chosen one raised white —
-// lighter than the tabs above it, with its count as a badge.
-export function Segmented({ options, value, onChange, label }) {
-  return (
-    <div role="group" aria-label={label} className="ci-scroll" style={{ display: "inline-flex", gap: 2, padding: 3, background: "#EEF2F6", borderRadius: 10, overflowX: "auto", maxWidth: "100%", boxSizing: "border-box" }}>
-      {options.map((o) => {
-        const on = o.key === value;
-        return (
-          <button key={o.key} type="button" aria-pressed={on} className="ci-tab" onClick={() => onChange(o.key)} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", border: 0, borderRadius: 8, background: on ? "#fff" : "transparent", color: on ? T.ink : T.inkMuted, boxShadow: on ? "0 1px 3px rgba(15,23,42,0.12)" : "none", fontSize: 12.5, fontWeight: 700, fontFamily: font, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-            {o.label}{o.count ? <CountBadge>{o.count}</CountBadge> : null}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+// The page's tabs and the filter inside a tab — shared with Activity (components/ui/TabBar.jsx).
+export { Tabs, Segmented } from "../../components/ui/TabBar";
 
 // The row above a list: its filter on the left, other controls on the right; wraps on a phone.
 export const toolbar = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" };

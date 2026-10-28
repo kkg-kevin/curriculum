@@ -9,7 +9,8 @@ import { can } from "../../../hooks/usePermissions";
 import { homeLearningApi } from "../services/homeLearningApi";
 import HouseholdCard from "../components/HouseholdCard";
 import { HouseholdFields } from "../components/HouseholdFields";
-import { HOUSEHOLD_STATUS, errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, thisMonth } from "../components/ui";
+import { errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, statusFilterOptions, thisMonth } from "../components/ui";
+import { Segmented } from "../../../components/ui/TabBar";
 
 const EMPTY_HOUSEHOLD = { guardianName: "", guardianEmail: "", guardianPhone: "", county: "", subCounty: "", town: "", addressLine: "", landmark: "", mapUrl: "", locationPhotos: [], packageId: "", childCount: "", status: "pending", startDate: "", notes: "", portalPassword: "", fromLearnerId: "" };
 const STATUS_FILTERS = ["all", "active", "pending", "paused", "cancelled"];
@@ -216,15 +217,8 @@ export default function HomeLearningPage() {
           <input type="search" aria-label="Search households" placeholder="Search guardian, phone, area or child…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: 32, fontSize: 13 }} />
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {STATUS_FILTERS.map((key) => {
-          const selected = statusFilter === key;
-          const tone = HOUSEHOLD_STATUS[key];
-          return <button key={key} type="button" onClick={() => setStatusFilter(key)} style={{ border: `1px solid ${selected ? "#25476a" : "#E5E7EB"}`, background: selected ? "#25476a" : "#fff", color: selected ? "#fff" : "#374151", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            {tone && <span style={{ width: 8, height: 8, borderRadius: "50%", background: tone.color }} />}
-            {tone ? tone.label : "All"} <span style={{ opacity: 0.7 }}>{statusCounts[key] || 0}</span>
-          </button>;
-        })}
+      <div>
+        <Segmented label="Status" options={statusFilterOptions(STATUS_FILTERS, statusCounts)} value={statusFilter} onChange={setStatusFilter} />
       </div>
       {isLoading
         ? <div style={{ ...panelStyle, color: "#6B7280" }}>Loading households…</div>

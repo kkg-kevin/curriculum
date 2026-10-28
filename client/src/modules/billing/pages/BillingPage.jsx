@@ -23,6 +23,7 @@ import PaymentNoticesPanel from "../components/PaymentNoticesPanel";
 import OrdersPanel from "../components/OrdersPanel";
 import ClaimsReviewPage from "../../claims/pages/ClaimsReviewPage";
 import { can, canViewAny, isStaff } from "../../../hooks/usePermissions";
+import { Tabs } from "../../../components/ui/TabBar";
 
 const INVOICES_PER_PAGE = 8;
 const RECENT_RECEIPTS_COUNT = 5;
@@ -298,16 +299,8 @@ function BillingPage() {
       </div>
 
       {isAdmin && (
-        <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid #E5E7EB", flexWrap: "wrap" }}>
-          {ADMIN_TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            const Icon = tab.icon;
-            return (
-              <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", border: 0, borderBottom: `2px solid ${active ? "#25476a" : "transparent"}`, background: "transparent", color: active ? "#25476a" : "#6B7280", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-                <Icon sx={{ fontSize: 17 }} /> {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ marginBottom: 16 }}>
+          <Tabs label="Billing" tabs={ADMIN_TABS} value={activeTab} onChange={setActiveTab} />
         </div>
       )}
 
