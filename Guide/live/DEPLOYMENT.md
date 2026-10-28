@@ -102,6 +102,90 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (28 Oct 2026, night) — System Levels as tiles; one tab bar across the portal; Sign in on the website
+
+**Portal** from `curriculum` (branch `modules`) at `a0372fa`; **website** from `curriculum-web`
+(branch `new`) at `d3ff58c`. The backend is unchanged since "This release (28 Oct 2026, late)"
+below (same code, rebuilt zip). Includes everything in that release and "This release (28 Oct
+2026, evening)" — if those weren't uploaded yet, upload this one instead. **Take a database backup
+first**, **upload the backend first**, then the portal, then the website.
+
+### What changed — portal
+
+- **Settings → System Levels takes up far less room.** The levels are small tiles in a grid, read
+  left to right (16 levels in 2 rows instead of 16 rows). Click a name to rename it; point at a
+  tile (or tab to it) for move earlier ‹, move later › and delete. On a phone the buttons sit on
+  their own line under each name. The long explanation is behind the ⓘ beside the title.
+- **One tab bar across the portal.** The look Hub Check-ins got earlier today — a white bar with
+  icons, the open tab filled; filters inside a tab as a grey switch with counts — now also on:
+  - **Activity** — the tabs with their counts (Refused & failed amber when above nought), and the
+    Sign-ins / Refused & failed choices inside them;
+  - **Billing** — Customers, Invoices, Payments, Orders, To confirm, M-Pesa, Packages, Educator
+    Claims;
+  - **Learners** — Learners | Parent & learner logins;
+  - **Tech Clubs** and **Home Learning** — the status filter (All, Pending, Active, Paused,
+    Cancelled), each status keeping its colour dot. A status with nothing in it no longer shows "0".
+  Every tab and filter does what it did; links to a tab (e.g. `?tab=mpesa`, `?tab=logins`) still
+  open it.
+
+### What changed — website
+
+- **Sign in** in the header, beside Enroll (and a **Sign in** button in the phone menu), opens the
+  portal's login page directly — https://dcf.digifunzi.com/login — for families, learners, educators and hubs who
+  already have an account.
+
+### No migrations, no new cron job, no new environment variable
+
+Nothing to install.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `a0372fa` — 583 files, 144 migrations (none new); the server code is
+the same as `6e7b01c`. Same zip in Dev, Live and Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-BMIWRaoW.js` |
+| Live | `npm run build:live` | `index-B5EzzKHR.js` |
+| Capable | `npm run build:capable` | `index-BzYL2wfb.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 25 pages (the same set as last release), all with content |
+
+Checked: built site (no dev-server files, entry `index-DkvoT8ZG.js`), calling its own API, the Sign in
+link pointing at https://dcf.digifunzi.com/login, `.htaccess` in place.
+
+### Checked so far
+
+Every build passes; server tests pass (82, 2 skipped). In a browser against the local app:
+System Levels on a desktop (2 rows) and a phone (names readable, nothing off the screen), rename
+opening in place; Activity, Billing, Learners, Tech Clubs and Home Learning tabs and filters
+switching and keeping their links; Hub Check-ins looking as before. On the local website, the
+header's Sign in landed on the portal's login page, and the phone menu's points there too.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart.
+3. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+5. **Verify:** Settings → System Levels shows tiles; Activity, Billing and Learners show the white
+   tab bar; on the website, **Sign in** (desktop and phone menu) opens the portal's login. Do the
+   earlier releases' checks too if those weren't uploaded before.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips (from
+commit `82aec18`).
+
+---
+
 ## This release (28 Oct 2026, late) — Multiple Choice (Multiple): every right answer can be ticked
 
 **Backend and portal** from `curriculum` (branch `modules`) at `6e7b01c`. No website change — the

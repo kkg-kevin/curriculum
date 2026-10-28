@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiDownload, FiSearch, FiX } from "react-icons/fi";
+import { FiActivity, FiAlertTriangle, FiDownload, FiEdit2, FiLogIn, FiPlusCircle, FiSearch, FiTrash2, FiX } from "react-icons/fi";
+import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import toast from "react-hot-toast";
 import { useActivity, useActivityCounts, useActivityFacets } from "../hooks/useActivity";
 import { activityApi } from "../services/activityApi";
 import { PERIODS, VIEWS, areaLabel, dayOf } from "../labels";
 import ActivityEntry from "../components/ActivityEntry";
 
-const control = { padding: "8px 10px", borderRadius: 9, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", background: "#fff", outline: "none", minWidth: 0 };
+const control = { height: 36, boxSizing: "border-box", padding: "0 10px", borderRadius: 9, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", background: "#fff", outline: "none", minWidth: 0 };
 const card = { background: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.04)" };
-const chip = (on) => ({ padding: "5px 12px", borderRadius: 999, border: `1.5px solid ${on ? "#25476a" : "#E5E7EB"}`, background: on ? "#25476a" : "#fff", color: on ? "#fff" : "#374151", fontSize: 12.5, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" });
+// Each tab's icon (the tabs themselves are labels.js's VIEWS).
+const VIEW_ICONS = { "": FiActivity, signins: FiLogIn, added: FiPlusCircle, edited: FiEdit2, deleted: FiTrash2, problems: FiAlertTriangle };
 
 // Who did what, and when. Every change anyone makes in the workspace is recorded as it happens;
 // this page reads that record. Nothing here can be edited or removed.
@@ -99,23 +101,13 @@ export default function ActivityPage() {
       </div>
 
       {/* What kind of thing happened */}
-      <div role="tablist" aria-label="Kind of activity" style={{ display: "flex", gap: 4, overflowX: "auto", borderBottom: "2px solid #EEF0F3", marginBottom: 14 }}>
-        {VIEWS.map((v) => {
-          const on = v.key === view;
-          const count = counts?.[v.key || "all"];
-          const alert = v.key === "problems" && count > 0;
-          return (
-            <button
-              key={v.key || "all"} type="button" role="tab" aria-selected={on} onClick={() => openTab(v.key)}
-              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 14px", marginBottom: -2, border: "none", borderBottom: `2px solid ${on ? "#25476a" : "transparent"}`, background: "none", color: on ? "#25476a" : "#6B7280", fontSize: 13.5, fontWeight: on ? 800 : 600, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              {v.label}
-              {count != null && (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 999, fontVariantNumeric: "tabular-nums", background: alert ? "#FEF3C7" : on ? "#E0ECF7" : "#F3F4F6", color: alert ? "#B45309" : on ? "#25476a" : "#6B7280" }}>{count.toLocaleString()}</span>
-              )}
-            </button>
-          );
-        })}
+      <div style={{ marginBottom: 14 }}>
+        <Tabs
+          label="Kind of activity"
+          tabs={VIEWS.map((v) => ({ key: v.key, label: v.label, icon: VIEW_ICONS[v.key], count: counts?.[v.key || "all"], alert: v.key === "problems" }))}
+          value={view}
+          onChange={openTab}
+        />
       </div>
 
       {/* Who, when, where — the same for every tab */}
@@ -144,7 +136,7 @@ export default function ActivityPage() {
             </select>
           )}
           {narrowed && (
-            <button type="button" onClick={clear} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 9, border: "1.5px solid #E5E7EB", background: "#fff", color: "#374151", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            <button type="button" onClick={clear} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, boxSizing: "border-box", padding: "0 12px", borderRadius: 9, border: "1.5px solid #E5E7EB", background: "#fff", color: "#374151", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               <FiX size={14} /> Clear
             </button>
           )}
@@ -163,11 +155,13 @@ export default function ActivityPage() {
 
         {/* The open tab's own second choice, e.g. Sign-ins → Failed attempts */}
         {tab.narrow && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-            <button type="button" aria-pressed={!narrow} onClick={() => setNarrow(null)} style={chip(!narrow)}>All</button>
-            {tab.narrow.map((n) => (
-              <button key={n.label} type="button" aria-pressed={narrow?.label === n.label} onClick={() => setNarrow(n)} style={chip(narrow?.label === n.label)}>{n.label}</button>
-            ))}
+          <div style={{ marginTop: 10 }}>
+            <Segmented
+              label={`Kind of ${tab.label.toLowerCase()}`}
+              options={[{ key: "", label: "All" }, ...tab.narrow.map((n) => ({ key: n.label, label: n.label }))]}
+              value={narrow?.label || ""}
+              onChange={(key) => setNarrow(tab.narrow.find((n) => n.label === key) || null)}
+            />
           </div>
         )}
       </div>

@@ -6,6 +6,8 @@ import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHu
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
 import { learnerCreatePath } from "../../../routes/portalPaths";
 import { useAllLearnersQuery, useLearnerLogins, useSetLearnerLoginActive } from "../hooks/useLearners";
+import { FiKey, FiUsers } from "react-icons/fi";
+import { Tabs } from "../../../components/ui/TabBar";
 import { learnerApi } from "../services/learnerApi";
 import { LearnerCard } from "../components/LearnerCard";
 import UsersTable from "../../settings/users/components/UsersTable";
@@ -13,7 +15,10 @@ import { usePermissions } from "../../../hooks/usePermissions";
 
 const inputStyle  = { padding: "8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", minWidth: 200 };
 
-const tabStyle = (on) => ({ padding: "7px 16px", borderRadius: 999, border: `1.5px solid ${on ? "#25476a" : "#E5E7EB"}`, background: on ? "#25476a" : "#fff", color: on ? "#fff" : "#374151", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" });
+const PAGE_TABS = [
+  { key: "learners", label: "Learners", icon: FiUsers },
+  { key: "logins", label: "Parent & learner logins", icon: FiKey },
+];
 
 // Parents' and learners' own logins — the kind of account, which child or hub, last used, and the
 // sign-in switch (Settings → Users lists the workspace's other logins). Switching needs Learners
@@ -204,9 +209,8 @@ export default function LearnersPage() {
         </div>
       </div>
 
-      <div role="tablist" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <button type="button" role="tab" aria-selected={tab === "learners"} onClick={() => setTab("learners")} style={tabStyle(tab === "learners")}>Learners</button>
-        <button type="button" role="tab" aria-selected={tab === "logins"} onClick={() => setTab("logins")} style={tabStyle(tab === "logins")}>Parent &amp; learner logins</button>
+      <div style={{ marginBottom: 16 }}>
+        <Tabs label="Learners" tabs={PAGE_TABS} value={tab} onChange={setTab} />
       </div>
 
       {tab === "logins" ? <LearnerLoginsPanel /> : (<>

@@ -210,6 +210,44 @@ const CSS = `
   .stg-icon-btn:hover        { background:#F3F4F6; color:#374151; }
   .stg-icon-btn.danger:hover { background:#FEF2F2; color:#DC2626; }
 
+  /* System levels: a grid of small tiles, read left to right. A tile's buttons show on hover or
+     keyboard focus, and always on a touch screen. */
+  .stg-level-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+  .stg-level {
+    position:relative; display:flex; align-items:center; gap:8px; min-width:0; height:42px;
+    padding:0 10px; border-radius:10px; border:1.5px solid #E5E7EB; background:#FAFAFA;
+    transition:border-color 0.15s, background 0.15s; animation:stg-fadein 0.18s ease;
+  }
+  .stg-level:hover, .stg-level:focus-within { border-color:#b8d9ee; background:#F8FBFF; }
+  .stg-level-num {
+    min-width:24px; height:24px; padding:0 4px; box-sizing:border-box; border-radius:7px; flex-shrink:0;
+    background:#e8f5fb; border:1px solid #a8d5ee; color:#25476a; font-size:11.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stg-level-name {
+    flex:1; min-width:0; padding:0; border:none; background:none; text-align:left; cursor:text;
+    font:700 13px Inter,sans-serif; color:#111827; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .stg-level-name:focus-visible { outline:2px solid #2e7db5; outline-offset:2px; border-radius:4px; }
+  .stg-level-input { flex:1; min-width:0; height:28px; padding:0 8px !important; font-size:13px !important; }
+  .stg-level-actions {
+    position:absolute; right:4px; top:50%; transform:translateY(-50%); display:flex; gap:1px;
+    padding-left:14px; background:linear-gradient(to right, rgba(248,251,255,0), #F8FBFF 14px);
+    opacity:0; pointer-events:none; transition:opacity 0.12s;
+  }
+  .stg-level:hover .stg-level-actions, .stg-level:focus-within .stg-level-actions { opacity:1; pointer-events:auto; }
+  .stg-level-actions .stg-icon-btn { width:24px; height:24px; border-radius:6px; }
+  .stg-level-actions .stg-icon-btn:disabled { opacity:0.35; cursor:default; }
+  /* A touch screen has no hover: the buttons sit on their own line under the name. */
+  @media (hover: none) {
+    .stg-level { height:auto; min-height:42px; flex-wrap:wrap; row-gap:2px; padding:7px 8px 4px; }
+    .stg-level-actions {
+      position:static; transform:none; opacity:1; pointer-events:auto; padding-left:0; background:none;
+      flex-basis:100%; justify-content:flex-end; gap:4px; border-top:1px solid #EEF2F6; padding-top:3px;
+    }
+    .stg-level-actions .stg-icon-btn { width:30px; height:30px; }
+  }
+
   .stg-course-section { margin-top:12px; padding-top:12px; border-top:1px dashed #E5E7EB; }
   .stg-course-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
   .stg-course-header-left { display:flex; align-items:center; gap:6px; }

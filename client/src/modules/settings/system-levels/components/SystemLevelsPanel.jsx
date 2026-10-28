@@ -1,16 +1,17 @@
 import { useState, useRef } from "react";
-import { FiChevronDown, FiChevronUp, FiLayers, FiTrash2 } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiInfo, FiLayers, FiTrash2 } from "react-icons/fi";
 import {
   useSystemLevels, useCreateSystemLevel, useUpdateSystemLevel, useDeleteSystemLevel, useReorderSystemLevels,
 } from "../hooks/useSystemLevels";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { systemLevelsApi } from "../services/systemLevelsApi";
 
-// One row — sequence badge, an inline-editable name, reorder arrows, delete. Kept intentionally
-// simple (no modal, no color/description) since a System Level is just a fixed position on the
-// spine — every other detail (what a curriculum actually calls it) lives on the curriculum's
-// own Curriculum Label/Short Label/Phase, not here.
-function LevelRow({ level, index, count, onRename, onMoveUp, onMoveDown, onDelete, saving }) {
+// One tile — sequence badge and an inline-editable name, with move earlier / later and delete
+// shown on hover or keyboard focus (settingsStyles.js's .stg-level). Kept intentionally simple
+// (no modal, no color/description) since a System Level is just a fixed position on the spine —
+// every other detail (what a curriculum actually calls it) lives on the curriculum's own
+// Curriculum Label/Short Label/Phase, not here.
+function LevelTile({ level, index, count, onRename, onMoveUp, onMoveDown, onDelete, saving }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(level.name);
 
@@ -22,16 +23,14 @@ function LevelRow({ level, index, count, onRename, onMoveUp, onMoveDown, onDelet
   };
 
   return (
-    <div className="stg-item" style={{ display: "flex", flexDirection: "row", alignItems: "center", textAlign: "left", gap: "12px", padding: "10px 14px" }}>
-      <span style={{ width: "26px", height: "26px", borderRadius: "8px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee", color: "#25476a", fontSize: "12px", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        {level.sequence}
-      </span>
+    <div className="stg-level" role="listitem">
+      <span className="stg-level-num" aria-hidden="true">{level.sequence}</span>
 
       {editing ? (
         <input
           autoFocus
-          className="stg-input"
-          style={{ flex: 1, padding: "6px 10px" }}
+          className="stg-input stg-level-input"
+          aria-label={`Name of level ${level.sequence}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
@@ -41,26 +40,29 @@ function LevelRow({ level, index, count, onRename, onMoveUp, onMoveDown, onDelet
           }}
         />
       ) : (
-        <span
-          onClick={() => { setDraft(level.name); setEditing(true); }}
-          style={{ flex: 1, fontSize: "13.5px", fontWeight: "700", color: "#111827", cursor: "text" }}
-          title="Click to rename"
-        >
-          {level.name}
-        </span>
+        <>
+          <button
+            type="button"
+            className="stg-level-name"
+            onClick={() => { setDraft(level.name); setEditing(true); }}
+            title={`${level.name} — click to rename`}
+            aria-label={`Level ${level.sequence}: ${level.name}. Rename`}
+          >
+            {level.name}
+          </button>
+          <div className="stg-level-actions">
+            <button type="button" className="stg-icon-btn" disabled={index === 0} onClick={onMoveUp} title="Move earlier" aria-label={`Move ${level.name} earlier`}>
+              <FiChevronLeft size={14} strokeWidth={2.2} />
+            </button>
+            <button type="button" className="stg-icon-btn" disabled={index === count - 1} onClick={onMoveDown} title="Move later" aria-label={`Move ${level.name} later`}>
+              <FiChevronRight size={14} strokeWidth={2.2} />
+            </button>
+            <button type="button" className="stg-icon-btn danger" disabled={saving} onClick={onDelete} title="Delete" aria-label={`Delete ${level.name}`}>
+              <FiTrash2 size={13} strokeWidth={2} />
+            </button>
+          </div>
+        </>
       )}
-
-      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
-        <button type="button" className="stg-icon-btn" disabled={index === 0} onClick={onMoveUp} title="Move up">
-          <FiChevronUp size={14} strokeWidth={2} />
-        </button>
-        <button type="button" className="stg-icon-btn" disabled={index === count - 1} onClick={onMoveDown} title="Move down">
-          <FiChevronDown size={14} strokeWidth={2} />
-        </button>
-        <button type="button" className="stg-icon-btn danger" disabled={saving} onClick={onDelete} title="Delete">
-          <FiTrash2 size={14} strokeWidth={2} />
-        </button>
-      </div>
     </div>
   );
 }
@@ -72,6 +74,7 @@ export default function SystemLevelsPanel() {
   const { mutate: remove, isPending: deleting } = useDeleteSystemLevel();
   const { mutate: reorder } = useReorderSystemLevels();
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showAbout, setShowAbout] = useState(false);
   // `creating` (React Query's isPending) only flips true once the mutation's own state update
   // has flowed through a re-render — a fast double-click on "+ Add Level" can fire twice before
   // that happens, racing two identically-named creates past each other (see
@@ -98,11 +101,28 @@ export default function SystemLevelsPanel() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", gap: "12px", flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>System Levels</h2>
-          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {levels.length} level{levels.length !== 1 ? "s" : ""} — the fixed spine every curriculum's grades map onto, so the same position is recognized across different curricula regardless of what each one calls it (e.g. "Grade 4" vs "Year 5"). Configured per curriculum on its own Structure page.
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0F2645" }}>
+            System Levels{levels.length > 0 && <span style={{ marginLeft: "6px", fontSize: "13px", fontWeight: "700", color: "#9CA3AF" }}>· {levels.length}</span>}
+          </h2>
+          <p style={{ margin: "3px 0 0", fontSize: "12px", color: "#9CA3AF", display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+            The shared spine every curriculum&apos;s grades map onto.
+            <button
+              type="button"
+              onClick={() => setShowAbout((v) => !v)}
+              aria-expanded={showAbout}
+              aria-label="About system levels"
+              title="About system levels"
+              style={{ display: "inline-flex", padding: 0, border: "none", background: "none", cursor: "pointer", color: showAbout ? "#25476a" : "#9CA3AF" }}
+            >
+              <FiInfo size={13} />
+            </button>
           </p>
+          {showAbout && (
+            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#6B7280", lineHeight: "1.6", maxWidth: "640px" }}>
+              The same position is recognised across different curricula whatever each one calls it (e.g. &quot;Grade 4&quot; vs &quot;Year 5&quot;) — each curriculum maps its grades onto these on its own Structure page. Click a level&apos;s name to rename it; point at it to move it earlier or later, or delete it.
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -128,9 +148,9 @@ export default function SystemLevelsPanel() {
           </button>
         </div>
       ) : (
-        <div className="stg-list" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div className="stg-level-grid" role="list" aria-label="System levels, in order">
           {levels.map((level, i) => (
-            <LevelRow
+            <LevelTile
               key={level.id}
               level={level}
               index={i}
