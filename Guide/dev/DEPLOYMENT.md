@@ -102,6 +102,73 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (28 Oct 2026, late) — Multiple Choice (Multiple): every right answer can be ticked
+
+**Backend and portal** from `curriculum` (branch `modules`) at `6e7b01c`. No website change — the
+website zip from "This release (28 Oct 2026)" below is still current. Includes everything in
+"This release (28 Oct 2026, evening)" below (one login and one password for every role, tidier Hub
+Check-ins buttons) — if that wasn't uploaded yet, upload this one instead. **Take a database backup
+first**, **upload the backend first**, then the portal.
+
+### What changed — portal and backend
+
+- **Multiple Choice (Multiple): every right option can be ticked.** In the assessment builder, an
+  option whose text ended with a space (easy to type or paste without noticing) or contained a
+  comma ("Wheels, motors") couldn't be marked correct — its box wouldn't stay ticked, so often only
+  one right answer could be set. Learners ticking such an option were marked wrong. Now any
+  option text can be marked correct, and is marked right when a learner picks it.
+- **Typing into an option already marked correct** no longer loses what was typed.
+- Questions saved before keep working as they are: their right answers are read the old way. To
+  fix one that had this problem, open the assessment, tick its right options again and save.
+
+### No migrations, no new cron job, no new environment variable
+
+The right options of a new or re-saved Multiple Choice (Multiple) question are stored as a list in
+the assessment's existing `items` JSON (they were one comma-joined line); the old form is still
+read. Nothing to install.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `6e7b01c` — 583 files, 144 migrations (none new). Same zip in Dev,
+Live and Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DaDiqglQ.js` |
+| Live | `npm run build:live` | `index-BEqn4BHl.js` |
+| Capable | `npm run build:capable` | `index-9OukhRIJ.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Checked so far
+
+Server tests pass (82, 2 skipped — 6 new for marking: the list and the old text, any order, too
+few / too many / wrong options, an option with a comma, one with a space at the end). In a browser
+against the local app, with a throwaway admin deleted afterwards: before the fix, options
+`Alpha ` and `Beta, Gamma` wouldn't tick; after it, both tick, and typing into a ticked option keeps
+the text and the tick. The learner's answer screen sends every ticked option. The server accepts
+the new list and the old text.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the nodeapp app folder, Extract, Restart.
+3. **Portal:** upload `assets.zip` + `index.html` to the `curriculum.digifunzi.com` document root (Ctrl+F5).
+4. **Verify:**
+   - Assessments → new Quiz → Multiple Choice (Multiple) with options `Wheels, motors`, `Battery `
+     (space at the end) and `Paper`; tick the first two → both stay ticked; save.
+   - Issue it to a test learner, answer with those two → marked right; with one of them → wrong.
+   - Do the evening release's checks too if that wasn't uploaded before (Staff invite of an
+     educator's email with no password; Hub Check-ins buttons).
+
+**Rolling back:** restore the backup, then upload the earlier backend and portal zips (from commit
+`1bebe6d`).
+
+---
+
 ## This release (28 Oct 2026, evening) — one login and one password for every role (staff and supervisors too); tidier Hub Check-ins buttons
 
 **Backend and portal** from `curriculum` (branch `modules`) at `ca7d20a`. No website change — the

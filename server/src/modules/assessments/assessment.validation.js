@@ -63,7 +63,11 @@ const itemSchema = z.object({
   sectionId:     z.string().optional().nullable().default(null),
   points:        markValue.optional().default(1),
   options:       z.array(z.string().min(1)).optional().default([]),
-  correctAnswer: z.string().optional().default(""),
+  // The right answer: one option's text (single choice, true/false), the model answer (short
+  // answer) — or, for Multiple Choice (Multiple), the list of right options' texts (a
+  // comma-joined string before 28 Oct 2026, still accepted; see grading.utils.js's
+  // correctOptionsOf).
+  correctAnswer: z.union([z.string(), z.array(z.string().trim().min(1).max(2000))]).optional().default(""),
   pairs:         z.array(z.object({ left: z.string().min(1), right: z.string().min(1) })).optional().default([]),
   blanks:        z.array(z.string().min(1)).optional().default([]),
   sequence:      z.array(z.string().min(1)).optional().default([]),
