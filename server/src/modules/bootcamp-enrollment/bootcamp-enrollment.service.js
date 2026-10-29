@@ -378,6 +378,9 @@ async function placeOnBootcampPathway(learnerId, bootcamp, hubId, { attemptId = 
   const courseId = fromScore || (await CompetencyService.orderedPathwayCourseIds(curriculumId, pathway))[0];
   if (!courseId) return pathway; // a pathway with no courses yet — the stage still shows it
   await LearnerPathwayModel.place(learnerId, curriculumId, pathway.id, courseId, scorePercent != null ? "diagnostic" : "enrolled", assessmentId, "auto");
+  // Placed by the website diagnostic: the system's own one, issued when they joined the class just
+  // before, is withdrawn (LearnerService's one-diagnostic rule) — they don't take both.
+  if (scorePercent != null) await LearnerService.ensureDiagnosticsIssued(learnerId, hubId);
   return pathway;
 }
 
