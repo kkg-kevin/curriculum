@@ -1,7 +1,7 @@
-﻿import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward,
-  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare,
+  FiBook, FiClipboard, FiBarChart2, FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar,
 } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
@@ -34,6 +34,8 @@ const ADMIN_MENU_ITEMS = [
   { name: "Billing", path: "/billing", icon: FiDollarSign, module: ["billing", "claims", "claims-approval"] },
   // Hub check-ins: taking part (Account Managers, Training Leads) or overseeing them.
   { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: "checkins-manage" },
+  // Quality assurance: visits to educators, their reviews, schedules and templates.
+  { name: "Quality Assurance", path: "/qa", icon: FiStar, module: "qa" },
   { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
   { name: "Settings", path: "/settings", icon: FiSettings, module: "settings" },
 ];

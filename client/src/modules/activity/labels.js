@@ -4,6 +4,7 @@
 export const AREA_LABELS = {
   account: "Sign-in & account",
   checkins: "Hub check-ins",
+  qa: "Quality assurance",
   people: "Staff, roles & sharing",
   "learning-hubs": "Learning Hubs",
   curriculum: "Curriculum",

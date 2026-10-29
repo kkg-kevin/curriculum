@@ -1,9 +1,11 @@
-import { FiKey, FiList, FiShare2, FiShield, FiUsers } from "react-icons/fi";
+import { FiKey, FiList, FiShare2, FiShield, FiUserCheck, FiUsers } from "react-icons/fi";
 import AdminsPanel from "../../admins/components/AdminsPanel";
 import CollaboratorsPanel from "../../collaborators/components/CollaboratorsPanel";
 import RolesPanel from "../../access/components/RolesPanel";
 import SharingPanel from "../../sharing/components/SharingPanel";
 import UsersPanel from "../../users/components/UsersPanel";
+import SupervisorsPanel from "../../../claims/components/SupervisorsPanel";
+import { useSupervisors } from "../../../claims/hooks/useClaims";
 import { useCollaborators } from "../../collaborators/hooks/useCollaborators";
 import { useAccessRoles } from "../../access/hooks/useAccessRoles";
 import { useConnections } from "../../sharing/hooks/useSharing";
@@ -11,7 +13,8 @@ import { useWorkspaceUsers } from "../../users/hooks/useWorkspaceUsers";
 import { useAuth } from "../../../../context/AuthContext";
 
 // Everything about WHO works with this workspace, in one place (owner-only): the people helping
-// inside it (Staff) and what they may do (Roles & access), other admins content is exchanged with
+// inside it (Staff) and what they may do (Roles & access), the supervisors who review educators'
+// claims and QA visits (Supervisors), other admins content is exchanged with
 // (Sharing — hidden once there are several admins in one organisation), adding admins to the
 // organisation (Admins), and every login the workspace
 // has, of any kind, with whether it is in use and switched on (Users). Each card says what it is
@@ -19,7 +22,7 @@ import { useAuth } from "../../../../context/AuthContext";
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export const TEAM_SECTIONS = ["staff", "roles", "users", "sharing", "admins"];
+export const TEAM_SECTIONS = ["staff", "roles", "supervisors", "users", "sharing", "admins"];
 
 function SectionCard({ active, Icon, title, purpose, status, alert, onClick }) {
   return (
@@ -53,6 +56,7 @@ export default function TeamPanel({ section, onSectionChange }) {
   const { data: roles } = useAccessRoles();
   const { data: connections } = useConnections();
   const { data: workspaceUsers } = useWorkspaceUsers();
+  const { data: supervisors } = useSupervisors();
 
   const connected = (connections || []).filter((c) => c.status === "accepted").length;
   const waitingForMe = (connections || []).filter((c) => c.status === "pending" && c.direction === "received").length;
@@ -75,6 +79,11 @@ export default function TeamPanel({ section, onSectionChange }) {
       key: "roles", Icon: FiKey, title: "Roles & access",
       purpose: "What each staff member can see and change.",
       status: roles ? plural(roles.length, "role") : "",
+    },
+    {
+      key: "supervisors", Icon: FiUserCheck, title: "Supervisors",
+      purpose: "Review the claims and do the QA visits of the educators assigned to them.",
+      status: supervisors ? (supervisors.length ? plural(supervisors.length, "supervisor") : "None yet") : "",
     },
     {
       key: "users", Icon: FiList, title: "Users",
@@ -107,6 +116,7 @@ export default function TeamPanel({ section, onSectionChange }) {
       <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: 20 }}>
         {active === "staff" && <CollaboratorsPanel onManageRoles={() => onSectionChange("roles")} />}
         {active === "roles" && <RolesPanel onManageStaff={() => onSectionChange("staff")} />}
+        {active === "supervisors" && <SupervisorsPanel heading />}
         {active === "users" && <UsersPanel />}
         {active === "sharing" && <SharingPanel />}
         {active === "admins" && <AdminsPanel />}

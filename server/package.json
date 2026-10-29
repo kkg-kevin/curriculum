@@ -11,6 +11,7 @@
     "mail:process": "node src/scripts/processEmailOutbox.js",
     "mpesa:reconcile": "node src/scripts/reconcileMpesa.js",
     "checkins:process": "node src/scripts/processCheckins.js",
+    "qa:process": "node src/scripts/processQa.js",
     "billing:process": "node src/scripts/processBilling.js",
     "enquiries:process": "node src/scripts/processEnquiries.js",
     "mpesa:register-urls": "node src/scripts/registerMpesaUrls.js",

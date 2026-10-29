@@ -43,6 +43,7 @@ const ROOTS = {
   leads: { table: "leads", noun: "enquiry", module: "enquiries" },
   claims: { table: "teacher_claims", noun: "claim", module: "claims" },
   checkins: { table: null, noun: "hub check-in", module: "checkins" },
+  qa: { table: null, noun: "QA visit", module: "qa" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
@@ -87,6 +88,11 @@ const COLLECTIONS = {
   checkins: {
     schedules: { table: "checkin_schedules", noun: "check-in schedule" },
     sessions: { table: "checkin_sessions", noun: "hub check-in" },
+  },
+  qa: {
+    templates: { table: "qa_templates", noun: "QA template" },
+    schedules: { table: "qa_schedules", noun: "QA visit schedule" },
+    visits: { table: "qa_visits", noun: "QA visit" },
   },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },

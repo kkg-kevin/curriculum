@@ -187,12 +187,12 @@ export default function TeacherForm() {
 
       {inWorkspace && supervisorsLoaded && (
         <div style={{ padding: "20px 24px", borderBottom: "1px solid #F3F4F6" }}>
-          <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Claims supervisor</h3>
+          <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "700", color: "#111827" }}>Supervisor</h3>
           <p style={{ margin: "0 0 16px", fontSize: "12px", color: "#9CA3AF" }}>
-            Who approves this educator's payment claims before the admin pays them. Optional — with no supervisor, claims go straight to the admin.
+            Who approves this educator's payment claims before the admin pays them, and does their QA visits. Optional — with no supervisor, claims go straight to the admin and admins do the QA visits.
           </p>
           <div style={{ maxWidth: "360px" }}>
-            <Field label="Supervisor" hint={supervisors.length === 0 ? "No supervisor accounts yet — create them under Billing → Educator Claims → Supervisors." : undefined}>
+            <Field label="Supervisor" hint={supervisors.length === 0 ? "No supervisor accounts yet — create them under Settings → People & sharing → Supervisors." : undefined}>
               <select {...register("supervisorId", { setValueAs: (value) => value || null })} style={selectStyle(false)}>
                 <option value="">No supervisor</option>
                 {supervisors.map((supervisor) => (
