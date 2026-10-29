@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -8,6 +8,7 @@ const menuItems = [
   { name: "Dashboard",    path: "/supervisor-portal", icon: FiGrid },
   { name: "Claims",       path: "/supervisor-portal/claims", icon: FiFileText, badge: true },
   { name: "My Educators", path: "/supervisor-portal/educators", icon: FiUsers },
+  { name: "QA Visits",    path: "/supervisor-portal/qa", icon: FiStar },
   { name: "My Profile",   path: "/supervisor-portal/profile", icon: FiUser },
 ];
 

@@ -15,6 +15,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { teacherApi } from "../services/teacherApi";
+import EducatorQaSection from "../../qa/components/EducatorQaSection";
 
 const ACCENT = "#25476a";
 
@@ -346,6 +347,9 @@ export default function TeacherViewPage() {
             )}
             {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
           </Section>
+
+          {/* QA visits and reports — the hub sees its announced visits and report summaries. */}
+          <EducatorQaSection teacherId={id} />
 
           <Section title="Availability">
             <WeeklyAvailabilityGrid slots={availabilitySlots} />

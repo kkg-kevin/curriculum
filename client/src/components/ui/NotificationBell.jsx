@@ -94,6 +94,12 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "qa_visit_announced":
+    case "qa_review_submitted":
+    case "qa_visit_due":
+    case "qa_review_reply":
+      // Quality assurance: the visit's page, in whichever app the person is in (set by the server).
+      return p.route || "/qa";
     default:
       return null;
   }

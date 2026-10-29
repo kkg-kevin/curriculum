@@ -46,6 +46,9 @@ const MODULES = [
   // and Training Lead aren't staff — they're named on the hub and work in the hub portal
   // (modules/checkins/checkin.access.js).
   { key: "checkins-manage", label: "Hub check-ins: schedules & every hub", group: "Workspace" },
+  // Quality assurance: templates, visit schedules and every educator's reviews. Supervisors aren't
+  // staff — they review the educators assigned to them in the supervisor portal (modules/qa/).
+  { key: "qa", label: "Quality assurance (educator reviews)", group: "Workspace" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -82,6 +85,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/audit": "activity",
   "/api/claims": "claims",
   "/api/checkins": "checkins-manage",
+  "/api/qa": "qa",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by

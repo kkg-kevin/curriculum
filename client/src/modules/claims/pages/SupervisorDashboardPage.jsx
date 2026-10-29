@@ -5,8 +5,9 @@ import { useAuth } from "../../../context/AuthContext";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { T, cardStyle, formatDate, formatMoney, TYPE_LABEL, ClaimStatusPill } from "../shared";
 import { Avatar, ClaimCard, HeroStat, OVERDUE_DAYS, daysSince, greeting } from "../components/supervisorParts";
+import SupervisorQaCard from "../../qa/components/SupervisorQaCard";
 
-// The supervisor's dashboard: what needs them now. The claims that have waited longest are here
+// The supervisor's dashboard: what needs them now — claims to review, and their QA check-ins. The claims that have waited longest are here
 // to act on directly; the full list, with its filters and export, is the Claims page.
 
 const SHOWN = 4;
@@ -62,7 +63,7 @@ export default function SupervisorDashboardPage() {
         <div style={{ position: "absolute", bottom: -90, right: 140, width: 200, height: 200, borderRadius: "50%", background: "rgba(254,177,57,0.14)", pointerEvents: "none" }} />
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)" }}>Claims supervisor</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)" }}>Supervisor</p>
             <h1 style={{ margin: "6px 0 0", fontSize: 28, fontWeight: 900, color: "#fff", letterSpacing: "-0.6px" }}>{greeting()}, {firstName}</h1>
             <p style={{ margin: "8px 0 0", fontSize: 14.5, color: "rgba(255,255,255,0.86)", lineHeight: 1.5, maxWidth: 620 }}>
               {waiting.length > 0
@@ -133,13 +134,14 @@ export default function SupervisorDashboardPage() {
         </section>
 
         <aside style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          <SupervisorQaCard />
           <div style={{ ...cardStyle, padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>Your educators</h2>
               <Link to="/supervisor-portal/educators" style={linkStyle}>View all <FiArrowRight size={14} /></Link>
             </div>
             {educators.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>No educators are assigned to you yet. The admin assigns them, and their claims then come to you.</p>
+              <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>No educators are assigned to you yet. The admin assigns them; their claims then come to you, and you can schedule their QA check-ins.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {educators.slice(0, 6).map((educator) => {

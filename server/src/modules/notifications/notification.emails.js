@@ -25,6 +25,9 @@ const CLAIM_REVIEWER_ROLES = ["admin", "supervisor"];
 // who manage check-ins too.
 const CHECKIN_ROLES = ["admin", "collaborator", "teacher"];
 const checkinPath = (p) => (typeof p.route === "string" && p.route.startsWith("/checkins") ? p.route : "/checkins");
+// Quality assurance: whoever reviews — supervisors, admins and staff.
+const QA_REVIEWER_ROLES = ["admin", "collaborator", "supervisor"];
+const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
 // notification opens — so the email's button lands on the same page. `look` is how the email
@@ -131,6 +134,12 @@ const EMAIL_TYPES = {
   checkin_due: { label: "A hub check-in of yours is due — write its report", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Hub check-in" }, path: checkinPath },
   checkin_task_assigned: { label: "You're given a task from a hub check-in", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Check-in task" }, path: checkinPath },
   checkin_task_due: { label: "A check-in task of yours is due", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Check-in task" }, path: checkinPath },
+  // Quality assurance (modules/qa/qa.notifications.js) — the educator hears of an announced visit
+  // and of each report; the reviewer (a supervisor, admin or staff) of a visit due and a reply.
+  qa_visit_announced: { label: "A QA visit to you is coming up", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
+  qa_review_submitted: { label: "A QA report on you is ready", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA report" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
+  qa_visit_due: { label: "A QA visit of yours is due — fill in the review", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/qa") },
+  qa_review_reply: { label: "An educator replies to a QA report", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "pencil", eyebrow: "QA report" }, path: (p) => routeOr(p, "/qa") },
   claim_submitted: {
     label: "An educator submits a claim for you to review",
     roles: CLAIM_REVIEWER_ROLES,

@@ -160,6 +160,8 @@ const CHECKS = {
         usage("claims", ["claim", "claims"], db("teacher_claims").where({ teacherId: id }), { table: "teacher_claims", labelFrom: null }),
         usage("homeLearning", ["Home Learning child", "Home Learning children"], db("home_learning_enrollments").where({ educatorId: id }).whereIn("status", ["active", "paused"]), { table: "home_learning_enrollments", labelFrom: "learners", distinctOn: "learnerId" }),
         login && usage("checkins", ["hub they run check-ins for", "hubs they run check-ins for"], db("learning_hubs").where((w) => w.where({ accountManagerId: login.id }).orWhere({ trainingLeadId: login.id })), { table: "learning_hubs" }),
+        usage("qa", ["QA report on them", "QA reports on them"], db("qa_visits").where({ teacherId: id, status: "submitted" }), { table: "qa_visits", labelFrom: null }),
+        usage("qaSchedules", ["active QA visit schedule", "active QA visit schedules"], db("qa_schedules").where({ teacherId: id, status: "active" }), { table: "qa_schedules", labelFrom: null }),
       ];
     },
   },
@@ -326,6 +328,19 @@ const CHECKS = {
     uses: (id) => [
       usage("educators", ["educator they supervise", "educators they supervise"], db("teachers").where({ supervisorId: id }), { table: "teachers" }),
       usage("claims", ["claim waiting for them", "claims waiting for them"], db("teacher_claims").where({ supervisorId: id, status: "pending_supervisor" }), { table: "teacher_claims", labelFrom: null }),
+      usage("qa", ["QA visit waiting for them", "QA visits waiting for them"], db("qa_visits").where({ reviewerId: id, status: "open" }), { table: "qa_visits", labelFrom: null }),
+      usage("qaSchedules", ["active QA visit schedule", "active QA visit schedules"], db("qa_schedules").where({ reviewerId: id, status: "active" }), { table: "qa_schedules", labelFrom: null }),
+    ],
+  },
+
+  // A QA template (modules/qa/): visits (open or reported) and active schedules use it. Archive it
+  // instead — reports keep their own copy either way.
+  qaTemplate: {
+    name: "qa_templates",
+    alternative: { action: "archive", label: "Archive the template instead" },
+    uses: (id) => [
+      usage("visits", ["QA visit", "QA visits"], db("qa_visits").where({ templateId: id }).whereNot({ status: "cancelled" }), { table: "qa_visits", labelFrom: null }),
+      usage("schedules", ["active visit schedule", "active visit schedules"], db("qa_schedules").where({ templateId: id, status: "active" }), { table: "qa_schedules", labelFrom: null }),
     ],
   },
 };
@@ -352,6 +367,7 @@ const OWNER = {
   bootcamp: (id) => db("bootcamps").where({ id }).first("ownerAdminId"),
   game: (id) => db("event_games").where({ id }).first("ownerAdminId"),
   supervisor: (id) => db("users").where({ id }).first("invitedByAdminId as ownerAdminId"),
+  qaTemplate: (id) => db("qa_templates").where({ id }).first("ownerAdminId"),
 };
 
 const UsageService = {

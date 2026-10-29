@@ -49,7 +49,7 @@ const OWNER_ONLY_TABS = ["people", "emails", "enquiries", "certificates", "payme
 
 // Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
 // sharing notifications, bookmarks) open the matching section of People & sharing.
-const FORMER_TABS = { collaborators: "staff", staff: "staff", roles: "roles", sharing: "sharing", admins: "admins" };
+const FORMER_TABS = { collaborators: "staff", staff: "staff", roles: "roles", sharing: "sharing", admins: "admins", supervisors: "supervisors" };
 
 export default function SettingsPage() {
   const { user } = useAuth();

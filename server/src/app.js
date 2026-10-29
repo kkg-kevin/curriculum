@@ -56,6 +56,7 @@ const sharingRoutes = require("./modules/sharing/sharing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
 const claimRoutes = require("./modules/claims/claim.routes");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
+const qaRoutes = require("./modules/qa/qa.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -330,6 +331,10 @@ app.use("/api/claims", protect, attachOwnRecords, claimRoutes);
 // reporting, and following up; the workspace owner and check-in managers oversee them. See
 // modules/checkins/ (checkin.access.js for who sees which hubs).
 app.use("/api/checkins", protect, attachOwnRecords, checkinRoutes);
+// Quality assurance — supervisors (and admins) visiting educators, announced or by surprise, and
+// reviewing them against a template; the educator reads and replies, the hub sees a summary. See
+// modules/qa/ (qa.access.js for who sees what).
+app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

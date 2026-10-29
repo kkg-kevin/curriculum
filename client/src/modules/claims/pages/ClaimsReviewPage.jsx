@@ -22,7 +22,7 @@ const STAGES = [
   { key: "rejected", label: "Declined", empty: "No claims have been declined." },
 ];
 export default function ClaimsReviewPage({ embedded = false }) {
-  const { can } = usePermissions();
+  const { can, isStaff } = usePermissions();
   const canSupervise = can("claims", "edit");
   const canApprove = can("claims-approval", "edit");
   const [searchParams] = useSearchParams();
@@ -68,7 +68,9 @@ export default function ClaimsReviewPage({ embedded = false }) {
           <button type="button" onClick={() => navigate("/billing/claim-invoices")} style={headerButton}><FiFileText size={15} /> Claim invoices</button>
           {canApprove && (
             <>
-              <button type="button" onClick={() => setShowSupervisors(true)} style={headerButton}><FiUsers size={15} /> Supervisors</button>
+              {/* Supervisors are managed in Settings → People & sharing; staff can't open that
+                  (owner only), so for them this still opens the list here. */}
+              <button type="button" onClick={() => (isStaff ? setShowSupervisors(true) : navigate("/settings?tab=people&section=supervisors"))} style={headerButton}><FiUsers size={15} /> Supervisors</button>
               {/* The rates live in Settings → Educator pay, for the whole workspace. */}
               <button type="button" onClick={() => navigate("/settings?tab=educator-pay")} style={headerButton}><FiSliders size={15} /> Educator pay</button>
             </>

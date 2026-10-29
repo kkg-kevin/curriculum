@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { FiArrowRight, FiHome, FiMail, FiMapPin, FiSearch, FiUsers } from "react-icons/fi";
+import { FiArrowRight, FiCalendar, FiHome, FiMail, FiMapPin, FiSearch, FiStar, FiUsers } from "react-icons/fi";
 import { useSupervisorClaims } from "../hooks/useClaims";
+import { useQaEducators } from "../../qa/hooks/useQa";
+import VisitDialog from "../../qa/components/VisitDialog";
+import { ScoreBadge, VisitTypePill } from "../../qa/shared";
 import { T, cardStyle, formatDate, formatMoney } from "../shared";
 import { Avatar } from "../components/supervisorParts";
 
-// The educators a supervisor looks after, each with where their claims stand. Who is on this
+// The educators a supervisor looks after, each with where their claims stand (and a way to their
+// QA reviews — modules/qa). Who is on this
 // list is the admin's decision (the educator form's "Claims supervisor"). A supervisor can look
 // after many schools: pick one to see only its educators; with all schools, educators are grouped
 // under each school they work at (one at two schools shows under both).
@@ -40,6 +44,10 @@ export default function SupervisorEducatorsPage() {
   const { data, isLoading, isError, error } = useSupervisorClaims();
   const [search, setSearch] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  // Each educator's QA check-ins (modules/qa), and the one a check-in is being scheduled for.
+  const { data: qaEducators = [] } = useQaEducators();
+  const qaById = useMemo(() => new Map(qaEducators.map((e) => [e.id, e])), [qaEducators]);
+  const [scheduling, setScheduling] = useState(null);
   const schools = useMemo(() => data?.schools || [], [data]);
   const picked = searchParams.get("school") || "all";
   const school = picked === "all" || picked === NO_SCHOOL || schools.some((s) => s.id === picked) ? picked : "all";
@@ -95,7 +103,7 @@ export default function SupervisorEducatorsPage() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: T.ink, letterSpacing: "-0.5px" }}>My Educators</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>The {total === 1 ? "educator" : `${total} educators`} whose claims come to you. The admin decides who is on this list.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>The {total === 1 ? "educator" : `${total} educators`} assigned to you — you review their claims and do their QA check-ins. The admin decides who is on this list.</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", flex: "0 1 560px", justifyContent: "flex-end" }}>
           {schools.length > 1 && (
@@ -118,7 +126,7 @@ export default function SupervisorEducatorsPage() {
         <div style={{ ...cardStyle, padding: "56px 24px", textAlign: "center" }}>
           <div style={{ width: 60, height: 60, margin: "0 auto 14px", borderRadius: 18, background: T.tintBg, color: T.accent, display: "grid", placeItems: "center" }}><FiUsers size={26} /></div>
           <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>No educators are assigned to you yet</p>
-          <p style={{ margin: "6px auto 0", maxWidth: 420, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>The admin assigns educators to a supervisor. Once they do, the educators show here and their claims come to you.</p>
+          <p style={{ margin: "6px auto 0", maxWidth: 420, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>The admin assigns educators to a supervisor. Once they do, the educators show here: their claims come to you, and you can schedule their QA check-ins.</p>
         </div>
       ) : educators.length === 0 ? (
         <div style={{ ...cardStyle, padding: "40px 24px", textAlign: "center" }}>
@@ -149,6 +157,7 @@ export default function SupervisorEducatorsPage() {
           {educators.map((educator) => renderCard(educator, school === "all" || school === NO_SCHOOL ? null : school))}
         </div>
       )}
+      {scheduling && <VisitDialog teacherId={scheduling} title="Schedule a QA check-in" onClose={() => setScheduling(null)} />}
     </div>
   );
 
@@ -156,6 +165,7 @@ export default function SupervisorEducatorsPage() {
   // to those claims — kept to `schoolId` when the page is narrowed to one school.
   function renderCard(educator, schoolId) {
             const status = STATUS[educator.status] || STATUS.active;
+            const qa = qaById.get(educator.id);
             return (
               <div key={educator.id} style={{ ...cardStyle, padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -178,6 +188,22 @@ export default function SupervisorEducatorsPage() {
                   <Figure label="To be paid" value={educator.approved} />
                   <Figure label="Paid" value={educator.paid} />
                   <Figure label="Declined" value={educator.declined} />
+                </div>
+
+                {/* QA check-ins: how their reports have gone, the next one, and scheduling one. */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 12px", borderRadius: 12, background: "#F5F8FB" }}>
+                  <Link to={`/supervisor-portal/educators/${educator.id}`} style={{ flex: "1 1 180px", minWidth: 0, textDecoration: "none", color: T.ink }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: T.inkMuted }}><FiStar size={11} /> QA check-ins</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4, fontSize: 12.5, fontWeight: 600 }}>
+                      {qa?.reports ? <><ScoreBadge score={qa.averageScore} /> <span style={{ color: T.inkMuted }}>avg of {qa.reports}</span></> : <span style={{ color: T.inkMuted }}>No reports yet</span>}
+                      <span style={{ color: T.inkFaint }}>·</span>
+                      {qa?.nextVisit ? <>Next {formatDate(qa.nextVisit.date)} <VisitTypePill type={qa.nextVisit.visitType} /></> : <span style={{ color: T.inkMuted }}>none planned</span>}
+                      {qa?.due > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, background: "#FFF4DC", color: "#B45309", fontSize: 11, fontWeight: 800 }}>{qa.due} to review</span>}
+                    </span>
+                  </Link>
+                  <button type="button" onClick={() => setScheduling(educator.id)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1.5px solid ${T.accent}`, background: "#fff", color: T.accent, fontSize: 12.5, fontWeight: 800, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}>
+                    <FiCalendar size={13} /> Schedule a check-in
+                  </button>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>

@@ -101,6 +101,11 @@ import SettingsPage from "../modules/settings/pages/SettingsPage";
 import ActivityPage from "../modules/activity/pages/ActivityPage";
 import CheckinsPage from "../modules/checkins/pages/CheckinsPage";
 import CheckinSessionPage from "../modules/checkins/pages/CheckinSessionPage";
+import QaPage from "../modules/qa/pages/QaPage";
+import QaVisitPage from "../modules/qa/pages/VisitPage";
+import QaTemplateEditorPage from "../modules/qa/pages/TemplateEditorPage";
+import MyQaPage from "../modules/qa/pages/MyQaPage";
+import SupervisorEducatorPage from "../modules/qa/pages/SupervisorEducatorPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
 import SupervisorDashboardPage from "../modules/claims/pages/SupervisorDashboardPage";
 import SupervisorClaimsPage from "../modules/claims/pages/SupervisorClaimsPage";
@@ -205,6 +210,11 @@ export default function AppRoutes() {
         <Route path="checkins" element={<CheckinsPage />} />
         <Route path="checkins/actions" element={<CheckinsPage />} />
         <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+        {/* Quality assurance — visits to educators, their reviews, schedules and templates (modules/qa). */}
+        <Route path="qa" element={<QaPage />} />
+        <Route path="qa/visits/:id" element={<QaVisitPage />} />
+        <Route path="qa/templates/new" element={<QaTemplateEditorPage />} />
+        <Route path="qa/templates/:id" element={<QaTemplateEditorPage />} />
         {/* Educator claims — the supervisor's review and the admin's approval and payment — are
             Billing's "Educator Claims" tab. The educator's own side lives in the teacher-portal
             (claims, claims/:classId/:courseId). */}
@@ -306,6 +316,9 @@ export default function AppRoutes() {
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
           <Route path="profile" element={<TeacherProfilePage />} />
+          {/* QA visits to this educator: announced ones coming up, and the reports, to reply to. */}
+          <Route path="qa" element={<MyQaPage />} />
+          <Route path="qa/:id" element={<QaVisitPage />} />
         </Route>
       </Route>
 
@@ -317,6 +330,12 @@ export default function AppRoutes() {
           <Route path="claims" element={<SupervisorClaimsPage />} />
           <Route path="claims/:claimId" element={<SupervisorClaimPage />} />
           <Route path="educators" element={<SupervisorEducatorsPage />} />
+          <Route path="educators/:id" element={<SupervisorEducatorPage />} />
+          {/* Quality assurance for the supervisor's own educators (modules/qa). */}
+          <Route path="qa" element={<QaPage />} />
+          <Route path="qa/visits/:id" element={<QaVisitPage />} />
+          <Route path="qa/templates/new" element={<QaTemplateEditorPage />} />
+          <Route path="qa/templates/:id" element={<QaTemplateEditorPage />} />
           <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>
       </Route>
@@ -357,6 +376,9 @@ export default function AppRoutes() {
           {/* A hub's Account Manager / Training Lead (a hubLead session) — their check-ins. */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* The hub's QA view: its educators' announced visits and a summary of each report. */}
+          <Route path="qa" element={<MyQaPage />} />
+          <Route path="qa/:id" element={<QaVisitPage />} />
         </Route>
       </Route>
 

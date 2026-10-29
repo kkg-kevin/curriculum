@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -14,6 +14,7 @@ const menuItems = [
   { name: "Timetable",       path: "/teacher-portal/timetable", icon: FiCalendar },
   // Claims and Invoices — two tabs of one page (PaymentsPage), so either address lights it up.
   { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices"] },
+  { name: "QA Reviews",      path: "/teacher-portal/qa", icon: FiStar },
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
 ];
 
