@@ -50,6 +50,7 @@ import { Editor as RichTextEditorControlled } from "../../courses/components/Ric
 import RichContent, { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
 import { useAssessmentsQuery } from "../../assessments/hooks/useAssessment";
 import ConfirmDialog from "../components/ConfirmDialog";
+import AssessmentSearchSelect from "../components/AssessmentSearchSelect";
 import { competenciesApi } from "../services/competenciesApi";
 import { usePermissions } from "../../../hooks/usePermissions";
 
@@ -1024,27 +1025,32 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
 
         {diagOpen ? (
           <div className="cp-diag-picker" style={{ flexDirection: "column", alignItems: "stretch", gap: "10px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>For learners</span>
               <span style={{ fontSize: "11px", color: "#9CA3AF" }}>Issued once a learner is enrolled at this stage. Any type of assessment.</span>
-              <select className="cp-select" value={diagValue} onChange={(e) => setDiagValue(e.target.value)}>
-                <option value="">— None —</option>
-                {assessments.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <AssessmentSearchSelect
+                assessments={assessments}
+                value={diagValue}
+                onChange={setDiagValue}
+                ariaLabel="Learner diagnostic"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>On the website</span>
               <span style={{ fontSize: "11px", color: "#9CA3AF" }}>
                 Taken by visitors before they sign up, including for bootcamps on this curriculum. Only assessments marked automatically can be used.
               </span>
-              <select className="cp-select" value={diagPublicValue} onChange={(e) => setDiagPublicValue(e.target.value)}>
-                <option value="">— None —</option>
-                {websiteChoices.map((a) => <option key={a.id} value={a.id}>{a.name}{a.autoGraded ? "" : " (marked by a teacher — can't be used)"}</option>)}
-              </select>
+              <AssessmentSearchSelect
+                assessments={websiteChoices}
+                value={diagPublicValue}
+                onChange={setDiagPublicValue}
+                note={(a) => (a.autoGraded ? null : "marked by a teacher — can't be used")}
+                ariaLabel="Website diagnostic"
+              />
               {websiteChoices.length === 0 && (
                 <span style={{ fontSize: "11px", color: "#B45309" }}>No assessment is marked automatically yet — use only auto-marked questions (multiple choice, true/false, matching, ordering, fill in the blank, can-do checks).</span>
               )}
-            </label>
+            </div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button type="button" className="cp-diag-btn cp-diag-btn-clear" onClick={() => setDiagOpen(false)}>Cancel</button>
               <button type="button" className="cp-diag-btn cp-diag-btn-assign" onClick={saveDiag} disabled={saving}>
