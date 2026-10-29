@@ -4,9 +4,10 @@
 - **Learner profile:** "Developmental stage" (was "Developmental Academy") and a **Pathway** card beside it.
 - **Bootcamp pathways mean every stage:** the bootcamp form shows one tick box per pathway.
 - **Dates of birth** kept on enquiries and new learners.
+- **One diagnostic per learner:** a learner already placed by a diagnostic gets no second one.
 - The website parts (date of birth forms, the diagnostic PDF, website bootcamp placement) don't apply here — Capable has no website. The one-off `bootcamps:place-learners` finds nothing to do here; no need to run it.
 
-One more new migration, applied on Restart: `20261030120000_add_learner_dates_of_birth.js` (additive) — four in all with the 29 Oct ones. Check `SHOW COLUMNS FROM leads LIKE 'learnerDateOfBirth';`. Backend from `776727c` (same zip as Dev and Live), portal `index-DnaIROqI.js`. **Cron, if not added yet: `npm run qa:process` hourly.**
+One more new migration, applied on Restart: `20261030120000_add_learner_dates_of_birth.js` (additive) — four in all with the 29 Oct ones. Check `SHOW COLUMNS FROM leads LIKE 'learnerDateOfBirth';`. Backend from `bd1b4ab` (same zip as Dev and Live), portal `index-DnaIROqI.js`. **Cron, if not added yet: `npm run qa:process` hourly.**
 
 Below it, "This release (29 Oct 2026)":
 - **Quality assurance (QA)** — supervisors (or admins) visit educators, announced or by surprise, and review them against a template; schedules; the educator reads and replies; the hub sees a summary only. Supervisors get QA Visits, a page per educator and **Schedule a check-in**.

@@ -102,10 +102,10 @@ the frontend needs a second, separately-built zip.
 
 ---
 
-## This release (30 Oct 2026) — Date of birth on the website, bootcamp learners placed on their pathway, a branded diagnostic PDF
+## This release (30 Oct 2026) — Date of birth on the website, bootcamp learners placed on their pathway, a diagnostic made for children, one diagnostic per learner
 
-**Portal and backend** from `curriculum` (branch `modules`) at `776727c`; **website** from
-`curriculum-web` (branch `new`) at `0ed6709`. Includes everything in "This release (29 Oct 2026)"
+**Portal and backend** from `curriculum` (branch `modules`) at `bd1b4ab`; **website** from
+`curriculum-web` (branch `new`) at `a50aad3`. Includes everything in "This release (29 Oct 2026)"
 (QA, TOT, bootcamp runs, parents' details, projects in the Store) — that one was never uploaded, so
 upload this one instead. **Take a database backup first**, **upload the backend first**, then the portal, then the
 website.
@@ -121,6 +121,10 @@ website.
 - **Bootcamp diagnostics cover every age.** Picking a pathway on a bootcamp now means every stage
   of it; before, only one stage's diagnostic was offered (often none for ages 5–16). The bootcamp
   form shows one tick box per pathway ("6 stages").
+- **One diagnostic per learner — the website's or the system's, never both.** A learner placed by
+  the website diagnostic gets no system diagnostic (the one issued when they joined the class is
+  withdrawn, and the portal doesn't ask for it at first sign-in); a learner who skipped the website
+  one takes the system one in their portal as before.
 - **Dates of birth are kept** on website enquiries, diagnostics and new learners (bootcamp, shop);
   Enquiries shows "age 9, born 15 Mar 2017".
 
@@ -129,6 +133,11 @@ website.
 - **Every form that needs a child's age asks for the date of birth** (shows "Age N" as it's
   picked): the pathway and bootcamp diagnostics, Enroll, Store enquiries (optional), bootcamp
   enrolment, shop checkout.
+- **The diagnostic is made for the child taking it**: a welcome card (their first name, what to
+  expect, no timer), one question at a time with big answer cards, a progress bar and numbered dots
+  to jump around, then a finish screen that hands over to a grown-up for the name and phone.
+  Can-do questions now show (they didn't before). A bootcamp's Enroll page can **skip** the website
+  diagnostic — the learner then does the system one after enrolling.
 - **The diagnostic "Download PDF" is a proper document**: the Digifunzi logo and report title on
   every page, the website, email, phone and office with page numbers along the bottom; the result
   and what it means, at a glance (doing well / to work on), next steps, then every competency with
@@ -155,7 +164,7 @@ variable or npm package.
 
 ### Backend (`backend-deploy.zip`)
 
-`git archive HEAD:server` at `776727c` — 605 files, 148 migrations. Same zip in Dev, Live and
+`git archive HEAD:server` at `bd1b4ab` — 605 files, 148 migrations. Same zip in Dev, Live and
 Capable.
 
 ### Portal (`assets.zip` + `index.html`)
@@ -173,18 +182,20 @@ its own API.
 
 | Site | Build | Zip | Pages |
 |---|---|---|---|
-| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 24/24, all with content |
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 25/25, all with content |
 
-Checked: built site (no dev-server files, entry `index-vgpOUVKY.js`), calling only https://dcf-api.digifunzi.com, `.htaccess`
+Checked: built site (no dev-server files, entry `index-C_e7DVbg.js`), calling only https://dcf-api.digifunzi.com, `.htaccess`
 with the `/projects` redirects.
 
 ### Checked so far
 
 Server tests pass (88, 2 skipped), website tests pass (97), every build passes. Locally: the
-diagnostic taken with a date of birth and its PDF downloaded and read page by page; the Enroll form;
+diagnostic taken with a date of birth (the new child-friendly quiz, on a desktop, a phone and in
+light mode) and its PDF downloaded and read page by page; the one-diagnostic rule on a learner
+(system diagnostic withdrawn once placed by a diagnostic, back when not); the Enroll form;
 the placement checked on the local database (19 earlier learners placed, one confirmed at its stage
 and pathway); each bootcamp's website diagnostics now listed for every age. Not looked at in a
-browser: the new profile cards, the bootcamp form's pathway list, bootcamp enrolment and checkout
+browser: the bootcamp Skip button (no mock bootcamp has a diagnostic), the new profile cards, the bootcamp form's pathway list, bootcamp enrolment and checkout
 forms. Not yet tried on the hosting.
 
 ### Deploy order
