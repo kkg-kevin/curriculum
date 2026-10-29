@@ -33,6 +33,11 @@ const BootcampModel = {
     return firstOrNull(db(TABLE).where({ id }));
   },
 
+  // Every run of one bootcamp ("Schedule another run" — they share the first run's id as seriesId).
+  findSeries(seriesId) {
+    return db(TABLE).where({ seriesId }).orderBy("startDate", "asc");
+  },
+
   // The designated public-content admin's bootcamps marked for sale — the one query the public
   // /api/public/bootcamps endpoint runs. `ownerAdminId` required (a missing scope would leak
   // every tenant's bootcamps), mirroring CompetitionModel.findPublic.

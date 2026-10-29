@@ -140,9 +140,29 @@ function applyBootcampRefinements(data, ctx) {
 const createBootcampSchema = bootcampFields.superRefine(applyBootcampRefinements);
 const updateBootcampSchema = bootcampFields.partial().superRefine(applyBootcampRefinements);
 
+// "Schedule another run": the new run's dates (start and end required — a run is a run), its
+// name (the same by default), whether it goes on the website, and the hubs it runs at — each
+// one creates that run's classes (bootcamp-hub.service.js's createOffering).
+const requiredDate = (message) => z.string({ error: message }).regex(/^\d{4}-\d{2}-\d{2}$/, message);
+const scheduleRunSchema = z.object({
+  name:                  z.string().trim().max(150).optional(),
+  startDate:             requiredDate("Choose the new run's start date"),
+  endDate:               requiredDate("Choose the new run's end date"),
+  registrationOpenDate:  dateStr.optional().default(""),
+  registrationCloseDate: dateStr.optional().default(""),
+  listOnWebsite:         z.boolean().optional().default(false),
+  hubIds:                z.array(z.string().max(36)).max(50).optional().default([]),
+}).superRefine((data, ctx) => {
+  if (data.endDate < data.startDate) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endDate"], message: "End date must be on or after the start date" });
+  if (data.registrationOpenDate && data.registrationCloseDate && data.registrationCloseDate < data.registrationOpenDate) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["registrationCloseDate"], message: "Registration close date must be on or after the open date" });
+  }
+});
+
 module.exports = {
   createBootcampSchema,
   updateBootcampSchema,
+  scheduleRunSchema,
   BOOTCAMP_SALE_STATUSES: SALE_STATUSES,
   BOOTCAMP_FORMATS: FORMATS,
   BOOTCAMP_DESCRIPTION_MAX_WORDS: DESCRIPTION_MAX_WORDS,

@@ -10,6 +10,8 @@ import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import BootcampGames from "../../programs/games/components/BootcampGames";
 import RecordHistory from "../../activity/components/RecordHistory";
+import { RunsSection, ScheduleRunDialog } from "../components/BootcampRuns";
+import BootcampParticipants from "../components/BootcampParticipants";
 
 const FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
 
@@ -171,6 +173,7 @@ export default function BootcampViewPage() {
   const { mutate: deleteBootcamp } = useDeleteBootcamp();
   const { mutate: updateBootcamp, isPending: saving } = useUpdateBootcamp();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [schedulingRun, setSchedulingRun] = useState(false);
   // Shares its cache with RunsAtHubsSection's own call further down — just for the hero's "Runs
   // at" stat chip, so it doesn't need the full section's picker/remove state.
   const { data: offerings = [] } = useBootcampHubsQuery(id);
@@ -222,7 +225,15 @@ export default function BootcampViewPage() {
               </p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {/* The same bootcamp again at other dates — a copy, linked to this one as a run. */}
+            <button
+              type="button"
+              onClick={() => setSchedulingRun(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              <FiCalendar size={13} /> Schedule another run
+            </button>
             <button
               type="button"
               onClick={() => navigate(editPath)}
@@ -346,6 +357,12 @@ export default function BootcampViewPage() {
       )}
 
       <RunsAtHubsSection bootcamp={bootcamp} />
+
+      <RunsSection bootcamp={bootcamp} onSchedule={() => setSchedulingRun(true)} />
+
+      <BootcampParticipants bootcamp={bootcamp} />
+
+      {schedulingRun && <ScheduleRunDialog bootcamp={bootcamp} offerings={offerings} onClose={() => setSchedulingRun(false)} />}
 
       <RecordHistory entityType="bootcamps" entityId={bootcamp.id} />
 

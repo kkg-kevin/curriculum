@@ -48,6 +48,24 @@ export function useUpdateBootcamp() {
   });
 }
 
+export function useBootcampRunsQuery(id) {
+  return useQuery({ queryKey: ["bootcamps", "runs", id], queryFn: () => bootcampApi.runs(id), enabled: !!id });
+}
+
+// "Schedule another run" — the caller says where to go next (the new run's page).
+export function useScheduleBootcampRun(id) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => bootcampApi.scheduleRun(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: BOOTCAMP_KEYS.all }),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to schedule the run"),
+  });
+}
+
+export function useBootcampParticipantsQuery(id, scope) {
+  return useQuery({ queryKey: ["bootcamps", "participants", id, scope], queryFn: () => bootcampApi.participants(id, scope), enabled: !!id });
+}
+
 export function useDeleteBootcamp() {
   const qc = useQueryClient();
   return useMutation({

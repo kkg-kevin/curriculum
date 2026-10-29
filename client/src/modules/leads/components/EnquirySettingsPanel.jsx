@@ -89,7 +89,7 @@ export default function EnquirySettingsPanel() {
           </Row>
           <Row
             title="Remove personal details from old closed enquiries"
-            description="For data protection: a Closed enquiry untouched for this long loses its name, email, phone, child's name, message and replies. What's left still counts in your figures (where it came from, what they were interested in, dates, paid or not). This can't be undone — check the period with whoever handles data protection."
+            description="For data protection: a Closed enquiry untouched for this long loses its name, email, phone, child's name, message and replies. What's left still counts in your figures (where it came from, what they were interested in, dates, paid or not). Sign-ups and bootcamp enrolments always keep their details. This can't be undone — check the period with whoever handles data protection."
             on={form.anonymiseOn}
             onToggle={set("anonymiseOn")}
           >

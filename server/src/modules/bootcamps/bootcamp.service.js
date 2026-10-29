@@ -4,6 +4,7 @@ const CourseCurriculumLinkModel = require("../courses/course-curriculum-link.mod
 const ModuleModel = require("../courses/module.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const GameService = require("./games/game.service");
+const { computeStatus } = require("../../shared/utils/hub-offering.utils");
 
 // A bootcamp links directly to a curriculum (any curriculum from the Curriculum module — no
 // special flag required) to inherit its pathway/course hierarchy. Kept as a display-only
@@ -213,6 +214,73 @@ const BootcampService = {
       throw err;
     }
     return { message: "Bootcamp deleted successfully" };
+  },
+
+  // "Schedule another run": the same bootcamp again at other dates. A copy of everything that
+  // describes it — content, images, curriculum and pathways, pricing, games — with the new run's
+  // own dates, name, website listing, and (optionally) the hubs it runs at, each creating its
+  // classes the way "Run at a Hub" does. The runs share a seriesId: the first run's id, set on it
+  // too the first time it's run again. A hub that can't be set up (no cohorts yet, say) doesn't
+  // stop the run being created; it comes back in `hubs` with the reason.
+  async scheduleRun(sourceId, data, ownerAdminId) {
+    const source = await BootcampModel.findById(sourceId);
+    if (!source || source.ownerAdminId !== ownerAdminId) {
+      const err = new Error("Bootcamp not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    const seriesId = source.seriesId || source.id;
+    if (!source.seriesId) await BootcampModel.update(source.id, { seriesId });
+
+    const COPIED = [
+      "curriculumId", "description", "tagline", "coverImage", "images", "format", "durationLabel", "ageMin", "ageMax",
+      "priceAmount", "priceCurrency", "priceNotes", "highlights", "coursePricing", "pathwayIds", "gameIds", "gamesNote",
+    ];
+    const copy = Object.fromEntries(COPIED.map((key) => [key, source[key] ?? null]));
+    const record = await BootcampModel.create({
+      ...copy,
+      ownerAdminId,
+      seriesId,
+      name: data.name || source.name,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      registrationOpenDate: data.registrationOpenDate || null,
+      registrationCloseDate: data.registrationCloseDate || null,
+      saleStatus: data.listOnWebsite ? "for_sale" : "internal",
+    });
+
+    const hubs = [];
+    for (const hubId of [...new Set(data.hubIds || [])]) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await BootcampHubService.createOffering({ bootcampId: record.id, hubId, ownerAdminId });
+        hubs.push({ hubId, ok: true });
+      } catch (err) {
+        hubs.push({ hubId, ok: false, message: err.message });
+      }
+    }
+    return { bootcamp: await enrich(await BootcampModel.findById(record.id)), hubs };
+  },
+
+  // Every run of this bootcamp (itself included), earliest first, each with where it stands and
+  // how many hubs it runs at. A bootcamp never run again is its only run.
+  async listRuns(id) {
+    const bootcamp = await this.getBootcampById(id);
+    const seriesId = bootcamp.seriesId || bootcamp.id;
+    const rows = await BootcampModel.findSeries(seriesId);
+    const runs = rows.length ? rows : [bootcamp];
+    const hubCounts = await BootcampHubService.countByBootcampIds(runs.map((r) => r.id));
+    return runs
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        startDate: r.startDate || null,
+        endDate: r.endDate || null,
+        saleStatus: r.saleStatus,
+        status: r.startDate && r.endDate ? computeStatus(r.startDate, r.endDate) : null,
+        hubCount: hubCounts.get(r.id) || 0,
+      }))
+      .sort((a, b) => (a.startDate || "9999").localeCompare(b.startDate || "9999"));
   },
 
   // Every bootcamp linked to a given curriculum — feeds the curriculum view's "Bootcamps"

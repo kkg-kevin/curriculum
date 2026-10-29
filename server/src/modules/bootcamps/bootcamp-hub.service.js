@@ -19,6 +19,17 @@ function getClassService() {
   return require("../classes/class.service");
 }
 
+// The stream label on a bootcamp's cohort classes. A bootcamp run more than once ("Schedule another
+// run", a shared seriesId) adds the run's start date — its runs share a name, and two in the same
+// year at the same hub would otherwise make the same class twice (classes are unique by hub,
+// cohort, year and stream). Kept within classes.streamName's 100 characters.
+function streamLabelFor(bootcamp) {
+  if (!bootcamp.seriesId) return bootcamp.name;
+  const day = new Date(`${bootcamp.startDate}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const suffix = ` · ${day}`;
+  return `${bootcamp.name.slice(0, 100 - suffix.length)}${suffix}`;
+}
+
 const BootcampHubService = {
   // Runs an already-authored bootcamp (linked to a curriculum from the Curriculum module) at a
   // hub as real Classes — one per cohort already defined in curriculum.classes, same idea as
@@ -61,7 +72,7 @@ const BootcampHubService = {
     // One bootcamp can run at a given hub only once — its dates are now uniform across every
     // hub it runs at (no per-hub override), so a second run at the same hub would always
     // overlap the first. Re-running the bootcamp there in a later term needs a new bootcamp
-    // record instead. Replaces event.service.js's date-overlap check, which is no longer
+    // record instead — "Schedule another run" (BootcampService.scheduleRun) makes one. Replaces event.service.js's date-overlap check, which is no longer
     // structurally possible to violate.
     if (await BootcampHubModel.findByBootcampAndHub(bootcampId, hubId)) {
       const err = new Error("This bootcamp already runs at that hub.");
@@ -74,7 +85,7 @@ const BootcampHubService = {
     // stream label so a second, different bootcamp built on this SAME curriculum can still run
     // at this same hub without colliding with this one's cohort classes — see
     // cohortClassPayload's own comment for why that's otherwise a false "already exists" error.
-    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, bootcamp.startDate, bootcamp.name));
+    const classes = await getClassService().bulkCreateClasses(cohortClassPayload(hub, curriculum, bootcamp.startDate, streamLabelFor(bootcamp)));
 
     const offering = await BootcampHubModel.create({
       ownerAdminId,
@@ -107,6 +118,16 @@ const BootcampHubService = {
       classes: classesWithCounts,
       learnerCount,
     };
+  },
+
+  // bootcampId -> how many hubs it runs at, for a list of bootcamps (a bootcamp's runs).
+  async countByBootcampIds(bootcampIds) {
+    const counts = new Map();
+    for (const id of bootcampIds) {
+      // eslint-disable-next-line no-await-in-loop
+      counts.set(id, (await BootcampHubModel.findByBootcampId(id)).length);
+    }
+    return counts;
   },
 
   async getOfferingsForBootcamp(bootcampId) {
