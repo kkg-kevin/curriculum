@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { FiClipboard, FiEye } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
@@ -39,6 +39,7 @@ import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
 import JourneyPlacementCard from "../components/staff/JourneyPlacementCard";
 import { DiagnosticAssessmentCard, PathwayDiagnosticsCard } from "../components/staff/DiagnosticsCards";
+import ParentTab from "../components/staff/ParentTab";
 
 function NoClassNotice() {
   return (
@@ -86,6 +87,8 @@ export default function LearnerPage() {
 
   const [preview, setPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
+  // The tab row — the Guardian card's "Parent's login…" link scrolls to it.
+  const tabsRef = useRef(null);
   // null | "learner" | "guardian" — which edit modal is open.
   const [editing, setEditing] = useState(null);
   // { password, name } — shown once after a save that set a password (see ProfilePage.jsx).
@@ -112,7 +115,10 @@ export default function LearnerPage() {
   const coursesCompleted = certificates.filter((c) => c.kind === "course" && c.hubId === selectedHub?.id).length;
 
   const manage = canManage && !preview;
-  const tabs = !preview && canSeeRecordHistory(user) ? [...PROFILE_TABS, "History"] : PROFILE_TABS;
+  // Staff also get the Parent tab (the parent on their own) and, when they may read the log, History.
+  // An educator in training (TOT — learner.teacherId) is an adult learning for themself: no parent.
+  const isEducatorTrainee = !!learner?.teacherId;
+  const tabs = preview ? PROFILE_TABS : [...PROFILE_TABS, ...(isEducatorTrainee ? [] : ["Parent"]), ...(canSeeRecordHistory(user) ? ["History"] : [])];
   const tab = tabs.includes(activeTab) ? activeTab : "Overview";
 
   if (isLoading) {
@@ -160,6 +166,13 @@ export default function LearnerPage() {
         </div>
       )}
 
+      {isEducatorTrainee && !preview && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 14px", borderRadius: 12, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, color: T.accent, fontSize: 13 }}>
+          <span style={{ flex: 1, minWidth: 220 }}>This is an <strong>educator in training (TOT)</strong> — their own learning record. They sign in as the educator and learn in their teacher portal; their supervisor marks their work. No parent.</span>
+          {isAdmin && <button type="button" onClick={() => navigate(`/teachers/${learner.teacherId}/view`)} style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${T.accent}`, background: "#fff", color: T.accent, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Open the educator</button>}
+        </div>
+      )}
+
       <HubSwitcher hubs={hubs} selectedHubId={selectedHub?.id} onChange={setPickedHubId} />
 
       <ProfileIdentityCard
@@ -176,7 +189,11 @@ export default function LearnerPage() {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
-          <GuardianProfileCard learner={learner} onEdit={manage ? () => setEditing("guardian") : undefined} />
+          <GuardianProfileCard
+            learner={learner}
+            onEdit={manage ? () => setEditing("guardian") : undefined}
+            onOpenParent={preview || isEducatorTrainee ? undefined : () => { setActiveTab("Parent"); requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); }}
+          />
           <ShareProfileCard learner={learner} />
           <PortfolioSnapshot coursesCompleted={coursesCompleted} curriculumId={curriculumId} learnerId={id} classId={cls?.id} staffLearnerId={id} />
         </div>
@@ -189,7 +206,9 @@ export default function LearnerPage() {
 
       <AchievementsShowcase certificates={certificates} progress={certificateProgress} isLoading={certificatesLoading} />
 
-      <ProfileTabs tabs={tabs} active={tab} onChange={setActiveTab} />
+      <div ref={tabsRef} style={{ scrollMarginTop: 16 }}>
+        <ProfileTabs tabs={tabs} active={tab} onChange={setActiveTab} />
+      </div>
 
       {tab === "Overview" && (
         <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} />
@@ -222,9 +241,11 @@ export default function LearnerPage() {
 
       {tab === "Reports" && <ReportsOverview hubId={selectedHub?.id} staffLearnerId={id} learner={learner} cls={cls} />}
 
+      {tab === "Parent" && <ParentTab learnerId={id} onEdit={manage ? () => setEditing("guardian") : undefined} />}
+
       {tab === "History" && <RecordHistory entityType="learners" entityId={id} defaultOpen />}
 
-      {tab !== "History" && (
+      {tab !== "History" && tab !== "Parent" && (
         <>
           {cls ? <SummaryRow classId={cls.id} staffLearnerId={id} /> : <NoClassNotice />}
           <FrameworkLegend />

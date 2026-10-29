@@ -84,6 +84,14 @@ export default function TeachersPage() {
             <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
             Add Educator
           </button>
+          {/* Training of trainers: educators' TOT work with no supervisor to mark it. */}
+          <button
+            type="button"
+            onClick={() => navigate("/teachers/training")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "11px 22px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: "12px", fontSize: "14px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            Training — work to mark
+          </button>
         </div>
       </div>
 

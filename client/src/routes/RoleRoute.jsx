@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AUTH_ENABLED } from "../config/authConfig";
 
@@ -12,12 +12,18 @@ export const ROLE_HOME = { admin: "/", collaborator: "/", school: "/school-porta
 // a role that doesn't belong on this branch back to its own portal home.
 export default function RoleRoute({ allow }) {
   const { user } = useAuth();
+  const location = useLocation();
 
   if (!AUTH_ENABLED) {
     return <Outlet />;
   }
 
   if (!allow.includes(user?.role)) {
+    // An educator's own learning lives in the teacher portal (/teacher-portal/learning): the
+    // learner-portal pages it reuses link to /learner-portal/…, which lands there instead.
+    if (user?.role === "teacher" && location.pathname.startsWith("/learner-portal")) {
+      return <Navigate to={`${location.pathname.replace(/^\/learner-portal/, "/teacher-portal/learning")}${location.search}`} replace />;
+    }
     return <Navigate to={ROLE_HOME[user?.role] || "/login"} replace />;
   }
 

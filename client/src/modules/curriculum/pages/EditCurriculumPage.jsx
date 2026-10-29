@@ -24,6 +24,8 @@ function EditCurriculumForm({ curriculum }) {
       name:        curriculum.name        || "",
       code:        curriculum.code        || "",
       description: curriculum.description || "",
+      audience:    curriculum.audience    || "learners",
+      completionTeacherLevel: curriculum.completionTeacherLevel ?? "",
     },
     mode: "onTouched",
   });

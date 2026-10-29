@@ -6,10 +6,11 @@ import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHu
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
 import { learnerCreatePath } from "../../../routes/portalPaths";
 import { useAllLearnersQuery, useLearnerLogins, useSetLearnerLoginActive } from "../hooks/useLearners";
-import { FiKey, FiUsers } from "react-icons/fi";
+import { FiKey, FiUser, FiUsers } from "react-icons/fi";
 import { Tabs } from "../../../components/ui/TabBar";
 import { learnerApi } from "../services/learnerApi";
 import { LearnerCard } from "../components/LearnerCard";
+import ParentsPanel from "../components/ParentsPanel";
 import UsersTable from "../../settings/users/components/UsersTable";
 import { usePermissions } from "../../../hooks/usePermissions";
 
@@ -18,6 +19,7 @@ const inputStyle  = { padding: "8px 12px", borderRadius: 8, border: "1px solid #
 const PAGE_TABS = [
   { key: "learners", label: "Learners", icon: FiUsers },
   { key: "logins", label: "Parent & learner logins", icon: FiKey },
+  { key: "parents", label: "Parents", icon: FiUser },
 ];
 
 // Parents' and learners' own logins — the kind of account, which child or hub, last used, and the
@@ -113,11 +115,12 @@ function HubTile({ hub, special, count, onOpen }) {
 export default function LearnersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  // ?tab=logins — Parent & learner logins (where Settings → Users points for those accounts).
-  const tab = searchParams.get("tab") === "logins" ? "logins" : "learners";
+  // ?tab=logins — Parent & learner logins (where Settings → Users points for those accounts);
+  // ?tab=parents — every parent's details, one row per family.
+  const tab = ["logins", "parents"].includes(searchParams.get("tab")) ? searchParams.get("tab") : "learners";
   const setTab = (next) => {
     const params = new URLSearchParams(searchParams);
-    if (next === "logins") params.set("tab", "logins"); else params.delete("tab");
+    if (next !== "learners") params.set("tab", next); else params.delete("tab");
     setSearchParams(params, { replace: true });
   };
 
@@ -213,7 +216,7 @@ export default function LearnersPage() {
         <Tabs label="Learners" tabs={PAGE_TABS} value={tab} onChange={setTab} />
       </div>
 
-      {tab === "logins" ? <LearnerLoginsPanel /> : (<>
+      {tab === "logins" ? <LearnerLoginsPanel /> : tab === "parents" ? <ParentsPanel /> : (<>
       {/* Filter bar */}
       <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         {openHubId && (

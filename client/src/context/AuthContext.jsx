@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../modules/auth/services/authApi";
 import { AUTH_ENABLED } from "../config/authConfig";
@@ -172,4 +172,18 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
+}
+
+// An educator's own learning (training of trainers — the teacher portal's "My learning"): inside
+// it the signed-in educator is a learner, so the learner-portal and course pages show and record
+// their learning exactly as for any learner. The server does the same for these requests
+// (X-Teacher-Learning, see services/api.js and scope.middleware.js).
+export function EducatorLearningAuth({ children }) {
+  const auth = useContext(AuthContext);
+  const user = auth?.user;
+  const value = useMemo(
+    () => ({ ...auth, user: user ? { ...user, role: "learner", username: user.username || "educator", learningAsEducator: true } : user }),
+    [auth, user],
+  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

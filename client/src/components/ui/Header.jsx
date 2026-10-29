@@ -201,6 +201,11 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Educator Claim";
     if (pathname.startsWith("/supervisor-portal/claims/"))
       return "Claim";
+    // An educator's own learning (training of trainers).
+    if (pathname.startsWith("/teacher-portal/learning"))
+      return "My Learning";
+    if (pathname.startsWith("/teachers/training") || pathname === "/supervisor-portal/marking")
+      return "Work to Mark";
     // Quality assurance, in every app it's in.
     if (/^\/(supervisor-portal\/|teacher-portal\/|school-portal\/)?qa(\/|$)/.test(pathname))
       return pathname.startsWith("/teacher-portal") || pathname.startsWith("/school-portal") ? "QA Reviews" : "Quality Assurance";

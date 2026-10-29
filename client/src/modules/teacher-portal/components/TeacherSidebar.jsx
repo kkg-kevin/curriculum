@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiBookOpen, FiTrendingUp, FiEdit3 } from "react-icons/fi";
+import { useMyTraining } from "../../tot/hooks/useTot";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -18,10 +19,26 @@ const menuItems = [
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
 ];
 
+// Training of trainers: an educator who is also learning (modules/tot) has their own courses,
+// assessments and reports here, apart from what they teach.
+const learningItems = [
+  { name: "Overview",        path: "/teacher-portal/learning", icon: FiBookOpen, end: true },
+  { name: "My courses",      path: "/teacher-portal/learning/courses", icon: FiBook },
+  { name: "My assessments",  path: "/teacher-portal/learning/assessments", icon: FiEdit3 },
+  { name: "My reports",      path: "/teacher-portal/learning/reports", icon: FiBarChart2 },
+  { name: "My progress",     path: "/teacher-portal/learning/progress", icon: FiTrendingUp },
+];
+
 function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {
   const { expanded, handlers } = useSidebarHover(!isMobile);
   const isCollapsed = !isMobile && !expanded;
   const { pathname } = useLocation();
+  const { data: training } = useMyTraining();
+  const learning = !!training;
+
+  const heading = (text) => (isCollapsed
+    ? <div style={{ height: 1, margin: "8px 10px 14px", background: "rgba(255,255,255,0.15)" }} />
+    : <p style={{ margin: "6px 18px 10px", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>{text}</p>);
 
   return (
     <>
@@ -71,14 +88,16 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
         </div>
 
         <nav style={{ flex: 1, padding: isCollapsed ? "20px 8px" : "20px 12px" }}>
-          {menuItems.map((item) => {
+          {learning && heading("Teaching")}
+          {[...menuItems, ...(learning ? [{ heading: "My learning" }, ...learningItems] : [])].map((item) => {
+            if (item.heading) return <div key={item.heading} style={{ marginTop: 14 }}>{heading(item.heading)}</div>;
             const Icon = item.icon;
             const alsoActive = (item.also || []).some((p) => pathname === p || pathname.startsWith(`${p}/`));
             return (
               <NavLink
                 key={item.name}
                 to={item.path}
-                end={item.path === "/teacher-portal"}
+                end={item.end || item.path === "/teacher-portal"}
                 onClick={isMobile ? onClose : undefined}
                 title={isCollapsed ? item.name : undefined}
                 style={({ isActive: routeActive }) => {

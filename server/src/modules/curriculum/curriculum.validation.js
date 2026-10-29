@@ -68,6 +68,9 @@ const createCurriculumSchema = z.object({
   gradeTo: z.string().optional().default(""),
   framework: z.string().optional().default(""),
   curriculumType: z.string().optional().default(""),
+  // "educators": a TOT curriculum (training of trainers) — see the 20261030090000 migration.
+  audience: z.enum(["learners", "educators"]).optional().default("learners"),
+  completionTeacherLevel: z.coerce.number().int().min(1).max(5).optional().nullable(),
   academicCycleModel: z.string().optional().default("terms"),
   periods: z.array(periodSchema).optional().default([]),
   classes: z.array(classSchema).optional().default([]),
@@ -95,6 +98,8 @@ const updateCurriculumSchema = z.object({
   gradeTo: z.string().optional(),
   framework: z.string().optional(),
   curriculumType: z.string().optional(),
+  audience: z.enum(["learners", "educators"]).optional(),
+  completionTeacherLevel: z.coerce.number().int().min(1).max(5).optional().nullable(),
   academicCycleModel: z.string().optional(),
   periods: z.array(periodSchema).optional(),
   classes: z.array(classSchema).optional(),

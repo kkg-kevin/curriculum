@@ -16,6 +16,7 @@ import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPa
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { teacherApi } from "../services/teacherApi";
 import EducatorQaSection from "../../qa/components/EducatorQaSection";
+import TotTrainingCard from "../../tot/components/TotTrainingCard";
 
 const ACCENT = "#25476a";
 
@@ -350,6 +351,8 @@ export default function TeacherViewPage() {
 
           {/* QA visits and reports — the hub sees its announced visits and report summaries. */}
           <EducatorQaSection teacherId={id} />
+
+          <TotTrainingCard teacherId={id} />
 
           <Section title="Availability">
             <WeeklyAvailabilityGrid slots={availabilitySlots} />

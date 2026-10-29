@@ -10,6 +10,7 @@ const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const UsageService = require("../usage/usage.service");
 const UserModel = require("../auth/user.model");
+const LearnerParentService = require("./learner-parent.service");
 const { cleanImportRow, sameLearner } = require("./learner.import");
 
 // A learner has no ownerAdminId of its own (see the migration's comment on why only
@@ -249,8 +250,12 @@ const getAllLearners = asyncHandler(async (req, res) => {
     // The learner's own dedicated login only ever sees itself, never siblings — the
     // guardian-mediated login is the one that broadens to every learner sharing its email
     // (see the sibling-switcher this feeds in the learner-portal).
-    if (req.user.username) filters.ids = [req.ownLearner.id];
-    else filters.guardianEmail = req.ownLearner.guardianEmail;
+    if (req.user.username) {
+      filters.ids = [req.ownLearner.id];
+      // Only itself, whatever email the page asked by (an educator learning — TOT — signs in
+      // with their own email, which is no guardian's).
+      delete filters.guardianEmail;
+    } else filters.guardianEmail = req.ownLearner.guardianEmail;
   }
   let records = await LearnerService.getAllLearners(filters);
   // A learner of this workspace may also be enrolled at another workspace's hub — that one isn't
@@ -260,6 +265,18 @@ const getAllLearners = asyncHandler(async (req, res) => {
     records = records.map((r) => ({ ...r, hubIds: (r.hubIds || []).filter((id) => own.has(id)) }));
   }
   res.json({ success: true, data: records, count: records.length });
+});
+
+// The learner's parent on its own (the staff learner page's Parent tab): their details, their login,
+// their children this viewer may see, and — for admins — what they've signed up for. See
+// learner-parent.service.js.
+const getLearnerParent = asyncHandler(async (req, res) => {
+  const record = await LearnerService.getLearnerById(req.params.id);
+  assertOwn(await isLinkedToOwnHub(req, record.id));
+  const isAdmin = req.user.role === "admin";
+  const visibleHubIds = isAdmin ? await adminOwnedHubIds(req) : [req.ownSchool?.id].filter(Boolean);
+  const data = await LearnerParentService.forLearner(record, { visibleHubIds, ownerAdminId: isAdmin ? req.ownerAdminId : null, isAdmin });
+  res.json({ success: true, data });
 });
 
 const getLearnerById = asyncHandler(async (req, res) => {
@@ -309,6 +326,11 @@ const updateLearner = asyncHandler(async (req, res) => {
     if (req.user.username) {
       Object.keys(data).forEach((key) => { if (!LEARNER_SELF_EDIT_FIELDS.includes(key)) delete data[key]; });
       allowGuardianPassword = false;
+    }
+    // An educator learning (TOT) signs in as the educator: their learning record gets no username
+    // or password of its own.
+    if (req.user.learningAsEducator && (learnerPassword || "username" in data)) {
+      throw Object.assign(new Error("You sign in as an educator — your learning has no separate login"), { statusCode: 400 });
     }
   }
   const record = await LearnerService.updateLearner(req.params.id, data);
@@ -499,6 +521,7 @@ module.exports = {
   bulkImportLearners,
   getAllLearners,
   getLearnerById,
+  getLearnerParent,
   updateLearner,
   updateLearnerAccountStatus,
   deleteLearner,

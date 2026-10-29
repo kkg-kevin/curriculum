@@ -86,6 +86,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/claims": "claims",
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
+  "/api/tot": "teachers",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
@@ -156,6 +157,8 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
+  // Scheduling another run of a bootcamp makes a new bootcamp (a copy with new dates).
+  { method: "POST", pattern: /^\/api\/bootcamps\/[^/]+\/runs$/, module: "bootcamps", action: "create" },
   // Hub check-ins: a staff member needs "checkins-manage" for all of it; the schedules map their
   // own actions.
   { method: "GET", pattern: /^\/api\/checkins\/schedules$/, module: "checkins-manage", action: "view" },

@@ -6,7 +6,9 @@ import { MetaRow } from "./ProfileIdentityCard";
 // learner's own identity) now that the learner can have its own login distinct from the
 // guardian's (see auth.service.js's setOrCreatePasswordByUsername). Always shown alongside it
 // regardless of which of the two logins is currently active.
-export default function GuardianProfileCard({ learner, onEdit }) {
+// `onOpenParent` (the staff learner page only): a link to its Parent tab — the parent's login, their
+// other children, sign-ups and activity.
+export default function GuardianProfileCard({ learner, onEdit, onOpenParent }) {
   return (
     <div style={{ ...cardStyle(), padding: 24, display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -36,6 +38,16 @@ export default function GuardianProfileCard({ learner, onEdit }) {
         <MetaRow label="Guardian Phone" value={learner.guardianPhone || <NotOnRecord />} />
         <MetaRow label="Guardian Email" value={learner.guardianEmail || <NotOnRecord />} />
       </div>
+
+      {onOpenParent && (
+        <button
+          type="button"
+          onClick={onOpenParent}
+          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${T.accent}`, background: "#fff", color: T.accent, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          Parent's login, other children &amp; activity →
+        </button>
+      )}
     </div>
   );
 }
