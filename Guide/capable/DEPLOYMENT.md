@@ -1,6 +1,24 @@
 # Deployment Guide — Digifunzi Curriculum — Capable environment
 
-**Status: backend and portal rebuilt (28 Oct 2026, night) — ready to upload, together; take a database backup first.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (28 Oct 2026, night)": Settings → System Levels as a grid of small tiles (rename by clicking a name; move and delete on hover, or on their own line on a phone), and one tab bar across the portal — Activity, Billing, Learners, and the Tech Clubs / Home Learning status filters now look like Hub Check-ins. The backend is unchanged since the late release (same code). No migration, no environment variable, no new npm package; backend and portal uploaded together (portal `index-BzYL2wfb.js`). The website parts of those notes (the header Sign in) don't apply here.
+**Status: backend and portal rebuilt (30 Oct 2026) — ready to upload, together; take a database backup first.** Release notes: `Guide/live/DEPLOYMENT.md` → "This release (30 Oct 2026)". It includes the 29 Oct release below, which was never uploaded on its own:
+- **Learner profile:** "Developmental stage" (was "Developmental Academy") and a **Pathway** card beside it.
+- **Bootcamp pathways mean every stage:** the bootcamp form shows one tick box per pathway.
+- **Dates of birth** kept on enquiries and new learners.
+- The website parts (date of birth forms, the diagnostic PDF, website bootcamp placement) don't apply here — Capable has no website. The one-off `bootcamps:place-learners` finds nothing to do here; no need to run it.
+
+One more new migration, applied on Restart: `20261030120000_add_learner_dates_of_birth.js` (additive) — four in all with the 29 Oct ones. Check `SHOW COLUMNS FROM leads LIKE 'learnerDateOfBirth';`. Backend from `776727c` (same zip as Dev and Live), portal `index-DnaIROqI.js`. **Cron, if not added yet: `npm run qa:process` hourly.**
+
+Below it, "This release (29 Oct 2026)":
+- **Quality assurance (QA)** — supervisors (or admins) visit educators, announced or by surprise, and review them against a template; schedules; the educator reads and replies; the hub sees a summary only. Supervisors get QA Visits, a page per educator and **Schedule a check-in**.
+- **Supervisors move to Settings → People & sharing → Supervisors.**
+- **Training of trainers (TOT)** — a curriculum marked **Who it's for → Educators (TOT)**; educators enrolled from their page's Training card learn in the teacher portal's **My learning**; supervisors (or admins) mark it in **Work to mark**; course certificates qualify them, finishing the curriculum can raise their level.
+- **Bootcamps: Schedule another run**, and each bootcamp's **Learners & parents** list (contacts, copy emails, CSV).
+- **Parents' details** — a **Parent** tab on the learner page and **Learners → Parents**.
+- **Search** when picking a pathway stage's diagnostic assessments.
+
+Three new migrations, applied on Restart, all additive: `20261029100000_create_qa.js`, `20261029120000_add_series_to_bootcamps.js` and `20261030090000_add_tot_trainees.js`. Check `SHOW TABLES LIKE 'qa_visits';` and `SHOW COLUMNS FROM learners LIKE 'teacherId';`, and run Run JS script → `db:migrate` if either is missing. **New cron job, needed: `npm run qa:process` hourly.** No new environment variable or npm package. The website parts of those notes (projects in the Store) don't apply here. Not yet tried on the hosting — follow "Verify" in those notes on Dev first.
+
+Below it, "This release (28 Oct 2026, night)": Settings → System Levels as a grid of small tiles (rename by clicking a name; move and delete on hover, or on their own line on a phone), and one tab bar across the portal — Activity, Billing, Learners, and the Tech Clubs / Home Learning status filters now look like Hub Check-ins. The backend is unchanged since the late release (same code). No migration, no environment variable, no new npm package; backend and portal uploaded together (portal `index-BzYL2wfb.js`). The website parts of those notes (the header Sign in) don't apply here.
 
 Below it, "This release (28 Oct 2026, late)": in Multiple Choice (Multiple) questions every right option can now be ticked — an option ending in a space or containing a comma used to refuse the tick (and was marked wrong for learners); typing into an option already marked correct no longer loses the text. Questions saved before keep working; tick their right options again and save to fix one that had the problem. No migration, no environment variable, no new npm package; backend and portal uploaded together (portal `index-9OukhRIJ.js`).
 
