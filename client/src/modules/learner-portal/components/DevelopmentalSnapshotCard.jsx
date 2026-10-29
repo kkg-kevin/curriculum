@@ -28,7 +28,7 @@ function SnapshotRow({ icon, label, value, sub }) {
   );
 }
 
-// The same facts ProfileIdentityCard shows on the full profile (Developmental Academy /
+// The same facts ProfileIdentityCard shows on the full profile (Developmental stage /
 // Current Level Summary) — presented as a compact vertical rail card here instead of
 // side-by-side pills, to fit the dashboard's right-rail layout. Profile stays the source of
 // truth and keeps its own version; this is just a second, differently-shaped view of the same
@@ -45,7 +45,7 @@ export default function DevelopmentalSnapshotCard({ stage, band, nextBand }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <SnapshotRow
           icon={<FiAward size={16} />}
-          label="Developmental Academy"
+          label="Developmental stage"
           value={stage?.name || "Not yet placed"}
           sub={stage && formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null}
         />

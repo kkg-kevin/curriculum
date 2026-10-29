@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { learnerDateOfBirth } = require("../../shared/utils/age");
 
 // Mirrors digifunzi-landing's src/components/forms/schemas.js exactly — that frontend already
 // validates client-side; this is the server-side copy of the same contract so a request that
@@ -21,6 +22,8 @@ const createLeadSchema = z.object({
   parentPhone: phone.optional().or(z.literal("")),
   learnerName: z.string().trim().max(120).optional().or(z.literal("")),
   learnerAge: z.coerce.number().int().min(3).max(19).optional().nullable(),
+  // What the website asks for now; the age is worked out from it when it's sent.
+  learnerDateOfBirth,
   interestedIn: z.enum(INTEREST_VALUES).optional().default("general"),
   referenceId: z.string().trim().max(100).optional().nullable(),
   note: z.string().trim().max(1000).optional().or(z.literal("")),

@@ -49,7 +49,7 @@ const BootcampParticipantsService = {
     const [links, leads] = await Promise.all([
       classIds.length ? db("learner_hub_links").whereIn("classId", classIds).select("learnerId", "hubId", "classId", "status", "createdAt") : [],
       db("leads").whereIn("bootcampId", runs.map((r) => r.id)).whereNull("anonymisedAt")
-        .select("id", "bootcampId", "learnerId", "hubId", "name", "email", "phone", "learnerName", "learnerAge", "paidAt", "invoiceId", "createdAt"),
+        .select("id", "bootcampId", "learnerId", "hubId", "name", "email", "phone", "learnerName", "learnerAge", "learnerDateOfBirth", "paidAt", "invoiceId", "createdAt"),
     ]);
 
     const learnerIds = [...new Set([...links.map((l) => l.learnerId), ...leads.map((l) => l.learnerId)].filter(Boolean))];
@@ -102,7 +102,7 @@ const BootcampParticipantsService = {
         runEndDate: run?.endDate || null,
         learnerId: learner ? learner.id : null,
         learnerName: fullName(learner) || lead?.learnerName || "—",
-        age: ageFrom(learner?.dateOfBirth, today) ?? (lead?.learnerAge != null ? Number(lead.learnerAge) : null),
+        age: ageFrom(learner?.dateOfBirth, today) ?? ageFrom(lead?.learnerDateOfBirth, today) ?? (lead?.learnerAge != null ? Number(lead.learnerAge) : null),
         gender: learner?.gender || null,
         username: learner?.username || null,
         accountStatus: learner?.accountStatus || null,

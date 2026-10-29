@@ -176,7 +176,7 @@ export default function LearnerPage() {
       <HubSwitcher hubs={hubs} selectedHubId={selectedHub?.id} onChange={setPickedHubId} />
 
       <ProfileIdentityCard
-        learner={learner} stage={stage} band={currentBand} nextBand={nextBand}
+        learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={curriculumId}
         onEdit={manage ? () => setEditing("learner") : undefined}
         extraMeta={preview ? [] : [
           { label: "Gender", value: learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null },

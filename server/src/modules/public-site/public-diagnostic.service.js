@@ -8,6 +8,7 @@ const LeadModel = require("../leads/lead.model");
 const LeadService = require("../leads/lead.service");
 const env = require("../../config/env");
 const { slugify } = require("../../shared/utils/slugify");
+const { ageFrom } = require("../../shared/utils/age");
 const {
   requiresManualGrading,
   computeAutoScore,
@@ -265,7 +266,9 @@ const PublicDiagnosticService = {
   // holds everything for the shareable report link and completion analytics, and now also carries
   // the lead id. `childName` stays optional context for how the report reads.
   async submitDiagnostic(pathwayIdOrSlug, body, ipHash, visitSource = null) {
-    const { answers, parentName, parentPhone, childName, childAge } = body;
+    const { answers, parentName, parentPhone, childName } = body;
+    const childDateOfBirth = body.childDateOfBirth || null;
+    const childAge = ageFrom(childDateOfBirth) ?? body.childAge;
     const candidates = await resolveDesignatedPathways(pathwayIdOrSlug);
     if (candidates.length === 0) throw notFound("Pathway not found");
     const match = await resolveOfferableForAge(pathwayIdOrSlug, childAge);
@@ -311,6 +314,7 @@ const PublicDiagnosticService = {
         phone: parentPhone,
         learnerName: childName || null,
         learnerAge: childAge,
+        learnerDateOfBirth: childDateOfBirth,
         interestedIn: "general",
         referenceId: pathwaySlug,
         message:
@@ -329,6 +333,7 @@ const PublicDiagnosticService = {
       assessmentId: assessment.id,
       leadId,
       childAge,
+      childDateOfBirth,
       childName: childName || null,
       answers,
       itemsSnapshot,

@@ -120,7 +120,7 @@ async function processEnquiries({ now = new Date(), settings = null } = {}) {
       // when a bootcamp runs again (the bootcamp's Learners & parents list).
       if (lead.status !== "closed" || !isPlain(lead) || lead.bootcampId || idleDays(lead) < rules.anonymiseMonths * 30.44) continue;
       await db("lead_messages").where({ leadId: lead.id }).del();
-      await db("leads").where({ id: lead.id }).update({ name: REMOVED_NAME, email: null, phone: null, learnerName: null, message: null, anonymisedAt: now, updatedAt: now });
+      await db("leads").where({ id: lead.id }).update({ name: REMOVED_NAME, email: null, phone: null, learnerName: null, learnerDateOfBirth: null, message: null, anonymisedAt: now, updatedAt: now });
       counts.anonymised += 1;
     }
   }

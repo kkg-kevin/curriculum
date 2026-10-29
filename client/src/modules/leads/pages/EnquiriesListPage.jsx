@@ -307,7 +307,8 @@ function LeadRow({ lead, highlighted, rowRef }) {
           </div>
           {(lead.source === "enroll" || lead.source === "diagnostic") && (lead.learnerName || lead.learnerAge) && (
             <div style={{ fontSize: 12, color: "#374151", marginTop: 6 }}>
-              Learner: <strong>{lead.learnerName || "—"}</strong>{lead.learnerAge ? ` (age ${lead.learnerAge})` : ""}
+              Learner: <strong>{lead.learnerName || "—"}</strong>
+              {lead.learnerAge ? ` (age ${lead.learnerAge}${lead.learnerDateOfBirth ? `, born ${new Date(`${lead.learnerDateOfBirth}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""})` : ""}
               {lead.source === "enroll" && lead.interestedIn && <> · {INTEREST_LABELS[lead.interestedIn] || lead.interestedIn}</>}
             </div>
           )}

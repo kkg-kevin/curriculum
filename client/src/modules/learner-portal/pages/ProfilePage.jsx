@@ -121,7 +121,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <ProfileIdentityCard learner={learner} stage={stage} band={currentBand} nextBand={nextBand} onEdit={() => setEditing("learner")} />
+      <ProfileIdentityCard learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={cls?.curriculumId} onEdit={() => setEditing("learner")} />
 
       {/* Only on Overview — Progress Arc otherwise lived further down, inside the Overview tab's
           own content below; moved up here, above Guardian Profile/My Learning Hubs, per the

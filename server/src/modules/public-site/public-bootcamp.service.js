@@ -2,7 +2,6 @@ const { resolveMapPin } = require("../../shared/utils/map-pin");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
-const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const GameService = require("../bootcamps/games/game.service");
@@ -10,7 +9,7 @@ const { requiresManualGrading } = require("../assessments/submissions/grading.ut
 const { slugify } = require("../../shared/utils/slugify");
 const { todayInKenya } = require("../checkins/checkin.dates");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
-const { requirePublicContentAdminId, htmlToText, resolveCoursePricing, resolveCurriculumSummary } = require("../../shared/utils/public-content");
+const { requirePublicContentAdminId, htmlToText, pathwayRowsFor, resolveCoursePricing, resolveCurriculumSummary } = require("../../shared/utils/public-content");
 
 // The public marketing site's Bootcamps section (digifunzi-landing's /bootcamps) sells short,
 // intensive holiday/weekend programmes. A bootcamp is its own standalone `bootcamps` row
@@ -265,10 +264,9 @@ async function pathwayDiagnosticOfferable(pathway) {
 // one whose range covers the child's age.
 async function resolvePathwayDiagnostics(bootcamp) {
   if (!bootcamp.curriculumId) return [];
-  const chosen = arr(bootcamp.pathwayIds);
-  const pathways = chosen.length > 0
-    ? await Promise.all(chosen.map((id) => PathwayModel.findById(id)))
-    : await PathwayModel.findByCurriculumId(bootcamp.curriculumId);
+  // Every stage of each picked pathway — a stage's own diagnostic covers its own ages, so a
+  // picked pathway must bring all of them, not only the one row the bootcamp form stored.
+  const pathways = await pathwayRowsFor(bootcamp.curriculumId, arr(bootcamp.pathwayIds));
   const offerable = await Promise.all(pathways.map((p) => (p ? pathwayDiagnosticOfferable(p) : false)));
   return pathways
     .map((pathway, i) => (pathway && offerable[i] ? { pathway, ages: offerable[i] } : null))
