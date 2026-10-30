@@ -1,6 +1,7 @@
-import { T, cardStyle, sectionHeaderStyle } from "./theme";
+import { T, cardStyle, KID, KidHeading } from "./theme";
 import { usePathway, usePathways } from "../../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
+import { FiCompass } from "react-icons/fi";
 
 // Read-only counterpart to the staff learner page's PathwayManagerCard — the same pathways (their
 // stage's one, plus any staff added by hand) and placement status, just without the stage
@@ -45,10 +46,7 @@ export default function PathwayTabContent({ learnerId, curriculumId }) {
 
   return (
     <div style={{ ...cardStyle(), padding: 20 }}>
-      <h2 style={{ ...sectionHeaderStyle(), marginBottom: 4 }}>Pathways</h2>
-      <p style={{ margin: "0 0 16px", fontSize: 12, color: T.inkMuted }}>
-        The pathways you're on, and where you sit in each one's course sequence.
-      </p>
+      <KidHeading icon={FiCompass} tone={KID.sky} sub="The pathways you're on, and which course you're up to in each.">Pathways</KidHeading>
 
       {journeyLoading ? (
         <p style={{ margin: 0, fontSize: 13, color: T.inkFaint, textAlign: "center", padding: "20px 0" }}>Loading…</p>

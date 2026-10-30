@@ -1,6 +1,7 @@
 import { priceForPackage } from "../services/homeLearningApi";
 import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField";
-import { formatMoney, inputStyle, labelStyle } from "./ui";
+import { inputStyle, labelStyle } from "./ui";
+import { pricePer } from "../../../utils/billingPeriods";
 
 const sectionHeading = { gridColumn: "1/-1", margin: "8px 0 -4px", paddingBottom: 6, borderBottom: "1px solid #EEF1F5", color: "#25476a", fontSize: 12, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase" };
 
@@ -13,11 +14,11 @@ function PackageFields({ values, setValue, packages, currentPackageId }) {
   return <>
     <label style={labelStyle}>Package<select style={inputStyle} required value={values.packageId || ""} onChange={(e) => { setValue("packageId", e.target.value); setValue("childCount", ""); }}>
       <option value="">{offered.length ? "Choose package" : "Create a package first"}</option>
-      {offered.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.childrenIncluded} {p.childrenIncluded === 1 ? "child" : "children"} · {formatMoney(p.monthlyAmount)}/month{p.status === "archived" ? " (archived)" : ""}</option>)}
+      {offered.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.childrenIncluded} {p.childrenIncluded === 1 ? "child" : "children"} · {pricePer(p.amount, p.billingPeriod)}{p.status === "archived" ? " (archived)" : ""}</option>)}
     </select></label>
     {pkg?.allowExtraChildren && <label style={labelStyle}>Number of children<input style={inputStyle} type="number" min={pkg.childrenIncluded} max={pkg.maxChildren} value={values.childCount || pkg.childrenIncluded} onChange={(e) => setValue("childCount", e.target.value)} /></label>}
     {pkg && <div style={{ alignSelf: "end", paddingBottom: 10, fontSize: 13, color: price ? "#25476a" : "#B91C1C", fontWeight: 700 }}>
-      {price ? `${formatMoney(price.monthlyAmount)}/month · ${price.childCount} places` : `Up to ${pkg.maxChildren} children on this package`}
+      {price ? `${pricePer(price.amount, price.billingPeriod)} · ${price.childCount} places` : `Up to ${pkg.maxChildren} children on this package`}
     </div>}
   </>;
 }

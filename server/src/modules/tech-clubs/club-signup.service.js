@@ -4,7 +4,7 @@ const ClubPackageModel = require("./club-package.model");
 const { raiseMembershipInvoice, syncMembershipChildren } = require("./club.service");
 const { signupSchema, signupChildSchema, approveSignupSchema } = require("./club.validation");
 const { priceForPackage, CURRENCY } = require("../home-learning/home-learning.pricing");
-const { monthRange } = require("../home-learning/home-learning.service");
+const { firstPeriod } = require("../billing/package-billing");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -152,7 +152,8 @@ const ClubSignupService = {
     const hub = await resolvePublicClub(data.hubId, ownerAdminId);
 
     const pkg = await ClubPackageModel.findBySlug(data.packageSlug, ownerAdminId);
-    if (!pkg || pkg.status !== "active" || !pkg.isPublished || !ClubPackageModel.offeredAt(pkg, hub.id)) {
+    // A daily package is never published (it's billed at month end, nothing to pay up front).
+    if (!pkg || pkg.status !== "active" || !pkg.isPublished || pkg.billingPeriod === "daily" || !ClubPackageModel.offeredAt(pkg, hub.id)) {
       fail("That package is no longer available at this club — please choose another.", 404);
     }
     const price = priceForPackage(pkg, data.children.length);
@@ -163,6 +164,7 @@ const ClubSignupService = {
     }
     await assertEmailFree(data.parent.email);
     await assertUsernamesFree(data.children);
+    const period = firstPeriod(price.billingPeriod);
 
     const created = { learnerIds: [], usernames: [], parentUserId: null, membershipId: null };
     let membership;
@@ -179,7 +181,11 @@ const ClubSignupService = {
         guardianEmail: data.parent.email,
         guardianPhone: data.parent.phone,
         childCount: price.childCount,
-        monthlyAmount: price.monthlyAmount,
+        amount: price.amount,
+        billingPeriod: price.billingPeriod,
+        // Their periods start today; the first is invoiced now, the rest automatically.
+        billingAnchor: period.start,
+        billedThrough: period.end,
         status: "pending",
         source: "website",
         notes: `Signed up on the website on ${new Date().toISOString().slice(0, 10)}.`,
@@ -194,8 +200,7 @@ const ClubSignupService = {
         }, created);
       }
 
-      const { periodStart, periodEnd, label } = monthRange(new Date().toISOString().slice(0, 7));
-      invoice = await raiseMembershipInvoice(membership, { periodStart, periodEnd, label, dueDate: "" }, null);
+      invoice = await raiseMembershipInvoice(membership, { periodStart: period.start, periodEnd: period.end, label: period.label, dueDate: "" }, null);
       membership = await ClubMembershipModel.update(membership.id, ownerAdminId, { signupInvoiceId: invoice.id });
     } catch (err) {
       await rollback(created);
@@ -223,7 +228,10 @@ const ClubSignupService = {
       clubName: hub.name,
       packageName: pkg.name,
       childCount: data.children.length,
-      monthlyAmount: price.monthlyAmount,
+      amount: price.amount,
+      billingPeriod: price.billingPeriod,
+      // The website before 31 Oct 2026 read this name.
+      monthlyAmount: price.amount,
       currency: CURRENCY,
       invoiceNumber: invoice.invoiceNumber,
       amountDue: Number(invoice.total),
@@ -329,7 +337,8 @@ const ClubSignupService = {
         places: membership.childCount,
         filled: active.length,
         placesLeft: Math.max(0, membership.childCount - active.length),
-        monthlyAmount: Number(membership.monthlyAmount),
+        amount: Number(membership.amount),
+        billingPeriod: membership.billingPeriod,
         currency: CURRENCY,
         children: active.map((c, i) => ({
           learnerId: c.learnerId,

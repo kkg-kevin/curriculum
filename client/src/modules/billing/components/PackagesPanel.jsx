@@ -5,6 +5,7 @@ import { FiEdit2, FiGlobe, FiPackage, FiPlus } from "react-icons/fi";
 import { billingApi } from "../services/billingApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { BILLING_PERIODS, periodHow, periodUnit, pricePer } from "../../../utils/billingPeriods";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
@@ -13,14 +14,14 @@ const smallButton = { border: "1px solid #D1D5DB", borderRadius: 7, color: "#4B5
 const formatMoney = (amount) => `KSh ${Number(amount || 0).toLocaleString("en-KE")}`;
 const errorMessage = (error, fallback) => error.response?.data?.message || error.message || fallback;
 
-const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", monthlyAmount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [] };
+const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", billingPeriod: "monthly", amount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [] };
 
 // The two kinds of package managed here. Home Learning is the original panel, unchanged; Tech Club
 // packages add which clubs a package is offered at (none ticked = every club).
 const PROGRAMMES = {
   home_learning: {
     title: "Home Learning packages",
-    intro: <>What Home Learning families sign up for and are billed monthly. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
+    intro: <>What Home Learning families sign up for, billed daily, weekly, monthly, quarterly or yearly — invoices go out automatically. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
     queryKey: ["billing", "packages"],
     refreshKeys: [["home-learning"]],
     list: billingApi.listPackages, create: billingApi.createPackage, update: billingApi.updatePackage, remove: billingApi.deletePackage, checkRemove: billingApi.checkDeletePackage,
@@ -28,11 +29,11 @@ const PROGRAMMES = {
     featuresPlaceholder: "Weekly home visits by a Digifunzi educator\nAll learning materials\nTermly progress report",
     namePlaceholder: "e.g. Three children",
     empty: "No packages yet — create one so households can be added and the website has something to show.",
-    editNote: "Price changes apply to new households. Existing households keep their price until you change their package.",
+    editNote: "Price and billing changes apply to new households. Existing households keep theirs until you change their package — and then from their next billing period.",
   },
   tech_club: {
     title: "Tech Club packages",
-    intro: <>What families pay each month to join an Estate Tech Club. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
+    intro: <>What families pay to join an Estate Tech Club, billed daily, weekly, monthly, quarterly or yearly — invoices go out automatically. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
     queryKey: ["billing", "club-packages"],
     refreshKeys: [["tech-clubs"]],
     list: billingApi.listClubPackages, create: billingApi.createClubPackage, update: billingApi.updateClubPackage, remove: billingApi.deleteClubPackage, checkRemove: billingApi.checkDeleteClubPackage,
@@ -40,14 +41,14 @@ const PROGRAMMES = {
     featuresPlaceholder: "Coding, robotics and AI sessions\nAll club materials\nTermly progress report",
     namePlaceholder: "e.g. One child",
     empty: "No club packages yet — create one so families can sign up for a club on the website.",
-    editNote: "Price changes apply to new sign-ups. Existing families keep their price until you change their package.",
+    editNote: "Price and billing changes apply to new sign-ups. Existing families keep theirs until you change their package — and then from their next billing period.",
     withClubs: true,
   },
 };
 
 const toForm = (pkg) => ({
   name: pkg.name, slug: pkg.slug, summary: pkg.summary || "", description: pkg.description || "",
-  childrenIncluded: String(pkg.childrenIncluded), monthlyAmount: String(pkg.monthlyAmount),
+  childrenIncluded: String(pkg.childrenIncluded), billingPeriod: pkg.billingPeriod || "monthly", amount: String(pkg.amount),
   allowExtraChildren: !!pkg.allowExtraChildren, extraChildAmount: pkg.extraChildAmount != null ? String(pkg.extraChildAmount) : "",
   maxChildren: pkg.allowExtraChildren ? String(pkg.maxChildren) : "", features: (pkg.features || []).join("\n"),
   badge: pkg.badge || "", isPublished: !!pkg.isPublished, status: pkg.status, sortOrder: String(pkg.sortOrder ?? 0),
@@ -62,13 +63,15 @@ const toPayload = (form, withClubs = false) => ({
   summary: form.summary,
   description: form.description,
   childrenIncluded: Number(form.childrenIncluded),
-  monthlyAmount: Number(form.monthlyAmount),
+  billingPeriod: form.billingPeriod,
+  amount: Number(form.amount),
+  // A daily package is billed at month end, so it's never offered on the website.
+  isPublished: form.billingPeriod === "daily" ? false : form.isPublished,
   allowExtraChildren: form.allowExtraChildren,
   extraChildAmount: form.allowExtraChildren && form.extraChildAmount !== "" ? Number(form.extraChildAmount) : null,
   maxChildren: form.allowExtraChildren && form.maxChildren !== "" ? Number(form.maxChildren) : undefined,
   features: form.features.split("\n").map((line) => line.trim()).filter(Boolean),
   badge: form.badge,
-  isPublished: form.isPublished,
   status: form.status,
   sortOrder: Number(form.sortOrder || 0),
 });
@@ -94,7 +97,11 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
   return <form onSubmit={(event) => { event.preventDefault(); onSubmit(toPayload(form, config.withClubs)); }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginTop: 14, padding: 16, background: "#F8FAFC", borderRadius: 12 }}>
     <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder={config.namePlaceholder} /></label>
     <label style={labelStyle}>Children included<input style={inputStyle} required type="number" min={1} max={50} value={form.childrenIncluded} onChange={set("childrenIncluded")} /></label>
-    <label style={labelStyle}>Monthly price (KSh)<input style={inputStyle} required type="number" min={0} step={1} value={form.monthlyAmount} onChange={set("monthlyAmount")} /></label>
+    <label style={labelStyle}>Billed<select style={inputStyle} value={form.billingPeriod} onChange={set("billingPeriod")}>
+      {BILLING_PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+    </select></label>
+    <label style={labelStyle}>Price per {periodUnit(form.billingPeriod)} (KSh)<input style={inputStyle} required type="number" min={0} step={1} value={form.amount} onChange={set("amount")} /></label>
+    <p style={{ gridColumn: "1/-1", margin: "-4px 0 0", fontSize: 12, color: "#6B7280" }}>{periodHow(form.billingPeriod)}</p>
     <label style={labelStyle}>Badge (optional)<input style={inputStyle} maxLength={40} value={form.badge} onChange={set("badge")} placeholder="e.g. Most popular" /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Short summary (shown on the card)<input style={inputStyle} maxLength={300} value={form.summary} onChange={set("summary")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Description (optional)<textarea style={{ ...inputStyle, minHeight: 64, resize: "vertical" }} maxLength={5000} value={form.description} onChange={set("description")} /></label>
@@ -102,13 +109,13 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
     {config.withClubs && <ClubPicker clubs={clubs} value={form.hubIds} onChange={(hubIds) => setForm((current) => ({ ...current, hubIds }))} />}
     <label style={{ ...checkLabel, gridColumn: "1/-1" }}><input type="checkbox" checked={form.allowExtraChildren} onChange={set("allowExtraChildren")} /> Families can add more children to this package</label>
     {form.allowExtraChildren && <>
-      <label style={labelStyle}>Price per extra child (KSh / month)<input style={inputStyle} required type="number" min={0} step={1} value={form.extraChildAmount} onChange={set("extraChildAmount")} /></label>
+      <label style={labelStyle}>Price per extra child (KSh / {periodUnit(form.billingPeriod)})<input style={inputStyle} required type="number" min={0} step={1} value={form.extraChildAmount} onChange={set("extraChildAmount")} /></label>
       <label style={labelStyle}>Maximum children<input style={inputStyle} type="number" min={Number(form.childrenIncluded || 1) + 1} max={50} value={form.maxChildren} onChange={set("maxChildren")} placeholder="20" /></label>
     </>}
     {isEdit && <label style={labelStyle}>Web address slug<input style={inputStyle} maxLength={160} value={form.slug} onChange={set("slug")} /></label>}
     <label style={labelStyle}>Display order<input style={inputStyle} type="number" min={0} max={999} value={form.sortOrder} onChange={set("sortOrder")} /></label>
     <label style={labelStyle}>Status<select style={inputStyle} value={form.status} onChange={set("status")}><option value="active">Active — can be sold</option><option value="archived">Archived — no longer offered</option></select></label>
-    <label style={{ ...checkLabel, alignSelf: "end", paddingBottom: 10 }}><input type="checkbox" checked={form.isPublished && form.status === "active"} disabled={form.status !== "active"} onChange={set("isPublished")} /> Show on the website</label>
+    <label style={{ ...checkLabel, alignSelf: "end", paddingBottom: 10 }} title={form.billingPeriod === "daily" ? "A daily package is billed at the end of each month, so it can't be offered on the website" : undefined}><input type="checkbox" checked={form.isPublished && form.status === "active" && form.billingPeriod !== "daily"} disabled={form.status !== "active" || form.billingPeriod === "daily"} onChange={set("isPublished")} /> Show on the website</label>
     <div style={{ gridColumn: "1/-1", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
       <button disabled={saving} style={{ border: 0, borderRadius: 9, padding: "10px 16px", color: "#fff", background: "#25476a", fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : isEdit ? "Save package" : "Create package"}</button>
       <button type="button" onClick={onCancel} style={smallButton}>Cancel</button>
@@ -182,7 +189,7 @@ export default function PackagesPanel({ programme = "home_learning" }) {
                     : <span style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", background: "#F3F4F6", borderRadius: 999, padding: "2px 8px" }}>Hidden from website</span>}
               </div>
               <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-                {pkg.childrenIncluded} {pkg.childrenIncluded === 1 ? "child" : "children"} · <strong style={{ color: "#25476a" }}>{formatMoney(pkg.monthlyAmount)}/month</strong>
+                {pkg.childrenIncluded} {pkg.childrenIncluded === 1 ? "child" : "children"} · <strong style={{ color: "#25476a" }}>{pricePer(pkg.amount, pkg.billingPeriod)}</strong>
                 {pkg.allowExtraChildren && <> · +{formatMoney(pkg.extraChildAmount)} per extra child (up to {pkg.maxChildren})</>}
                 {" · "}{config.count(pkg)} {config.noun[config.count(pkg) === 1 ? 0 : 1]}
               </div>
@@ -191,7 +198,7 @@ export default function PackagesPanel({ programme = "home_learning" }) {
               </div>}
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {pkg.status === "active" && <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: { isPublished: !pkg.isPublished } })} style={smallButton}><FiGlobe /> {pkg.isPublished ? "Hide from website" : "Show on website"}</button>}
+              {pkg.status === "active" && pkg.billingPeriod !== "daily" && <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: { isPublished: !pkg.isPublished } })} style={smallButton}><FiGlobe /> {pkg.isPublished ? "Hide from website" : "Show on website"}</button>}
               <button type="button" onClick={() => setEditingId(pkg.id)} style={smallButton}><FiEdit2 /> Edit</button>
               <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: pkg.status === "active" ? { status: "archived", isPublished: false } : { status: "active" } })} style={smallButton}>{pkg.status === "active" ? "Archive" : "Restore"}</button>
               {config.count(pkg) === 0 && <button type="button" disabled={deleteMutation.isPending} onClick={() => setDeleteTarget(pkg)} style={{ ...smallButton, color: "#B91C1C" }}>Delete</button>}

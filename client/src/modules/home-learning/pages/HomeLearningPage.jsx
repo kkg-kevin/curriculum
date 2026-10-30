@@ -9,7 +9,7 @@ import { can } from "../../../hooks/usePermissions";
 import { homeLearningApi } from "../services/homeLearningApi";
 import HouseholdCard from "../components/HouseholdCard";
 import { HouseholdFields } from "../components/HouseholdFields";
-import { errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, statusFilterOptions, thisMonth } from "../components/ui";
+import { errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, statusFilterOptions } from "../components/ui";
 import { Segmented } from "../../../components/ui/TabBar";
 
 const EMPTY_HOUSEHOLD = { guardianName: "", guardianEmail: "", guardianPhone: "", county: "", subCounty: "", town: "", addressLine: "", landmark: "", mapUrl: "", locationPhotos: [], packageId: "", childCount: "", status: "pending", startDate: "", notes: "", portalPassword: "", fromLearnerId: "" };
@@ -34,7 +34,6 @@ export default function HomeLearningPage() {
   const focusId = searchParams.get("household");
   const focusRef = useRef(null);
   const [form, setForm] = useState(EMPTY_HOUSEHOLD);
-  const [bulkPeriod, setBulkPeriod] = useState(thisMonth());
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
@@ -103,7 +102,7 @@ export default function HomeLearningPage() {
     onError: (error) => toast.error(errorMessage(error, "Could not remove learner")),
   });
   const invoiceMutation = useMutation({
-    mutationFn: ({ id, period, dueDate }) => homeLearningApi.generateInvoice(id, { period, dueDate }),
+    mutationFn: ({ id, dueDate }) => homeLearningApi.generateInvoice(id, { dueDate }),
     onSuccess: ({ created, invoice }) => { refresh(); toast.success(created ? `Invoice ${invoice.invoiceNumber} issued` : `Already invoiced (${invoice.invoiceNumber})`); },
     onError: (error) => toast.error(errorMessage(error, "Could not raise invoice")),
   });
@@ -118,8 +117,8 @@ export default function HomeLearningPage() {
     onError: (error) => toast.error(errorMessage(error, "Could not decline the sign-up")),
   });
   const bulkInvoiceMutation = useMutation({
-    mutationFn: homeLearningApi.generateMonthlyInvoices,
-    onSuccess: ({ created, skipped }) => { refresh(); toast.success(`${created} invoice${created === 1 ? "" : "s"} issued${skipped ? `, ${skipped} already invoiced` : ""}`); },
+    mutationFn: homeLearningApi.generateDueInvoices,
+    onSuccess: ({ created }) => { refresh(); toast.success(created ? `${created} invoice${created === 1 ? "" : "s"} issued` : "Nothing due — every household is invoiced up to today"); },
     onError: (error) => toast.error(errorMessage(error, "Could not raise invoices")),
   });
 
@@ -164,11 +163,8 @@ export default function HomeLearningPage() {
   return <div style={{ width: "100%", fontFamily: "Inter, sans-serif", color: "#111827" }}>
     <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, flexWrap: "wrap" }}>
       <div style={{ width: 48, height: 48, borderRadius: 14, background: "#E8F5FB", color: "#25476a", display: "grid", placeItems: "center" }}><FiHome size={23} /></div>
-      <div style={{ flex: 1, minWidth: 240 }}><h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Home Learning</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families, each child's curriculum, grade and educator, and monthly invoices. Every child gets their own class in the Home Learning hub, so assessments, attendance and reports work as usual. Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p></div>
-      {canBill && <form onSubmit={(e) => { e.preventDefault(); bulkInvoiceMutation.mutate({ period: bulkPeriod }); }} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", maxWidth: "100%" }}>
-        <input aria-label="Month to invoice" type="month" required value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} style={{ ...inputStyle, width: "auto", padding: "8px 10px", fontSize: 13 }} />
-        <button disabled={bulkInvoiceMutation.isPending} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkInvoiceMutation.isPending ? "Invoicing…" : "Invoice all active households"}</button>
-      </form>}
+      <div style={{ flex: 1, minWidth: 240 }}><h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Home Learning</h1><p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families, each child's curriculum, grade and educator, and their invoices — raised automatically for each billing period (daily packages at month end, for the days attended). Every child gets their own class in the Home Learning hub, so assessments, attendance and reports work as usual. Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p></div>
+      {canBill && <button type="button" title="Invoices are raised automatically every hour — this does it now" disabled={bulkInvoiceMutation.isPending} onClick={() => bulkInvoiceMutation.mutate()} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkInvoiceMutation.isPending ? "Invoicing…" : "Invoice what's due now"}</button>}
     </header>
 
     {!packagesLoading && !packages.some((p) => p.status === "active") && (

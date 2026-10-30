@@ -7,8 +7,7 @@ import { summarizeCoursesProgress } from "../utils/progressStorage";
 import { deriveBandJourney } from "../utils/bandJourney";
 import { stagePendingReason } from "../../../utils/learnerAge";
 
-import { FiClipboard } from "react-icons/fi";
-import { T, cardStyle, EmptyState } from "../components/profile/theme";
+import { T, cardStyle, EmptyState, KID, KID_FONT, KidHeading } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
 import GuardianProfileCard from "../components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
@@ -32,6 +31,7 @@ import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import { useMyCertificates, useMyCertificateProgress } from "../../certificates/hooks/useCertificates";
+import { FiBell, FiBriefcase, FiKey } from "react-icons/fi";
 
 // classId-scoped components (AssessmentsOverview, SummaryRow) fall back to showing the
 // learner's ENTIRE cross-hub assessment history when classId is undefined — correct for a
@@ -40,13 +40,13 @@ import { useMyCertificates, useMyCertificateProgress } from "../../certificates/
 function NoClassNotice() {
   return (
     <div style={{ ...cardStyle(), padding: "12px 24px" }}>
-      <EmptyState icon={FiClipboard}>You haven't been assigned to a class in this hub yet — assessment data will appear here once you are.</EmptyState>
+      <EmptyState icon={FiBriefcase}>You haven't been put in a class at this hub yet — your assessments will show up here once you are.</EmptyState>
     </div>
   );
 }
 
 export default function ProfilePage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading } = useOutletContext();
+  const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading, viewOnly } = useOutletContext();
   const { mutate: updateLearner, isPending: isSaving } = useUpdateLearner();
   const [activeTab, setActiveTab] = useState("Overview");
   // null | "learner" | "guardian" — which of the two now-separate edit modals is open.
@@ -122,8 +122,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
+    // The learner's own profile is made for young learners: the rounded Nunito font throughout.
+    <div style={{ fontFamily: KID_FONT, display: "flex", flexDirection: "column", gap: 18 }}>
       <ProfileIdentityCard
+        greeting={viewOnly ? `${learner.firstName}'s profile` : `Hi, ${learner.firstName}!`}
         learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={cls?.curriculumId} onEdit={() => setEditing("learner")}
         stageHint={stage ? null : stagePendingReason({ learner, inClass: !!cls?.curriculumId, stages: ageCategories })}
       />
@@ -185,10 +187,10 @@ export default function ProfilePage() {
 
       <FrameworkLegend />
 
-      <ChangePasswordCard />
+      <ChangePasswordCard heading={<KidHeading icon={FiKey} tone={KID.navy}>Change my password</KidHeading>} />
 
-      <div style={cardStyle()}>
-        <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: T.ink }}>Email notifications</h3>
+      <div style={{ ...cardStyle(), padding: 22 }}>
+        <KidHeading icon={FiBell} tone={KID.gold} as="h3">Email notifications</KidHeading>
         <EmailNotificationSettings padding={0} />
       </div>
 

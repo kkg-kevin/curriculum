@@ -63,9 +63,9 @@ const generateInvoice = asyncHandler(async (req, res) => {
   res.status(result.created ? 201 : 200).json({ success: true, data: result });
 });
 
-const generateMonthlyInvoices = asyncHandler(async (req, res) => {
+const generateDueInvoices = asyncHandler(async (req, res) => {
   assertNotCollaborator(req);
-  res.json({ success: true, data: await HomeLearningService.generateMonthlyInvoices(req.ownerAdminId, req.body, req.user.id) });
+  res.json({ success: true, data: await HomeLearningService.generateDueInvoices(req.ownerAdminId, req.user.id) });
 });
 
 // Website sign-ups: approving records a payment (Billing → Edit for staff, enforced by
@@ -100,6 +100,6 @@ const getForEducator = asyncHandler(async (req, res) => {
 
 module.exports = {
   list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
-  generateInvoice, generateMonthlyInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
+  generateInvoice, generateDueInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
   getFamily, addFamilyChild,
 };

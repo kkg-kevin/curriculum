@@ -7,7 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { can } from "../../../hooks/usePermissions";
 import { techClubApi } from "../services/techClubApi";
 import MembershipCard from "../components/MembershipCard";
-import { errorMessage, inputStyle, panelStyle, primaryButton, statusFilterOptions, thisMonth } from "../../home-learning/components/ui";
+import { errorMessage, inputStyle, panelStyle, primaryButton, statusFilterOptions } from "../../home-learning/components/ui";
 import { Segmented } from "../../../components/ui/TabBar";
 
 const STATUS_FILTERS = ["all", "pending", "active", "paused", "cancelled"];
@@ -34,7 +34,6 @@ export default function TechClubsPage() {
   const [clubFilter, setClubFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [bulkPeriod, setBulkPeriod] = useState(thisMonth());
 
   const { data: membershipRows = [], isLoading } = useQuery({ queryKey: ["tech-clubs", "memberships"], queryFn: () => techClubApi.getAll() });
   const { data: clubRows } = useQuery({ queryKey: ["tech-clubs", "clubs"], queryFn: techClubApi.getClubs });
@@ -64,10 +63,10 @@ export default function TechClubsPage() {
   const placeMutation = useMutation(mutation(({ id, learnerId, classId }) => techClubApi.placeChild(id, learnerId, classId), "Child placed", "Could not place child"));
   const removeMutation = useMutation(mutation(({ id, learnerId }) => techClubApi.removeChild(id, learnerId), "Removed — they can be added back later", "Could not remove child"));
   const restoreMutation = useMutation(mutation(({ id, learnerId }) => techClubApi.restoreChild(id, learnerId), "Child added back", "Could not add child back"));
-  const invoiceMutation = useMutation(mutation(({ id, period, dueDate }) => techClubApi.generateInvoice(id, { period, dueDate }), ({ created, invoice }) => (created ? `Invoice ${invoice.invoiceNumber} issued` : `Already invoiced (${invoice.invoiceNumber})`), "Could not raise invoice"));
+  const invoiceMutation = useMutation(mutation(({ id, dueDate }) => techClubApi.generateInvoice(id, { dueDate }), ({ created, invoice }) => (created ? `Invoice ${invoice.invoiceNumber} issued` : `Already invoiced (${invoice.invoiceNumber})`), "Could not raise invoice"));
   const approveMutation = useMutation(mutation(({ id, data }) => techClubApi.approveSignup(id, data), "Payment approved — the family can now log in", "Could not approve the payment"));
   const declineMutation = useMutation(mutation((id) => techClubApi.declineSignup(id), "Sign-up declined", "Could not decline the sign-up"));
-  const bulkMutation = useMutation(mutation((data) => techClubApi.generateMonthlyInvoices(data), ({ created, skipped }) => `${created} invoice${created === 1 ? "" : "s"} issued${skipped ? `, ${skipped} already invoiced` : ""}`, "Could not raise invoices"));
+  const bulkMutation = useMutation(mutation((data) => techClubApi.generateDueInvoices(data), ({ created }) => (created ? `${created} invoice${created === 1 ? "" : "s"} issued` : "Nothing due — every membership is invoiced up to today"), "Could not raise invoices"));
 
   // Handed to every card; `done` runs only when the request succeeds (e.g. to close a form).
   const actions = {
@@ -93,12 +92,9 @@ export default function TechClubsPage() {
       <div style={{ width: 48, height: 48, borderRadius: 14, background: "#E8F5FB", color: "#25476a", display: "grid", placeItems: "center" }}><FiCpu size={23} /></div>
       <div style={{ flex: 1, minWidth: 240 }}>
         <h1 style={{ margin: 0, fontSize: 25, fontWeight: 800 }}>Tech Clubs</h1>
-        <p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families who joined an Estate Tech Club on the website. Approve their first payment, place each child in one of the club's classes — from then on attendance, assessments and reports work as usual — and invoice them monthly. Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p>
+        <p style={{ margin: "4px 0 0", color: "#6B7280", fontSize: 14 }}>Families who joined an Estate Tech Club on the website. Approve their first payment, place each child in one of the club's classes — from then on attendance, assessments and reports work as usual — their invoices go out automatically for each billing period (daily packages at month end, for the days attended). Packages are set up in <Link to="/billing?tab=packages" style={{ color: "#25476a", fontWeight: 700 }}>Billing → Packages</Link>.</p>
       </div>
-      {canBill && <form onSubmit={(e) => { e.preventDefault(); bulkMutation.mutate({ period: bulkPeriod, ...(clubFilter !== "all" ? { hubId: clubFilter } : {}) }); }} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", maxWidth: "100%" }}>
-        <input aria-label="Month to invoice" type="month" required value={bulkPeriod} onChange={(e) => setBulkPeriod(e.target.value)} style={{ ...inputStyle, width: "auto", padding: "8px 10px", fontSize: 13 }} />
-        <button disabled={bulkMutation.isPending} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkMutation.isPending ? "Invoicing…" : clubFilter === "all" ? "Invoice all active members" : "Invoice this club's active members"}</button>
-      </form>}
+      {canBill && <button type="button" title="Invoices are raised automatically every hour — this does it now" disabled={bulkMutation.isPending} onClick={() => bulkMutation.mutate(clubFilter !== "all" ? { hubId: clubFilter } : {})} style={{ ...primaryButton, padding: "9px 14px", fontSize: 13 }}>{bulkMutation.isPending ? "Invoicing…" : clubFilter === "all" ? "Invoice what's due now" : "Invoice this club's due now"}</button>}
     </header>
 
     {!packagesLoading && !packages.some((p) => p.status === "active" && p.isPublished) && (

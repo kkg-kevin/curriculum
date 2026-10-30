@@ -127,8 +127,23 @@ async function pickForSlug(pathways, slug) {
   );
 }
 
+// A stage's address within its pathway (/pathways/:slug/:stageSlug on the website): its name made
+// into a slug, unique within the pathway. A row with no stage is "other-courses". Never
+// "diagnostic" — that address is the pathway's diagnostic.
+function stageSlugs(stages) {
+  const used = new Set(["diagnostic"]);
+  return stages.map((s) => {
+    const base = s.stage ? slugify(s.stage.name) || "stage" : "other-courses";
+    let slug = base;
+    for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`;
+    used.add(slug);
+    return slug;
+  });
+}
+
 function listItem(resolved) {
   const pathway = resolved.stages[0]?.row || resolved.rows[0];
+  const slugs = stageSlugs(resolved.stages);
   return {
     id: pathway.id,
     slug: computedSlug(pathway),
@@ -136,6 +151,14 @@ function listItem(resolved) {
     description: pathway.description || "",
     color: pathway.color || "#25476a",
     courseCount: resolved.courseCount,
+    // The developmental stages it runs through, youngest first (the website's stage pages).
+    stages: resolved.stages.map((s, i) => ({
+      slug: slugs[i],
+      name: s.stage?.name || null,
+      minAge: s.stage?.minAge ?? null,
+      maxAge: s.stage?.maxAge ?? null,
+      courseCount: s.courses.length,
+    })),
   };
 }
 
@@ -208,8 +231,10 @@ const PublicSiteService = {
           }
         : { available: false, minAge: null, maxAge: null },
       courses: resolved.stages.flatMap((s) => s.courses.map(publicCourse)),
-      stages: resolved.stages.map((s) => ({
+      stages: resolved.stages.map((s, i) => ({
+        slug: stageSlugs(resolved.stages)[i],
         name: s.stage?.name || null,
+        description: htmlToText(s.stage?.description || ""),
         minAge: s.stage?.minAge ?? null,
         maxAge: s.stage?.maxAge ?? null,
         diagnostic: s.diagnostic,

@@ -11,7 +11,7 @@ router.get("/packages", authorize("admin"), controller.listPackages);
 // A parent fills the free places in their membership with more children (parent login only).
 router.get("/family", authorize("learner"), controller.getFamily);
 router.post("/family/:membershipId/children", authorize("learner"), controller.addFamilyChild);
-router.post("/invoices", authorize("admin"), controller.generateMonthlyInvoices);
+router.post("/invoices", authorize("admin"), controller.generateDueInvoices);
 router.put("/:id", authorize("admin"), controller.update);
 router.put("/:id/children/:learnerId", authorize("admin"), controller.placeChild);
 router.post("/:id/children/:learnerId/restore", authorize("admin"), controller.restoreChild);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { periodUnit } from "../../../utils/billingPeriods";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiCheckCircle, FiClock, FiPlus, FiUsers } from "react-icons/fi";
@@ -100,7 +101,7 @@ function HouseholdCard({ household, kind = KINDS.home_learning }) {
         <div>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: T.inkFaint }}>{kind.eyebrow(household)}</p>
           <h2 style={{ margin: "4px 0 2px", fontSize: 19, fontWeight: 800, color: T.ink }}>{household.packageName || "Your package"}</h2>
-          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{formatMoney(household.monthlyAmount, household.currency)} per month · {household.places} {household.places === 1 ? "child" : "children"}</p>
+          <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{formatMoney(household.amount, household.currency)} per {periodUnit(household.billingPeriod)} · {household.places} {household.places === 1 ? "child" : "children"}</p>
         </div>
         <div style={{ minWidth: 200 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.ink, fontWeight: 700 }}>
@@ -146,7 +147,7 @@ function HouseholdCard({ household, kind = KINDS.home_learning }) {
           <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => { setJustAdded(null); setAdding(true); }} style={primaryButton}><FiPlus size={16} /> Add a child</button>
             <span style={{ fontSize: 13, color: T.inkMuted }}>
-              Your package has {household.placesLeft} free {household.placesLeft === 1 ? "place" : "places"} — already included in your monthly price.
+              Your package has {household.placesLeft} free {household.placesLeft === 1 ? "place" : "places"} — already included in your price.
               {pendingPayment && " New children can start once your first payment is confirmed."}
             </span>
           </div>

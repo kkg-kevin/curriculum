@@ -9,8 +9,9 @@ import HomeLocation from "./HomeLocation";
 import { EnrollmentFields, HouseholdFields } from "./HouseholdFields";
 import {
   ENROLLMENT_STATUS, HOUSEHOLD_STATUS, Initials, Pill, formatDate, formatMoney, inputStyle, labelStyle, panelStyle,
-  primaryButton, secondaryButton, thisMonth, toDateInput,
+  primaryButton, secondaryButton, toDateInput,
 } from "./ui";
+import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
 
 const EMPTY_CHILD = { firstName: "", lastName: "", gender: "", dateOfBirth: "", username: "", password: "", learnerPassword: "", curriculumId: "", gradeId: "", educatorId: "" };
 const INVOICE_STATUS_COLORS = { paid: "#047857", partially_paid: "#C2410C", overdue: "#B91C1C", issued: "#1D4ED8" };
@@ -94,7 +95,6 @@ function PlacesBar({ filled, total }) {
 }
 
 function BillingTile({ household, canBill, onInvoice, invoicing }) {
-  const [period, setPeriod] = useState(thisMonth());
   const [dueDate, setDueDate] = useState("");
   const [showAll, setShowAll] = useState(false);
   const billing = household.billing || { outstanding: 0, overdue: false, invoices: [] };
@@ -113,12 +113,14 @@ function BillingTile({ household, canBill, onInvoice, invoicing }) {
         </Link>)}
         {billing.invoices.length > 3 && <button type="button" onClick={() => setShowAll((v) => !v)} style={{ ...secondaryButton, border: 0, padding: 0, background: "none", color: "#25476a" }}>{showAll ? "Show fewer" : `Show ${billing.invoices.length - 3} more`}</button>}
       </div>}
-    {canBill && household.status === "active" && <form onSubmit={(e) => { e.preventDefault(); onInvoice({ id: household.id, period, dueDate }); }} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-      <input aria-label="Invoice month" type="month" value={period} onChange={(e) => setPeriod(e.target.value)} required style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
-      <input aria-label="Due date" title="Due date (optional)" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
-      <button disabled={invoicing} style={{ ...secondaryButton, flex: "1 1 100%", justifyContent: "center", borderColor: "#2E7DB5", color: "#2E7DB5" }}>{invoicing ? "Invoicing…" : "Invoice month"}</button>
+    {billing.outlook && <span style={{ ...mutedText, fontSize: 12 }}>{outlookLine(billing.outlook)}</span>}
+    {/* Invoices go out on their own; this raises the next one early (not for a daily package,
+        billed once its month is over). */}
+    {canBill && household.status === "active" && household.billingPeriod !== "daily" && <form onSubmit={(e) => { e.preventDefault(); onInvoice({ id: household.id, dueDate }); }} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+      <input aria-label="Due date" title="Due date (optional — a week from today if left empty)" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
+      <button disabled={invoicing} style={{ ...secondaryButton, flex: "1 1 140px", justifyContent: "center", borderColor: "#2E7DB5", color: "#2E7DB5" }}>{invoicing ? "Invoicing…" : "Invoice next period now"}</button>
     </form>}
-    {canBill && household.status !== "active" && <span style={{ ...mutedText, fontSize: 12 }}>Set the household to Active to raise invoices.</span>}
+    {canBill && household.status !== "active" && <span style={{ ...mutedText, fontSize: 12 }}>Invoices go out automatically once the household is Active.</span>}
   </Tile>;
 }
 
@@ -248,7 +250,7 @@ const PAYMENT_METHODS = [["cash", "Cash"], ["mpesa_manual", "M-Pesa"], ["bank_tr
 // (recorded against the sign-up invoice), or you decline the sign-up.
 function SignupBanner({ household, children, canApprove, canDecline, actions, pending }) {
   const invoice = (household.billing?.invoices || []).find((inv) => inv.id === household.signupInvoiceId);
-  const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(household.monthlyAmount);
+  const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(household.amount);
   const [approving, setApproving] = useState(false);
   const [form, setForm] = useState({ amount: String(due), paymentMethod: "cash", providerReference: "" });
   const unplacedCount = children.filter((item) => !item.curriculumId && item.status !== "removed").length;
@@ -336,7 +338,7 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
         </div>
       </div>
       <div style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(household.monthlyAmount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/month</span></div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(household.amount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/{pricePer(0, household.billingPeriod).split("/")[1]}</span></div>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <select aria-label="Household status" value={household.status} onChange={(event) => actions.updateHousehold(household.id, { status: event.target.value })} style={{ ...inputStyle, width: "auto", padding: "7px 10px", fontSize: 13 }}>
@@ -377,7 +379,7 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
 
       <Tile icon={FiPackage} title="Package">
         <div style={{ fontWeight: 700, fontSize: 14 }}>{household.package?.name || "No package"}{household.package?.status === "archived" && <span style={{ ...mutedText, fontWeight: 500, fontSize: 12 }}> (archived)</span>}</div>
-        <div style={mutedText}>{formatMoney(household.monthlyAmount)} per month</div>
+        <div style={mutedText}>{pricePer(household.amount, household.billingPeriod)} — {periodHow(household.billingPeriod).replace(" Can't be offered on the website.", "")}</div>
         <PlacesBar filled={activeCount} total={Number(household.childCount)} />
       </Tile>
 

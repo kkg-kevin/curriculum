@@ -9,20 +9,22 @@ const UserModel = require("../auth/user.model");
 const BillingModel = require("../billing/billing.model");
 const { packageSchema, packageClubsSchema, membershipUpdateSchema, placeChildSchema, invoiceSchema } = require("./club.validation");
 const { priceForPackage, toPublicPackage, CURRENCY } = require("../home-learning/home-learning.pricing");
-const { monthRange } = require("../home-learning/home-learning.service");
+const { kenyaToday } = require("../../shared/utils/age");
+const { scheduleChange, onActivation } = require("../../shared/utils/billing-periods");
+const PackageBilling = require("../billing/package-billing");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 const { slugify } = require("../../shared/utils/slugify");
 const { classLabel } = require("./club.model");
 
 // Estate Tech Clubs: a family's membership of one club (a non-school learning hub), sold on a
-// package and billed monthly — the club counterpart of Home Learning's households. Each child in
+// package and billed every period (day, week, month, quarter or year — billing/package-billing.js) — the club counterpart of Home Learning's households. Each child in
 // a membership is an ordinary learner; once an admin places them in one of the club's classes
 // they get an ordinary learner_hub_links row there, so attendance, assessments, reports and the
 // learner portal all work through the existing class-based code with no club special cases.
 // club_membership_children stays the record of the membership side (which family, which
 // placement, active/removed) and is what a child's hub link is kept in line with.
 //
-// Pricing reuses Home Learning's rules (home-learning.pricing.js): a package's monthlyAmount
+// Pricing reuses Home Learning's rules (home-learning.pricing.js): a package's amount per period
 // covers childrenIncluded children, extra children (when allowed) cost extraChildAmount each.
 
 function fail(message, statusCode = 400) {
@@ -68,7 +70,8 @@ function packageRow(data, hubIds) {
     summary: data.summary || null,
     description: data.description || null,
     childrenIncluded: data.childrenIncluded,
-    monthlyAmount: data.monthlyAmount,
+    amount: data.amount,
+    billingPeriod: data.billingPeriod,
     allowExtraChildren: extras,
     extraChildAmount: extras ? data.extraChildAmount : null,
     maxChildren: extras ? (data.maxChildren ?? Math.max(data.childrenIncluded + 1, 20)) : data.childrenIncluded,
@@ -156,14 +159,16 @@ async function nextInvoiceNumber(trx) {
   return `INV-${year}-${String(await BillingModel.nextNumber("invoice", year, trx)).padStart(6, "0")}`;
 }
 
-// Creates one membership's monthly invoice (issued), issued by the club to the parent — shared by
-// the admin's "Invoice month" and a website sign-up's first-month invoice. Callers check
-// eligibility (status, duplicates).
-async function raiseMembershipInvoice(membership, { periodStart, periodEnd, label, dueDate }, actorUserId) {
+// Creates one membership's invoice (issued) for one billing period, issued by the club to the
+// parent — shared by the automatic invoicing (billing/package-billing.js), "Invoice next period"
+// and a website sign-up's first invoice. A daily package's is `quantity` days at `unitAmount`
+// each. Callers check eligibility (status, duplicates).
+async function raiseMembershipInvoice(membership, { periodStart, periodEnd, label, dueDate, quantity = 1, unitAmount = membership.amount, unit = null }, actorUserId) {
   const hub = await LearningHubModel.findById(membership.hubId);
   const payer = membership.guardianEmail ? await UserModel.findByEmail(membership.guardianEmail) : null;
-  const amount = money(membership.monthlyAmount);
+  const amount = money(Number(unitAmount) * quantity);
   const clubName = hub?.name || "Tech Club";
+  const what = unit === "day" ? `${quantity} ${quantity === 1 ? "day" : "days"}, ${label}` : label;
   const invoice = await BillingModel.transaction(async (trx) => {
     const created = await BillingModel.createInvoice({
       invoiceNumber: await nextInvoiceNumber(trx),
@@ -176,8 +181,8 @@ async function raiseMembershipInvoice(membership, { periodStart, periodEnd, labe
     }, trx);
     await BillingModel.createItem({
       invoiceId: created.id, learnerId: null, courseId: null,
-      description: `${clubName} membership (${childrenLabel(membership.childCount)}) — ${label}`,
-      quantity: 1, unitAmount: amount, totalAmount: amount,
+      description: `${clubName} membership (${childrenLabel(membership.childCount)}) — ${what}`,
+      quantity, unitAmount: money(unitAmount), totalAmount: amount,
       metadata: { clubMembershipId: membership.id, packageId: membership.packageId, childCount: membership.childCount },
     }, trx);
     await BillingModel.createAuditEvent({
@@ -262,7 +267,7 @@ const ClubService = {
         ...membership,
         club: hub ? { id: hub.id, name: hub.name } : null,
         package: pkg ? { id: pkg.id, name: pkg.name, status: pkg.status } : null,
-        billing: billing.get(membership.id),
+        billing: { ...billing.get(membership.id), outlook: PackageBilling.billingOutlook(membership) },
       };
     });
   },
@@ -282,9 +287,13 @@ const ClubService = {
     if (updates.packageId !== undefined || updates.childCount !== undefined) {
       const packageId = updates.packageId ?? existing.packageId;
       if (!packageId) fail("Choose a package for this membership");
-      const price = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.hubId, existing.packageId);
-      if ((await ClubMembershipModel.countActiveChildren(id, ownerAdminId)) > price.childCount) fail("Remove children before reducing the package size");
-      Object.assign(updates, price);
+      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.hubId, existing.packageId);
+      if ((await ClubMembershipModel.countActiveChildren(id, ownerAdminId)) > place.childCount) fail("Remove children before reducing the package size");
+      // The places change now; the price and period from the next period not billed yet.
+      Object.assign(updates, place, scheduleChange(existing, { amount, billingPeriod }));
+    }
+    if (updates.status === "active" && existing.status !== "active") {
+      Object.assign(updates, onActivation(existing, { today: kenyaToday() }));
     }
     if (updates.notes === "") updates.notes = null;
     const membership = await ClubMembershipModel.update(id, ownerAdminId, updates);
@@ -344,35 +353,22 @@ const ClubService = {
 
   /* ── Billing ─────────────────────────────────────────────────────────────── */
 
-  // One "tech_club" invoice per membership per month. Idempotent: a month that's already invoiced
-  // (and not cancelled/void) is returned as-is rather than billed twice.
+  // "Invoice next period": the membership's next invoice raised now, before its period starts
+  // (otherwise the automatic invoicing raises it on the day). Idempotent: a period already
+  // invoiced is returned as-is.
   async generateInvoice(ownerAdminId, membershipId, input, actorUserId) {
-    const { period, dueDate } = parseOrFail(invoiceSchema, input, "Invalid invoice details");
+    const { dueDate } = parseOrFail(invoiceSchema, input || {}, "Invalid invoice details");
     const membership = await ClubMembershipModel.findById(membershipId, ownerAdminId);
     if (!membership) fail("Membership not found", 404);
     if (membership.status !== "active") fail("Only active memberships can be invoiced");
-    const { periodStart, periodEnd, label } = monthRange(period);
-    const existing = await db("billing_invoices")
-      .where({ clubMembershipId: membershipId, periodStart, invoiceType: "tech_club" })
-      .whereNotIn("status", ["cancelled", "void"])
-      .first();
-    if (existing) return { invoice: existing, created: false };
-    const invoice = await raiseMembershipInvoice(membership, { periodStart, periodEnd, label, dueDate }, actorUserId);
-    return { invoice, created: true };
+    return PackageBilling.invoiceNextPeriod("tech_club", membership, { dueDate: dueDate || null, actorUserId });
   },
 
-  // "Invoice everyone for this month" — every active membership (optionally at one club),
-  // skipping ones already billed.
-  async generateMonthlyInvoices(ownerAdminId, input, actorUserId) {
-    const { period, dueDate } = parseOrFail(invoiceSchema, input, "Invalid invoice details");
-    let query = db("club_memberships").where({ ownerAdminId, status: "active" });
-    if (input?.hubId) query = query.where({ hubId: input.hubId });
-    const result = { created: 0, skipped: 0 };
-    for (const membership of await query) {
-      const { created } = await ClubService.generateInvoice(ownerAdminId, membership.id, { period, dueDate }, actorUserId);
-      result[created ? "created" : "skipped"] += 1;
-    }
-    return result;
+  // "Invoice due now": every active membership's invoices (optionally at one club) brought up to
+  // today, as the hourly run does.
+  async generateDueInvoices(ownerAdminId, input, actorUserId) {
+    const { families, invoices } = await PackageBilling.processPackageBilling({ ownerAdminId, kinds: ["tech_club"], hubId: input?.hubId || null, actorUserId });
+    return { memberships: families, created: invoices };
   },
 };
 

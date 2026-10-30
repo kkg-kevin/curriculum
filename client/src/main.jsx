@@ -15,6 +15,11 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
+// Nunito — the rounded, friendly font of the learner's own profile pages (learner-portal theme's KID_FONT).
+import "@fontsource/nunito/600.css";
+import "@fontsource/nunito/700.css";
+import "@fontsource/nunito/800.css";
+import "@fontsource/nunito/900.css";
 
 if (BRAND_FAVICON) {
   let faviconLink = document.querySelector('link[rel~="icon"]');

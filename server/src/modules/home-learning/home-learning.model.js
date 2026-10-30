@@ -3,7 +3,7 @@ const { createRecord, updateRecord, firstOrNull, stringifyJsonFields } = require
 
 const HOUSEHOLDS = "home_learning_households";
 const ENROLLMENTS = "home_learning_enrollments";
-const HOUSEHOLD_JSON_FIELDS = ["locationPhotos"];
+const HOUSEHOLD_JSON_FIELDS = ["locationPhotos", "pendingBilling"];
 
 // Includes the parent on the child's profile so the admin page can spot a household whose parent
 // differs from it (that parent's portal login wouldn't reach the household's invoices).

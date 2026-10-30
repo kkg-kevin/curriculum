@@ -3,7 +3,7 @@ const { createRecord, updateRecord, deleteRecord, firstOrNull, stringifyJsonFiel
 
 const TABLE = "home_learning_packages";
 const JSON_FIELDS = ["features"];
-const ordered = (query) => query.orderBy([{ column: "sortOrder", order: "asc" }, { column: "monthlyAmount", order: "asc" }, { column: "name", order: "asc" }]);
+const ordered = (query) => query.orderBy([{ column: "sortOrder", order: "asc" }, { column: "amount", order: "asc" }, { column: "name", order: "asc" }]);
 
 const HomeLearningPackageModel = {
   findAll(ownerAdminId, { publishedOnly = false } = {}) {

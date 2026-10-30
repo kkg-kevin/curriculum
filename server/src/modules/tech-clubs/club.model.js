@@ -1,8 +1,9 @@
 const db = require("../../config/db");
-const { createRecord, updateRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { createRecord, updateRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const MEMBERSHIPS = "club_memberships";
 const CHILDREN = "club_membership_children";
+const MEMBERSHIP_JSON_FIELDS = ["pendingBilling"];
 
 // No SQL joins here: the club tables, learners and classes don't all share one collation, so
 // related rows are looked up by id in separate queries instead.
@@ -80,13 +81,13 @@ const ClubMembershipModel = {
   },
 
   create(data) {
-    return createRecord(db, MEMBERSHIPS, data);
+    return createRecord(db, MEMBERSHIPS, stringifyJsonFields(data, MEMBERSHIP_JSON_FIELDS));
   },
 
   async update(id, ownerAdminId, data) {
     const existing = await firstOrNull(db(MEMBERSHIPS).where({ id, ownerAdminId }));
     if (!existing) return null;
-    await updateRecord(db, MEMBERSHIPS, id, data);
+    await updateRecord(db, MEMBERSHIPS, id, stringifyJsonFields(data, MEMBERSHIP_JSON_FIELDS));
     return firstOrNull(db(MEMBERSHIPS).where({ id, ownerAdminId }));
   },
 
