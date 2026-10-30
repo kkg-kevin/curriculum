@@ -37,22 +37,22 @@ router.get("/needs-grading", authorize("admin", "school", "teacher"), getSubmiss
 // Same, but for standalone diagnostic submissions (classId: null) belonging to learners in this
 // class — see getStandaloneSubmissionsNeedingGrading in the service.
 router.get("/diagnostics-needing-grading", authorize("admin", "school", "teacher"), getStandaloneSubmissionsNeedingGrading);
-router.get("/issues/:id/roster", authorize("admin", "school", "teacher"), getRosterForIssue);
+router.get("/issues/:id/roster", authorize("admin", "school", "teacher", "supervisor"), getRosterForIssue);
 // Teacher-initiated start of a Teacher Observation submission — the one assessment type with no
 // learner-facing "take" step, since the teacher records it directly (see
 // startObservationSubmission's comment in the controller). Rejects any other assessment type.
-router.post("/issues/:id/start-observation", authorize("admin", "school", "teacher"), startObservationSubmission);
+router.post("/issues/:id/start-observation", authorize("admin", "school", "teacher", "supervisor"), startObservationSubmission);
 // Grades one milestone of a project assessment — see gradeMilestone's comment in the
 // controller. Independent of the submission's own draft/submit/grade flow below.
-router.post("/issues/:id/milestones/:milestoneId", authorize("admin", "school", "teacher"), gradeMilestone);
+router.post("/issues/:id/milestones/:milestoneId", authorize("admin", "school", "teacher", "supervisor"), gradeMilestone);
 // Reissues a graded assessment to one learner who didn't perform well — see reissueAssessment's
 // comment in the controller.
-router.post("/issues/:id/reissue", authorize("admin", "school", "teacher"), reissueAssessment);
+router.post("/issues/:id/reissue", authorize("admin", "school", "teacher", "supervisor"), reissueAssessment);
 router.delete("/issues/:id", authorize("admin", "school", "teacher"), revokeIssue);
-router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher"), gradeSubmission);
+router.patch("/submissions/:id/grade", authorize("admin", "school", "teacher", "supervisor"), gradeSubmission);
 // Releases an already-graded submission's score/feedback to the learner — a separate step from
 // grading itself, see publishReport in assessment-submission.service.js.
-router.post("/submissions/:id/publish-report", authorize("admin", "school", "teacher"), publishSubmissionReport);
+router.post("/submissions/:id/publish-report", authorize("admin", "school", "teacher", "supervisor"), publishSubmissionReport);
 
 // A specific learner's auto-issued Stage diagnostic (standalone, no class involved). Also
 // learner-facing (own record only, enforced in the controller) — the portal's first-login gate
@@ -79,6 +79,6 @@ router.post("/submissions/:id/submit", authorize("learner"), notAsParent, submit
 
 // Shared read — a learner reads their own submission (feedback view), a teacher/school/admin
 // reads any submission belonging to a class they own.
-router.get("/submissions/:id", authorize("admin", "school", "teacher", "learner"), getSubmission);
+router.get("/submissions/:id", authorize("admin", "school", "teacher", "supervisor", "learner"), getSubmission);
 
 module.exports = router;

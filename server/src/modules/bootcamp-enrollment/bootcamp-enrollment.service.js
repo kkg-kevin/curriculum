@@ -14,6 +14,11 @@ const NotificationService = require("../notifications/notification.service");
 const { resolveForSaleBootcamp } = require("../public-site/public-bootcamp.service");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { slugify } = require("../../shared/utils/slugify");
+const { ageFrom } = require("../../shared/utils/age");
+const { pathwayRowsFor } = require("../../shared/utils/public-content");
+const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
+const PublicDiagnosticAttemptModel = require("../public-site/public-diagnostic-attempt.model");
 
 // A visitor who takes a bootcamp diagnostic and wants to enroll no longer just sends a lead for
 // a human to follow up on — this module auto-provisions a REAL learner account immediately
@@ -107,7 +112,8 @@ const BootcampEnrollmentService = {
       email: data.parentEmail,
       phone: data.parentPhone,
       learnerName: data.learnerName,
-      learnerAge: data.learnerAge,
+      learnerAge: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge,
+      learnerDateOfBirth: data.learnerDateOfBirth || null,
       interestedIn: "bootcamp",
       referenceId: bootcampSlug,
       message: data.attemptId ? `Diagnostic attempt: ${data.attemptId}` : null,
@@ -130,6 +136,7 @@ const BootcampEnrollmentService = {
         firstName,
         lastName,
         gender: null, // the bootcamp form doesn't ask; male or female is set on the learner later
+        dateOfBirth: data.learnerDateOfBirth || "",
         guardianName: data.parentName,
         guardianPhone: data.parentPhone,
         guardianEmail: data.parentEmail,
@@ -156,6 +163,10 @@ const BootcampEnrollmentService = {
       if (createdParentId) await UserModel.delete(createdParentId).catch(() => {});
       throw err;
     }
+
+    // Their stage and pathway, so the profile shows them from day one. Never fails the enrolment.
+    await placeOnBootcampPathway(learner.id, bootcamp, offering.hubId, { attemptId: data.attemptId, age: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge })
+      .catch((err) => console.error("[bootcamp-enrollment] could not place the learner on a pathway:", err.message));
 
     // The confirmation screen shows "pay KES X at <hub>" — the price/hub the visitor needs to
     // complete the payment. A bootcamp priced by course/module (not a single whole-bootcamp
@@ -323,6 +334,56 @@ const PAYABLE = ["issued", "partially_paid", "overdue"];
 // The enrolment's invoice, issued to the family at sign-up — the bootcamp at the hub the learner
 // was enrolled into. Written through BillingModel directly, like hub-visit charges: the generic
 // createInvoice route is for staff typing an invoice in.
+// A website bootcamp enrolment's learner onto the bootcamp's pathway (every stage of its picked
+// pathways — pathwayRowsFor):
+//   - the one whose website diagnostic they just took (attemptId), at the course their score earns
+//     (the curriculum's ladder, resolvePlacementFromScore — the same as a learner diagnostic);
+//   - otherwise the one for their stage at this hub, or for their age, at its first course.
+// Their stage at the hub is set from that pathway when it isn't set yet (enrollInHub already sets
+// it from the date of birth when there is one). Nothing happens when no pathway fits.
+async function placeOnBootcampPathway(learnerId, bootcamp, hubId, { attemptId = null, age = null } = {}) {
+  if (!bootcamp?.curriculumId) return null;
+  const CompetencyService = require("../curriculum/competency-framework/competency.service");
+  const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
+  const curriculumId = bootcamp.curriculumId;
+  const rows = await pathwayRowsFor(curriculumId, Array.isArray(bootcamp.pathwayIds) ? bootcamp.pathwayIds : []);
+  if (rows.length === 0) return null;
+  const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
+
+  let pathway = null;
+  let scorePercent = null;
+  let assessmentId = null;
+  const attempt = attemptId ? await PublicDiagnosticAttemptModel.findById(attemptId).catch(() => null) : null;
+  if (attempt) {
+    pathway = rows.find((r) => r.id === attempt.pathwayId) || null;
+    if (pathway) {
+      scorePercent = Number(attempt.maxScore) > 0 ? (Number(attempt.totalScore) / Number(attempt.maxScore)) * 100 : 0;
+      assessmentId = attempt.assessmentId || null;
+    }
+  }
+  if (!pathway && link?.currentStageId) pathway = rows.find((r) => r.ageCategoryId === link.currentStageId) || null;
+  if (!pathway && age != null) {
+    for (const row of rows) {
+      const stage = row.ageCategoryId ? await AgeCategoryModel.findById(row.ageCategoryId) : null;
+      if (stage?.minAge != null && stage?.maxAge != null && age >= stage.minAge && age <= stage.maxAge) { pathway = row; break; }
+    }
+  }
+  if (!pathway) return null;
+
+  if (link && !link.currentStageId && pathway.ageCategoryId) {
+    await LearnerHubLinkModel.update(link.id, { currentStageId: pathway.ageCategoryId });
+  }
+  if (await LearnerPathwayModel.findOne(learnerId, pathway.id)) return pathway;
+  const fromScore = scorePercent != null ? await CompetencyService.resolvePlacementFromScore(curriculumId, pathway.id, scorePercent) : null;
+  const courseId = fromScore || (await CompetencyService.orderedPathwayCourseIds(curriculumId, pathway))[0];
+  if (!courseId) return pathway; // a pathway with no courses yet — the stage still shows it
+  await LearnerPathwayModel.place(learnerId, curriculumId, pathway.id, courseId, scorePercent != null ? "diagnostic" : "enrolled", assessmentId, "auto");
+  // Placed by the website diagnostic: the system's own one, issued when they joined the class just
+  // before, is withdrawn (LearnerService's one-diagnostic rule) — they don't take both.
+  if (scorePercent != null) await LearnerService.ensureDiagnosticsIssued(learnerId, hubId);
+  return pathway;
+}
+
 async function raiseEnrollmentInvoice({ lead, learnerId, hubId, bootcamp, amount, currency }) {
   const now = new Date();
   let invoice;
@@ -361,3 +422,4 @@ async function activateLead(leadId, { amount, currency, paidByUserId = null, inv
 }
 
 module.exports = BootcampEnrollmentService;
+module.exports.placeOnBootcampPathway = placeOnBootcampPathway;

@@ -124,6 +124,12 @@ const NotificationService = {
       const learnerUser = await UserModel.findByUsername(learner.username);
       if (learnerUser) recipientIds.push(learnerUser.id);
     }
+    // An educator learning (TOT — learners.teacherId) hears as the educator: their own login.
+    if (learner.teacherId) {
+      const teacher = await TeacherModel.findById(learner.teacherId);
+      const educatorUser = teacher?.email ? await UserModel.findByEmail(teacher.email) : null;
+      if (educatorUser) recipientIds.push(educatorUser.id);
+    }
     await Promise.all([...new Set(recipientIds)].map((id) => NotificationService.notifyPerson(id, event)));
   },
 

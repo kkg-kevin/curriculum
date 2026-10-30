@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { learnerDateOfBirth } = require("../../shared/utils/age");
 
 const ORDER_STATUSES = ["awaiting_payment", "paid", "preparing", "ready_for_pickup", "dispatched", "completed", "cancelled"];
 
@@ -20,6 +21,7 @@ const childSchema = z.discriminatedUnion("mode", [
     mode: z.literal("new"),
     name: z.string().trim().min(2, "Enter the child's name").max(150),
     age: z.coerce.number().int().min(3, "Age must be between 3 and 19").max(19, "Age must be between 3 and 19"),
+    dateOfBirth: learnerDateOfBirth, // what the website asks; goes on the learner record
     username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
       .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
     password: z.string().min(6, "The child's password must be at least 6 characters").max(72),

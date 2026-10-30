@@ -145,6 +145,7 @@ export default function CurriculumForm() {
 
   const name = watch("name") || "";
   const description = watch("description") || "";
+  const audience = watch("audience") || "learners";
   const nameLen = name.length;
   const descLen = stripHtml(description).length;
   const canGenerate = name.trim().length > 0;
@@ -226,6 +227,34 @@ export default function CurriculumForm() {
         />
         <FieldError error={errors.description} />
       </div>
+
+      {/* Who it's for — a TOT curriculum (training of trainers) is for educators only. */}
+      <div style={{ marginTop: 18 }}>
+        <div style={labelRowStyle}><label style={labelStyle}>Who it's for</label></div>
+        <div role="radiogroup" aria-label="Who it's for" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[["learners", "Learners"], ["educators", "Educators (TOT)"]].map(([value, text]) => (
+            <button key={value} type="button" role="radio" aria-checked={audience === value}
+              onClick={() => setValue("audience", value, { shouldDirty: true })}
+              style={{ padding: "8px 16px", borderRadius: 999, border: `1.5px solid ${audience === value ? "#25476a" : "#E5E7EB"}`, background: audience === value ? "#25476a" : "#fff", color: audience === value ? "#fff" : "#374151", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+              {text}
+            </button>
+          ))}
+        </div>
+        <p style={hintStyle}>{audience === "educators"
+          ? "Training of trainers: educators learn on it while they teach — enrolled by an admin or through a TOT bootcamp, marked by their supervisor. Each course they finish qualifies them to teach it."
+          : "For the children and young people you teach."}</p>
+      </div>
+
+      {audience === "educators" && (
+        <div style={{ marginTop: 14 }}>
+          <div style={labelRowStyle}><label style={labelStyle}>Educator level on finishing it <span style={{ color: "#9CA3AF", fontWeight: 400 }}>(optional)</span></label></div>
+          <select {...register("completionTeacherLevel")} className="cf-input" style={{ maxWidth: 260 }}>
+            <option value="">Don't change their level</option>
+            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Level {n}</option>)}
+          </select>
+          <p style={hintStyle}>When an educator holds a certificate for every course in this curriculum, they move up to this level (never down).</p>
+        </div>
+      )}
     </div>
   );
 }

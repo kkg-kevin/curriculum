@@ -14,6 +14,8 @@ export const learnerApi = {
   updateAccountStatus: (id, accountStatus) => api.patch(`${BASE}/${id}/account-status`, { accountStatus }).then((r) => r.data.data),
   remove:  (id)         => api.delete(`${BASE}/${id}`).then((r) => r.data),
   checkRemove: (id) => checkDelete(`${BASE}/${id}`),
+  // The learner's parent on its own: details, login, their children, sign-ups (staff learner page's Parent tab).
+  parent: (id) => api.get(`${BASE}/${id}/parent`).then((r) => r.data.data),
   getHubs:   (id)                  => api.get(`${BASE}/${id}/hubs/links`).then((r) => r.data.data),
   enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => r.data.data),
   updateHub: (id, hubId, data)     => api.put(`${BASE}/${id}/hubs/links/${hubId}`, data).then((r) => r.data.data),

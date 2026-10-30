@@ -10,6 +10,7 @@ const InventoryModel = require("../settings/items/items.model");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const HomeLearningService = require("../home-learning/home-learning.service");
+const { ageFrom } = require("../../shared/utils/age");
 const HomeLearningPackageModel = require("../home-learning/home-learning-package.model");
 const { priceForPackage } = require("../home-learning/home-learning.pricing");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
@@ -29,7 +30,8 @@ const LeadService = {
       email: data.parentEmail,
       phone: data.parentPhone || null,
       learnerName: data.learnerName || null,
-      learnerAge: data.learnerAge ?? null,
+      learnerAge: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge ?? null,
+      learnerDateOfBirth: data.learnerDateOfBirth || null,
       interestedIn: data.interestedIn,
       referenceId: data.referenceId || null,
       message: data.note || null,
@@ -289,7 +291,7 @@ const LeadService = {
     }
     const childCount = notedCount && priceForPackage(pkg, notedCount) ? notedCount : pkg.childrenIncluded;
     const child = lead.learnerName
-      ? `Child from enquiry: ${lead.learnerName}${lead.learnerAge != null ? ` (age ${lead.learnerAge})` : ""}.`
+      ? `Child from enquiry: ${lead.learnerName}${lead.learnerAge != null ? ` (age ${lead.learnerAge}${lead.learnerDateOfBirth ? `, born ${lead.learnerDateOfBirth}` : ""})` : ""}.`
       : "";
     const household = await HomeLearningService.create(ownerAdminId, {
       guardianName: lead.name,

@@ -23,11 +23,21 @@ const api = axios.create({
 // every request to whichever one the school-portal is currently switched to — a no-op for every
 // other role, since the server only reads this header when role === "school" (see
 // scope.middleware.js's attachOwnRecords).
+const EDUCATOR_FRAME_REQUESTS = /^\/api\/(teachers|checkins|notifications|auth|tot|qa|claims|uploads)(\/|$|\?)|^\/api\/home-learning\/(educator|my-assignments)/;
+
 api.interceptors.request.use((config) => {
   const learnerId = getActiveLearnerId();
   if (learnerId) config.headers["X-Active-Learner-Id"] = learnerId;
   const hubId = getActiveHubId();
   if (hubId) config.headers["X-Active-Hub-Id"] = hubId;
+  // An educator's own learning (training of trainers): requests from the teacher portal's "My
+  // learning" run as their own learner record (scope.middleware.js) — except what the teacher
+  // portal's own frame keeps loading around it (the educator record, check-ins, notifications…),
+  // which stays the educator's.
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/teacher-portal/learning")
+    && !EDUCATOR_FRAME_REQUESTS.test(config.url || "")) {
+    config.headers["X-Teacher-Learning"] = "1";
+  }
   return config;
 });
 

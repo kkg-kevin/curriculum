@@ -2,14 +2,14 @@ const { resolveMapPin } = require("../../shared/utils/map-pin");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
-const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const AgeCategoryModel = require("../curriculum/competency-framework/age-category.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const GameService = require("../bootcamps/games/game.service");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 const { slugify } = require("../../shared/utils/slugify");
+const { todayInKenya } = require("../checkins/checkin.dates");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
-const { requirePublicContentAdminId, htmlToText, resolveCoursePricing, resolveCurriculumSummary } = require("../../shared/utils/public-content");
+const { requirePublicContentAdminId, htmlToText, pathwayRowsFor, resolveCoursePricing, resolveCurriculumSummary } = require("../../shared/utils/public-content");
 
 // The public marketing site's Bootcamps section (digifunzi-landing's /bootcamps) sells short,
 // intensive holiday/weekend programmes. A bootcamp is its own standalone `bootcamps` row
@@ -30,16 +30,20 @@ function computedSlug(bootcamp) {
   return slugify(bootcamp.name) || "bootcamp";
 }
 
-// Two of the admin's for-sale bootcamps can share a computed slug (unlikely — names aren't
-// enforced unique here, but slugify collapses punctuation). Prefer the one with a cover image,
-// then a price, then the first — deterministic so a list and a detail lookup agree.
+// Two of the admin's for-sale bootcamps can share a computed slug — most often runs of the same
+// bootcamp ("Schedule another run" keeps the name), or two names slugify collapses alike. The
+// website shows one: the next run that hasn't ended (earliest start), else the run that ended
+// last; ties prefer a cover image, then a price. Deterministic so a list and a detail lookup agree.
 function pickForSlug(matches) {
   if (matches.length <= 1) return matches[0] || null;
-  return (
-    matches.find((b) => b.coverImage) ||
-    matches.find((b) => b.priceAmount != null) ||
-    matches[0]
-  );
+  const today = todayInKenya();
+  const live = matches.filter((b) => !b.endDate || b.endDate >= today);
+  const ordered = live.length
+    ? [...live].sort((a, b) => (a.startDate || "9999").localeCompare(b.startDate || "9999"))
+    : [...matches].sort((a, b) => (b.endDate || "").localeCompare(a.endDate || ""));
+  const firstDate = ordered[0].startDate || null;
+  const sameRun = ordered.filter((b) => (b.startDate || null) === firstDate);
+  return sameRun.find((b) => b.coverImage) || sameRun.find((b) => b.priceAmount != null) || sameRun[0];
 }
 
 function priceOf(bootcamp) {
@@ -260,10 +264,9 @@ async function pathwayDiagnosticOfferable(pathway) {
 // one whose range covers the child's age.
 async function resolvePathwayDiagnostics(bootcamp) {
   if (!bootcamp.curriculumId) return [];
-  const chosen = arr(bootcamp.pathwayIds);
-  const pathways = chosen.length > 0
-    ? await Promise.all(chosen.map((id) => PathwayModel.findById(id)))
-    : await PathwayModel.findByCurriculumId(bootcamp.curriculumId);
+  // Every stage of each picked pathway — a stage's own diagnostic covers its own ages, so a
+  // picked pathway must bring all of them, not only the one row the bootcamp form stored.
+  const pathways = await pathwayRowsFor(bootcamp.curriculumId, arr(bootcamp.pathwayIds));
   const offerable = await Promise.all(pathways.map((p) => (p ? pathwayDiagnosticOfferable(p) : false)));
   return pathways
     .map((pathway, i) => (pathway && offerable[i] ? { pathway, ages: offerable[i] } : null))
@@ -374,3 +377,4 @@ module.exports = PublicBootcampService;
 // bootcamp-enrollment.service.js can resolve "which bootcamp" identically without
 // re-implementing the id/slug/tenant-scoping rules — an internal helper, not a new public route.
 module.exports.resolveForSaleBootcamp = resolveForSaleBootcamp;
+module.exports._pickForSlug = pickForSlug;

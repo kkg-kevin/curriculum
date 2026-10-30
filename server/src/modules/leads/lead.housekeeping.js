@@ -13,7 +13,8 @@ const { todayInKenya } = require("../checkins/checkin.dates");
 //      sign-up, an invoice, a learner or a payment is left for staff.
 //   3. Anonymise (off by default) — a Closed enquiry with nothing happening for
 //      `anonymiseMonths` loses its personal details (name, email, phone, child's name, message,
-//      and its replies and notes); what's left still counts in reports.
+//      and its replies and notes); what's left still counts in reports. Never one that made a
+//      sign-up, a learner, an invoice or a payment, nor a bootcamp enrolment — those are kept.
 // "Nothing happening" is measured from the enquiry's last change or its last reply / note,
 // whichever is later. Safe to run any number of times.
 
@@ -115,9 +116,11 @@ async function processEnquiries({ now = new Date(), settings = null } = {}) {
   // 3. Anonymise.
   if (rules.anonymiseOn) {
     for (const lead of leads) {
-      if (lead.status !== "closed" || idleDays(lead) < rules.anonymiseMonths * 30.44) continue;
+      // Sign-ups and bootcamp enrolments keep their details — they're the families to reach out to
+      // when a bootcamp runs again (the bootcamp's Learners & parents list).
+      if (lead.status !== "closed" || !isPlain(lead) || lead.bootcampId || idleDays(lead) < rules.anonymiseMonths * 30.44) continue;
       await db("lead_messages").where({ leadId: lead.id }).del();
-      await db("leads").where({ id: lead.id }).update({ name: REMOVED_NAME, email: null, phone: null, learnerName: null, message: null, anonymisedAt: now, updatedAt: now });
+      await db("leads").where({ id: lead.id }).update({ name: REMOVED_NAME, email: null, phone: null, learnerName: null, learnerDateOfBirth: null, message: null, anonymisedAt: now, updatedAt: now });
       counts.anonymised += 1;
     }
   }

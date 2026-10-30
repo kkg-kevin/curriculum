@@ -70,6 +70,25 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     // A deactivated teacher isn't blocked here (client redirects to the suspended page) — prefer
     // a non-inactive record if one exists, else fall back to the first so the page can still load.
     req.ownTeacher = teachers.find((t) => (t.status || "active") !== "inactive") || teachers[0] || null;
+
+    // Training of trainers (modules/tot/): an educator's own learning — the teacher portal's "My
+    // learning", whose requests carry X-Teacher-Learning — runs as their own learner record
+    // (learners.teacherId), exactly as a learner's own login would: role "learner", that one
+    // record, and a username so nothing takes them for a parent. The same single choke point as
+    // the staff aliasing below, so every learner route works unchanged and only ever on their own
+    // record. Without a learner record of their own the header changes nothing.
+    if (req.headers["x-teacher-learning"] === "1" && req.ownTeacher) {
+      const row = await require("../../config/db")("learners").where({ teacherId: req.ownTeacher.id }).first("id");
+      const trainee = row ? await LearnerModel.findById(row.id) : null;
+      if (trainee) {
+        req.user.actualRole = "teacher";
+        req.user.learningAsEducator = true;
+        req.user.role = "learner";
+        req.user.username = trainee.username || `educator:${trainee.id}`;
+        req.ownLearner = trainee;
+        req.ownLearners = [trainee];
+      }
+    }
   }
 
   if (role === "learner") {

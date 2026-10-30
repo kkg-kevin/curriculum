@@ -3,6 +3,7 @@ import { T, heroGradient } from "./theme";
 import Avatar from "../../../../components/ui/Avatar";
 import { formatAgeRange } from "../../utils/ageRange";
 import { currentLevelName, levelCaption } from "../../utils/bandJourney";
+import { usePathway } from "../../../curriculum/hooks/useCompetencies";
 
 // Unchanged, still exported — GuardianProfileCard uses this too, and it stays on a light card
 // (never moves onto the hero gradient below), so its light-background styling is untouched.
@@ -56,8 +57,12 @@ function computeAge(dateOfBirth) {
 // is in, and what's left to unlock the next (currentLevelName / levelCaption in bandJourney.js).
 // No `onEdit`, no pencil (staff previewing the learner's view). `extraMeta` — [{ label, value }]
 // added after the learner's own rows; the staff learner page's record details.
-export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit, extraMeta = [] }) {
+// `curriculumId` — the selected hub's curriculum, for the pathways the learner is on there (the
+// same list as the Pathway tab, CompetencyService.getPathway).
+export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit, extraMeta = [], curriculumId }) {
   const age = computeAge(learner.dateOfBirth);
+  const { data: pathways = [] } = usePathway(curriculumId, learner.id);
+  const pathwayNames = [...new Set(pathways.map((p) => p.pathwayName).filter(Boolean))];
 
   return (
     <div style={{ background: heroGradient(), borderRadius: 20, padding: "28px 32px", display: "flex", flexDirection: "column", gap: 22, position: "relative", overflow: "hidden" }}>
@@ -101,9 +106,14 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, position: "relative" }}>
         <StatusPill
-          eyebrow="Developmental Academy"
+          eyebrow="Developmental stage"
           value={stage?.name || "Not yet placed"}
           sub={stage ? (formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null) : "Set by a teacher or admin"}
+        />
+        <StatusPill
+          eyebrow={pathwayNames.length > 1 ? "Pathways" : "Pathway"}
+          value={pathwayNames.length ? pathwayNames.join(", ") : "Not on a pathway yet"}
+          sub={pathwayNames.length ? null : "Set by the hub"}
         />
         <StatusPill
           eyebrow="Current Level Summary"

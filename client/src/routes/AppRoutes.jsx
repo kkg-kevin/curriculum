@@ -17,6 +17,8 @@ import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
 import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
 import TeacherAssessmentsPage from "../modules/teacher-portal/pages/AssessmentsPage";
 import TeacherAssessmentRosterPage from "../modules/teacher-portal/pages/AssessmentRosterPage";
+import TeacherLearningLayout from "../modules/tot/pages/TeacherLearningLayout";
+import TotMarkingPage from "../modules/tot/pages/TotMarkingPage";
 import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
 import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
 import TeacherAttendancePage from "../modules/teacher-portal/pages/AttendancePage";
@@ -285,6 +287,8 @@ export default function AppRoutes() {
           <Route path="create" element={<CreateTeacherPage />} />
           <Route path=":id/edit" element={<EditTeacherPage />} />
           <Route path=":id/view" element={<TeacherViewPage />} />
+          {/* Training of trainers: work to mark from educators with no supervisor (modules/tot). */}
+          <Route path="training" element={<TotMarkingPage />} />
         </Route>
         <Route path="classes">
           <Route index element={<ClassesPage />} />
@@ -316,6 +320,22 @@ export default function AppRoutes() {
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
           <Route path="profile" element={<TeacherProfilePage />} />
+          {/* Training of trainers — the educator's own learning (modules/tot): the learner-portal
+              pages, as their own learner record. Links to /learner-portal/… land here (RoleRoute). */}
+          <Route path="learning" element={<TeacherLearningLayout />}>
+            <Route index element={<LearnerPortalDashboardPage />} />
+            <Route path="courses" element={<LearnerMyCoursesPage />} />
+            <Route path="courses/:courseId" element={<CourseContentLandingPage />} />
+            <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
+            <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
+            <Route path="assessments" element={<LearnerAssessmentsPage />} />
+            <Route path="assessments/:issueId" element={<LearnerAssessmentDetailPage />} />
+            <Route path="reports" element={<LearnerReportsPage />} />
+            <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
+            <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
+            <Route path="progress" element={<LearnerProgressPage />} />
+            <Route path="*" element={<Navigate to="/teacher-portal/learning" replace />} />
+          </Route>
           {/* QA visits to this educator: announced ones coming up, and the reports, to reply to. */}
           <Route path="qa" element={<MyQaPage />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
@@ -331,6 +351,8 @@ export default function AppRoutes() {
           <Route path="claims/:claimId" element={<SupervisorClaimPage />} />
           <Route path="educators" element={<SupervisorEducatorsPage />} />
           <Route path="educators/:id" element={<SupervisorEducatorPage />} />
+          {/* Training of trainers: their educators' work to mark (modules/tot). */}
+          <Route path="marking" element={<TotMarkingPage />} />
           {/* Quality assurance for the supervisor's own educators (modules/qa). */}
           <Route path="qa" element={<QaPage />} />
           <Route path="qa/visits/:id" element={<QaVisitPage />} />

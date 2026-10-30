@@ -132,11 +132,21 @@ async function maybeAutoPlaceRung(learner, cls, age) {
 // reassignment) is left holding only the one that matches their current stage. A diagnostic the
 // learner has already opened (in_progress / submitted / graded) is never touched — that's real
 // work / a real placement.
+// One diagnostic per learner per curriculum: a learner already placed by a diagnostic there — the
+// website one they took before enrolling (BootcampEnrollmentService's placeOnBootcampPathway), or
+// one of this system's once marked — isn't given another.
+async function placedByDiagnostic(learnerId, curriculumId) {
+  const records = await LearnerPathwayModel.findByLearner(learnerId);
+  return records.some((r) => r.curriculumId === curriculumId && (r.history || []).some((h) => h.reason === "diagnostic"));
+}
+
 async function maybeAutoIssuePathwayDiagnostics(learnerId, cls, stageId) {
   if (!cls?.curriculumId || !stageId) return;
   const allPathways = await PathwayModel.findByCurriculumId(cls.curriculumId);
   const pathwayById = new Map(allPathways.map((p) => [p.id, p]));
-  const match = allPathways.find((p) => p.ageCategoryId === stageId);
+  const alreadyPlaced = await placedByDiagnostic(learnerId, cls.curriculumId);
+  // Already placed: no diagnostic is needed here, so every un-started one is withdrawn.
+  const match = alreadyPlaced ? null : allPathways.find((p) => p.ageCategoryId === stageId);
 
   // Revoke stale un-started Pathway diagnostics for THIS curriculum's pathways — anything
   // that isn't the age-matched one.

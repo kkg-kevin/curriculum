@@ -144,6 +144,7 @@ async function childFor(child, customer, hubId) {
   const { firstName, lastName } = splitName(child.name);
   const learner = await LearnerService.createLearner({
     firstName, lastName, gender: null, // checkout doesn't ask; set on the learner later
+    dateOfBirth: child.dateOfBirth || "",
     guardianName: customer.name, guardianPhone: customer.phone, guardianEmail: customer.email,
     username: child.username, accountStatus: "pending_payment",
   });

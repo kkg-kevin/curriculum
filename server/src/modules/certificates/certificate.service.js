@@ -129,6 +129,8 @@ const CertificateService = {
       snapshot: { learnerName: await learnerName(report.learnerId), title, courseName: title, hubName, signatory: await currentSignatory(ownerAdminId) },
     });
     if (isNew && notify) await NotificationService.certificateIssued(certificate);
+    // An educator in training (modules/tot/) is now qualified to teach this course.
+    await require("../tot/tot.service").onCourseCertificate(certificate);
     await CertificateService.syncProgrammes(report.learnerId, report.classId, { notify });
     return certificate;
   },

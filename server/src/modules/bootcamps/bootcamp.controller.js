@@ -1,9 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const BootcampService = require("./bootcamp.service");
 const BootcampHubService = require("./bootcamp-hub.service");
+const BootcampParticipantsService = require("./bootcamp-participants.service");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
-const { createBootcampSchema, updateBootcampSchema } = require("./bootcamp.validation");
+const { createBootcampSchema, updateBootcampSchema, scheduleRunSchema } = require("./bootcamp.validation");
 const { createOfferingSchema } = require("./bootcamp-hub.validation");
 const { parsePatch } = require("../../shared/validators/common.validator");
 const UsageService = require("../usage/usage.service");
@@ -56,6 +57,29 @@ const deleteBootcamp = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+// Every run of this bootcamp, and scheduling another (a copy with new dates — see
+// BootcampService.scheduleRun). The hubs picked for the new run must be this admin's own.
+const listRuns = asyncHandler(async (req, res) => {
+  assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
+  res.json({ success: true, data: await BootcampService.listRuns(req.params.id) });
+});
+
+const scheduleRun = asyncHandler(async (req, res) => {
+  assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
+  const data = scheduleRunSchema.parse(req.body);
+  for (const hubId of data.hubIds) await assertOwnHub(req, hubId);
+  const result = await BootcampService.scheduleRun(req.params.id, data, req.ownerAdminId);
+  res.status(201).json({ success: true, data: result });
+});
+
+// The learners and parents who took part — this run, or every run of the bootcamp (?scope=series).
+const listParticipants = asyncHandler(async (req, res) => {
+  const bootcamp = await BootcampService.getBootcampById(req.params.id);
+  assertOwn(isOwn(req, bootcamp));
+  const scope = req.query.scope === "series" ? "series" : "run";
+  res.json({ success: true, data: await BootcampParticipantsService.list(bootcamp, { scope }) });
+});
+
 const listOfferings = asyncHandler(async (req, res) => {
   assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
   const records = await BootcampHubService.getOfferingsForBootcamp(req.params.id);
@@ -82,6 +106,9 @@ module.exports = {
   getBootcampById,
   updateBootcamp,
   deleteBootcamp,
+  listRuns,
+  scheduleRun,
+  listParticipants,
   listOfferings,
   createOffering,
   deleteOffering,

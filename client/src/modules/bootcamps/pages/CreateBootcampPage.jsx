@@ -156,6 +156,14 @@ function NotesInput({ value, onChange }) {
 // camp built on a curriculum that also has an unrelated digital-literacy pathway). Checking none
 // means "every pathway" (the pre-existing behaviour before this field existed) — made explicit
 // here rather than defaulting to "none selected" reading as "nothing included".
+// A pathway is one row per developmental stage, all sharing its name, so picking a pathway means
+// every stage of it: these are the ids of every row whose name is among the picked rows' names
+// (the server reads a bootcamp's picks the same way — public-content.js's pathwayRowsFor).
+const everyStageOf = (rows, ids) => {
+  const names = new Set((rows || []).filter((p) => (ids || []).includes(p.id)).map((p) => p.name));
+  return (rows || []).filter((p) => names.has(p.name)).map((p) => p.id);
+};
+
 function PathwaysField({ curriculumId, value, onChange }) {
   const { data: pathways, isLoading } = usePathways(curriculumId);
 
@@ -169,23 +177,33 @@ function PathwaysField({ curriculumId, value, onChange }) {
     return <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>This curriculum has no pathways yet.</p>;
   }
 
+  // One tick box per pathway (not per stage row); ticking it picks every stage.
   const selected = value || [];
-  const toggle = (pathwayId, checked) => {
-    onChange(checked ? [...selected, pathwayId] : selected.filter((id) => id !== pathwayId));
+  const groups = [];
+  for (const p of pathways) {
+    const group = groups.find((g) => g.name === p.name);
+    if (group) group.rows.push(p);
+    else groups.push({ name: p.name, color: p.color, rows: [p] });
+  }
+  const toggle = (group, checked) => {
+    const ids = group.rows.map((r) => r.id);
+    const rest = selected.filter((id) => !ids.includes(id));
+    onChange(checked ? [...rest, ...ids] : rest);
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {pathways.map((p) => (
-        <label key={p.id} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+      {groups.map((g) => (
+        <label key={g.name} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
           <input
             type="checkbox"
-            checked={selected.includes(p.id)}
-            onChange={(e) => toggle(p.id, e.target.checked)}
+            checked={g.rows.some((r) => selected.includes(r.id))}
+            onChange={(e) => toggle(g, e.target.checked)}
             style={{ width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
           />
-          {p.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: p.color, flexShrink: 0 }} />}
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{p.name}</span>
+          {g.color && <span style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: g.color, flexShrink: 0 }} />}
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{g.name}</span>
+          {g.rows.length > 1 && <span style={{ fontSize: 12, color: "#9CA3AF" }}>{g.rows.length} stages</span>}
         </label>
       ))}
     </div>
@@ -273,8 +291,9 @@ export default function CreateBootcampPage() {
   // runs. "Effective" pathways = the selected ones, or every pathway under the curriculum when
   // none are checked (same "empty means all" rule as pathwayIds itself).
   const { data: curriculumPathways } = usePathways(selectedCurriculumId);
+  const effectivePathwayIds = selectedPathwayIds?.length > 0 ? everyStageOf(curriculumPathways, selectedPathwayIds) : [];
   const effectivePathways = selectedPathwayIds?.length > 0
-    ? (curriculumPathways || []).filter((p) => selectedPathwayIds.includes(p.id))
+    ? (curriculumPathways || []).filter((p) => effectivePathwayIds.includes(p.id))
     : (curriculumPathways || []);
 
   // Price the whole bootcamp OR individual courses, never both (see
@@ -580,7 +599,7 @@ export default function CreateBootcampPage() {
                   render={({ field }) => (
                     <CoursePricingField
                       curriculumId={selectedCurriculumId}
-                      pathwayIds={selectedPathwayIds}
+                      pathwayIds={effectivePathwayIds}
                       value={field.value || []}
                       onChange={field.onChange}
                       color={ACCENT}

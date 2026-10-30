@@ -85,7 +85,7 @@ export default function DashboardPage() {
   const progressKey = user?.email || user?.username;
   const progressSummary = useMemo(() => summarizeCoursesProgress(progressKey, courses), [progressKey, courses]);
 
-  // Same stage lookup ProfilePage.jsx uses for ProfileIdentityCard's "Developmental Academy"
+  // Same stage lookup ProfilePage.jsx uses for ProfileIdentityCard's "Developmental stage"
   // pill — kept in sync here so the dashboard's snapshot card shows the same placement. Stage
   // is hub-specific (see selectedHub.currentStageId's comment in learner.service.js), not a
   // flat learner field, since a learner running two curricula at two hubs has a different one
@@ -161,10 +161,10 @@ export default function DashboardPage() {
               <HeroPill icon={<FiTrendingUp size={18} />} value={`${progressSummary.percent}%`} label="Course completion" />
               <HeroPill icon={<FiCheckCircle size={18} />} value={progressSummary.completed} label="Courses completed" />
               <HeroPill icon={<FiClipboard size={18} />} value={pendingRows.length} label="Assessments pending" highlight={pendingRows.length > 0} />
-              {/* Same "Developmental Academy" placement ProfileIdentityCard's first StatusPill
+              {/* Same "Developmental stage" placement ProfileIdentityCard's first StatusPill
                   shows on the full profile — borrowed here so it's visible without leaving the
                   dashboard. */}
-              <HeroPill icon={<FiAward size={18} />} value={stage?.name || "Not placed"} label="Developmental Academy" />
+              <HeroPill icon={<FiAward size={18} />} value={stage?.name || "Not placed"} label="Developmental stage" />
               <HeroPill icon={<FiUserCheck size={18} />} value={attendanceRate != null ? `${attendanceRate}%` : "—"} label="Attendance (30d)" />
             </div>
           )}

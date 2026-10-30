@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { learnerDateOfBirth } = require("../../shared/utils/age");
 
 // Mirrors lead.validation.js's phone pattern — same reasoning: the website already validates
 // client-side, this is the server-side copy so a request bypassing the browser can't skip it.
@@ -27,6 +28,9 @@ const submitBootcampEnrollmentSchema = z.object({
   parentPhone: phone,
   learnerName: z.string().trim().min(2, "Please enter the learner's name").max(120),
   learnerAge: z.coerce.number().int().min(3).max(19),
+  // The website sends the date of birth too; the age is then worked out from it (the service)
+  // and the date goes on the learner record.
+  learnerDateOfBirth,
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(30, "Username must be at most 30 characters")
     .regex(/^[a-zA-Z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
   password: z.string().min(6, "Password must be at least 6 characters").max(72),

@@ -1,13 +1,16 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiStar } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3 } from "react-icons/fi";
+import { useTotMarking } from "../../tot/hooks/useTot";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
 
 const menuItems = [
   { name: "Dashboard",    path: "/supervisor-portal", icon: FiGrid },
-  { name: "Claims",       path: "/supervisor-portal/claims", icon: FiFileText, badge: true },
+  { name: "Claims",       path: "/supervisor-portal/claims", icon: FiFileText, badge: "claims" },
   { name: "My Educators", path: "/supervisor-portal/educators", icon: FiUsers },
+  // Training of trainers: their educators' TOT work waiting to be marked.
+  { name: "Work to mark", path: "/supervisor-portal/marking", icon: FiEdit3, badge: "marking" },
   { name: "QA Visits",    path: "/supervisor-portal/qa", icon: FiStar },
   { name: "My Profile",   path: "/supervisor-portal/profile", icon: FiUser },
 ];
@@ -18,6 +21,8 @@ const menuItems = [
 function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {}, waiting = 0 }) {
   const { expanded, handlers } = useSidebarHover(!isMobile);
   const isCollapsed = !isMobile && !expanded;
+  const { data: marking = [] } = useTotMarking();
+  const counts = { claims: waiting, marking: marking.length };
 
   return (
     <>
@@ -69,14 +74,15 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
         <nav style={{ flex: 1, padding: isCollapsed ? "20px 8px" : "20px 12px" }}>
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const showBadge = item.badge && waiting > 0;
+            const count = item.badge ? counts[item.badge] : 0;
+            const showBadge = count > 0;
             return (
               <NavLink
                 key={item.name}
                 to={item.path}
                 end={item.path === "/supervisor-portal"}
                 onClick={isMobile ? onClose : undefined}
-                title={isCollapsed ? `${item.name}${showBadge ? ` (${waiting} to review)` : ""}` : undefined}
+                title={isCollapsed ? `${item.name}${showBadge ? ` (${count} waiting)` : ""}` : undefined}
                 style={({ isActive }) => ({
                   position: "relative",
                   display: "flex",
@@ -101,7 +107,7 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
                     {showBadge && (
                       isCollapsed
                         ? <span style={{ position: "absolute", top: 6, right: 6, width: 9, height: 9, borderRadius: "50%", background: isActive ? "#25476a" : "#feb139" }} />
-                        : <span style={{ minWidth: 22, padding: "1px 7px", borderRadius: 999, textAlign: "center", fontSize: 12, fontWeight: 800, background: isActive ? "#25476a" : "#feb139", color: isActive ? "#fff" : "#17304B" }}>{waiting}</span>
+                        : <span style={{ minWidth: 22, padding: "1px 7px", borderRadius: 999, textAlign: "center", fontSize: 12, fontWeight: 800, background: isActive ? "#25476a" : "#feb139", color: isActive ? "#fff" : "#17304B" }}>{count}</span>
                     )}
                   </>
                 )}

@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { FiArrowLeft, FiMail, FiMapPin } from "react-icons/fi";
 import { useQaEducators } from "../hooks/useQa";
 import EducatorQaSection from "../components/EducatorQaSection";
+import TotTrainingCard from "../../tot/components/TotTrainingCard";
 import SchedulesTab from "../components/SchedulesTab";
 import { QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
 
@@ -46,6 +47,8 @@ export default function SupervisorEducatorPage() {
       </section>
 
       <EducatorQaSection teacherId={id} />
+
+      <TotTrainingCard teacherId={id} />
 
       <div>
         <h2 style={{ margin: "4px 0 10px", fontSize: 15, fontWeight: 800, color: T.ink }}>Regular visits</h2>

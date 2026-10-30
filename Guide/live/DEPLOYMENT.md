@@ -102,6 +102,224 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (30 Oct 2026) — Date of birth on the website, bootcamp learners placed on their pathway, a diagnostic made for children, one diagnostic per learner
+
+**Portal and backend** from `curriculum` (branch `modules`) at `bd1b4ab`; **website** from
+`curriculum-web` (branch `new`) at `a50aad3`. Includes everything in "This release (29 Oct 2026)"
+(QA, TOT, bootcamp runs, parents' details, projects in the Store) — that one was never uploaded, so
+upload this one instead. **Take a database backup first**, **upload the backend first**, then the portal, then the
+website.
+
+### What changed — portal and backend
+
+- **Bootcamp learners from the website get their stage and pathway.** A family's website bootcamp
+  enrolment now puts the learner on the pathway whose diagnostic they took (at the course their
+  score earns), or the bootcamp's pathway for their age, and sets their developmental stage at the
+  hub. Learners who enrolled before are placed by a one-off command (below).
+- **The learner profile** says **Developmental stage** (was "Developmental Academy") and shows a
+  **Pathway** card beside it — staff learner page, the learner's own profile, the parent's view.
+- **Bootcamp diagnostics cover every age.** Picking a pathway on a bootcamp now means every stage
+  of it; before, only one stage's diagnostic was offered (often none for ages 5–16). The bootcamp
+  form shows one tick box per pathway ("6 stages").
+- **One diagnostic per learner — the website's or the system's, never both.** A learner placed by
+  the website diagnostic gets no system diagnostic (the one issued when they joined the class is
+  withdrawn, and the portal doesn't ask for it at first sign-in); a learner who skipped the website
+  one takes the system one in their portal as before.
+- **Dates of birth are kept** on website enquiries, diagnostics and new learners (bootcamp, shop);
+  Enquiries shows "age 9, born 15 Mar 2017".
+
+### What changed — website
+
+- **Every form that needs a child's age asks for the date of birth** (shows "Age N" as it's
+  picked): the pathway and bootcamp diagnostics, Enroll, Store enquiries (optional), bootcamp
+  enrolment, shop checkout.
+- **The diagnostic is made for the child taking it**: a welcome card (their first name, what to
+  expect, no timer), one question at a time with big answer cards, a progress bar and numbered dots
+  to jump around, then a finish screen that hands over to a grown-up for the name and phone.
+  Can-do questions now show (they didn't before). A bootcamp's Enroll page can **skip** the website
+  diagnostic — the learner then does the system one after enrolling.
+- **The diagnostic "Download PDF" is a proper document**: the Digifunzi logo and report title on
+  every page, the website, email, phone and office with page numbers along the bottom; the result
+  and what it means, at a glance (doing well / to work on), next steps, then every competency with
+  each of its skills. The on-screen report is unchanged.
+
+### One new migration — applied on Restart
+
+`20261030120000_add_learner_dates_of_birth.js` (additive): `leads.learnerDateOfBirth`,
+`public_diagnostic_attempts.childDateOfBirth`. With the 29 Oct ones, four in all. After Restart,
+check `SHOW COLUMNS FROM leads LIKE 'learnerDateOfBirth';` and `SHOW TABLES LIKE 'qa_visits';` —
+if either is missing, Run JS script → `db:migrate`.
+
+### One-off: place earlier bootcamp learners
+
+After the backend is up, cPanel → Run JS script → `bootcamps:place-learners` — it only **lists**
+who it would place. Check the list, then run it with `-- --apply` (Run JS script's arguments
+box). Sends nothing; safe to run again. Their age stays "Not on record" — the old sign-ups kept
+only an age; add the date of birth on the learner page.
+
+### Cron
+
+`npm run qa:process` hourly (from the 29 Oct release) if not added yet. No new environment
+variable or npm package.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `bd1b4ab` — 605 files, 148 migrations. Same zip in Dev, Live and
+Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-BSuUPeW1.js` |
+| Live | `npm run build:live` | `index-BdSrmC1a.js` |
+| Capable | `npm run build:capable` | `index-DnaIROqI.js` |
+
+CSS `index-hXTMed0K.css` in all three. 68 entries in each `assets.zip`; each checked to call only
+its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 25/25, all with content |
+
+Checked: built site (no dev-server files, entry `index-C_e7DVbg.js`), calling only https://dcf-api.digifunzi.com, `.htaccess`
+with the `/projects` redirects.
+
+### Checked so far
+
+Server tests pass (88, 2 skipped), website tests pass (97), every build passes. Locally: the
+diagnostic taken with a date of birth (the new child-friendly quiz, on a desktop, a phone and in
+light mode) and its PDF downloaded and read page by page; the one-diagnostic rule on a learner
+(system diagnostic withdrawn once placed by a diagnostic, back when not); the Enroll form;
+the placement checked on the local database (19 earlier learners placed, one confirmed at its stage
+and pathway); each bootcamp's website diagnostics now listed for every age. Not looked at in a
+browser: the bootcamp Skip button (no mock bootcamp has a diagnostic), the new profile cards, the bootcamp form's pathway list, bootcamp enrolment and checkout
+forms. Not yet tried on the hosting.
+
+### Deploy order
+
+1. Take a database backup.
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check the
+   two queries above.
+3. **Cron:** `npm run qa:process`, hourly, if not there yet.
+4. **One-off:** `bootcamps:place-learners` (list), then with `-- --apply`.
+5. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+6. **Website:** upload the zip to the `https://digifunzi.co.ke` document root and Extract.
+7. **Verify:** a website bootcamp learner's page shows a Developmental stage and a Pathway; a
+   bootcamp's Enroll page on the website asks for a date of birth and offers a diagnostic for a
+   9-year-old; Download PDF on a diagnostic report has the letterhead; plus the 29 Oct checks.
+
+**Rolling back:** restore the backup, then upload the earlier zips (from commit `5f27830`).
+
+---
+
+## This release (29 Oct 2026) — Quality assurance, training of trainers (TOT), bootcamp runs, parents' details, projects in the Store
+
+**Portal and backend** from `curriculum` (branch `modules`) at `d6db0c0`; **website** from
+`curriculum-web` (branch `new`) at `4330a5d`. Includes everything in "This release (28 Oct 2026,
+night)" and earlier — if those weren't uploaded yet, upload this one instead. **Take a database
+backup first**, **upload the backend first**, then the portal, then the website.
+
+### What changed — portal
+
+- **Quality assurance (QA)** — sidebar **Quality Assurance**. Supervisors (or admins) visit
+  educators, announced or by surprise, and review them against a template (yes / no, rubric levels,
+  comments; rich-text guidance). Visits are planned one at a time or on a schedule. The educator
+  reads the report in their portal (**QA Reviews**) and can reply; the hub sees a summary only (score,
+  strengths, areas to improve). Supervisors have **QA Visits**, a page per educator, and **Schedule a
+  check-in** on each My Educators card.
+- **Supervisors are now managed in Settings → People & sharing → Supervisors** (Billing's
+  Supervisors button leads there).
+- **Training of trainers (TOT).** A curriculum can be marked **Who it's for → Educators (TOT)**.
+  Enrol an educator from their page's **Training (TOT)** card; they learn in the teacher portal's new
+  **My learning** while they teach. Their supervisor marks their work (**Work to mark**); admins mark
+  for educators with no supervisor (Educators → **Training — work to mark**). Each course
+  certificate qualifies them to teach that course; finishing every course raises their level if the
+  curriculum sets one. The website TOT sign-up isn't built yet.
+- **Bootcamps: Schedule another run** — the same bootcamp at new dates, optionally at the same hubs;
+  every run listed on the bootcamp page. Each bootcamp also lists its **Learners & parents** (this run
+  or all runs) with contacts, Copy parent emails and a CSV download.
+- **Parents' details** — a **Parent** tab on each learner's page (details, their login and last use,
+  their children, website sign-ups, their activity) and **Learners → Parents** (every family, with
+  search, hub filter, copy emails, CSV).
+- **Searching assessments** when choosing a pathway stage's diagnostics in a curriculum.
+- Enquiry clean-up (Settings → Enquiries) never removes the details of bootcamp enrolments or sign-ups.
+
+### What changed — website
+
+- **Projects are sold in the Store.** `/store` lists robots, kits and projects together, with
+  category tabs, search, sort and **Add to cart** on every card. A project's page is now
+  `/store/projects/<name>`; the old `/projects` addresses redirect there (301, in `.htaccess`).
+  The Store opens straight onto the products (no banner).
+- The same bootcamp run again shows its **next** run on the website.
+
+### Three new migrations — applied on Restart
+
+All additive: `20261029100000_create_qa.js` (QA tables), `20261029120000_add_series_to_bootcamps.js`
+(`bootcamps.seriesId`) and `20261030090000_add_tot_trainees.js` (`learners.teacherId`,
+`curricula.audience`, `curricula.completionTeacherLevel`). After Restart, check
+`SHOW TABLES LIKE 'qa_visits';` and `SHOW COLUMNS FROM learners LIKE 'teacherId';` — if either is
+missing, Run JS script → `db:migrate`.
+
+### New cron job — needed
+
+`npm run qa:process` **hourly**, from the app root (cPanel → Cron Jobs), like `checkins:process`.
+It puts scheduled QA visits on the calendar and sends "visit coming up" / "visit due" notices.
+No new environment variable or npm package.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `d6db0c0` — 602 files, 147 migrations (3 new). Same zip in Dev, Live
+and Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-BGXGKRoa.js` |
+| Live | `npm run build:live` | `index-gwA7gvYl.js` |
+| Capable | `npm run build:capable` | `index-CuSC5oGU.js` |
+
+CSS `index-hXTMed0K.css` in all three (unchanged). 68 entries in each `assets.zip`; each checked
+to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| https://digifunzi.co.ke | `npm run deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 25/25, all with content |
+
+Checked: built site (no dev-server files, entry `index-Py7d7FVk.js`), calling only https://dcf-api.digifunzi.com,
+the Store page with its search, `.htaccess` in place with the `/projects` redirects.
+
+### Checked so far
+
+Server tests pass (88, 2 skipped); every build passes. Locally, in a browser and against the local
+database: QA as admin, supervisor, educator and hub; TOT as admin, supervisor and educator (My
+learning, Work to mark, the Training card; qualifying and level-up tested with temporary
+certificates); a bootcamp run scheduled through the page; the Learners & parents and Parents lists;
+the website Store on a desktop and a phone. Not yet tried on the hosting — check on Dev first.
+
+### Deploy order
+
+1. **Take a database backup.**
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check the
+   two queries above.
+3. **Cron:** add `npm run qa:process`, hourly.
+4. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+5. **Website:** upload `digifunzi-co-ke-dist.zip` to the `https://digifunzi.co.ke` document root and Extract.
+6. **Verify:** the sidebar shows **Quality Assurance**; Settings → People & sharing has
+   **Supervisors**; Learners has the **Parents** tab; a bootcamp page shows **Schedule another run**
+   and **Learners & parents**; an educator's page shows **Training (TOT)**; on the website, `/store`
+   lists projects and `/projects` redirects to it.
+
+**Rolling back:** restore the backup, then upload the earlier backend, portal and website zips (from
+commit `5f27830`).
+
+---
+
 ## This release (28 Oct 2026, night) — System Levels as tiles; one tab bar across the portal; Sign in on the website
 
 **Portal** from `curriculum` (branch `modules`) at `a0372fa`; **website** from `curriculum-web`

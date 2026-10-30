@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Check as CheckIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
@@ -83,7 +83,7 @@ function Spinner() {
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
-const DEFAULT_VALUES = { name: "", code: "", description: "" };
+const DEFAULT_VALUES = { name: "", code: "", description: "", audience: "learners", completionTeacherLevel: "" };
 
 export default function CreateCurriculumPage() {
   const navigate = useNavigate();

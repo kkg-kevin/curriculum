@@ -6,6 +6,7 @@ const PerformanceBandModel = require("../../modules/curriculum/competency-framew
 const CurriculumModel = require("../../modules/curriculum/curriculum.model");
 const CurriculumCompetencyLinkModel = require("../../modules/curriculum/competency-framework/curriculum-competency-link.model");
 const CompetencyModel = require("../../modules/settings/competencies/competency.model");
+const AgeCategoryModel = require("../../modules/curriculum/competency-framework/age-category.model");
 const { toAbsoluteMediaUrl } = require("./media-url");
 
 // The public marketing site (digifunzi-landing) reads ONE designated admin's content — the
@@ -66,6 +67,31 @@ function htmlToText(html) {
 // rather than showing a broken row. Returns [] when there's nothing priced or no curriculum to
 // group against.
 //
+// A pathway is one row per developmental stage, all sharing its name (pathways-one-row-per-stage),
+// so picking a pathway on a bootcamp means every stage of it — whichever row the picker stored.
+// Returns the curriculum's rows for the picked pathways (each pathway in the picked order, its
+// stages youngest first), or every row of the curriculum when nothing is picked.
+async function pathwayRowsFor(curriculumId, pathwayIds) {
+  if (!curriculumId) return [];
+  const rows = await PathwayModel.findByCurriculumId(curriculumId);
+  const picked = Array.isArray(pathwayIds) ? pathwayIds : [];
+  if (picked.length === 0) return rows;
+  const names = [];
+  for (const id of picked) {
+    const name = rows.find((r) => r.id === id)?.name;
+    if (name != null && !names.includes(name)) names.push(name);
+  }
+  const stageAge = new Map();
+  await Promise.all(
+    [...new Set(rows.map((r) => r.ageCategoryId).filter(Boolean))].map(async (id) => {
+      const stage = await AgeCategoryModel.findById(id);
+      stageAge.set(id, stage?.minAge ?? Infinity);
+    })
+  );
+  const ageOf = (r) => (r.ageCategoryId ? stageAge.get(r.ageCategoryId) ?? Infinity : Infinity);
+  return names.flatMap((name) => rows.filter((r) => r.name === name).sort((a, b) => ageOf(a) - ageOf(b)));
+}
+
 // `pathwayIds`, when non-empty, scopes this to just those pathways (a bootcamp's own choice of
 // which of its curriculum's pathways it actually runs — see bootcamp.validation.js). A priced
 // course whose only pathway isn't in that list is dropped entirely, including from the ungrouped
@@ -74,7 +100,8 @@ function htmlToText(html) {
 async function resolveCoursePricing(coursePricing, curriculumId, pathwayIds) {
   if (!Array.isArray(coursePricing) || coursePricing.length === 0 || !curriculumId) return [];
   const scoped = Array.isArray(pathwayIds) && pathwayIds.length > 0;
-  const scopedIds = scoped ? new Set(pathwayIds) : null;
+  // Every stage of each picked pathway (pathwayRowsFor), not only the row the picker stored.
+  const scopedIds = scoped ? new Set((await pathwayRowsFor(curriculumId, pathwayIds)).map((p) => p.id)) : null;
 
   const priceByCourseId = new Map(coursePricing.map((p) => [p.courseId, p]));
   const courses = await Promise.all(
@@ -186,4 +213,4 @@ async function resolveCurriculumSummary(curriculumId) {
   };
 }
 
-module.exports = { requirePublicContentAdminId, htmlToText, resolveCoursePricing, resolveCurriculumSummary };
+module.exports = { requirePublicContentAdminId, htmlToText, pathwayRowsFor, resolveCoursePricing, resolveCurriculumSummary };

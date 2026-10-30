@@ -7,6 +7,13 @@ const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
+const TotService = require("../../tot/tot.service");
+
+// A supervisor marks the work of the educators they supervise who are learning (training of
+// trainers — modules/tot/): only those educators' own learner records, in whatever class.
+async function assertSupervisesLearner(req, learnerId) {
+  assertOwn(await TotService.supervisesLearner(req.user.id, learnerId));
+}
 
 async function isOwnHubForAdmin(req, hubId) {
   if (!hubId) return false;
@@ -44,6 +51,12 @@ async function assertClassAccess(req, cls) {
   if (req.user.role === "school")  assertOwn(cls.schoolId === req.ownSchool?.id);
   if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, cls.schoolId));
   if (req.user.role === "teacher") assertOwn(await teacherLinkedToClass(req, cls.id));
+  // A supervisor reaches a class only through an educator of theirs learning in it.
+  if (req.user.role === "supervisor") {
+    const mine = new Set(await TotService.supervisedTraineeIds(req.user.id));
+    const links = await LearnerHubLinkModel.findByClassId(cls.id);
+    assertOwn(links.some((l) => mine.has(l.learnerId)));
+  }
 }
 
 // A standalone diagnostic submission (see issueDiagnostic in assessment-submission.service.js)
@@ -82,6 +95,7 @@ function assertLearnerOwnsSubmission(req, submission) {
 // checks ownership via its class, a standalone one (diagnostic/course-progress, no classId) via
 // the learner's own hub/class links instead.
 async function assertSubmissionAccess(req, submission) {
+  if (req.user.role === "supervisor") return assertSupervisesLearner(req, submission.learnerId);
   if (submission.classId) {
     await assertClassAccess(req, await ClassModel.findById(submission.classId));
   } else {
@@ -138,6 +152,12 @@ const getRosterForIssue = asyncHandler(async (req, res) => {
   const { issue, assessment, roster, groups, ungroupedLearners } = await AssessmentSubmissionService.getRosterForIssue(req.params.id);
   const cls = await ClassModel.findById(issue.classId);
   await assertClassAccess(req, cls);
+  // A supervisor sees only their own educators in the class.
+  if (req.user.role === "supervisor") {
+    const mine = new Set(await TotService.supervisedTraineeIds(req.user.id));
+    const keep = (row) => mine.has(row.learner?.id);
+    return res.json({ success: true, data: { issue, assessment, roster: roster.filter(keep), groups: [], ungroupedLearners: ungroupedLearners.filter(keep) } });
+  }
   res.json({ success: true, data: { issue, assessment, roster, groups, ungroupedLearners } });
 });
 
@@ -288,6 +308,7 @@ const startObservationSubmission = asyncHandler(async (req, res) => {
   }
   const cls = await ClassModel.findById(issue.classId);
   await assertClassAccess(req, cls);
+  if (req.user.role === "supervisor") await assertSupervisesLearner(req, learnerId);
   const assessment = await AssessmentModel.findById(issue.assessmentId);
   if (assessment?.type !== "observation") {
     const err = new Error("Only Teacher Observation assessments can be started this way");
@@ -319,6 +340,7 @@ const gradeMilestone = asyncHandler(async (req, res) => {
   }
   const cls = await ClassModel.findById(issue.classId);
   await assertClassAccess(req, cls);
+  if (req.user.role === "supervisor") await assertSupervisesLearner(req, learnerId);
   const assessment = await AssessmentModel.findById(issue.assessmentId);
   if (assessment?.type !== "project") {
     const err = new Error("Only Project assessments can be graded by milestone");
@@ -353,7 +375,9 @@ const reissueAssessment = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  if (issue.classId) {
+  if (req.user.role === "supervisor") {
+    await assertSupervisesLearner(req, learnerId);
+  } else if (issue.classId) {
     const cls = await ClassModel.findById(issue.classId);
     await assertClassAccess(req, cls);
   } else {
