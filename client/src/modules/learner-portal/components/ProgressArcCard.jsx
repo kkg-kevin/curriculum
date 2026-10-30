@@ -94,8 +94,10 @@ function LevelConnector({ status, percent }) {
 // Overview tab and the Dashboard's own upper section can show the exact same live progress.
 // Named "Progress Arc" to match Engine 3 (scoring-engines.js → runProgressArcEngine), the
 // score-to-band mapping this whole ladder visualizes — not just a "journey" through levels.
-export default function ProgressArcCard({ curriculumId, learnerId }) {
-  const { data: bandProgress = [] } = useLearnerBandProgress(curriculumId, learnerId);
+// `hubId` — the hub shown: a learner at two hubs running this curriculum can be in a different
+// stage (and so a different band ladder) at each.
+export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
+  const { data: bandProgress = [] } = useLearnerBandProgress(curriculumId, learnerId, hubId);
   const { current, next } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
   if (bandProgress.length === 0) return null;
 

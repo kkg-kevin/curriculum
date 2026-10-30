@@ -42,6 +42,8 @@ export function useUpdateLearner() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: LEARNER_KEYS.all });
       if (data?.id) qc.invalidateQueries({ queryKey: LEARNER_KEYS.detail(data.id) });
+      // A new date of birth or age can move their stage, and with it their pathway.
+      qc.invalidateQueries({ queryKey: ["pathway-placement"] });
       toast.success("Learner updated successfully!");
     },
     onError: (err) => toast.error(err.message || "Failed to update learner"),

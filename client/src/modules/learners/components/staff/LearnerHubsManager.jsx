@@ -11,6 +11,20 @@ import { formatClassName } from "../../../classes/utils/classDisplay";
 
 const ACCENT = "#25476a";
 
+// The body of the Unlink / Transfer warnings: a lead line, then what will happen.
+function WarningBody({ lead, points }) {
+  return (
+    <>
+      <p style={{ margin: "0 0 10px", color: "#374151" }}>{lead}</p>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+        {points.filter(Boolean).map((point, i) => <li key={i}>{point}</li>)}
+      </ul>
+    </>
+  );
+}
+
+const classLabel = (cls) => (cls ? `${formatClassName(cls)} — ${cls.academicYear}` : null);
+
 const STATUS_LABELS = { active: "Active", inactive: "Inactive", transferred: "Transferred", graduated: "Graduated" };
 const STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
@@ -22,13 +36,15 @@ const STATUS_STYLES = {
 // One enrollment row — hub name, plus that hub's class/admission-number/status, editable
 // in place (mirrors TeacherViewPage's Learning Hubs row, richer because a learner's
 // placement within a hub is meaningful in a way a teacher's isn't).
-function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
+function EnrollmentRow({ learnerId, learnerName, enrollment, isAdmin, onRequestUnlink }) {
   const navigate = useNavigate();
   const { mutate: updateLink } = useUpdateLearnerHubLink();
   const { mutate: transferHub, isPending: isTransferring } = useTransferLearnerHub();
   const [transferOpen, setTransferOpen] = useState(false);
   const [targetHubId, setTargetHubId] = useState("");
   const [targetClassId, setTargetClassId] = useState("");
+  // The transfer waits for the warning to be confirmed.
+  const [confirmTransfer, setConfirmTransfer] = useState(false);
 
   const { data: classesData } = useQuery({
     queryKey: ["classes", "bySchool", enrollment.id],
@@ -49,6 +65,9 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
     enabled:  !!targetHubId,
   });
   const targetClasses = targetClassesData?.data || [];
+  const targetHub = targetHubOptions.find((h) => h.id === targetHubId);
+  const targetClass = targetClasses.find((c) => c.id === targetClassId);
+  const currentClass = classLabel(enrollment.class);
 
   return (
     <div style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -121,15 +140,10 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
             <button
               type="button"
               disabled={!targetHubId || isTransferring}
-              onClick={() => {
-                transferHub(
-                  { learnerId, hubId: enrollment.id, data: { toHubId: targetHubId, toClassId: targetClassId } },
-                  { onSuccess: () => { setTransferOpen(false); setTargetHubId(""); setTargetClassId(""); } }
-                );
-              }}
+              onClick={() => setConfirmTransfer(true)}
               style={{ padding: "6px 14px", backgroundColor: !targetHubId || isTransferring ? "#b8d9ee" : ACCENT, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !targetHubId || isTransferring ? "not-allowed" : "pointer" }}
             >
-              {isTransferring ? "Transferring…" : "Confirm Transfer"}
+              {isTransferring ? "Transferring…" : "Transfer…"}
             </button>
             <button type="button" onClick={() => setTransferOpen(false)} style={{ padding: "6px 14px", backgroundColor: "transparent", color: "#6B7280", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Cancel
@@ -137,6 +151,31 @@ function EnrollmentRow({ learnerId, enrollment, isAdmin, onRequestUnlink }) {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={confirmTransfer}
+        title="Transfer this learner?"
+        variant="default"
+        confirmLabel={`Transfer to ${targetHub?.name || "the new hub"}`}
+        message={(
+          <WarningBody
+            lead={<>{learnerName} will move from <strong>{enrollment.name}</strong> to <strong>{targetHub?.name}</strong>.</>}
+            points={[
+              <>At {targetHub?.name}: {targetClass ? <>the class <strong>{classLabel(targetClass)}</strong></> : "the hub's first active class (you didn't pick one)"}, a new admission number, and a developmental stage set from their age.</>,
+              <>They leave {enrollment.name}{currentClass ? <> and the class <strong>{currentClass}</strong></> : ""} — that class's courses, assessments and timetable stop showing for them, and admission number {enrollment.admissionNumber || "—"} and their stage there are removed.</>,
+              "A transfer record is kept, and their marked work, reports and certificates stay on their record.",
+            ]}
+          />
+        )}
+        onConfirm={() => {
+          setConfirmTransfer(false);
+          transferHub(
+            { learnerId, hubId: enrollment.id, data: { toHubId: targetHubId, toClassId: targetClassId } },
+            { onSuccess: () => { setTransferOpen(false); setTargetHubId(""); setTargetClassId(""); } }
+          );
+        }}
+        onCancel={() => setConfirmTransfer(false)}
+      />
+
       {!isAdmin && (
         <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
           {enrollment.class ? `${formatClassName(enrollment.class)} — ${enrollment.class.academicYear}` : "No class assigned yet"}
@@ -207,7 +246,7 @@ export default function LearnerHubsManager({ learnerId, learnerName, enrollments
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {enrollments.map((e) => (
-            <EnrollmentRow key={e.linkId} learnerId={learnerId} enrollment={e} isAdmin={isAdmin} onRequestUnlink={setUnlinkTarget} />
+            <EnrollmentRow key={e.linkId} learnerId={learnerId} learnerName={learnerName} enrollment={e} isAdmin={isAdmin} onRequestUnlink={setUnlinkTarget} />
           ))}
         </div>
       )}
@@ -215,8 +254,20 @@ export default function LearnerHubsManager({ learnerId, learnerName, enrollments
 
       <ConfirmDialog
         isOpen={!!unlinkTarget}
-        title="Unlink Learning Hub"
-        message={`"${learnerName}" will no longer be enrolled at "${unlinkTarget?.name}". Their record and any other hub enrollments are unaffected.`}
+        title="Unlink from this hub?"
+        message={unlinkTarget && (
+          <WarningBody
+            lead={<>{learnerName} will no longer be enrolled at <strong>{unlinkTarget.name}</strong>.</>}
+            points={[
+              <>They leave {classLabel(unlinkTarget.class) ? <>the class <strong>{classLabel(unlinkTarget.class)}</strong></> : "the hub"} — its courses, assessments and timetable stop showing for them.</>,
+              <>Admission number {unlinkTarget.admissionNumber || "—"} and their developmental stage at this hub are removed; enrolling them again gives a new admission number.</>,
+              enrollments.length === 1
+                ? <strong style={{ color: "#B91C1C" }}>This is their only hub — they'll be in no class at all until you enrol them again.</strong>
+                : "Their other hub enrolments aren't affected.",
+              "Their marked work, reports and certificates stay on their record. To move them to another hub instead, use Transfer.",
+            ]}
+          />
+        )}
         confirmLabel="Unlink"
         cancelLabel="Cancel"
         variant="danger"

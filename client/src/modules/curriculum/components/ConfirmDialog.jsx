@@ -88,7 +88,8 @@ export default function ConfirmDialog({
             <UsageList usage={check.usage} />
           </div>
         ) : (
-          <p
+          // A div, not a p: `message` may be more than text (a list of what will happen).
+          <div
             style={{
               margin: "0 0 24px 0",
               fontSize: "14px",
@@ -97,7 +98,7 @@ export default function ConfirmDialog({
             }}
           >
             {checking ? "Checking whether it's in use…" : message}
-          </p>
+          </div>
         )}
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button

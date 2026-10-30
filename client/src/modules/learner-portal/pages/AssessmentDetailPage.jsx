@@ -234,7 +234,7 @@ export default function AssessmentDetailPage() {
   const { issueId } = useParams();
   const navigate = usePortalNavigate();
   // viewOnly: a parent looking at their child's work (parent portal) — they can see it, not do it.
-  const { cls, learner, viewOnly } = useOutletContext();
+  const { cls, learner, viewOnly, selectedHub } = useOutletContext();
   const { data, isLoading } = useIssuedForLearner();
   // A Developmental Stage or Pathway diagnostic never shows up in useIssuedForLearner()
   // above — getIssuedRowsForLearner (server) deliberately excludes them, since the general "My
@@ -288,7 +288,7 @@ export default function AssessmentDetailPage() {
   // Real per-learner score/band per competency (Evidence Type → Assessment Type → Engine
   // pipeline) — shown alongside each indicator's flat marks so a learner can see how this one
   // graded assessment connects to their overall standing on that competency.
-  const { data: scoreRows = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id);
+  const { data: scoreRows = [] } = useLearnerCompetencyScores(cls?.curriculumId, learner?.id, selectedHub?.id);
   const scoreByCompetencyId = useMemo(() => new Map(scoreRows.map((r) => [r.competencyId, r])), [scoreRows]);
 
   if (isLoading || stageLoading || areaLoading) {

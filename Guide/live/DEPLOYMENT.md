@@ -102,6 +102,110 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (30 Oct 2026, evening) — Learners placed by age, the website diagnostic on the learner's profile, levels per hub, hub warnings
+
+**Portal and backend** from `curriculum` (branch `modules`) at `57afd05`. **The website is unchanged** —
+its zip in this folder is the 30 Oct one. Includes everything in "This release (30 Oct 2026)" below; if
+that one isn't uploaded yet, upload this one instead. Take a database backup first, **upload the
+backend first**, then the portal.
+
+### What changed
+
+- **Every learner is placed from their age** — staff-added or from the website. Their developmental
+  stage at each hub comes from the date of birth (or, when that isn't known, an age: older website
+  sign-ups, the shop, or staff typing one — **Age (if the date of birth isn't known)** on the learner
+  form and the profile's edit window), and the stage's pathway follows. Adding or correcting the date
+  of birth or age moves a stage that came from the age; a stage set by a diagnostic or chosen by staff
+  stays. The Pathways card says which it was.
+- **The profile says why a learner isn't placed** ("Add a date of birth (or age) to place them",
+  "Placed once they join a class", "No stage for age 19 in this curriculum") and marks an age
+  "given — no date of birth".
+- **Staff see more on the learner page:** the date of birth, **Joined via** (website bootcamp / Home
+  Learning / Tech Club / shop, or added in the system, by whom), **From the family** (the school or
+  grade a parent typed), and **Waiting for payment** instead of "Account inactive" for a website
+  sign-up not yet paid (Activate warns that the invoice stays open).
+- **The website diagnostic is part of the learner's record.** A website bootcamp enrolment adds the
+  diagnostic they took; for a family that enquired instead, staff add it on the learner's Pathway tab
+  (**Website diagnostics** — those taken under the guardian's phone). Its marks count towards the
+  learner's **competencies, Progress Arc and pathway progress** — and so do diagnostics marked in the
+  portal, which counted for nothing before.
+- **Diagnostic report** on the profile (Overview and Pathway tabs; learner, parent and staff): the
+  score, website or portal, the course it placed them at, and each competency opening to its
+  indicators.
+- **Levels follow the hub on screen.** A learner at two hubs running the same curriculum (with a
+  different stage at each) showed "Not started" when the first hub's stage had no Performance Bands;
+  the Current Level Summary, Progress Arc and competency bands now use the selected hub's stage.
+- **Warnings before Unlink and Transfer** on a learner's Learning Hubs card — what they leave (class,
+  admission number, stage), what's kept, and "This is their only hub".
+- **Pathway tab tidied:** the retired stage diagnostic card, the old Progression Ladder ("Pathway
+  Placement") and the Pathway Diagnostics list are gone; no coloured side lines. Educators still mark
+  diagnostics in their portal's Assessments page.
+
+### Two new migrations — applied on Restart
+
+Both additive: `20261030150000_add_stated_age_and_stage_source.js` (`learners.statedAge`,
+`learners.statedAgeOn`, `learner_hub_links.stageSource`) and
+`20261030170000_link_website_diagnostics_to_learners.js` (`assessment_issues.publicAttemptId`).
+After Restart, check `SHOW COLUMNS FROM learner_hub_links LIKE 'stageSource';` and
+`SHOW COLUMNS FROM assessment_issues LIKE 'publicAttemptId';` — if either is missing, Run JS script →
+`db:migrate`.
+
+### Two one-offs, after the backend is up
+
+cPanel → Run JS script, each first without arguments (it only **lists** what it would do), then
+with `-- --apply` in the arguments box. Both send nothing and are safe to run again.
+
+1. `learners:place-by-age` — gives learners with no date of birth the age from their website enquiry,
+   marks stages that already match the age as age-based, and places anyone in a class with no stage.
+2. `diagnostics:link-website` — adds the website diagnostic to learners who enrolled in a bootcamp
+   after taking one.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `57afd05` — 611 files, 150 migrations. Same zip in Dev, Live and
+Capable.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-DAiQuiZN.js` |
+| Live | `npm run build:live` | `index-BAN_K71G.js` |
+| Capable | `npm run build:capable` | `index-BLHimtZk.js` |
+
+CSS `index-hXTMed0K.css` in all three. 68 entries in each `assets.zip`; each checked to call only
+its own API.
+
+### Checked so far
+
+Server tests pass (88, 2 skipped), every build passes. On the local database: a learner placed from
+an age alone, the stage moved when the age changed and kept when staff had chosen it; a website
+diagnostic added to a learner (once only), its report with placement and competencies, and the
+learner's competency marks going from none to six indicators; every learner whose stage has bands
+getting their levels (23 enrolments), including one at two hubs. Not looked at in a browser: the new
+profile cards, the Unlink / Transfer warnings, the age field. Not yet tried on the hosting.
+
+**Note on levels:** a stage's Performance Bands only gain progress through the indicators linked to
+them (Curriculum → Competencies → Progress Arc → Performance Bands). Bands with no indicators stay at
+0% however much work is marked — locally 29 of 43 bands had none.
+
+### Deploy order
+
+1. Take a database backup.
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check the
+   two queries above.
+3. **One-offs:** `learners:place-by-age`, then `diagnostics:link-website` (each listed first, then
+   with `-- --apply`). If the 30 Oct release wasn't uploaded before, run its
+   `bootcamps:place-learners` first.
+4. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+5. **Verify:** a website bootcamp learner's Overview shows a Diagnostic report and their
+   Competencies tab has marks; a learner with no date of birth gets a stage once an age is typed on
+   the edit window; Unlink on the Learning Hubs card shows the warning; staff see Joined via.
+
+**Rolling back:** restore the backup, then upload the earlier zips (from commit `1d1f7bd`).
+
+---
+
 ## This release (30 Oct 2026) — Date of birth on the website, bootcamp learners placed on their pathway, a diagnostic made for children, one diagnostic per learner
 
 **Portal and backend** from `curriculum` (branch `modules`) at `bd1b4ab`; **website** from

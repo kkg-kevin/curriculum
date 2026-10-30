@@ -28,7 +28,7 @@ export default function CreateLearnerPage() {
   const methods = useForm({
     resolver: zodResolver(createLearnerSchema),
     defaultValues: {
-      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
+      firstName: "", lastName: "", gender: "", dateOfBirth: "", statedAge: "", nationality: "", languages: "", username: "",
       guardianName: "", guardianPhone: "", guardianEmail: "", password: "", learnerPassword: "", photo: null,
     },
     mode: "onTouched",
@@ -40,7 +40,9 @@ export default function CreateLearnerPage() {
     // A learner is never linked to a hub as part of its own identity — hubId here is purely
     // an optional one-shot convenience for when this page was opened from within a school's
     // own page (e.g. its "Enrol Learner" button), same pattern as CreateTeacherPage.
-    const payload = lockedSchoolId ? { ...data, hubId: lockedSchoolId } : data;
+    // A date of birth makes an age typed as well unnecessary.
+    const learnerData = data.dateOfBirth ? { ...data, statedAge: "" } : data;
+    const payload = lockedSchoolId ? { ...learnerData, hubId: lockedSchoolId } : learnerData;
     createLearner(payload, {
       onSuccess: (learner) => {
         const viewPath = learnerPath(user?.role, learner.id, "view");

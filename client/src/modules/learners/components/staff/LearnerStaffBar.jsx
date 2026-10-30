@@ -26,6 +26,8 @@ export default function LearnerStaffBar({
   onOpenFullForm, onRemove, removeLabel,
 }) {
   const active = accountStatus === "active";
+  // A website sign-up stays switched off until its invoice is paid.
+  const awaitingPayment = accountStatus === "pending_payment";
   return (
     <div style={{ ...cardStyle(), padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
@@ -34,8 +36,8 @@ export default function LearnerStaffBar({
         </button>
         <span style={{ color: "#D1D5DB", fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: T.ink, fontWeight: 600 }}>{learner.firstName} {learner.lastName}</span>
-        <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 700, backgroundColor: active ? "#ECFDF5" : "#FEF2F2", color: active ? "#047857" : "#B91C1C", border: `1px solid ${active ? "#A7F3D0" : "#FECACA"}` }}>
-          Account {active ? "active" : "inactive"}
+        <span style={{ padding: "2px 10px", borderRadius: 20, fontSize: 11.5, fontWeight: 700, backgroundColor: active ? "#ECFDF5" : awaitingPayment ? "#FFFBEB" : "#FEF2F2", color: active ? "#047857" : awaitingPayment ? "#B45309" : "#B91C1C", border: `1px solid ${active ? "#A7F3D0" : awaitingPayment ? "#FDE68A" : "#FECACA"}` }}>
+          {awaitingPayment ? "Waiting for payment" : `Account ${active ? "active" : "inactive"}`}
         </span>
       </div>
 

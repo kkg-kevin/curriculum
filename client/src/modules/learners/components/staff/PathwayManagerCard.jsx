@@ -13,7 +13,14 @@ const ACCENT = "#25476a";
 // placement, and sees its courses in My Courses (CompetencyService.assignPathway). Only a
 // hand-added pathway can be removed. Stage lives on the hub enrollment link (`hubId`), not the
 // learner record — see maybeAutoIssueDiagnostic's comment in learner.service.js.
-export default function PathwayManagerCard({ learnerId, hubId, currentStageId, curriculumId, canRemove }) {
+// `stageSource` — who set the stage (learner_hub_links.stageSource): "age" | "diagnostic" | "staff".
+const STAGE_SOURCE = {
+  age: "Worked out from their age — moves if the date of birth or age is corrected",
+  diagnostic: "Set by their diagnostic — stays when the age changes",
+  staff: "Chosen by hand — stays when the age changes (choose “Not set” to place by age again)",
+};
+
+export default function PathwayManagerCard({ learnerId, hubId, currentStageId, stageSource, curriculumId, canRemove }) {
   const { data: journey = [], isLoading: journeyLoading } = usePathway(curriculumId, learnerId);
   const { data: areas = [] } = usePathways(curriculumId);
   const { data: stages = [] } = useAgeCategories(curriculumId);
@@ -58,6 +65,7 @@ export default function PathwayManagerCard({ learnerId, hubId, currentStageId, c
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+          {currentStageId && STAGE_SOURCE[stageSource] && <span style={{ fontSize: 12, color: "#9CA3AF" }}>{STAGE_SOURCE[stageSource]}</span>}
         </div>
       )}
 

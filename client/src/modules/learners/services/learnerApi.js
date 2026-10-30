@@ -16,6 +16,9 @@ export const learnerApi = {
   checkRemove: (id) => checkDelete(`${BASE}/${id}`),
   // The learner's parent on its own: details, login, their children, sign-ups (staff learner page's Parent tab).
   parent: (id) => api.get(`${BASE}/${id}/parent`).then((r) => r.data.data),
+  // Website diagnostics the family took (by the guardian's phone, or the bootcamp enrolment), and linking one.
+  websiteDiagnostics: (id) => api.get(`${BASE}/${id}/website-diagnostics`).then((r) => r.data.data),
+  linkWebsiteDiagnostic: (id, attemptId) => api.post(`${BASE}/${id}/website-diagnostics/${attemptId}`).then((r) => r.data.data),
   getHubs:   (id)                  => api.get(`${BASE}/${id}/hubs/links`).then((r) => r.data.data),
   enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => r.data.data),
   updateHub: (id, hubId, data)     => api.put(`${BASE}/${id}/hubs/links/${hubId}`, data).then((r) => r.data.data),

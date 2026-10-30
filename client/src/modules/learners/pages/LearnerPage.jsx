@@ -11,6 +11,7 @@ import { learnerApi } from "../services/learnerApi";
 import { useCompetencies, useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { useLearnerCertificates, useLearnerCertificateProgress } from "../../certificates/hooks/useCertificates";
 import { deriveBandJourney } from "../../learner-portal/utils/bandJourney";
+import { stagePendingReason } from "../../../utils/learnerAge";
 import { useLearnerMentors } from "../../learner-portal/hooks/useLearnerMentors";
 import HubSwitcher from "../../../components/ui/HubSwitcher";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -37,9 +38,9 @@ import AchievementsShowcase from "../../certificates/components/AchievementsShow
 import LearnerStaffBar from "../components/staff/LearnerStaffBar";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
-import JourneyPlacementCard from "../components/staff/JourneyPlacementCard";
-import { DiagnosticAssessmentCard, PathwayDiagnosticsCard } from "../components/staff/DiagnosticsCards";
 import ParentTab from "../components/staff/ParentTab";
+import WebsiteDiagnosticsCard from "../components/staff/WebsiteDiagnosticsCard";
+import DiagnosticReportCard from "../../learner-portal/components/profile/DiagnosticReportCard";
 
 function NoClassNotice() {
   return (
@@ -50,6 +51,13 @@ function NoClassNotice() {
 }
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : null);
+// A "YYYY-MM-DD" calendar date, never shifted by the viewer's timezone.
+const formatBirthDate = (value) => {
+  const [y, m, d] = String(value || "").slice(0, 10).split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : value || null;
+};
+// "Website — bootcamp enrolment · Robotics Holiday Camp · 30 Oct 2026" (server: learner-origin.js).
+const joinedVia = (origin) => (origin ? [origin.title, origin.detail, formatDate(origin.at)].filter(Boolean).join(" · ") : null);
 
 // One page per learner for staff (admin, staff, a learning hub): the learner's own profile
 // (learner-portal/pages/ProfilePage.jsx) — the same cards, for this learner — with everything
@@ -105,7 +113,7 @@ export default function LearnerPage() {
   const { data: competencies = [], isLoading: competenciesLoading } = useCompetencies(curriculumId);
   const { data: ageCategories = [] } = useAgeCategories(curriculumId);
   const stage = ageCategories.find((s) => s.id === selectedHub?.currentStageId) || null;
-  const { data: bandProgress = [] } = useLearnerBandProgress(curriculumId, id);
+  const { data: bandProgress = [] } = useLearnerBandProgress(curriculumId, id, selectedHub?.id);
   const { current: currentBand, next: nextBand } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
 
   // Certificates held (the learner sees only standing ones), and what they can earn next here.
@@ -178,14 +186,18 @@ export default function LearnerPage() {
       <ProfileIdentityCard
         learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={curriculumId}
         onEdit={manage ? () => setEditing("learner") : undefined}
+        stageHint={stage ? null : stagePendingReason({ learner, inClass: !!curriculumId, stages: ageCategories, staff: true })}
         extraMeta={preview ? [] : [
           { label: "Gender", value: learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null },
+          { label: "Date of birth", value: learner.dateOfBirth ? formatBirthDate(learner.dateOfBirth) : learner.statedAge != null ? `Not known — age ${learner.statedAge} given on ${formatBirthDate(learner.statedAgeOn)}` : null },
+          { label: "Joined via", value: joinedVia(learner.origin) },
+          ...(learner.origin?.note ? [{ label: "From the family", value: learner.origin.note }] : []),
           { label: "Added", value: formatDate(learner.createdAt) },
           { label: "Last updated", value: formatDate(learner.updatedAt) },
         ]}
       />
 
-      {tab === "Overview" && <ProgressArcCard curriculumId={curriculumId} learnerId={id} />}
+      {tab === "Overview" && <ProgressArcCard curriculumId={curriculumId} learnerId={id} hubId={selectedHub?.id} />}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
@@ -195,7 +207,7 @@ export default function LearnerPage() {
             onOpenParent={preview || isEducatorTrainee ? undefined : () => { setActiveTab("Parent"); requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); }}
           />
           <ShareProfileCard learner={learner} />
-          <PortfolioSnapshot coursesCompleted={coursesCompleted} curriculumId={curriculumId} learnerId={id} classId={cls?.id} staffLearnerId={id} />
+          <PortfolioSnapshot coursesCompleted={coursesCompleted} curriculumId={curriculumId} learnerId={id} classId={cls?.id} staffLearnerId={id} hubId={selectedHub?.id} />
         </div>
         <SideRail
           hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading}
@@ -211,28 +223,32 @@ export default function LearnerPage() {
       </div>
 
       {tab === "Overview" && (
-        <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} />
+        <>
+          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} hubId={selectedHub?.id} />
+          <DiagnosticReportCard learnerId={id} curriculumId={curriculumId} staff={!preview} />
+        </>
       )}
 
       {tab === "Competencies" && (
-        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} />
+        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} hubId={selectedHub?.id} />
       )}
 
       {tab === "Pathway" && (
         !manage ? (
-          <PathwayTabContent learnerId={id} curriculumId={curriculumId} />
+          <>
+            <PathwayTabContent learnerId={id} curriculumId={curriculumId} />
+            <DiagnosticReportCard learnerId={id} curriculumId={curriculumId} staff={!preview} />
+          </>
         ) : !curriculumId ? (
-          <NoClassNotice />
+          <>
+            <WebsiteDiagnosticsCard learnerId={id} canLink={isAdmin || isSchool} />
+            <NoClassNotice />
+          </>
         ) : (
           <>
-            {(isAdmin || isSchool) && (
-              <>
-                <DiagnosticAssessmentCard learnerId={id} currentStageId={selectedHub?.currentStageId} currentBandId={selectedHub?.currentBandId} curriculumId={curriculumId} />
-                <PathwayDiagnosticsCard learnerId={id} curriculumId={curriculumId} />
-              </>
-            )}
-            <PathwayManagerCard learnerId={id} hubId={selectedHub?.id} currentStageId={selectedHub?.currentStageId} curriculumId={curriculumId} canRemove={isAdmin || isSchool} />
-            <JourneyPlacementCard learnerId={id} currentRungId={learner.currentRungId} curriculumId={curriculumId} dateOfBirth={learner.dateOfBirth} />
+            <WebsiteDiagnosticsCard learnerId={id} canLink={isAdmin || isSchool} />
+            <DiagnosticReportCard learnerId={id} curriculumId={curriculumId} staff />
+            <PathwayManagerCard learnerId={id} hubId={selectedHub?.id} currentStageId={selectedHub?.currentStageId} stageSource={selectedHub?.stageSource} curriculumId={curriculumId} canRemove={isAdmin || isSchool} />
           </>
         )
       )}
@@ -296,7 +312,9 @@ export default function LearnerPage() {
         message={
           accountStatus === "active"
             ? `"${fullName}" will be marked inactive and lose learner portal access.`
-            : `"${fullName}" will be marked active again and regain learner portal access.`
+            : accountStatus === "pending_payment"
+              ? `"${fullName}" signed up on the website and their invoice isn't paid yet. Activating gives them portal access now; the invoice stays open. To take a payment, record it on the invoice instead — that activates them.`
+              : `"${fullName}" will be marked active again and regain learner portal access.`
         }
         confirmLabel={accountStatus === "active" ? "Deactivate" : "Activate"}
         cancelLabel="Cancel"

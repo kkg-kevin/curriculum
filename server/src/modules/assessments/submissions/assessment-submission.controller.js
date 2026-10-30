@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const { redactUnpublishedReport } = require("./grading.utils");
 const AssessmentSubmissionService = require("./assessment-submission.service");
+const WebsiteDiagnosticService = require("./website-diagnostic.service");
 const AssessmentModel = require("../assessment.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
@@ -240,6 +241,19 @@ const getPathwayDiagnosticsForLearner = asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows, count: rows.length });
 });
 
+// The profile's diagnostic report — every marked pathway diagnostic this learner holds, from the
+// website or the portal, with its competency marks (website-diagnostic.service.js). Same access
+// shape as the two above; ?curriculumId narrows it to one hub's curriculum.
+const getDiagnosticReportsForLearner = asyncHandler(async (req, res) => {
+  if (req.user.role === "learner") {
+    assertOwn(req.params.learnerId === req.ownLearner?.id);
+  } else {
+    await assertLearnerHubAccess(req, req.params.learnerId);
+  }
+  const rows = await WebsiteDiagnosticService.reportsForLearner(req.params.learnerId, req.query.curriculumId || null);
+  res.json({ success: true, data: rows, count: rows.length });
+});
+
 // A learner reading their own accumulating competency progress, or an admin/school reviewing
 // it for a learner in their own hub — same access shape as the diagnostic card.
 const getLearnerIndicatorProgress = asyncHandler(async (req, res) => {
@@ -459,6 +473,7 @@ module.exports = {
   getIssuedForLearnerAsStaff,
   getDiagnosticForLearner,
   getPathwayDiagnosticsForLearner,
+  getDiagnosticReportsForLearner,
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,

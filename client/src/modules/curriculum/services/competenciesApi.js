@@ -78,8 +78,10 @@ export const competenciesApi = {
   // Real per-learner sibling of the above — this learner's own graded work run through the
   // same Evidence Type → Assessment Type → Engine 1/2/5/3 pipeline, instead of the shared
   // curriculum-wide manual preview value.
-  getLearnerCompetencyScores: (curriculumId, learnerId) =>
-    api.get(`${base(curriculumId)}/scores/learner/${learnerId}`).then((r) => r.data.data),
+  // `hubId` — the hub the profile shows: a learner at two hubs running this curriculum can be in a
+  // different stage at each, and the stage decides the bands.
+  getLearnerCompetencyScores: (curriculumId, learnerId, hubId) =>
+    api.get(`${base(curriculumId)}/scores/learner/${learnerId}`, { params: hubId ? { hubId } : {} }).then((r) => r.data.data),
 
   /* Age Categories */
   getAgeCategories: (curriculumId) =>
@@ -179,8 +181,8 @@ export const competenciesApi = {
 
   // Real per-learner sibling — this learner's own accumulating indicator progress instead of
   // the shared curriculum-wide manual store.
-  getLearnerBandProgress: (curriculumId, learnerId) =>
-    api.get(`${base(curriculumId)}/bands/progress/learner/${learnerId}`).then((r) => r.data.data),
+  getLearnerBandProgress: (curriculumId, learnerId, hubId) =>
+    api.get(`${base(curriculumId)}/bands/progress/learner/${learnerId}`, { params: hubId ? { hubId } : {} }).then((r) => r.data.data),
 
   /* Pathway — course sequence + indicator-contribution/threshold progress (same Engine 4 shape
    * as Performance Bands above, scoped to one Pathway's course ladder instead of a stage's). */

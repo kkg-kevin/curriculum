@@ -15,6 +15,8 @@
     "billing:process": "node src/scripts/processBilling.js",
     "enquiries:process": "node src/scripts/processEnquiries.js",
     "bootcamps:place-learners": "node src/scripts/placeBootcampLearners.js",
+    "learners:place-by-age": "node src/scripts/placeLearnersByAge.js",
+    "diagnostics:link-website": "node src/scripts/linkWebsiteDiagnostics.js",
     "mpesa:register-urls": "node src/scripts/registerMpesaUrls.js",
     "org:merge:report": "node src/scripts/mergeOrganisation.js",
     "org:merge:apply": "node src/scripts/mergeOrganisation.js --apply",

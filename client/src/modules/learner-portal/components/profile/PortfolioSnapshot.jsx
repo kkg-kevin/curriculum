@@ -19,9 +19,9 @@ function Stat({ value, label, isReal, icon: Icon }) {
 }
 
 // `staffLearnerId` — an admin/school viewing that learner's profile (see AssessmentsOverview).
-export default function PortfolioSnapshot({ coursesCompleted, curriculumId, learnerId, classId, staffLearnerId }) {
+export default function PortfolioSnapshot({ coursesCompleted, curriculumId, learnerId, classId, staffLearnerId, hubId }) {
   const { data: competencies = [] } = useCompetencies(curriculumId);
-  const { data: scores = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
+  const { data: scores = [] } = useLearnerCompetencyScores(curriculumId, learnerId, hubId);
   const { data: issuedData } = useIssuedForLearner(staffLearnerId);
 
   // "On track" = adopted competencies whose real score has cleared this curriculum's own

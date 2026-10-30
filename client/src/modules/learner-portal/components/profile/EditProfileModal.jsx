@@ -29,6 +29,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     lastName: "",
     gender: "",
     dateOfBirth: "",
+    statedAge: "",
     nationality: "",
     languages: "",
     username: "",
@@ -49,6 +50,7 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
         lastName: learner.lastName || "",
         gender: ["male", "female"].includes(learner.gender) ? learner.gender : "", // an old "other" must be re-chosen
         dateOfBirth: learner.dateOfBirth || "",
+        statedAge: learner.statedAge != null ? String(learner.statedAge) : "",
         nationality: learner.nationality || "",
         languages: learner.languages || "",
         username: learner.username || "",
@@ -69,6 +71,9 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     if (!formData.firstName.trim()) nextErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) nextErrors.lastName = "Last name is required";
     if (!formData.gender) nextErrors.gender = "Gender is required";
+    if (!formData.dateOfBirth && formData.statedAge.trim() && !(/^\d{1,2}$/.test(formData.statedAge.trim()) && Number(formData.statedAge) >= 2)) {
+      nextErrors.statedAge = "Enter an age from 2 to 99";
+    }
     if (formData.username && !/^[a-zA-Z0-9._-]{3,30}$/.test(formData.username)) {
       nextErrors.username = "3-30 characters — letters, numbers, dots, underscores, and hyphens only";
     }
@@ -80,8 +85,10 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    const { username, ...rest } = formData;
-    onSave(hasUsername ? rest : { ...rest, username: username.trim() });
+    // A date of birth replaces an age given without one.
+    const { username, statedAge, ...rest } = formData;
+    const withAge = { ...rest, statedAge: rest.dateOfBirth ? "" : statedAge.trim() };
+    onSave(hasUsername ? withAge : { ...withAge, username: username.trim() });
   };
 
   return (
@@ -154,6 +161,14 @@ export default function EditProfileModal({ learner, isSaving, onSave, onClose })
               <label style={labelStyle}>Date of birth</label>
               <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} style={inputStyle(false)} />
             </div>
+            {/* Only without a date of birth: an age places the learner until the date is known. */}
+            {!formData.dateOfBirth && (
+              <div>
+                <label style={labelStyle}>Age (if the date of birth isn't known)</label>
+                <input name="statedAge" inputMode="numeric" placeholder="e.g. 9" value={formData.statedAge} onChange={handleChange} style={inputStyle(errors.statedAge)} />
+                {errors.statedAge && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444" }}>{errors.statedAge}</p>}
+              </div>
+            )}
             <div>
               <label style={labelStyle}>Nationality</label>
               <select name="nationality" value={formData.nationality} onChange={handleChange} style={{ ...inputStyle(false), backgroundColor: "#fff" }}>

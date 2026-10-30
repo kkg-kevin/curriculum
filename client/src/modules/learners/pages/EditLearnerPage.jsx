@@ -27,7 +27,7 @@ export default function EditLearnerPage() {
   const methods = useForm({
     resolver: zodResolver(updateLearnerSchema),
     defaultValues: {
-      firstName: "", lastName: "", gender: "", dateOfBirth: "", nationality: "", languages: "", username: "",
+      firstName: "", lastName: "", gender: "", dateOfBirth: "", statedAge: "", nationality: "", languages: "", username: "",
       guardianName: "", guardianPhone: "", guardianEmail: "", password: "", learnerPassword: "", photo: null,
     },
     mode: "onTouched",
@@ -42,6 +42,7 @@ export default function EditLearnerPage() {
         lastName:      learner.lastName      || "",
         gender:        ["male", "female"].includes(learner.gender) ? learner.gender : "", // an old "other" must be re-chosen
         dateOfBirth:   learner.dateOfBirth   || "",
+        statedAge:     learner.statedAge != null ? String(learner.statedAge) : "",
         nationality:   learner.nationality   || "",
         languages:     learner.languages     || "",
         username:      learner.username      || "",
@@ -57,6 +58,8 @@ export default function EditLearnerPage() {
 
   const onSubmit = (data) => {
     const viewPath = learnerPath(user?.role, id, "view");
+    // A date of birth replaces an age given without one.
+    if (data.dateOfBirth) data = { ...data, statedAge: "" };
     updateLearner({ id, data }, {
       onSuccess: () => {
         const queue = [];
