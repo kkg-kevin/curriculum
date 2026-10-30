@@ -100,17 +100,17 @@ function CompetencyRow({ competency, isOpen, onToggle, progressByIndicator, scor
 // → Assessment Type Weights → scoring engines (see competency.service.js). The raw per-indicator
 // marks fetched below are shown only in each row's expanded detail, never averaged into the
 // headline percent — that would bypass the curriculum's configured weighting.
-export default function CompetenciesTabContent({ competencies, isLoading, learnerId, curriculumId }) {
+export default function CompetenciesTabContent({ competencies, isLoading, learnerId, curriculumId, hubId }) {
   const [openId, setOpenId] = useState(null);
   const { data: progressRows = [] } = useLearnerIndicatorProgress(learnerId, curriculumId);
   const progressByIndicator = useMemo(() => new Map(progressRows.map((r) => [r.indicatorId, r])), [progressRows]);
 
-  const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
+  const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId, hubId);
   const scoreByCompetencyId = useMemo(() => new Map(scoreRows.map((r) => [r.competencyId, r])), [scoreRows]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <ProgressArcCard curriculumId={curriculumId} learnerId={learnerId} />
+      <ProgressArcCard curriculumId={curriculumId} learnerId={learnerId} hubId={hubId} />
 
       <div style={{ ...cardStyle(), padding: 20 }}>
         <h2 style={{ ...sectionHeaderStyle(), marginBottom: 16 }}>Competency Framework</h2>

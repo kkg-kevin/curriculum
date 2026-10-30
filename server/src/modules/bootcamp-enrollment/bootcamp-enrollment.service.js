@@ -14,7 +14,7 @@ const NotificationService = require("../notifications/notification.service");
 const { resolveForSaleBootcamp } = require("../public-site/public-bootcamp.service");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { slugify } = require("../../shared/utils/slugify");
-const { ageFrom } = require("../../shared/utils/age");
+const { ageFrom, kenyaToday } = require("../../shared/utils/age");
 const { pathwayRowsFor } = require("../../shared/utils/public-content");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
@@ -137,6 +137,8 @@ const BootcampEnrollmentService = {
         lastName,
         gender: null, // the bootcamp form doesn't ask; male or female is set on the learner later
         dateOfBirth: data.learnerDateOfBirth || "",
+        // No date of birth (an older website): the age they gave places them instead.
+        ...(data.learnerDateOfBirth ? {} : { statedAge: data.learnerAge, statedAgeOn: kenyaToday() }),
         guardianName: data.parentName,
         guardianPhone: data.parentPhone,
         guardianEmail: data.parentEmail,
@@ -164,6 +166,12 @@ const BootcampEnrollmentService = {
       throw err;
     }
 
+    // The website diagnostic they took joins their record — its report, competencies and progress
+    // show on the profile like one taken in the portal (website-diagnostic.service.js).
+    if (data.attemptId) {
+      await require("../assessments/submissions/website-diagnostic.service").record(learner.id, data.attemptId)
+        .catch((err) => console.error("[bootcamp-enrollment] could not add the website diagnostic to the learner:", err.message));
+    }
     // Their stage and pathway, so the profile shows them from day one. Never fails the enrolment.
     await placeOnBootcampPathway(learner.id, bootcamp, offering.hubId, { attemptId: data.attemptId, age: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge })
       .catch((err) => console.error("[bootcamp-enrollment] could not place the learner on a pathway:", err.message));
@@ -370,8 +378,11 @@ async function placeOnBootcampPathway(learnerId, bootcamp, hubId, { attemptId = 
   }
   if (!pathway) return null;
 
-  if (link && !link.currentStageId && pathway.ageCategoryId) {
-    await LearnerHubLinkModel.update(link.id, { currentStageId: pathway.ageCategoryId });
+  // The stage: the website diagnostic's (over one worked out from the age), else the age's.
+  const fromDiagnostic = scorePercent != null;
+  const stageFollows = !link?.currentStageId || (fromDiagnostic && link.stageSource === "age");
+  if (link && stageFollows && pathway.ageCategoryId && link.currentStageId !== pathway.ageCategoryId) {
+    await LearnerHubLinkModel.update(link.id, { currentStageId: pathway.ageCategoryId, stageSource: fromDiagnostic ? "diagnostic" : "age" });
   }
   if (await LearnerPathwayModel.findOne(learnerId, pathway.id)) return pathway;
   const fromScore = scorePercent != null ? await CompetencyService.resolvePlacementFromScore(curriculumId, pathway.id, scorePercent) : null;

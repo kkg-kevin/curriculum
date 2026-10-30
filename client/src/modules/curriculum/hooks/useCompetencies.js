@@ -19,8 +19,8 @@ const KEYS = {
   indicatorAchievements: (cid) => ["indicator-achievements", cid],
   competencyScores:      (cid, ageCategoryId) => ["competency-scores", cid, ageCategoryId],
   bandProgress:          (cid, ageCategoryId) => ["band-progress", cid, ageCategoryId],
-  learnerCompetencyScores: (cid, learnerId) => ["competency-scores", "learner", cid, learnerId],
-  learnerBandProgress:     (cid, learnerId) => ["band-progress", "learner", cid, learnerId],
+  learnerCompetencyScores: (cid, learnerId, hubId) => ["competency-scores", "learner", cid, learnerId, hubId || null],
+  learnerBandProgress:     (cid, learnerId, hubId) => ["band-progress", "learner", cid, learnerId, hubId || null],
   learnerPathwayCourseProgress: (cid, pathwayId, learnerId) => ["pathway-course-progress", cid, pathwayId, learnerId],
 };
 
@@ -284,18 +284,19 @@ export function useBandProgress(curriculumId, ageCategoryId) {
 // Real per-learner siblings of the two hooks above — this learner's own graded work run
 // through the curriculum's real Evidence/Assessment-Type scoring config, instead of the shared
 // curriculum-wide manual preview value.
-export function useLearnerCompetencyScores(curriculumId, learnerId) {
+// `hubId` (optional): the hub the profile shows — its stage decides the bands.
+export function useLearnerCompetencyScores(curriculumId, learnerId, hubId = null) {
   return useQuery({
-    queryKey: KEYS.learnerCompetencyScores(curriculumId, learnerId),
-    queryFn:  () => competenciesApi.getLearnerCompetencyScores(curriculumId, learnerId),
+    queryKey: KEYS.learnerCompetencyScores(curriculumId, learnerId, hubId),
+    queryFn:  () => competenciesApi.getLearnerCompetencyScores(curriculumId, learnerId, hubId),
     enabled:  !!curriculumId && !!learnerId,
   });
 }
 
-export function useLearnerBandProgress(curriculumId, learnerId) {
+export function useLearnerBandProgress(curriculumId, learnerId, hubId = null) {
   return useQuery({
-    queryKey: KEYS.learnerBandProgress(curriculumId, learnerId),
-    queryFn:  () => competenciesApi.getLearnerBandProgress(curriculumId, learnerId),
+    queryKey: KEYS.learnerBandProgress(curriculumId, learnerId, hubId),
+    queryFn:  () => competenciesApi.getLearnerBandProgress(curriculumId, learnerId, hubId),
     enabled:  !!curriculumId && !!learnerId,
   });
 }

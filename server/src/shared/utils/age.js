@@ -17,6 +17,20 @@ function ageFrom(dateOfBirth, today = kenyaToday()) {
   return age < 120 ? age : null;
 }
 
+/**
+ * A learner's age today: from their date of birth, else from an age given without one
+ * (`statedAge` on `statedAgeOn`, plus the whole years since). Null when neither is on record.
+ */
+function learnerAge(learner, today = kenyaToday()) {
+  if (!learner) return null;
+  const fromBirth = ageFrom(learner.dateOfBirth, today);
+  if (fromBirth !== null) return fromBirth;
+  if (learner.statedAge == null || learner.statedAge === "") return null;
+  const given = Number(learner.statedAge);
+  if (!Number.isFinite(given)) return null;
+  return given + (ageFrom(learner.statedAgeOn, today) ?? 0);
+}
+
 // An optional learner date of birth on a public form — a child of 3 to 19, like the website's own check.
 const learnerDateOfBirth = z
   .string()
@@ -29,4 +43,4 @@ const learnerDateOfBirth = z
   .optional()
   .nullable();
 
-module.exports = { ageFrom, kenyaToday, learnerDateOfBirth };
+module.exports = { ageFrom, kenyaToday, learnerAge, learnerDateOfBirth };

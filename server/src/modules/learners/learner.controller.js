@@ -12,6 +12,9 @@ const UsageService = require("../usage/usage.service");
 const UserModel = require("../auth/user.model");
 const LearnerParentService = require("./learner-parent.service");
 const { cleanImportRow, sameLearner } = require("./learner.import");
+const { kenyaToday } = require("../../shared/utils/age");
+const { originOf } = require("./learner-origin");
+const WebsiteDiagnosticService = require("../assessments/submissions/website-diagnostic.service");
 
 // A learner has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -77,6 +80,7 @@ const createLearner = asyncHandler(async (req, res) => {
   // Stamped server-side (never from the body — the schema strips it) so the creating admin keeps
   // access before any hub link exists; see isLinkedToOwnHub.
   if (req.user.role === "admin") data.createdByAdminId = req.ownerAdminId;
+  if (data.statedAge != null) data.statedAgeOn = kenyaToday();
   const record = await LearnerService.createLearner(data);
   // The learner's OWN dedicated login is minted only after the record — createLearner's own
   // username-uniqueness check (assertUsernameAvailable) has to throw first, so a colliding/
@@ -279,13 +283,34 @@ const getLearnerParent = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// Website diagnostics staff can link to a learner they added (the family took one, then enquired
+// rather than enrolling online) — and linking one, which places them from it like a diagnostic
+// marked in the portal. See website-diagnostic.service.js.
+const getLearnerWebsiteDiagnostics = asyncHandler(async (req, res) => {
+  const record = await LearnerService.getLearnerById(req.params.id);
+  assertOwn(await isLinkedToOwnHub(req, record.id));
+  res.json({ success: true, data: await WebsiteDiagnosticService.candidatesFor(record) });
+});
+
+const linkLearnerWebsiteDiagnostic = asyncHandler(async (req, res) => {
+  const record = await LearnerService.getLearnerById(req.params.id);
+  assertOwn(await isLinkedToOwnHub(req, record.id));
+  // Only one of the diagnostics offered for this learner — never an arbitrary attempt id.
+  const candidates = await WebsiteDiagnosticService.candidatesFor(record);
+  assertOwn(candidates.some((c) => c.attemptId === req.params.attemptId));
+  const { created } = await WebsiteDiagnosticService.attach(record.id, req.params.attemptId);
+  res.status(created ? 201 : 200).json({ success: true, data: { created } });
+});
+
 const getLearnerById = asyncHandler(async (req, res) => {
   const record = await LearnerService.getLearnerById(req.params.id);
   if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, record.id));
   if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, record.id));
   if (req.user.role === "teacher") assertOwn(await anyEnrollmentTaughtByTeacher(record.id, req.ownTeacher?.id));
   if (req.user.role === "learner") assertOwn(record.id === req.ownLearner?.id);
-  res.json({ success: true, data: record });
+  // Staff also see how the learner joined (the learner page's "Joined via").
+  if (req.user.role === "learner") return res.json({ success: true, data: record });
+  res.json({ success: true, data: { ...record, origin: await originOf(record) } });
 });
 
 // Self-service fields the learner's OWN dedicated login (as opposed to the guardian-mediated
@@ -293,7 +318,7 @@ const getLearnerById = asyncHandler(async (req, res) => {
 // guardianEmail: those are the GUARDIAN's own profile, edited only from the guardian's login.
 // The guardian's own `password` is likewise never honored from this login (see below) — only
 // `learnerPassword`, the learner's own credential, ever is.
-const LEARNER_SELF_EDIT_FIELDS = ["firstName", "lastName", "gender", "dateOfBirth", "nationality", "languages", "photo", "username"];
+const LEARNER_SELF_EDIT_FIELDS = ["firstName", "lastName", "gender", "dateOfBirth", "statedAge", "nationality", "languages", "photo", "username"];
 
 const updateLearner = asyncHandler(async (req, res) => {
   const { password, learnerPassword, ...parsed } = updateLearnerSchema.parse(req.body);
@@ -333,7 +358,17 @@ const updateLearner = asyncHandler(async (req, res) => {
       throw Object.assign(new Error("You sign in as an educator — your learning has no separate login"), { statusCode: 400 });
     }
   }
+  // The day an age is given is the day it changes — re-saving the same age keeps its day.
+  if ("statedAge" in data) {
+    if ((data.statedAge ?? null) === (before.statedAge ?? null)) delete data.statedAge;
+    else data.statedAgeOn = data.statedAge != null ? kenyaToday() : null;
+  }
   const record = await LearnerService.updateLearner(req.params.id, data);
+  // A new date of birth or age moves a stage that was worked out from the age (and places a
+  // learner who had none) at each hub where they're in a class.
+  if (("dateOfBirth" in data && data.dateOfBirth !== before.dateOfBirth) || ("statedAge" in data && data.statedAge !== before.statedAge)) {
+    await LearnerService.placeByAge(record.id);
+  }
   if (password && allowGuardianPassword) {
     if (!record.guardianEmail) {
       const err = new Error("This learner needs a guardian email before a password can be set");
@@ -522,6 +557,8 @@ module.exports = {
   getAllLearners,
   getLearnerById,
   getLearnerParent,
+  getLearnerWebsiteDiagnostics,
+  linkLearnerWebsiteDiagnostic,
   updateLearner,
   updateLearnerAccountStatus,
   deleteLearner,

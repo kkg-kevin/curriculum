@@ -5,6 +5,8 @@ const {
   getAllLearners,
   getLearnerById,
   getLearnerParent,
+  getLearnerWebsiteDiagnostics,
+  linkLearnerWebsiteDiagnostic,
   updateLearner,
   updateLearnerAccountStatus,
   deleteLearner,
@@ -44,6 +46,8 @@ router.post("/bulk-import", authorize("admin", "school"), bulkImportLearners);
 
 // The learner's parent on its own — the staff learner page's Parent tab.
 router.get("/:id/parent", authorize("admin", "school"), getLearnerParent);
+router.get("/:id/website-diagnostics", authorize("admin", "school"), getLearnerWebsiteDiagnostics);
+router.post("/:id/website-diagnostics/:attemptId", authorize("admin", "school"), linkLearnerWebsiteDiagnostic);
 router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getLearnerById)
   .put(authorize("admin", "school", "learner"), updateLearner)

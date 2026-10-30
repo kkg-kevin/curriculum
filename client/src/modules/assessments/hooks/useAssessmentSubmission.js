@@ -11,6 +11,7 @@ const KEYS = {
   submission:     (id)        => ["assessment-submissions", id],
   diagnostic:     (learnerId, curriculumId) => ["assessment-issues", "diagnostic", learnerId, curriculumId || null],
   pathwayDiagnostics: (learnerId) => ["assessment-issues", "diagnostic", "pathways", learnerId],
+  diagnosticReports: (learnerId, curriculumId) => ["assessment-issues", "diagnostic", "reports", learnerId, curriculumId || null],
   indicatorProgress: (learnerId, curriculumId) => ["assessment-issues", "indicator-progress", learnerId, curriculumId || null],
 };
 
@@ -188,6 +189,16 @@ export function usePathwayDiagnosticsForLearner(learnerId) {
   return useQuery({
     queryKey: KEYS.pathwayDiagnostics(learnerId),
     queryFn:  () => assessmentSubmissionApi.getPathwayDiagnosticsForLearner(learnerId),
+    enabled:  !!learnerId,
+  });
+}
+
+// The profile's diagnostic report — every marked pathway diagnostic this learner holds (taken on
+// the website before enrolling, or in the portal), for one curriculum when given.
+export function useDiagnosticReports(learnerId, curriculumId = null) {
+  return useQuery({
+    queryKey: KEYS.diagnosticReports(learnerId, curriculumId),
+    queryFn:  () => assessmentSubmissionApi.getDiagnosticReports(learnerId, curriculumId),
     enabled:  !!learnerId,
   });
 }

@@ -2,6 +2,7 @@ const db = require("../../config/db");
 const { createRecord, firstOrNull, toJson } = require("../../shared/utils/model.utils");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
+const { kenyaToday } = require("../../shared/utils/age");
 const BillingModel = require("../billing/billing.model");
 const ItemsModel = require("../settings/items/items.model");
 const AssessmentModel = require("../assessments/assessment.model");
@@ -145,6 +146,8 @@ async function childFor(child, customer, hubId) {
   const learner = await LearnerService.createLearner({
     firstName, lastName, gender: null, // checkout doesn't ask; set on the learner later
     dateOfBirth: child.dateOfBirth || "",
+    // No date of birth (an older website): the age they gave places them instead.
+    ...(child.dateOfBirth ? {} : { statedAge: child.age, statedAgeOn: kenyaToday() }),
     guardianName: customer.name, guardianPhone: customer.phone, guardianEmail: customer.email,
     username: child.username, accountStatus: "pending_payment",
   });

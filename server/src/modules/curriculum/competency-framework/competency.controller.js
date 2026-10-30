@@ -383,7 +383,8 @@ exports.getLearnerCompetencyScores = asyncHandler(async (req, res) => {
   } else {
     await assertLearnerHubAccess(req, learnerId);
   }
-  const data = await CompetencyService.getLearnerCompetencyScores(req.params.id, learnerId);
+  // ?hubId — the hub the profile is showing, whose stage counts.
+  const data = await CompetencyService.getLearnerCompetencyScores(req.params.id, learnerId, req.query.hubId || null);
   res.json({ success: true, data });
 });
 
@@ -394,7 +395,8 @@ exports.getLearnerBandProgress = asyncHandler(async (req, res) => {
   } else {
     await assertLearnerHubAccess(req, learnerId);
   }
-  const data = await CompetencyService.getLearnerBandProgress(req.params.id, learnerId);
+  // ?hubId — the hub the profile is showing, whose stage counts.
+  const data = await CompetencyService.getLearnerBandProgress(req.params.id, learnerId, req.query.hubId || null);
   res.json({ success: true, data });
 });
 

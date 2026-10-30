@@ -21,16 +21,13 @@ const AttendanceModel = require("../attendance/attendance.model");
 const ClassGroupService = require("../classes/groups/class-group.service");
 const CourseModel = require("../courses/course.model");
 const TeacherModel = require("../teachers/teacher.model");
+const { learnerAge } = require("../../shared/utils/age");
 
-function computeAge(dateOfBirth) {
-  if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth);
-  if (Number.isNaN(dob.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
-  return age;
+// The curriculum's Developmental Stage an age falls in — the first by authoring order whose
+// range holds it (an open end matches anything on that side). Null when none does.
+function stageForAge(categories, age) {
+  if (age === null || age === undefined) return null;
+  return categories.find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge)) || null;
 }
 
 // Runs whenever a learner's enrollment resolves a class (and so a curriculum) — matches their
@@ -49,22 +46,27 @@ function computeAge(dateOfBirth) {
 // still runs — only the issueDiagnostic call was removed. AgeCategory.diagnosticAssessmentId
 // remains in the schema for now (existing historical issues/reports still reference it) but the
 // authoring UI (AgeCategoriesPanel) no longer exposes it, so no new stage ever sets it again.
+//
+// The age is the date of birth's, else an age given without one (learnerAge). A stage this set
+// (stageSource "age") follows the age when it's corrected; one set by a diagnostic or by staff
+// never moves, and neither does an older one with no source recorded.
 async function maybeAutoIssueDiagnostic(learnerId, cls, hubId) {
   if (!cls?.curriculumId) return;
   const learner = await LearnerModel.findById(learnerId);
   const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
-  const age = computeAge(learner?.dateOfBirth);
+  const age = learnerAge(learner);
   let stageId = link?.currentStageId || null;
   if (age !== null) {
     const categories = await AgeCategoryModel.findByCurriculumId(cls.curriculumId);
-    const category = categories.find((c) => (c.minAge == null || age >= c.minAge) && (c.maxAge == null || age <= c.maxAge));
-    if (category && link && !link.currentStageId) {
-      await LearnerHubLinkModel.update(link.id, { currentStageId: category.id });
+    const category = stageForAge(categories, age);
+    const followsAge = !link?.currentStageId || link.stageSource === "age";
+    if (category && link && followsAge && link.currentStageId !== category.id) {
+      await LearnerHubLinkModel.update(link.id, { currentStageId: category.id, stageSource: "age" });
+      stageId = category.id;
     }
-    // An existing manual/diagnostic placement always wins (never overwritten above), so the
-    // stage a Pathway diagnostic is matched against is whichever one actually ended up set —
-    // the pre-existing placement if there was one, or the freshly age-matched one otherwise.
-    stageId = link?.currentStageId || category?.id || null;
+    // A diagnostic/staff placement always wins (never overwritten above), so the stage a Pathway
+    // diagnostic is matched against is whichever one actually ended up set.
+    stageId = stageId || category?.id || null;
   }
   await maybeAutoIssuePathwayDiagnostics(learnerId, cls, stageId);
   await maybeAutoPlaceRung(learner, cls, age);
@@ -507,6 +509,7 @@ const LearnerService = {
           // This hub's own Developmental Stage / Performance Band placement — see
           // maybeAutoIssueDiagnostic's comment for why this lives per-hub, not on the learner.
           currentStageId: link.currentStageId || null,
+          stageSource: link.stageSource || null,
           currentBandId: link.currentBandId || null,
         };
       })
@@ -592,7 +595,9 @@ const LearnerService = {
         throw err;
       }
     }
-    await LearnerHubLinkModel.update(link.id, data);
+    // A stage picked by hand stays put when the age changes; cleared, it's placed by age again.
+    const patch = "currentStageId" in data ? { ...data, stageSource: data.currentStageId ? "staff" : null } : data;
+    await LearnerHubLinkModel.update(link.id, patch);
     if (cls) await maybeAutoIssueDiagnostic(learnerId, cls, hubId);
     return LearnerService.getLearnerHubs(learnerId);
   },
@@ -632,6 +637,17 @@ const LearnerService = {
     });
     await LearnerHubLinkModel.unlink(learnerId, fromHubId);
     return LearnerService.getLearnerHubs(learnerId);
+  },
+
+  // Places the learner by age at every hub where they're in a class (stage, and with it the
+  // stage's pathway and diagnostic) — after their date of birth or age changes. Safe to repeat.
+  async placeByAge(learnerId) {
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    for (const link of links) {
+      if (!link.classId) continue;
+      const cls = await ClassModel.findById(link.classId);
+      if (cls) await maybeAutoIssueDiagnostic(learnerId, cls, link.hubId);
+    }
   },
 
   // Safety-net for the learner-portal's first-login diagnostic gate: enrollInHub/
@@ -713,7 +729,7 @@ const LearnerService = {
       firstName: record.firstName,
       lastName: record.lastName,
       photo: record.photo,
-      age: computeAge(record.dateOfBirth),
+      age: learnerAge(record),
       registrationNumber: record.registrationNumber,
       nationality: record.nationality,
       languages: record.languages,

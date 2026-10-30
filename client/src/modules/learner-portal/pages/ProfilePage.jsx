@@ -5,6 +5,7 @@ import { useLearnerCourses } from "../hooks/useLearnerCourses";
 import { useCompetencies, useAgeCategories, useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import { deriveBandJourney } from "../utils/bandJourney";
+import { stagePendingReason } from "../../../utils/learnerAge";
 
 import { FiClipboard } from "react-icons/fi";
 import { T, cardStyle, EmptyState } from "../components/profile/theme";
@@ -26,6 +27,7 @@ import FrameworkLegend from "../components/profile/FrameworkLegend";
 import CompetenciesTabContent from "../components/profile/CompetenciesTabContent";
 import ProgressArcCard from "../components/ProgressArcCard";
 import PathwayTabContent from "../components/profile/PathwayTabContent";
+import DiagnosticReportCard from "../components/profile/DiagnosticReportCard";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ReportsOverview from "../components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
@@ -70,7 +72,7 @@ export default function ProfilePage() {
   // selectedHub.currentBandId — a value only ever written once, by a diagnostic-placement event,
   // that never updates again as the learner keeps progressing. Both surfaces read the same
   // deriveBandJourney() so they can never disagree with each other.
-  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id);
+  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id, selectedHub?.id);
   const { current: currentBand, next: nextBand } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
@@ -121,14 +123,17 @@ export default function ProfilePage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <ProfileIdentityCard learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={cls?.curriculumId} onEdit={() => setEditing("learner")} />
+      <ProfileIdentityCard
+        learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={cls?.curriculumId} onEdit={() => setEditing("learner")}
+        stageHint={stage ? null : stagePendingReason({ learner, inClass: !!cls?.curriculumId, stages: ageCategories })}
+      />
 
       {/* Only on Overview — Progress Arc otherwise lived further down, inside the Overview tab's
           own content below; moved up here, above Guardian Profile/My Learning Hubs, per the
           product decision this was built for. Still tab-scoped (not shown on Competencies/
           Pathway/etc.) since CompetencyProgressGrid right below it already covers the
           Overview-only Progress Arc + competency summary pairing those other tabs don't need. */}
-      {activeTab === "Overview" && <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} />}
+      {activeTab === "Overview" && <ProgressArcCard curriculumId={cls?.curriculumId} learnerId={learner.id} hubId={selectedHub?.id} />}
 
       {/* Guardian + Portfolio stack into their own column (matching SideRail's own two stacked
           cards) rather than sitting as three same-row siblings of mismatched height — Guardian
@@ -138,7 +143,7 @@ export default function ProfilePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minWidth: 260 }}>
           <GuardianProfileCard learner={learner} onEdit={() => setEditing("guardian")} />
           <ShareProfileCard learner={learner} />
-          <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} />
+          <PortfolioSnapshot coursesCompleted={progressSummary.completed} curriculumId={cls?.curriculumId} learnerId={learner.id} classId={cls?.id} hubId={selectedHub?.id} />
         </div>
         <SideRail hubs={hubs} mentors={mentors} hubsLoading={hubsLoading} mentorsLoading={mentorsLoading} />
       </div>
@@ -151,7 +156,9 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
-          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
+          <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} hubId={selectedHub?.id} />
+
+          <DiagnosticReportCard learnerId={learner.id} curriculumId={cls?.curriculumId} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             <MyCoursesCard courses={courses} email={progressKey} isLoading={coursesLoading} />
@@ -160,11 +167,14 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "Competencies" && (
-        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} />
+        <CompetenciesTabContent competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} hubId={selectedHub?.id} />
       )}
 
       {activeTab === "Pathway" && (
-        <PathwayTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
+        <>
+          <PathwayTabContent learnerId={learner.id} curriculumId={cls?.curriculumId} />
+          <DiagnosticReportCard learnerId={learner.id} curriculumId={cls?.curriculumId} />
+        </>
       )}
 
       {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}

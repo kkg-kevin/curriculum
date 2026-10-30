@@ -48,6 +48,10 @@ const baseLearnerSchema = z.object({
   lastName:      z.string().min(1, "Last name is required"),
   gender:        z.enum(["male", "female"], { required_error: "Gender is required", message: "Choose male or female" }),
   dateOfBirth:   z.string().optional().or(z.literal("")),
+  // An age when the date of birth isn't known — places the learner until a date of birth is added.
+  statedAge: z.string().trim()
+    .refine((v) => v === "" || (/^\d{1,2}$/.test(v) && Number(v) >= 2), "Enter an age from 2 to 99")
+    .optional().or(z.literal("")),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
   // The learner's own login identifier - either logs into the guardian-owned account (if no

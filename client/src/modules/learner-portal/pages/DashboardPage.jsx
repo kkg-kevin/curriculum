@@ -97,7 +97,7 @@ export default function DashboardPage() {
   // completion data (indicator-achievement-weighted) and deriveBandJourney logic the Progress
   // Arc card and ProfileIdentityCard both use, so all three surfaces can never disagree about
   // which band this learner is currently at.
-  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id);
+  const { data: bandProgress = [] } = useLearnerBandProgress(cls?.curriculumId, learner?.id, selectedHub?.id);
   const { current: currentBand, next: nextBand } = useMemo(() => deriveBandJourney(bandProgress), [bandProgress]);
 
   const { data: issuedData, isLoading: assessmentsLoading } = useIssuedForLearner();
@@ -190,7 +190,7 @@ export default function DashboardPage() {
           {/* Progress Arc — the gamified progress ladder, given the most prominent spot on the
               page (full width, right under the hero) since motivating the learner to keep moving
               up it is the whole point of showing it here rather than only buried in Profile. */}
-          {cls?.curriculumId && <ProgressArcCard curriculumId={cls.curriculumId} learnerId={learner.id} />}
+          {cls?.curriculumId && <ProgressArcCard curriculumId={cls.curriculumId} learnerId={learner.id} hubId={selectedHub?.id} />}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
           {/* Main column */}

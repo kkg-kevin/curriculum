@@ -14,13 +14,14 @@ function BandBadge({ band }) {
   );
 }
 
-export default function CompetencyProgressGrid({ competencies, isLoading, learnerId, curriculumId }) {
+// `hubId` — the hub shown: its stage decides the bands.
+export default function CompetencyProgressGrid({ competencies, isLoading, learnerId, curriculumId, hubId }) {
   const items = (competencies || []).slice(0, 8);
   // The curriculum's own weighted score (Evidence Type → Assessment Type → scoring engines,
   // configured on the curriculum's Score Evidence panel) — the only source of truth for a
   // competency's percent. Do not reintroduce a client-side average of raw indicator marks here;
   // that bypasses the curriculum's configured weighting entirely.
-  const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId);
+  const { data: scoreRows = [] } = useLearnerCompetencyScores(curriculumId, learnerId, hubId);
   const scoreByCompetencyId = new Map(scoreRows.map((r) => [r.competencyId, r]));
 
   return (

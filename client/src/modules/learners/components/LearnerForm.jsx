@@ -4,19 +4,7 @@ import MultiSelectChips from "../../../components/MultiSelectChips";
 import PortalPasswordField from "../../../components/PortalPasswordField";
 import CollapsibleFormSection from "../../../components/CollapsibleFormSection";
 import { NATIONALITIES, LANGUAGES } from "../schemas/learner.schema";
-
-// Mirrors client/src/modules/learner-portal/components/profile/ProfileIdentityCard.jsx's
-// computeAge — display-only, derived live from whatever date of birth is currently typed in.
-function computeAge(dateOfBirth) {
-  if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth);
-  if (Number.isNaN(dob.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
-  return age;
-}
+import { ageFrom } from "../../../utils/learnerAge";
 
 // Same visual language as TeacherForm.jsx (bordered card sections, same input/select styling) —
 // kept as local copies rather than a further-shared file since these two forms' field sets don't
@@ -82,7 +70,8 @@ function TextInput({ name, placeholder, type = "text", label, required, hint, au
 // hub, from the learner's own detail page (see the "Learning Hubs" section on LearnerPage).
 export default function LearnerForm() {
   const { register, control, watch, formState: { errors } } = useFormContext();
-  const age = computeAge(watch("dateOfBirth"));
+  const dateOfBirth = watch("dateOfBirth");
+  const age = ageFrom(dateOfBirth);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0", backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
@@ -119,11 +108,17 @@ export default function LearnerForm() {
             <Field
               label="Date of Birth"
               error={errors?.dateOfBirth?.message}
-              hint={age !== null ? `Age: ${age} year${age !== 1 ? "s" : ""}` : undefined}
+              hint={age !== null ? `Age: ${age} year${age !== 1 ? "s" : ""}` : "Places the learner in a developmental stage and pathway"}
             >
               <input type="date" {...register("dateOfBirth")} style={inputStyle(!!errors?.dateOfBirth)} />
             </Field>
           </div>
+          {/* Only without a date of birth: an age places them until the date is known. */}
+          {!dateOfBirth && (
+            <div style={{ maxWidth: 220 }}>
+              <TextInput name="statedAge" label="Age (if the date of birth isn't known)" placeholder="e.g. 9" hint="Years old today" />
+            </div>
+          )}
           <Field label="Nationality" error={errors?.nationality?.message}>
             <select {...register("nationality")} style={selectStyle(!!errors?.nationality)}>
               <option value="">— Select nationality —</option>

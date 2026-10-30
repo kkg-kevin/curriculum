@@ -1084,26 +1084,38 @@ const CompetencyService = {
   // getLearnerBandProgress both need it too. Returns null if the learner has no enrollment link
   // resolving to this curriculum, or hasn't been placed at a stage yet (currentStageId not set) —
   // both are legitimate, pre-placement states, not errors.
-  async _resolveLearnerStageId(curriculumId, learnerId) {
+  async _resolveLearnerStageId(curriculumId, learnerId, hubId = null) {
     const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    // Their enrolments in a class running this curriculum. A learner can be at two hubs running the
+    // same curriculum with a different stage at each — the profile shows one hub (`hubId`), so its
+    // stage is the one that counts; without a hub, an active enrolment with a stage comes first.
+    const inCurriculum = [];
     for (const l of links) {
       if (!l.classId) continue;
       const cls = await ClassModel.findById(l.classId);
-      if (cls?.curriculumId === curriculumId) return l.currentStageId || null;
+      if (cls?.curriculumId === curriculumId) inCurriculum.push(l);
     }
-    return null;
+    if (hubId) {
+      const atHub = inCurriculum.find((l) => l.hubId === hubId);
+      if (atHub) return atHub.currentStageId || null;
+    }
+    const best = inCurriculum.find((l) => l.status === "active" && l.currentStageId)
+      || inCurriculum.find((l) => l.currentStageId)
+      || inCurriculum[0];
+    return best?.currentStageId || null;
   },
+
 
   // Real per-learner competency score — the number this learner should actually see on their
   // profile: their own graded work (AssessmentSubmissionService.getLearnerIndicatorProgress, the
   // same live source feeding the Competencies tab's flat indicator view), aggregated per
   // competency and classified via Engine 3, instead of the shared manual preview value.
-  async getLearnerCompetencyScores(curriculumId, learnerId) {
+  async getLearnerCompetencyScores(curriculumId, learnerId, hubId = null) {
     // Required lazily — see the note near the top of this file on why (circular require with
     // assessment-submission.service.js, which requires this file back for diagnostic placement).
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
     const rows = await AssessmentSubmissionService.getLearnerIndicatorProgress(learnerId, curriculumId);
-    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
+    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId, hubId);
     return this._competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, rows);
   },
 
@@ -1140,7 +1152,8 @@ const CompetencyService = {
   // _syncBandAcrossStages) but each configures its own thresholds/indicators appropriately for
   // that age group, so a 5-year-old's "Pioneer" and an 18-year-old's "Pioneer" are the same rung
   // in name only, evaluated against completely different, age-appropriate criteria.
-  async getLearnerBandProgress(curriculumId, learnerId) {
+  // `hubId`: the hub the profile is showing (see _resolveLearnerStageId).
+  async getLearnerBandProgress(curriculumId, learnerId, hubId = null) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
     // Scoped to this curriculum, matching getLearnerCompetencyScores above — omitting curriculumId
     // here (as this used to) pulled in a multi-hub/multi-curriculum learner's indicator progress
@@ -1151,7 +1164,7 @@ const CompetencyService = {
       indicatorId:  p.indicatorId,
       percent:      p.percent,
     }));
-    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
+    const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId, hubId);
     // Not yet placed at a stage — no ladder to report progress against, rather than resolving
     // findByCurriculumAndStage(curriculumId, null), which would ambiguously match orphaned
     // legacy bands still sitting with ageCategoryId null (see the backfill migration).
@@ -1415,7 +1428,7 @@ const CompetencyService = {
       .sort((a, b) => a.minScore - b.minScore)
       .find((b) => scorePercent >= b.minScore && scorePercent <= b.maxScore) || null;
     const link = await LearnerHubLinkModel.findOne(learnerId, hubId);
-    if (link) await LearnerHubLinkModel.update(link.id, { currentStageId: ageCategoryId, currentBandId: band?.id ?? null });
+    if (link) await LearnerHubLinkModel.update(link.id, { currentStageId: ageCategoryId, stageSource: "diagnostic", currentBandId: band?.id ?? null });
     return { stageId: ageCategoryId, band };
   },
 

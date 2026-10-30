@@ -155,6 +155,17 @@ async function summarizeIndicatorProgress(submissions, curriculumId = null) {
 // mechanism behind "one submission per group": every sibling row stays an identical mirror of
 // the group's shared attempt (answers on draft/submit, score+feedback+status on grade). A no-op
 // for a submission with no groupId (an ordinary individual submission).
+// This learner's diagnostic issues (pathway or stage) that belong to `curriculumId`.
+async function curriculumDiagnosticIssueIds(learnerId, curriculumId) {
+  const issues = (await AssessmentIssueModel.findAll({ learnerId })).filter((i) => i.pathwayId || i.ageCategoryId);
+  const ids = new Set();
+  for (const issue of issues) {
+    const owner = issue.pathwayId ? await PathwayModel.findById(issue.pathwayId) : await AgeCategoryModel.findById(issue.ageCategoryId);
+    if (owner?.curriculumId === curriculumId) ids.add(issue.id);
+  }
+  return ids;
+}
+
 function alreadySubmitted() {
   const err = new Error("This assessment has already been submitted");
   err.statusCode = 400;
@@ -468,7 +479,9 @@ const AssessmentSubmissionService = {
     const candidates = standalone.filter((row) => !!row.issue.pathwayId);
     const results = await Promise.all(candidates.map(async (row) => {
       const pathway = await PathwayModel.findById(row.issue.pathwayId);
-      const matches = !!pathway && activeCurriculumIds.has(pathway.curriculumId) && pathway.diagnosticAssessmentId === row.issue.assessmentId;
+      // A website diagnostic (issuedBy "website") uses the pathway's website assessment instead.
+      const current = pathway?.diagnosticAssessmentId === row.issue.assessmentId || row.issue.issuedBy === "website";
+      const matches = !!pathway && activeCurriculumIds.has(pathway.curriculumId) && current;
       return matches ? row : null;
     }));
     return results.filter(Boolean);
@@ -914,11 +927,16 @@ const AssessmentSubmissionService = {
   // Competencies tab should only reflect its own. Omitted, this stays the full cross-hub view,
   // which existing internal callers (getLearnerEvidenceTypeScores/getLearnerBandProgress —
   // already curriculum-scoped further downstream through their own Assessment-Type config) rely on.
+  //
+  // A marked diagnostic of this curriculum's pathways or stages counts too — taken in the portal or
+  // on the website before enrolling (website-diagnostic.service.js) — though its assessment isn't
+  // attached to a course session: it's this learner's first evidence of those competencies.
   async getLearnerIndicatorProgress(learnerId, curriculumId = null) {
     let submissions = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
     if (curriculumId) {
       const assessmentIds = await CompetencyService.getAttachedAssessmentIds(curriculumId);
-      submissions = submissions.filter((s) => assessmentIds.has(s.assessmentId));
+      const diagnosticIssueIds = await curriculumDiagnosticIssueIds(learnerId, curriculumId);
+      submissions = submissions.filter((s) => assessmentIds.has(s.assessmentId) || diagnosticIssueIds.has(s.issueId));
     }
     return summarizeIndicatorProgress(submissions, curriculumId);
   },

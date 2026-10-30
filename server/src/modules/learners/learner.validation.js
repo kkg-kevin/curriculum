@@ -17,6 +17,10 @@ const baseLearnerSchema = z.object({
   // Optional identity fields - deliberately no .default() (see updateLearner's partial-PUT
   // filter in the controller, which relies on absent keys staying undefined, not defaulted).
   dateOfBirth:   z.string().optional().or(z.literal("")),
+  // An age when the date of birth isn't known — places the learner until a date of birth is
+  // added (which then wins). The day it was given (statedAgeOn) is set by the server.
+  statedAge: z.preprocess((v) => (v === "" || v === undefined ? null : v),
+    z.coerce.number().int("Enter the age in whole years").min(2, "Enter an age from 2 to 99").max(99, "Enter an age from 2 to 99").nullable()).optional(),
   nationality:   z.string().optional().or(z.literal("")),
   languages:     z.string().optional().or(z.literal("")),
   // Lets the learner log into the same guardian-owned account by username instead of typing

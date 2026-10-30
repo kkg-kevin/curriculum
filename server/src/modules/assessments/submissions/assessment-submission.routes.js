@@ -10,6 +10,7 @@ const {
   getIssuedForLearnerAsStaff,
   getDiagnosticForLearner,
   getPathwayDiagnosticsForLearner,
+  getDiagnosticReportsForLearner,
   getLearnerIndicatorProgress,
   issueOnSessionComplete,
   getOrCreateSubmission,
@@ -62,6 +63,9 @@ router.get("/diagnostic/:learnerId", authorize("admin", "school", "learner"), ge
 // facing (own record only, enforced in the controller) — the portal's first-login gate reads
 // this directly rather than duplicating the query.
 router.get("/diagnostic/pathways/:learnerId", authorize("admin", "school", "learner"), getPathwayDiagnosticsForLearner);
+// The profile's diagnostic report: every marked pathway diagnostic (website or portal), with its
+// competency marks. Learner-facing too (own record only).
+router.get("/diagnostic/reports/:learnerId", authorize("admin", "school", "learner"), getDiagnosticReportsForLearner);
 
 // A learner's own accumulating competency progress, or an admin/school reviewing it.
 router.get("/learner/:learnerId/competency-progress", authorize("admin", "school", "learner"), getLearnerIndicatorProgress);

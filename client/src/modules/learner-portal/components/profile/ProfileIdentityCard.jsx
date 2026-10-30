@@ -4,6 +4,7 @@ import Avatar from "../../../../components/ui/Avatar";
 import { formatAgeRange } from "../../utils/ageRange";
 import { currentLevelName, levelCaption } from "../../utils/bandJourney";
 import { usePathway } from "../../../curriculum/hooks/useCompetencies";
+import { learnerAge } from "../../../../utils/learnerAge";
 
 // Unchanged, still exported — GuardianProfileCard uses this too, and it stays on a light card
 // (never moves onto the hero gradient below), so its light-background styling is untouched.
@@ -39,17 +40,6 @@ function StatusPill({ eyebrow, value, sub, icon }) {
   );
 }
 
-function computeAge(dateOfBirth) {
-  if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth);
-  if (Number.isNaN(dob.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
-  return age;
-}
-
 // Same gradient-hero treatment teacher-portal/school-portal already use for their own profile
 // pages — this was the one profile page in the app still using a plain white card here, which is
 // why it read as visually flat next to every other section repeating the same card style.
@@ -58,9 +48,11 @@ function computeAge(dateOfBirth) {
 // No `onEdit`, no pencil (staff previewing the learner's view). `extraMeta` — [{ label, value }]
 // added after the learner's own rows; the staff learner page's record details.
 // `curriculumId` — the selected hub's curriculum, for the pathways the learner is on there (the
-// same list as the Pathway tab, CompetencyService.getPathway).
-export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit, extraMeta = [], curriculumId }) {
-  const age = computeAge(learner.dateOfBirth);
+// same list as the Pathway tab, CompetencyService.getPathway). `stageHint` — why there's no stage
+// yet (utils/learnerAge.js's stagePendingReason), shown under "Not yet placed".
+// The age is the date of birth's, else the one given without it ("given" beside it).
+export default function ProfileIdentityCard({ learner, stage, band, nextBand, onEdit, extraMeta = [], curriculumId, stageHint }) {
+  const { age, fromBirthDate } = learnerAge(learner);
   const { data: pathways = [] } = usePathway(curriculumId, learner.id);
   const pathwayNames = [...new Set(pathways.map((p) => p.pathwayName).filter(Boolean))];
 
@@ -92,7 +84,7 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
             {learner.firstName} {learner.lastName}
           </h1>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px 20px" }}>
-            <HeroMetaRow label="Age" value={age != null ? age : <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
+            <HeroMetaRow label="Age" value={age != null ? (fromBirthDate ? age : <>{age} <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>(given — no date of birth)</span></>) : <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
             <HeroMetaRow label="DCF ID" value={learner.registrationNumber || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
             <HeroMetaRow label="Nationality" value={learner.nationality || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
             <HeroMetaRow label="Languages" value={learner.languages || <span style={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic" }}>Not on record</span>} />
@@ -108,12 +100,12 @@ export default function ProfileIdentityCard({ learner, stage, band, nextBand, on
         <StatusPill
           eyebrow="Developmental stage"
           value={stage?.name || "Not yet placed"}
-          sub={stage ? (formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null) : "Set by a teacher or admin"}
+          sub={stage ? (formatAgeRange(stage.minAge, stage.maxAge) ? `(${formatAgeRange(stage.minAge, stage.maxAge)})` : null) : (stageHint || "Set by a teacher or admin")}
         />
         <StatusPill
           eyebrow={pathwayNames.length > 1 ? "Pathways" : "Pathway"}
           value={pathwayNames.length ? pathwayNames.join(", ") : "Not on a pathway yet"}
-          sub={pathwayNames.length ? null : "Set by the hub"}
+          sub={pathwayNames.length ? null : stage ? "No pathway set up for this stage yet" : "Follows the developmental stage"}
         />
         <StatusPill
           eyebrow="Current Level Summary"
