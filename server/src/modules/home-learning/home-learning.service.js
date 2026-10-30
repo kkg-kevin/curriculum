@@ -19,6 +19,9 @@ const HomeLearningPackageModel = require("./home-learning-package.model");
 const { priceForPackage, toPublicPackage, CURRENCY } = require("./home-learning.pricing");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 const { slugify } = require("../../shared/utils/slugify");
+const { kenyaToday } = require("../../shared/utils/age");
+const { scheduleChange, onActivation } = require("../../shared/utils/billing-periods");
+const PackageBilling = require("../billing/package-billing");
 
 // How Home Learning plugs into the rest of the system: every admin gets one "Home Learning" hub
 // (learning_hubs.isHomeLearning), and every enrolled child gets their own Class in it for their
@@ -62,7 +65,8 @@ function packageRow(data) {
     summary: data.summary || null,
     description: data.description || null,
     childrenIncluded: data.childrenIncluded,
-    monthlyAmount: data.monthlyAmount,
+    amount: data.amount,
+    billingPeriod: data.billingPeriod,
     allowExtraChildren: extras,
     extraChildAmount: extras ? data.extraChildAmount : null,
     maxChildren: extras ? (data.maxChildren ?? Math.max(data.childrenIncluded + 1, 20)) : data.childrenIncluded,
@@ -82,8 +86,6 @@ async function uniqueSlug(ownerAdminId, wanted, excludeId) {
     if (!clash || clash.id === excludeId) return slug;
   }
 }
-
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 // Enrollment status → what the child's class and hub link should look like. Only a child who is
 // active in an active household is "in class"; everyone else keeps their hub link (so they stay in
@@ -243,13 +245,6 @@ async function portalStatuses(households) {
   }));
 }
 
-function monthRange(period) {
-  const [year, month] = period.split("-").map(Number);
-  const pad = (n) => String(n).padStart(2, "0");
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return { periodStart: `${year}-${pad(month)}-01`, periodEnd: `${year}-${pad(month)}-${pad(lastDay)}`, label: `${MONTHS[month - 1]} ${year}` };
-}
-
 const money = (value) => Math.round(Number(value || 0) * 100) / 100;
 const OPEN_STATUSES = ["issued", "partially_paid", "overdue"];
 
@@ -278,13 +273,16 @@ async function billingSummaries(householdIds) {
   return summaries;
 }
 
-// Creates one household's monthly package invoice (issued) — shared by the admin's "Invoice month"
-// and a website sign-up's first-month invoice. Callers check eligibility (status, duplicates).
-async function raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate }, actorUserId) {
+// Creates one household's package invoice (issued) for one billing period — shared by the automatic
+// invoicing (billing/package-billing.js), "Invoice next period" and a website sign-up's first
+// invoice. A daily package's is `quantity` days at `unitAmount` each. Callers check eligibility
+// (status, duplicates).
+async function raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate, quantity = 1, unitAmount = household.amount, unit = null }, actorUserId) {
   const hub = await ensureHomeHub(ownerAdminId);
   const payer = household.guardianEmail ? await UserModel.findByEmail(household.guardianEmail) : null;
-  const amount = money(household.monthlyAmount);
+  const amount = money(Number(unitAmount) * quantity);
   const children = `${household.childCount} ${household.childCount === 1 ? "child" : "children"}`;
+  const what = unit === "day" ? `${quantity} ${quantity === 1 ? "day" : "days"}, ${label}` : label;
   const now = new Date();
   const invoice = await BillingModel.transaction(async (trx) => {
     const created = await BillingModel.createInvoice({
@@ -298,8 +296,8 @@ async function raiseHouseholdInvoice(ownerAdminId, household, { periodStart, per
     }, trx);
     await BillingModel.createItem({
       invoiceId: created.id, learnerId: null, courseId: null,
-      description: `Home Learning package (${children}) — ${label}`,
-      quantity: 1, unitAmount: amount, totalAmount: amount,
+      description: `Home Learning package (${children}) — ${what}`,
+      quantity, unitAmount: money(unitAmount), totalAmount: amount,
       metadata: { householdId: household.id, planCode: household.planCode, childCount: household.childCount },
     }, trx);
     await BillingModel.createAuditEvent({
@@ -372,7 +370,11 @@ const HomeLearningService = {
     const packages = new Map((await HomeLearningPackageModel.findAll(ownerAdminId)).map((pkg) => [pkg.id, pkg]));
     return households.map((household) => {
       const pkg = packages.get(household.packageId);
-      return { ...household, package: pkg ? { id: pkg.id, name: pkg.name, status: pkg.status } : null, billing: billing.get(household.id), parentPortal: portal.get(household.id) };
+      return {
+        ...household, package: pkg ? { id: pkg.id, name: pkg.name, status: pkg.status } : null,
+        billing: { ...billing.get(household.id), outlook: PackageBilling.billingOutlook(household) },
+        parentPortal: portal.get(household.id),
+      };
     });
   },
 
@@ -384,11 +386,15 @@ const HomeLearningService = {
     const { portalPassword, ...data } = parseOrFail(householdSchema, input, "Invalid household details");
     const price = await resolvePackagePrice(ownerAdminId, data.packageId, data.childCount);
     await setParentPortalPassword(data.guardianName, data.guardianEmail, portalPassword);
+    const status = data.status || "pending";
     return HouseholdModel.createHousehold({
       ...data,
       ownerAdminId,
       ...price,
-      status: data.status || "pending",
+      // Added as active: billing starts on its start date (or today) — the first invoice comes with
+      // the next automatic run. Pending: when it's made active.
+      ...(status === "active" ? onActivation({ billedThrough: null }, { today: kenyaToday(), startDate: data.startDate || null }) : {}),
+      status,
       guardianEmail: data.guardianEmail || null,
       mapUrl: data.mapUrl || null,
       locationPhotos: data.locationPhotos || [],
@@ -413,8 +419,14 @@ const HomeLearningService = {
     if (updates.packageId !== undefined || updates.childCount !== undefined) {
       const packageId = updates.packageId ?? existing.packageId;
       if (!packageId) fail("Choose a package for this household");
-      Object.assign(updates, await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.packageId));
+      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.packageId);
+      Object.assign(updates, place);
       if ((await HouseholdModel.countActive(id, ownerAdminId)) > updates.childCount) fail("Remove child enrollments before reducing the package size");
+      // The places change now; the price and period from the next period not billed yet.
+      Object.assign(updates, scheduleChange(existing, { amount, billingPeriod }));
+    }
+    if (updates.status === "active" && existing.status !== "active") {
+      Object.assign(updates, onActivation({ ...existing, ...updates, status: existing.status }, { today: kenyaToday(), startDate: updates.startDate || null }));
     }
     if (updates.guardianEmail === "") updates.guardianEmail = null;
     if (updates.mapUrl === "") updates.mapUrl = null;
@@ -579,39 +591,25 @@ const HomeLearningService = {
 
   /* ── Billing ─────────────────────────────────────────────────────────────── */
 
-  // One "home_learning" invoice per household per month, issued by the Home Learning hub to the
-  // guardian. Idempotent: a month that's already invoiced (and not cancelled/void) is returned
-  // as-is rather than billed twice. Payments are recorded on the invoice in Billing as usual.
+  // "Invoice next period": the household's next invoice raised now, before its period starts
+  // (otherwise the automatic invoicing raises it on the day — billing/package-billing.js).
+  // Idempotent: a period already invoiced is returned as-is.
   async generateInvoice(ownerAdminId, householdId, input, actorUserId) {
-    const { period, dueDate } = parseOrFail(invoiceSchema, input, "Invalid invoice details");
+    const { dueDate } = parseOrFail(invoiceSchema, input || {}, "Invalid invoice details");
     const household = await HouseholdModel.findById(householdId, ownerAdminId);
     if (!household) fail("Household not found", 404);
     if (household.status !== "active") fail("Only active households can be invoiced");
-    const { periodStart, periodEnd, label } = monthRange(period);
-    const existing = await db("billing_invoices")
-      .where({ householdId, periodStart, invoiceType: "home_learning" })
-      .whereNotIn("status", ["cancelled", "void"])
-      .first();
-    if (existing) return { invoice: existing, created: false };
-
-    const invoice = await raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate }, actorUserId);
-    return { invoice, created: true };
+    return PackageBilling.invoiceNextPeriod("home_learning", household, { dueDate: dueDate || null, actorUserId });
   },
 
-  // "Invoice everyone for this month" — every active household, skipping ones already billed.
-  async generateMonthlyInvoices(ownerAdminId, input, actorUserId) {
-    const { period, dueDate } = parseOrFail(invoiceSchema, input, "Invalid invoice details");
-    const households = (await db("home_learning_households").where({ ownerAdminId, status: "active" }));
-    const result = { created: 0, skipped: 0 };
-    for (const household of households) {
-      const { created } = await HomeLearningService.generateInvoice(ownerAdminId, household.id, { period, dueDate }, actorUserId);
-      result[created ? "created" : "skipped"] += 1;
-    }
-    return result;
+  // "Invoice due now": every active household's invoices brought up to today, as the hourly run
+  // does — for when staff don't want to wait for it.
+  async generateDueInvoices(ownerAdminId, actorUserId) {
+    const { families, invoices } = await PackageBilling.processPackageBilling({ ownerAdminId, kinds: ["home_learning"], actorUserId });
+    return { households: families, created: invoices };
   },
 };
 
 module.exports = HomeLearningService;
-// For home-learning-signup.service.js: a website sign-up raises its first-month invoice the same way.
+// For home-learning-signup.service.js (a website sign-up's first invoice) and billing/package-billing.js.
 module.exports.raiseHouseholdInvoice = raiseHouseholdInvoice;
-module.exports.monthRange = monthRange;

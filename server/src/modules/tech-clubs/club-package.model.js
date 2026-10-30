@@ -3,7 +3,7 @@ const { createRecord, updateRecord, deleteRecord, firstOrNull, stringifyJsonFiel
 
 const TABLE = "club_packages";
 const JSON_FIELDS = ["features", "hubIds"];
-const ordered = (query) => query.orderBy([{ column: "sortOrder", order: "asc" }, { column: "monthlyAmount", order: "asc" }, { column: "name", order: "asc" }]);
+const ordered = (query) => query.orderBy([{ column: "sortOrder", order: "asc" }, { column: "amount", order: "asc" }, { column: "name", order: "asc" }]);
 
 // mysql2 parses JSON columns on read; a row saved before a list was set holds null.
 const normalise = (pkg) => (pkg ? { ...pkg, features: Array.isArray(pkg.features) ? pkg.features : [], hubIds: Array.isArray(pkg.hubIds) ? pkg.hubIds : [] } : null);

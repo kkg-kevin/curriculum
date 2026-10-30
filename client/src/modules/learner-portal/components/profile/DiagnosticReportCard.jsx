@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { FiActivity, FiChevronDown, FiChevronUp, FiGlobe } from "react-icons/fi";
-import { T, cardStyle, sectionHeaderStyle } from "./theme";
+import { T, cardStyle, KID, KidHeading } from "./theme";
 import { useDiagnosticReports } from "../../../assessments/hooks/useAssessmentSubmission";
 
-const ACCENT = "#7C3AED";
+// System colours: navy for the score, sky blue for the bars.
+const ACCENT = "#25476a";
+const BAR = "#38aae1";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : null);
 
-function Bar({ percent, color = ACCENT }) {
+function Bar({ percent, color = BAR }) {
   return (
-    <div style={{ height: 6, borderRadius: 999, backgroundColor: "#EEF0F4", overflow: "hidden", flex: 1, minWidth: 80 }}>
+    <div style={{ height: 10, borderRadius: 999, backgroundColor: "#EEF0F4", overflow: "hidden", flex: 1, minWidth: 80 }}>
       <div style={{ width: `${Math.max(0, Math.min(100, percent))}%`, height: "100%", backgroundColor: color, borderRadius: 999 }} />
     </div>
   );
@@ -35,7 +37,7 @@ function CompetencyRow({ competency }) {
           {competency.indicators.map((indicator) => (
             <div key={indicator.indicatorId} style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 12, color: T.inkMuted, flex: "0 1 206px", minWidth: 0 }}>{indicator.name}</span>
-              <Bar percent={indicator.percent} color="#A78BFA" />
+              <Bar percent={indicator.percent} color="#7FC4EA" />
               <span style={{ fontSize: 11.5, color: T.inkMuted, width: 70, textAlign: "right" }}>{indicator.marksEarned}/{indicator.marksPossible}</span>
             </div>
           ))}
@@ -48,19 +50,19 @@ function CompetencyRow({ competency }) {
 function Report({ report, staff }) {
   const fromWebsite = report.source === "website";
   return (
-    <div style={{ padding: "14px 16px", borderRadius: 12, backgroundColor: "#FAFAFF", border: "1px solid #EDE9FE" }}>
+    <div style={{ padding: "16px 18px", borderRadius: 18, backgroundColor: "#F7FAFD", border: `1.5px solid ${T.tintBorder}` }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: T.ink }}>{report.pathwayName}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>
             {report.assessmentName}{report.takenAt ? ` · ${formatDate(report.takenAt)}` : ""}
           </p>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: fromWebsite ? "#EFF6FF" : "#F5F3FF", color: fromWebsite ? "#1D4ED8" : "#6D28D9", border: `1px solid ${fromWebsite ? "#BFDBFE" : "#DDD6FE"}` }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: fromWebsite ? "#E8F5FB" : "#EDF2F8", color: fromWebsite ? "#2e7db5" : "#25476a", border: `1px solid ${fromWebsite ? "#A8D5EE" : "#C5D4E5"}` }}>
             {fromWebsite && <FiGlobe size={11} />} {fromWebsite ? "Taken on the website before enrolling" : "Taken in the portal"}
           </span>
         </div>
         <div style={{ textAlign: "right" }}>
-          <p style={{ margin: 0, fontSize: 22, fontWeight: 900, color: ACCENT }}>{report.percent}%</p>
+          <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: ACCENT }}>{report.percent}%</p>
           <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>{report.totalScore}/{report.maxScore} marks</p>
         </div>
       </div>
@@ -99,12 +101,9 @@ export default function DiagnosticReportCard({ learnerId, curriculumId, staff = 
   if (isLoading || !curriculumId || reports.length === 0) return null;
   return (
     <div style={{ ...cardStyle(), padding: 20 }}>
-      <h2 style={{ ...sectionHeaderStyle(), color: ACCENT, display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-        <FiActivity size={13} /> Diagnostic report
-      </h2>
-      <p style={{ margin: "0 0 14px", fontSize: 12, color: T.inkMuted }}>
-        {staff ? "Where this learner started" : "Where you started"} — these marks count towards {staff ? "their" : "your"} competencies and progress.
-      </p>
+      <KidHeading icon={FiActivity} tone={KID.navy} sub={`${staff ? "Where this learner started" : "Where you started"} — these marks count towards ${staff ? "their" : "your"} skills and progress.`}>
+        Diagnostic report
+      </KidHeading>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {reports.map((report) => <Report key={report.issueId} report={report} staff={staff} />)}
       </div>

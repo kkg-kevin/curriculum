@@ -102,6 +102,110 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (30 Oct 2026, night) — Packages billed by day, week, month, quarter or year; a child-friendly learner profile; pathway stage pages on the website
+
+**Portal and backend** from `curriculum` (branch `modules`) at `915cf21`. **Website** from
+`curriculum-web` (branch `new`) at `412a442`. Includes everything in "This release (30 Oct 2026,
+evening)" below; if that one isn't uploaded yet, upload this one instead (and run its two one-offs).
+Take a database backup first, **upload the backend first**, then the portal and the website.
+
+### Read this before uploading — families will be invoiced
+
+From now on Home Learning and Tech Club invoices are **raised and emailed automatically** by the
+hourly `billing:process` cron (already set up for part payments). The first run after this backend
+is up invoices **every active family for the current period they haven't been invoiced for yet** —
+for families on a monthly package that's this month, unless they already have an invoice for it.
+Nothing earlier is billed. Before uploading, check Home Learning and Tech Clubs: anyone who shouldn't
+be billed should be **paused** (or cancelled) first. Settings → Emails → invoice emails decides
+whether the invoices are emailed.
+
+### What changed
+
+- **Package billing periods.** A Home Learning or Tech Club package is billed **daily, weekly,
+  monthly, quarterly or annually** (Billing → Packages; the price is per period). A family's periods
+  count from the day they join; advance periods are invoiced on their first day, due a week later. A
+  **daily** package is invoiced at the end of each month for the days any of the family's children
+  was marked present or late (it is never offered on the website). Changing a family's package or
+  price takes effect **from their next period**. Paused, cancelled and unpaid sign-ups aren't
+  billed; coming back starts afresh. **Invoice what's due now** on the Home Learning and Tech Clubs
+  pages runs the same thing for that workspace. Part-payment plans are offered only on a package
+  invoice of about a quarter or more.
+- **The website** shows each package's period ("per week", "per quarter"…) on cards, the price
+  calculator and the sign-up.
+- **Learner profile for young learners** (learner portal, UI only — nothing works differently):
+  rounder cards, the Nunito font, the system colours, real icons, a "Hi, Name!" greeting, friendlier
+  headings and empty states.
+- **Website — pathway stages:** a pathway's page shows a **card for each developmental stage**
+  (stage number, ages, description, its first courses); each opens the stage's own page
+  (`/pathways/<pathway>/<stage>`) with its courses in order, Enroll / Take the diagnostic, and the
+  stages either side. Needs this backend (it sends each stage's address and description); with the
+  old backend the pathway page shows its course list as before.
+- **Website — bootcamp Enroll:** progress steps and a summary of the bootcamp beside the form; after
+  the diagnostic report the enrolment form opens straight away (no "Where to from here" panel, no
+  "Talk it through with a mentor").
+- **Website — diagnostic report:** the on-screen report looks like the downloaded PDF; no coloured
+  line on top; the footer is the office, the phone and "Learn better, Live better".
+- **Website — forms:** every multi-step form scrolls back to the top on Next / Back.
+
+### One new migration — applied on Restart
+
+`20261031090000_add_package_billing_periods.js`: on `home_learning_packages`, `club_packages`,
+`home_learning_households` and `club_memberships` it **renames `monthlyAmount` to `amount`** and adds
+`billingPeriod` (existing rows: `monthly`); the two family tables also get `billingAnchor`,
+`billedThrough` and `pendingBilling`, filled so existing families carry on by calendar month. After
+Restart, check `SHOW COLUMNS FROM home_learning_households LIKE 'billedThrough';` — if it's missing,
+Run JS script → `db:migrate`. The public API still also sends `monthlyAmount`, so a website not yet
+updated keeps working.
+
+### Backend (`backend-deploy.zip`)
+
+`git archive HEAD:server` at `915cf21` — 614 files, 151 migrations. Same zip in Dev, Live and
+Capable. No new cron, environment variable or npm package.
+
+### Portal (`assets.zip` + `index.html`)
+
+| Environment | Build | Entry |
+|---|---|---|
+| Dev | `npm run build` | `index-bLMgjjvj.js` |
+| Live | `npm run build:live` | `index-CsWO6OgX.js` |
+| Capable | `npm run build:capable` | `index-Cq8O3PT6.js` |
+
+CSS `index-CPf40rDF.css` in all three. 108 entries in each `assets.zip` (the extra ones are the
+Nunito font files); each checked to call only its own API.
+
+### Website
+
+| Site | Build | Zip | Pages |
+|---|---|---|---|
+| africa.digifunzi.com (Dev) | `deploy:build:dev` | `Guide/dev/africa-digifunzi-com-dist.zip` | 36/36 pre-rendered, 33 URLs in the sitemap |
+| digifunzi.co.ke (Live) | `deploy:build` | `Guide/live/digifunzi-co-ke-dist.zip` | 25/25 pre-rendered, 22 URLs in the sitemap |
+
+Both built against APIs without this release, so the **stage pages aren't pre-rendered yet** — they
+work (they load like any page), but aren't in the sitemap. Rebuild the websites once the backends
+are up to add them.
+
+### Checked so far
+
+Server tests pass (98, 2 skipped, including the billing-period rules), website tests pass (99),
+every build passes. Locally: the pathway and stage pages at computer and phone width, with all 8
+pathways showing 5 stages. Not looked at in a browser: the bootcamp Enroll form beside the report
+(reaching it means submitting a diagnostic) and the new report footer. Not yet tried on the hosting.
+
+### Deploy order
+
+1. Take a database backup. Pause any Home Learning / Tech Club family that shouldn't be invoiced.
+2. **Backend:** upload `backend-deploy.zip` to the dcf-api app folder, Extract, Restart. Check the
+   query above.
+3. **Portal:** upload `assets.zip` + `index.html` to the `dcf.digifunzi.com` document root (Ctrl+F5).
+4. **Website:** upload `digifunzi-co-ke-dist.zip` to digifunzi.co.ke's document root and extract.
+5. **Verify:** Billing → Packages shows each package's billing period; within the hour (or after
+   **Invoice what's due now**) active families have this period's invoice; a pathway on the website
+   shows its stage cards and a stage opens its courses; a learner's profile shows the new look.
+
+**Rolling back:** restore the backup, then upload the earlier zips (from commit `fd23422`).
+
+---
+
 ## This release (30 Oct 2026, evening) — Learners placed by age, the website diagnostic on the learner's profile, levels per hub, hub warnings
 
 **Portal and backend** from `curriculum` (branch `modules`) at `57afd05`. **The website is unchanged** —

@@ -8,7 +8,9 @@ import { authApi } from "../services/authApi";
 // uses the bare `protect` (not app.js's protect+blockIfSuspended chain), so this keeps working
 // regardless of account status — being able to set your own password shouldn't require the
 // account to be unlocked first.
-export default function ChangePasswordCard() {
+// `heading` (optional) replaces the card's own title — the learner profile gives it a friendly one;
+// every other page keeps the default.
+export default function ChangePasswordCard({ heading = null } = {}) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,7 +52,7 @@ export default function ChangePasswordCard() {
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
       <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
-        <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Change Password</h2>
+        {heading || <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>Change Password</h2>}
       </div>
       <form onSubmit={handleSubmit} style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: 400 }}>
         <div>

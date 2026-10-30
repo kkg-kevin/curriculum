@@ -8,7 +8,6 @@ export const secondaryButton = { border: "1px solid #D1D5DB", borderRadius: 7, c
 export const formatMoney = (amount) => `KSh ${Number(amount || 0).toLocaleString("en-KE")}`;
 export const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "");
 export const toDateInput = (value) => (value ? new Date(value).toISOString().slice(0, 10) : "");
-export const thisMonth = () => new Date().toISOString().slice(0, 7);
 export const errorMessage = (error, fallback) => error.response?.data?.message || error.message || fallback;
 
 export const HOUSEHOLD_STATUS = {

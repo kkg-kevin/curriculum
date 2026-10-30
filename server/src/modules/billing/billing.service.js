@@ -11,6 +11,7 @@ const { runInvoiceActivationHooks, runInvoicePaidHooks } = require("./billing.pa
 const { paymentPosition, scheduleFromPlan, scheduleProblems } = require("./billing.instalments");
 const BillingAccess = require("./billing.access");
 const { todayInKenya } = require("../checkins/checkin.dates");
+const { allowsPlans } = require("../../shared/utils/billing-periods");
 const { paymentInstructions } = require("../payments/mpesa/mpesa.instructions");
 
 const RECEIVABLE_STATUSES = ["issued", "partially_paid", "paid", "overdue"];
@@ -325,9 +326,11 @@ async function settleAfterScheduleChange(invoiceId) {
 
 // The plans a family may choose for this invoice when paying it online (a sign-up's Payment step,
 // a payment link): only before anything is paid, for the invoice types the workspace allows, each
-// with its parts worked out from today. Empty when part payments are off.
+// with its parts worked out from today. Empty when part payments are off, and for a package's
+// invoice covering less than about a quarter (billing-periods.js's allowsPlans).
 async function offeredPlans(invoice) {
   if (!invoice || !["issued", "overdue"].includes(invoice.status) || Number(invoice.amountPaid || 0) > 0) return [];
+  if (!allowsPlans(invoice)) return [];
   const settings = await partPaymentsOf(invoice);
   if (!settings?.enabled || !(settings.planTypes || []).includes(invoice.invoiceType)) return [];
   const start = todayInKenya();

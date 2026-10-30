@@ -35,9 +35,9 @@ const generateInvoice = asyncHandler(async (req, res) => {
   ok(res, result, result.created ? 201 : 200);
 });
 
-const generateMonthlyInvoices = asyncHandler(async (req, res) => {
+const generateDueInvoices = asyncHandler(async (req, res) => {
   assertNotCollaborator(req);
-  ok(res, await ClubService.generateMonthlyInvoices(req.ownerAdminId, req.body, req.user.id));
+  ok(res, await ClubService.generateDueInvoices(req.ownerAdminId, req.body, req.user.id));
 });
 
 // Website sign-ups: approving records a payment (Billing → Edit for staff, enforced by
@@ -51,5 +51,5 @@ const addFamilyChild = asyncHandler(async (req, res) => ok(res, await ClubSignup
 
 module.exports = {
   list, listClubs, listPackages, createPackage, updatePackage, deletePackage, update, placeChild, removeChild, restoreChild,
-  generateInvoice, generateMonthlyInvoices, approveSignup, declineSignup, getFamily, addFamilyChild,
+  generateInvoice, generateDueInvoices, approveSignup, declineSignup, getFamily, addFamilyChild,
 };

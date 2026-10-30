@@ -14,7 +14,8 @@ export const techClubApi = {
   removeChild: (id, learnerId) => api.delete(`${BASE}/${id}/children/${learnerId}`).then((r) => r.data.data),
   restoreChild: (id, learnerId) => api.post(`${BASE}/${id}/children/${learnerId}/restore`, {}).then((r) => r.data.data),
   generateInvoice: (id, data) => api.post(`${BASE}/${id}/invoices`, data).then((r) => r.data.data),
-  generateMonthlyInvoices: (data) => api.post(`${BASE}/invoices`, data).then((r) => r.data.data),
+  // Every active membership's due invoices (optionally at one club) raised now.
+  generateDueInvoices: (data) => api.post(`${BASE}/invoices`, data).then((r) => r.data.data),
   // Website sign-ups: record the payment and activate the family, or decline the sign-up.
   approveSignup: (id, data) => api.post(`${BASE}/${id}/approve-payment`, data).then((r) => r.data.data),
   declineSignup: (id) => api.post(`${BASE}/${id}/decline-signup`, {}).then((r) => r.data.data),

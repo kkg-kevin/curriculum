@@ -1,18 +1,20 @@
-// Pricing rules for a Home Learning package (home_learning_packages). A package's monthlyAmount
-// covers childrenIncluded children; when allowExtraChildren is on, every child beyond that adds
-// extraChildAmount, up to maxChildren. A family with fewer children than the package includes still
-// pays the package price, and the household gets the package's full number of places.
+// Pricing rules for a Home Learning or Tech Club package. A package's `amount` — its price per
+// `billingPeriod` (day, week, month, quarter or year; shared/utils/billing-periods.js) — covers
+// childrenIncluded children; when allowExtraChildren is on, every child beyond that adds
+// extraChildAmount per period, up to maxChildren. A family with fewer children than the package
+// includes still pays the package price, and gets the package's full number of places.
 const CURRENCY = "KES";
 
-// { childCount, monthlyAmount } for a household on `pkg` with `requested` children, or null when
-// the package can't take that many.
+// { childCount, amount, billingPeriod } for a family on `pkg` with `requested` children, or null
+// when the package can't take that many.
 function priceForPackage(pkg, requested) {
   if (!pkg) return null;
   const count = requested == null || requested === "" ? pkg.childrenIncluded : Number(requested);
   if (!Number.isInteger(count) || count < 1) return null;
-  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, monthlyAmount: pkg.monthlyAmount };
+  const billingPeriod = pkg.billingPeriod || "monthly";
+  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, amount: pkg.amount, billingPeriod };
   if (!pkg.allowExtraChildren || count > pkg.maxChildren) return null;
-  return { childCount: count, monthlyAmount: pkg.monthlyAmount + (count - pkg.childrenIncluded) * (pkg.extraChildAmount || 0) };
+  return { childCount: count, amount: pkg.amount + (count - pkg.childrenIncluded) * (pkg.extraChildAmount || 0), billingPeriod };
 }
 
 // The website's view of a package — marketing fields only (no ownerAdminId, status or timestamps).
@@ -24,7 +26,10 @@ function toPublicPackage(pkg) {
     summary: pkg.summary || "",
     description: pkg.description || "",
     childrenIncluded: pkg.childrenIncluded,
-    monthlyAmount: pkg.monthlyAmount,
+    amount: pkg.amount,
+    billingPeriod: pkg.billingPeriod || "monthly",
+    // The website before 31 Oct 2026 read this name; only a monthly price means what it says.
+    monthlyAmount: pkg.amount,
     currency: CURRENCY,
     allowExtraChildren: !!pkg.allowExtraChildren,
     extraChildAmount: pkg.allowExtraChildren ? pkg.extraChildAmount : null,

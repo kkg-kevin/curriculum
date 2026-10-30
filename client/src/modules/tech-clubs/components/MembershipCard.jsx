@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { FiAlertTriangle, FiBookOpen, FiCalendar, FiEdit2, FiFileText, FiGlobe, FiMail, FiPackage, FiPhone, FiUsers, FiX } from "react-icons/fi";
 import { priceForPackage } from "../../home-learning/services/homeLearningApi";
 import {
-  HOUSEHOLD_STATUS, Initials, Pill, formatDate, formatMoney, inputStyle, labelStyle, panelStyle, primaryButton, secondaryButton, thisMonth,
+  HOUSEHOLD_STATUS, Initials, Pill, formatDate, formatMoney, inputStyle, labelStyle, panelStyle, primaryButton, secondaryButton,
 } from "../../home-learning/components/ui";
+import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
 
 // One family's membership of one club — the club counterpart of Home Learning's HouseholdCard,
 // with the same look. Children are placed in one of the club's classes instead of getting their
@@ -44,7 +45,6 @@ function PlacesBar({ filled, total }) {
 }
 
 function BillingTile({ membership, canBill, onInvoice, invoicing }) {
-  const [period, setPeriod] = useState(thisMonth());
   const [dueDate, setDueDate] = useState("");
   const billing = membership.billing || { outstanding: 0, overdue: false, invoices: [] };
   return <Tile icon={FiFileText} title="Billing" action={billing.overdue && <Pill tone={{ color: "#B91C1C", background: "#FEF2F2" }}><FiAlertTriangle /> Overdue</Pill>}>
@@ -60,12 +60,14 @@ function BillingTile({ membership, canBill, onInvoice, invoicing }) {
           <span>{formatMoney(invoice.total)} · <strong style={{ color: INVOICE_STATUS_COLORS[invoice.status] || "#6B7280", textTransform: "capitalize" }}>{invoice.status.replace("_", " ")}</strong></span>
         </Link>)}
       </div>}
-    {canBill && membership.status === "active" && <form onSubmit={(e) => { e.preventDefault(); onInvoice({ id: membership.id, period, dueDate }); }} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-      <input aria-label="Invoice month" type="month" value={period} onChange={(e) => setPeriod(e.target.value)} required style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
-      <input aria-label="Due date" title="Due date (optional)" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
-      <button disabled={invoicing} style={{ ...secondaryButton, flex: "1 1 100%", justifyContent: "center", borderColor: "#2E7DB5", color: "#2E7DB5" }}>{invoicing ? "Invoicing…" : "Invoice month"}</button>
+    {billing.outlook && <span style={{ ...mutedText, fontSize: 12 }}>{outlookLine(billing.outlook)}</span>}
+    {/* Invoices go out on their own; this raises the next one early (not for a daily package,
+        billed once its month is over). */}
+    {canBill && membership.status === "active" && membership.billingPeriod !== "daily" && <form onSubmit={(e) => { e.preventDefault(); onInvoice({ id: membership.id, dueDate }); }} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+      <input aria-label="Due date" title="Due date (optional — a week from today if left empty)" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ ...inputStyle, flex: "1 1 120px", width: "auto", padding: "6px 8px", fontSize: 12 }} />
+      <button disabled={invoicing} style={{ ...secondaryButton, flex: "1 1 140px", justifyContent: "center", borderColor: "#2E7DB5", color: "#2E7DB5" }}>{invoicing ? "Invoicing…" : "Invoice next period now"}</button>
     </form>}
-    {canBill && membership.status !== "active" && <span style={{ ...mutedText, fontSize: 12 }}>Set the membership to Active to raise invoices.</span>}
+    {canBill && membership.status !== "active" && <span style={{ ...mutedText, fontSize: 12 }}>Invoices go out automatically once the membership is Active.</span>}
   </Tile>;
 }
 
@@ -73,7 +75,7 @@ function BillingTile({ membership, canBill, onInvoice, invoicing }) {
 // (recorded against the sign-up invoice), or you decline the sign-up.
 function SignupBanner({ membership, canApprove, canDecline, actions, pending }) {
   const invoice = (membership.billing?.invoices || []).find((inv) => inv.id === membership.signupInvoiceId);
-  const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(membership.monthlyAmount);
+  const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(membership.amount);
   const [approving, setApproving] = useState(false);
   const [form, setForm] = useState({ amount: String(due), paymentMethod: "cash", providerReference: "" });
   const unplaced = (membership.children || []).filter((c) => c.status === "active" && !c.classId).length;
@@ -190,7 +192,7 @@ function EditForm({ membership, packages, onSave, onCancel, saving }) {
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Notes<textarea style={{ ...inputStyle, minHeight: 56, resize: "vertical" }} maxLength={5000} value={draft.notes} onChange={set("notes")} /></label>
     <div style={{ gridColumn: "1/-1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
       <span style={{ fontSize: 12, color: price || !packageChanged ? "#6B7280" : "#B91C1C" }}>
-        {packageChanged ? (price ? `New price: ${formatMoney(price.monthlyAmount)}/month for ${price.childCount} places.` : "This package can't take that many children.") : `Email (their login): ${membership.guardianEmail || "—"}`}
+        {packageChanged ? (price ? `New price: ${pricePer(price.amount, price.billingPeriod)} for ${price.childCount} places, from their next billing period.` : "This package can't take that many children.") : `Email (their login): ${membership.guardianEmail || "—"}`}
       </span>
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={onCancel} style={{ ...secondaryButton, padding: "10px 14px", fontSize: 13 }}>Cancel</button>
@@ -219,7 +221,7 @@ export default function MembershipCard({ membership, focused, cardRef, classes, 
           <strong style={{ color: "#25476a" }}>{membership.club?.name || "Club"}</strong> · {membership.package?.name || "No package"} · {activeCount} {activeCount === 1 ? "child" : "children"}
         </div>
       </div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(membership.monthlyAmount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/month</span></div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(membership.amount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/{pricePer(0, membership.billingPeriod).split("/")[1]}</span></div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <select aria-label="Membership status" value={membership.status} onChange={(event) => actions.updateMembership(membership.id, { status: event.target.value })} style={{ ...inputStyle, width: "auto", padding: "7px 10px", fontSize: 13 }}>
           <option value="pending">Pending</option><option value="active">Active</option><option value="paused">Paused</option><option value="cancelled">Cancelled</option>
@@ -240,7 +242,7 @@ export default function MembershipCard({ membership, focused, cardRef, classes, 
       </Tile>
       <Tile icon={FiPackage} title="Package">
         <div style={{ fontWeight: 700, fontSize: 14 }}>{membership.package?.name || "No package"}{membership.package?.status === "archived" && <span style={{ ...mutedText, fontWeight: 500, fontSize: 12 }}> (archived)</span>}</div>
-        <div style={mutedText}>{formatMoney(membership.monthlyAmount)} per month</div>
+        <div style={mutedText}>{pricePer(membership.amount, membership.billingPeriod)} — {periodHow(membership.billingPeriod).replace(" Can't be offered on the website.", "")}</div>
         <PlacesBar filled={activeCount} total={Number(membership.childCount)} />
       </Tile>
       <BillingTile membership={membership} canBill={canBill} onInvoice={actions.invoice} invoicing={pending.invoicing} />

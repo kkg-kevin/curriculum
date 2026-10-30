@@ -13,7 +13,7 @@ router.get("/learner/:learnerId", authorize("learner"), controller.getForLearner
 router.get("/family", authorize("learner"), controller.getFamily);
 router.post("/family/:householdId/children", authorize("learner"), controller.addFamilyChild);
 router.post("/", authorize("admin"), controller.create);
-router.post("/invoices", authorize("admin"), controller.generateMonthlyInvoices);
+router.post("/invoices", authorize("admin"), controller.generateDueInvoices);
 router.put("/:id", authorize("admin"), controller.update);
 router.post("/:id/learners", authorize("admin"), controller.setEnrollment);
 router.post("/:id/learners/new", authorize("admin"), controller.createLearner);

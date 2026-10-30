@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { FiShare2 } from "react-icons/fi";
 import { QRCodeSVG } from "qrcode.react";
-import { T, cardStyle, sectionHeaderStyle } from "./theme";
+import { KID, KidHeading, T, cardStyle } from "./theme";
 import { usePublicToken, useRegeneratePublicToken } from "../../../learners/hooks/useLearners";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import ShareQrTools from "../../../learners/components/ShareQrTools";
+import { FiShare2 } from "react-icons/fi";
 
 // The learner's no-login share link — on their own profile, and on the staff learner page
 // (LearnerPage.jsx, admin/school-portal): same token, same server endpoints, same deliberately
@@ -41,29 +41,23 @@ export default function ShareProfileCard({ learner }) {
   };
 
   return (
-    <div style={{ ...cardStyle(), padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 260 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: T.tintBg, color: T.accentMid, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <FiShare2 size={12} />
-          </div>
-          <p style={sectionHeaderStyle()}>Share Profile</p>
-        </div>
+    <div style={{ ...cardStyle(), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10, flex: 1, minWidth: 260 }}>
+      <KidHeading icon={FiShare2} tone={KID.navy} action={
         <button
           type="button"
           onClick={handleToggle}
           style={{
-            padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
-            backgroundColor: open ? "#F3F4F6" : T.tintBg, color: open ? T.inkMuted : T.accent, border: `1.5px solid ${open ? T.border : T.tintBorder}`,
+            padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", flexShrink: 0,
+            backgroundColor: open ? "#F3F4F6" : KID.navy.color, color: open ? T.inkMuted : "#fff", border: `2px solid ${open ? T.border : KID.navy.color}`,
           }}
         >
           {open ? "Hide" : "Show QR"}
         </button>
-      </div>
+      }>Share Profile</KidHeading>
 
       {!open ? (
-        <p style={{ margin: 0, fontSize: 12, color: T.inkFaint, lineHeight: 1.4 }}>
-          No-login page — shows identity, guardian name, and for each hub the learner's levels, competencies, pathways, courses and attendance. Guardian contact, fees, individual assessment scores and teacher feedback stay private.
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.5 }}>
+          A page anyone with the link or QR code can open — no login needed. It shows the learner&apos;s levels, skills, pathways, courses and attendance. Contact details, fees, marks and teacher notes stay private.
         </p>
       ) : loadingToken && !token ? (
         <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Loading…</p>

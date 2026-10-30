@@ -12,7 +12,8 @@ export const homeLearningApi = {
   createLearner: (id, data) => api.post(`${BASE}/${id}/learners/new`, data).then((r) => r.data.data),
   removeLearner: (id, learnerId) => api.delete(`${BASE}/${id}/learners/${learnerId}`).then((r) => r.data.data),
   generateInvoice: (id, data) => api.post(`${BASE}/${id}/invoices`, data).then((r) => r.data.data),
-  generateMonthlyInvoices: (data) => api.post(`${BASE}/invoices`, data).then((r) => r.data.data),
+  // Every active household's due invoices raised now (the hourly run does the same).
+  generateDueInvoices: () => api.post(`${BASE}/invoices`, {}).then((r) => r.data.data),
   // Website sign-ups: record the payment and activate the family, or decline the sign-up.
   approveSignup: (id, data) => api.post(`${BASE}/${id}/approve-payment`, data).then((r) => r.data.data),
   declineSignup: (id) => api.post(`${BASE}/${id}/decline-signup`, {}).then((r) => r.data.data),
@@ -29,7 +30,8 @@ export function priceForPackage(pkg, requested) {
   if (!pkg) return null;
   const count = requested == null || requested === "" ? pkg.childrenIncluded : Number(requested);
   if (!Number.isInteger(count) || count < 1) return null;
-  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, monthlyAmount: pkg.monthlyAmount };
+  const billingPeriod = pkg.billingPeriod || "monthly";
+  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, amount: pkg.amount, billingPeriod };
   if (!pkg.allowExtraChildren || count > pkg.maxChildren) return null;
-  return { childCount: count, monthlyAmount: pkg.monthlyAmount + (count - pkg.childrenIncluded) * (pkg.extraChildAmount || 0) };
+  return { childCount: count, amount: pkg.amount + (count - pkg.childrenIncluded) * (pkg.extraChildAmount || 0), billingPeriod };
 }

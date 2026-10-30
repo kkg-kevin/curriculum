@@ -2,7 +2,8 @@ const db = require("../../config/db");
 const HouseholdModel = require("./home-learning.model");
 const HomeLearningPackageModel = require("./home-learning-package.model");
 const HomeLearningService = require("./home-learning.service");
-const { raiseHouseholdInvoice, monthRange } = require("./home-learning.service");
+const { raiseHouseholdInvoice } = require("./home-learning.service");
+const { firstPeriod } = require("../billing/package-billing");
 const { signupSchema, signupChildSchema, approveSignupSchema } = require("./home-learning.validation");
 const { priceForPackage, CURRENCY } = require("./home-learning.pricing");
 const LearnerService = require("../learners/learner.service");
@@ -119,7 +120,8 @@ const HomeLearningSignupService = {
     const ownerAdminId = requirePublicContentAdminId();
 
     const pkg = await HomeLearningPackageModel.findBySlug(data.packageSlug, ownerAdminId);
-    if (!pkg || pkg.status !== "active" || !pkg.isPublished) fail("That package is no longer available — please choose another.", 404);
+    // A daily package is never published (it's billed at month end, nothing to pay up front).
+    if (!pkg || pkg.status !== "active" || !pkg.isPublished || pkg.billingPeriod === "daily") fail("That package is no longer available — please choose another.", 404);
     const price = priceForPackage(pkg, data.children.length);
     if (!price) {
       fail(pkg.allowExtraChildren
@@ -128,6 +130,7 @@ const HomeLearningSignupService = {
     }
     await assertEmailFree(data.parent.email);
     await assertUsernamesFree(data.children);
+    const period = firstPeriod(price.billingPeriod);
 
     const created = { learnerIds: [], usernames: [], parentUserId: null, householdId: null };
     let household;
@@ -151,7 +154,11 @@ const HomeLearningSignupService = {
         packageId: pkg.id,
         planCode: pkg.slug.slice(0, 30),
         childCount: price.childCount,
-        monthlyAmount: price.monthlyAmount,
+        amount: price.amount,
+        billingPeriod: price.billingPeriod,
+        // Their periods start today; the first is invoiced now, the rest automatically.
+        billingAnchor: period.start,
+        billedThrough: period.end,
         status: "pending",
         source: "website",
         notes: `Signed up on the website on ${new Date().toISOString().slice(0, 10)}.`,
@@ -181,8 +188,7 @@ const HomeLearningSignupService = {
         });
       }
 
-      const { periodStart, periodEnd, label } = monthRange(new Date().toISOString().slice(0, 7));
-      invoice = await raiseHouseholdInvoice(ownerAdminId, household, { periodStart, periodEnd, label, dueDate: "" }, null);
+      invoice = await raiseHouseholdInvoice(ownerAdminId, household, { periodStart: period.start, periodEnd: period.end, label: period.label, dueDate: "" }, null);
       await HouseholdModel.updateHousehold(household.id, ownerAdminId, { signupInvoiceId: invoice.id });
     } catch (err) {
       await rollback(created);
@@ -208,7 +214,10 @@ const HomeLearningSignupService = {
       householdId: household.id,
       packageName: pkg.name,
       childCount: data.children.length,
-      monthlyAmount: price.monthlyAmount,
+      amount: price.amount,
+      billingPeriod: price.billingPeriod,
+      // The website before 31 Oct 2026 read this name.
+      monthlyAmount: price.amount,
       currency: CURRENCY,
       invoiceNumber: invoice.invoiceNumber,
       amountDue: Number(invoice.total),
@@ -239,7 +248,8 @@ const HomeLearningSignupService = {
         places: household.childCount,
         filled: active.length,
         placesLeft: Math.max(0, household.childCount - active.length),
-        monthlyAmount: Number(household.monthlyAmount),
+        amount: Number(household.amount),
+        billingPeriod: household.billingPeriod,
         currency: CURRENCY,
         children: active.map((e, i) => ({
           learnerId: e.learnerId,

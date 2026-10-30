@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { PERIODS } = require("../../shared/utils/billing-periods");
 
 const optionalText = (max) => z.string().trim().max(max).optional().or(z.literal(""));
 
@@ -80,7 +81,9 @@ const packageSchema = z.object({
   summary: z.string().trim().max(300).optional().or(z.literal("")),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   childrenIncluded: z.coerce.number().int().min(1, "A package includes at least 1 child").max(50),
-  monthlyAmount: money,
+  // The price per billing period (shared/utils/billing-periods.js).
+  amount: money,
+  billingPeriod: z.enum(PERIODS, { errorMap: () => ({ message: "Choose how often the package is billed" }) }).default("monthly"),
   allowExtraChildren: z.boolean().default(false),
   extraChildAmount: money.nullable().optional(),
   maxChildren: z.coerce.number().int().min(1).max(50).optional(),
@@ -90,15 +93,19 @@ const packageSchema = z.object({
   status: z.enum(["active", "archived"]).default("active"),
   sortOrder: z.coerce.number().int().min(0).max(999).default(0),
 }).superRefine((data, ctx) => {
+  // A daily package is billed at the end of each month for the days used — nothing to pay when
+  // signing up, so it isn't offered on the website.
+  if (data.billingPeriod === "daily" && data.isPublished) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["isPublished"], message: "A daily package is billed at the end of each month, so it can't be offered on the website" });
+  }
   if (data.allowExtraChildren) {
     if (data.extraChildAmount == null) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["extraChildAmount"], message: "Set the price per extra child" });
     if (data.maxChildren != null && data.maxChildren <= data.childrenIncluded) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["maxChildren"], message: "Maximum children must be more than the children included" });
   }
 });
 
-// "YYYY-MM" — the month an invoice covers.
+// Raising a family's next invoice now ("Invoice next period"): optionally its due date.
 const invoiceSchema = z.object({
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Choose a month (YYYY-MM)"),
   dueDate: isoDate.optional().or(z.literal("")),
 });
 

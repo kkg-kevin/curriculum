@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FiStar, FiLock, FiAward } from "react-icons/fi";
+import { FiAward, FiLock, FiStar } from "react-icons/fi";
 import { T, sectionHeaderStyle } from "./profile/theme";
 import { useLearnerBandProgress } from "../../curriculum/hooks/useCompetencies";
 import { deriveBandJourney, levelCaption } from "../utils/bandJourney";
@@ -117,7 +117,7 @@ export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
 
   return (
     <div style={{
-      backgroundColor: "#FFFDF9", borderRadius: 16, border: "1.5px solid #FDE9C0",
+      backgroundColor: "#FFFBF0", borderRadius: 24, border: "2px solid #FDE2A7",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", padding: 20, overflow: "hidden", position: "relative",
     }}>
       <style>{`
@@ -129,18 +129,18 @@ export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
       `}</style>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: T.gold, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <FiAward size={13} />
-          </div>
-          <h2 style={{ ...sectionHeaderStyle(), color: "#B45309" }}>Progress Arc</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: T.gold, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 10px rgba(254,177,57,0.35)" }}>
+            <FiAward size={20} strokeWidth={2.5} />
+          </span>
+          <h2 style={{ ...sectionHeaderStyle(), color: "#B45309", fontSize: 18 }}>Progress Arc</h2>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 800, color: "#B45309", backgroundColor: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 13, fontWeight: 900, color: T.accentDeep, backgroundColor: T.gold, borderRadius: 999, padding: "5px 12px", whiteSpace: "nowrap" }}>
           {achievedCount} of {bandProgress.length} unlocked
         </span>
       </div>
 
-      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.5 }}>{levelCaption(current, next)}</p>
+      <p style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 800, color: T.ink, lineHeight: 1.5 }}>{levelCaption(current, next)}</p>
 
       <div style={{ display: "flex", alignItems: "flex-start", overflowX: "auto", paddingBottom: 4 }}>
         {bandProgress.map((bp, i) => {

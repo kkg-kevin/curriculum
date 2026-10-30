@@ -1,7 +1,9 @@
-// Keeps part payments current, then exits.
+// Raises package invoices that are due, then keeps part payments current, and exits.
 //   npm run billing:process
 //
-// For every invoice still owed something: marks it overdue (or not any more), sends payment
+// First, every active Home Learning household and Tech Club membership gets the invoice for each
+// billing period that has started (a daily package's for each month that has ended) — see
+// modules/billing/package-billing.js. Then, for every invoice still owed something: marks it overdue (or not any more), sends payment
 // reminders (a few days before a part is due, on the day, the day after, when the grace days run
 // out — each once), and pauses a family's learner accounts when a payment is overdue past the grace
 // days (when the workspace has that on), switching them back on once it's paid. See
@@ -11,8 +13,10 @@ require("dotenv").config({ quiet: true });
 
 const db = require("../config/db");
 const { processPartPayments } = require("../modules/billing/billing.process");
+const { processPackageBilling } = require("../modules/billing/package-billing");
 
 (async () => {
+  console.log("Package invoices:", JSON.stringify(await processPackageBilling()));
   const counts = await processPartPayments();
   console.log("Part payments:", JSON.stringify(counts));
 })()
