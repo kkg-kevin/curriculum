@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiChevronDown } from "react-icons/fi";
 import { useUpdateLearnerHubLink } from "../../hooks/useLearners";
 import { usePathway, usePathways, useAgeCategories, useAssignLearnerPathway, useRemoveLearnerPathway } from "../../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
@@ -20,6 +21,45 @@ const STAGE_SOURCE = {
   staff: "Chosen by hand — stays when the age changes (choose “Not set” to place by age again)",
 };
 
+// A pathway's courses in order, shown when its row is opened: the learner's current course
+// marked, the ones before it faded, the one after it "Next".
+function PathwayCourseList({ courseIds, currentCourseId, courseNameById, color, awaitingDiagnostic }) {
+  if (courseIds.length === 0) {
+    return <p style={{ margin: "8px 0 0 20px", fontSize: 12, color: "#9CA3AF" }}>No courses in this pathway yet.</p>;
+  }
+  const currentIndex = currentCourseId ? courseIds.indexOf(currentCourseId) : -1;
+  return (
+    <ol style={{ listStyle: "none", margin: "8px 0 0", padding: "0 0 0 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+      {courseIds.map((courseId, i) => {
+        const isCurrent = i === currentIndex;
+        const earlier = currentIndex !== -1 && i < currentIndex;
+        const tag = isCurrent ? (awaitingDiagnostic ? "Starts here" : "Current") : currentIndex !== -1 && i === currentIndex + 1 ? "Next" : null;
+        return (
+          <li
+            key={courseId}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8,
+              background: isCurrent ? "#ffffff" : "transparent",
+              border: `1px solid ${isCurrent ? color : "transparent"}`,
+              opacity: earlier ? 0.6 : 1,
+            }}
+          >
+            <span style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, backgroundColor: isCurrent ? color : "#F3F4F6", color: isCurrent ? "#ffffff" : "#6B7280" }}>
+              {i + 1}
+            </span>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: isCurrent ? 700 : 500, color: "#1F2937" }}>
+              {courseNameById.get(courseId) || "Course not found"}
+            </span>
+            {tag && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: isCurrent ? "#059669" : "#6B7280" }}>{tag}</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function PathwayManagerCard({ learnerId, hubId, currentStageId, stageSource, curriculumId, canRemove }) {
   const { data: journey = [], isLoading: journeyLoading } = usePathway(curriculumId, learnerId);
   const { data: areas = [] } = usePathways(curriculumId);
@@ -30,6 +70,7 @@ export default function PathwayManagerCard({ learnerId, hubId, currentStageId, s
   const { mutate: removePathway, isPending: removing } = useRemoveLearnerPathway(curriculumId, learnerId);
   const [addId, setAddId] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [openId, setOpenId] = useState(null);
 
   if (!curriculumId || journeyLoading) return null;
 
@@ -83,32 +124,68 @@ export default function PathwayManagerCard({ learnerId, hubId, currentStageId, s
             const step = j.currentCourseId ? courseIds.indexOf(j.currentCourseId) + 1 : 0;
             const manual = j.source === "manual";
             const stageName = stageNameById.get(j.stageId);
+            const open = openId === j.pathwayId;
+            const toggle = () => setOpenId(open ? null : j.pathwayId);
             return (
-              <div key={j.pathwayId} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 180, flex: 1, flexWrap: "wrap" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.pathwayName}</span>
-                  {stageName && <span style={{ fontSize: 11, color: "#6B7280" }}>{stageName}</span>}
-                  <span style={{ padding: "1px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: manual ? "#F5F3FF" : "#e8f5fb", color: manual ? "#6D28D9" : ACCENT, border: `1px solid ${manual ? "#DDD6FE" : "#a8d5ee"}` }}>
-                    {manual ? "Added by staff" : "Automatic · stage"}
-                  </span>
+              <div key={j.pathwayId} style={{ padding: "10px 12px", borderRadius: 10, background: "#FAFCFF", border: `1px solid ${open ? "#E5EEF6" : "transparent"}` }}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={open}
+                  title={open ? "Hide this pathway's courses" : "Show this pathway's courses"}
+                  onClick={toggle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggle();
+                    }
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", cursor: "pointer" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 180, flex: 1, flexWrap: "wrap" }}>
+                    <FiChevronDown size={14} color="#6B7280" style={{ flexShrink: 0, transform: open ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s ease" }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: areaColor, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{j.pathwayName}</span>
+                    {stageName && <span style={{ fontSize: 11, color: "#6B7280" }}>{stageName}</span>}
+                    <span style={{ padding: "1px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 700, backgroundColor: manual ? "#F5F3FF" : "#e8f5fb", color: manual ? "#6D28D9" : ACCENT, border: `1px solid ${manual ? "#DDD6FE" : "#a8d5ee"}` }}>
+                      {manual ? "Added by staff" : "Automatic · stage"}
+                    </span>
+                  </div>
+                  {courseName ? (
+                    <>
+                      <span style={{ fontSize: 13, color: "#111827" }}>
+                        {courseName}{step > 0 && courseIds.length > 1 ? ` · step ${step} of ${courseIds.length}` : ""}
+                      </span>
+                      <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
+                        {j.isDefault ? "Awaiting diagnostic" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
+                  )}
+                  {manual && canRemove && (
+                    <button
+                      type="button"
+                      disabled={removing}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRemoveTarget(j);
+                      }}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: removing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
-                {courseName ? (
-                  <>
-                    <span style={{ fontSize: 13, color: "#111827" }}>
-                      {courseName}{step > 0 && courseIds.length > 1 ? ` · step ${step} of ${courseIds.length}` : ""}
-                    </span>
-                    <span style={{ fontSize: 11, color: j.isDefault ? "#9CA3AF" : "#059669", fontWeight: 600 }}>
-                      {j.isDefault ? "Awaiting diagnostic" : `Placed${j.history.length > 1 ? ` · ${j.history.length} changes` : ""}`}
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ fontSize: 11, color: "#9CA3AF" }}>No course sequenced yet</span>
-                )}
-                {manual && canRemove && (
-                  <button type="button" disabled={removing} onClick={() => setRemoveTarget(j)} style={{ background: "none", border: "none", color: "#EF4444", fontSize: 12, fontWeight: 700, cursor: removing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}>
-                    Remove
-                  </button>
+                {open && (
+                  <PathwayCourseList
+                    courseIds={courseIds}
+                    currentCourseId={j.currentCourseId}
+                    courseNameById={courseNameById}
+                    color={areaColor}
+                    awaitingDiagnostic={j.isDefault}
+                  />
                 )}
               </div>
             );
