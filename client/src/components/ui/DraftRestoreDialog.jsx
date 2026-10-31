@@ -26,7 +26,7 @@ const button = {
  * what            — "assessment", "course", "session" — used in the wording
  * listedOn        — where the record's other drafts are listed ("the Assessments page")
  * otherCount      — how many more drafts there are of the same record
- * onDismiss       — "Not now": the form opens as saved and the draft is left for later
+ * onDismiss       — "Not now": the form opens as saved; the draft is kept until the record is saved
  */
 export default function DraftRestoreDialog({ draft, recordUpdatedAt = null, what, listedOn, otherCount = 0, onRestore, onDiscard, onDismiss }) {
   if (!draft) return null;
@@ -72,7 +72,7 @@ export default function DraftRestoreDialog({ draft, recordUpdatedAt = null, what
         )}
         <p style={{ margin: "0 0 24px 0", fontSize: "13px", color: "#6B7280", lineHeight: "1.55" }}>
           Restore brings the changes back so you can carry on and save. Discard deletes them for good, for everyone on this account.
-          {onDismiss ? " Not now opens the saved version and leaves the draft for later." : ""}
+          {onDismiss ? ` Not now opens the saved version and keeps the draft until this ${what} is saved.` : ""}
           {otherCount > 0 && listedOn ? ` ${otherCount === 1 ? "One more unsaved draft" : `${otherCount} more unsaved drafts`} of this ${what} ${otherCount === 1 ? "is" : "are"} listed on ${listedOn}.` : ""}
         </p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>

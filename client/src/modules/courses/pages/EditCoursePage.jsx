@@ -11,7 +11,7 @@ import CourseForm from "../components/CourseForm";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
 import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
-import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, useDraftsSeenAtOpen, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
 
 const DRAFT_GONE = "That draft is no longer there — it may have been saved or deleted by someone else.";
@@ -58,6 +58,13 @@ export default function EditCoursePage() {
   // Opening without one: drafts other visits left of this course, offered back below.
   const { data: courseDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses, { kind: "course", recordId: id }, { enabled: !draftParam });
   const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.courses);
+  // Earlier visits' drafts of this course go once it's saved.
+  const dropSeenDrafts = useDraftsSeenAtOpen(DRAFT_ENDPOINTS.courses, {
+    drafts: courseDrafts,
+    recordId: isLoaded ? id : null,
+    untouched: isLoaded && isSameContent(values, loaded.current.values),
+    ownDraftId: autosave.currentDraftId(),
+  });
 
   useEffect(() => {
     if (course && linkedPathways && linkedCompetencies && loaded.current?.id !== id) {
@@ -112,6 +119,7 @@ export default function EditCoursePage() {
     updateCourse({ id, data }, {
       onSuccess: async () => {
         autosave.clear();
+        dropSeenDrafts(id);
         const originalAreaIds = (linkedPathways || []).map((a) => a.id);
         const areasToAdd = pathwayIds.filter((aid) => !originalAreaIds.includes(aid));
         const areasToRemove = originalAreaIds.filter((aid) => !pathwayIds.includes(aid));

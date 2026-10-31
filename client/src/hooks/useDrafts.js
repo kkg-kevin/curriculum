@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -50,4 +51,33 @@ export function useDeleteDraft(endpoint) {
       toast.error(err.message || "Failed to delete draft");
     },
   });
+}
+
+// Drafts earlier visits left on a record — the ones the restore dialog offers, noted while the form
+// still shows the record as it was opened. Saving the record supersedes them, so the returned
+// drop(recordId) deletes them once the save has gone through; without it a draft passed over with
+// "Not now" (or one of several) kept the record marked "Unsaved draft" after every save. A draft
+// someone else starts while this form is open isn't noted, so it's kept.
+//
+// drafts — the record's drafts as listed; untouched — the form is still as it was loaded;
+// ownDraftId — the draft this visit is writing (deleted by the save itself).
+export function useDraftsSeenAtOpen(endpoint, { drafts, recordId, untouched, ownDraftId }) {
+  const queryClient = useQueryClient();
+  const seen = useRef(new Map());
+  useEffect(() => {
+    if (!untouched || !recordId) return;
+    const ids = drafts.filter((d) => d.recordId === recordId && d.id !== ownDraftId).map((d) => d.id);
+    if (!ids.length) return;
+    const noted = seen.current.get(recordId) || new Set();
+    ids.forEach((draftId) => noted.add(draftId));
+    seen.current.set(recordId, noted);
+  }, [untouched, recordId, drafts, ownDraftId]);
+
+  return useCallback((forRecord) => {
+    const ids = [...(seen.current.get(forRecord) || [])];
+    seen.current.delete(forRecord);
+    if (!ids.length) return;
+    Promise.allSettled(ids.map((draftId) => draftsApi.remove(endpoint, draftId)))
+      .then(() => queryClient.invalidateQueries({ queryKey: ["drafts"] }));
+  }, [endpoint, queryClient]);
 }

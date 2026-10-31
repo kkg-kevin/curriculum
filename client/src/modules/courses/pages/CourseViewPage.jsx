@@ -29,7 +29,7 @@ import { Editor as RichTextEditorControlled } from "../components/RichTextEditor
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { courseApi } from "../services/courseApi";
 import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
-import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, useDraftsSeenAtOpen, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
 import { UnsavedDraftBadge } from "../../../components/ui/DraftCard";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
@@ -183,6 +183,13 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
   const { data: openedDraft, isError: openedDraftMissing } = useDraftQuery(DRAFT_ENDPOINTS.courses, startDraftId, { enabled: !draftsHandled.has(startSessionId) });
   const { data: sessionDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.courses, { kind: "course-session", parentId: courseId });
   const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.courses);
+  // Earlier visits' drafts of a session go once that session is saved.
+  const dropSeenDrafts = useDraftsSeenAtOpen(DRAFT_ENDPOINTS.courses, {
+    drafts: sessionDrafts,
+    recordId: isLoaded ? current.id : null,
+    untouched: isLoaded && isSameContent(values, loaded.values),
+    ownDraftId: autosave.currentDraftId(),
+  });
 
   const restoreInto = (draft) => {
     const restored = { ...loaded.values, ...draft.content };
@@ -225,8 +232,9 @@ function SessionModal({ courseId, sessions, modules, sessionPosition, startSessi
     // mutateAsync, not mutate's onSuccess: Done closes the modal before the save returns, and
     // mutate's own callbacks don't run once the component has gone. A failed save keeps the draft
     // (the hook's onError already says it failed).
-    updateSession({ id: current.id, data: getValues() })
-      .then(discardDraft)
+    const sessionId = current.id;
+    updateSession({ id: sessionId, data: getValues() })
+      .then(() => { discardDraft(); dropSeenDrafts(sessionId); })
       .catch(() => {});
   };
 
