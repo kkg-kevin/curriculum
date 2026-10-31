@@ -102,6 +102,42 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (31 Oct 2026) — What's left to unlock the next level; a pathway's courses on the learner page; drafts cleared on save
+
+**Portal only** from `curriculum` (branch `modules`) at `2874c05`. The backend is unchanged since
+"This release (30 Oct 2026, night)" below (`backend-deploy.zip` is that release's, same code) — if
+that one isn't uploaded yet, upload it first (backend, then this portal), and follow its notes
+(families will be invoiced). The website is unchanged.
+
+### What changed
+
+- **Progress Arc says what's left to unlock the next level.** A learner on Explorer now reads
+  "27% left to unlock Builder" (it used to say "…to unlock Explorer", the level they're already on).
+  Finished levels read **Completed**, the badge "0 of 5 completed", and the learner's level on the
+  profile and dashboard is the one in progress on the arc. On the last level it says what's left to
+  complete it.
+- **Staff learner page → Pathway tab: click a pathway to see its courses** — in order, the learner's
+  current course marked ("Current", or "Starts here" while a diagnostic is awaited), earlier ones
+  faded, the one after it "Next". Click again to close; **Remove** still only removes.
+- **Drafts cleared on save.** Saving a course, a course session or an assessment now deletes the
+  drafts earlier visits left of it (the ones the restore dialog offered and "Not now" passed over), so
+  it no longer stays marked "Unsaved draft" after every save. A draft someone else starts while the
+  form is open is kept.
+
+### Upload
+
+Portal only: `index.html` + `assets.zip` (unzip into the portal's folder, replacing `assets/`).
+No migration, no environment variable, no cron, no npm package.
+
+### Verify
+
+1. A learner's profile → Progress Arc: the line under the title names the **next** level
+   ("…left to unlock Builder" while on Explorer).
+2. Staff learner page → Pathway tab → click a pathway: its courses list opens below it.
+3. Edit a course, choose "Not now" on a draft, save: the course no longer shows "Unsaved draft".
+
+---
+
 ## This release (30 Oct 2026, night) — Packages billed by day, week, month, quarter or year; a child-friendly learner profile; pathway stage pages on the website
 
 **Portal and backend** from `curriculum` (branch `modules`) at `915cf21`. **Website** from
