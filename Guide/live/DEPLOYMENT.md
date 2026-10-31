@@ -104,10 +104,11 @@ the frontend needs a second, separately-built zip.
 
 ## This release (31 Oct 2026) — What's left to unlock the next level; a pathway's courses on the learner page; drafts cleared on save
 
-**Portal only** from `curriculum` (branch `modules`) at `2874c05`. The backend is unchanged since
-"This release (30 Oct 2026, night)" below (`backend-deploy.zip` is that release's, same code) — if
-that one isn't uploaded yet, upload it first (backend, then this portal), and follow its notes
-(families will be invoiced). The website is unchanged.
+**Portal and backend** from `curriculum` (branch `modules`) at `2874c05`. Only the portal changed:
+the backend code is the same as "This release (30 Oct 2026, night)" below (`backend-deploy.zip`
+rebuilt today, same 614 files, 151 migrations). If that release isn't uploaded yet, upload this
+backend first, then the portal, and follow its notes (families will be invoiced). The website is
+unchanged (its zip is still the 30 Oct one).
 
 ### What changed
 
@@ -126,8 +127,8 @@ that one isn't uploaded yet, upload it first (backend, then this portal), and fo
 
 ### Upload
 
-Portal only: `index.html` + `assets.zip` (unzip into the portal's folder, replacing `assets/`).
-No migration, no environment variable, no cron, no npm package.
+The portal: `index.html` + `assets.zip` (unzip into the portal's folder, replacing `assets/`).
+The backend zip needs uploading only if the 30 Oct (night) one isn't up yet. No migration, no environment variable, no cron, no npm package.
 
 ### Verify
 
