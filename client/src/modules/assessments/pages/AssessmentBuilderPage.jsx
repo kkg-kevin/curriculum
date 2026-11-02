@@ -8,7 +8,7 @@ import {
 import { assessmentApi } from "../services/assessmentApi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useWorkspaceDraft, isSameContent } from "../../../hooks/useWorkspaceDraft";
-import { useDraftQuery, useDraftsQuery, useDeleteDraft, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
+import { useDraftQuery, useDraftsQuery, useDeleteDraft, useDraftsSeenAtOpen, draftsApi, DRAFT_ENDPOINTS } from "../../../hooks/useDrafts";
 import DraftRestoreDialog, { WorkspaceDraftNote } from "../../../components/ui/DraftRestoreDialog";
 import { useCompetencies } from "../../settings/competencies/hooks/useCompetencies";
 import { usePathwayTemplates } from "../../settings/pathways/hooks/usePathwayTemplates";
@@ -1679,6 +1679,13 @@ export default function AssessmentBuilderPage() {
   // Editing without one: drafts other visits left of this assessment, offered back below.
   const { data: assessmentDrafts = [] } = useDraftsQuery(DRAFT_ENDPOINTS.assessments, { recordId: id }, { enabled: isEdit && !draftParam });
   const { mutate: deleteDraft } = useDeleteDraft(DRAFT_ENDPOINTS.assessments);
+  // Earlier visits' drafts of this assessment go once it's saved.
+  const dropSeenDrafts = useDraftsSeenAtOpen(DRAFT_ENDPOINTS.assessments, {
+    drafts: assessmentDrafts,
+    recordId: isEdit && form ? id : null,
+    untouched: Boolean(form) && isSameContent(form, loadedForm.current),
+    ownDraftId: autosave.currentDraftId(),
+  });
 
   // `name` (competency — indicator) disambiguates in the picker dropdown when more than one
   // linked competency is in play; `chipName` (just the indicator) keeps the selected chip and
@@ -1934,7 +1941,7 @@ export default function AssessmentBuilderPage() {
     if (!form.name.trim()) { setActiveTab("info"); return; }
     const data = buildPayload();
     if (isEdit) {
-      updateAssessment({ id, data }, { onSuccess: async () => { autosave.clear(); await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
+      updateAssessment({ id, data }, { onSuccess: async () => { autosave.clear(); dropSeenDrafts(id); await reconcileTags(id); navigate(`/assessments/${id}/view`); } });
     } else {
       createAssessment(data, { onSuccess: async (created) => { autosave.clear(); await reconcileTags(created.id); navigate(`/assessments/${created.id}/view`); } });
     }

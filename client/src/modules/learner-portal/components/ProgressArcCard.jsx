@@ -59,7 +59,7 @@ function LevelNode({ band, status, ordinal, size = 64 }) {
         </p>
         <p style={{ margin: "1px 0 0", fontSize: 12.5, fontWeight: 700, color: achieved || current ? T.ink : "#B0B4BC" }}>{band.name}</p>
         <p style={{ margin: "1px 0 0", fontSize: 10, fontWeight: 700, color: achieved ? "#059669" : current ? T.gold : "#B0B4BC" }}>
-          {achieved ? "Unlocked" : current ? "In progress" : "Locked"}
+          {achieved ? "Completed" : current ? "In progress" : "Locked"}
         </p>
       </div>
     </div>
@@ -109,7 +109,7 @@ export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
   // band means every earlier band is already behind them, even if that earlier band's own
   // independently-weighted formula never technically cleared its own bar. Without this, an
   // earlier band could render "Locked" while a later one shows "In progress" — reads as broken
-  // (how are you past a level you haven't unlocked?). The "X of Y unlocked" badge below counts
+  // (how are you past a level you haven't unlocked?). The "X of Y completed" badge below counts
   // the same way, so it never disagrees with what the ladder itself shows.
   const nextIndex = next ? bandProgress.findIndex((bp) => bp.bandId === next.bandId) : -1;
   const achievedCount = bandProgress.filter((bp, i) => bp.thresholdMet || (nextIndex !== -1 && i < nextIndex)).length;
@@ -136,7 +136,7 @@ export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
           <h2 style={{ ...sectionHeaderStyle(), color: "#B45309", fontSize: 18 }}>Progress Arc</h2>
         </div>
         <span style={{ fontSize: 13, fontWeight: 900, color: T.accentDeep, backgroundColor: T.gold, borderRadius: 999, padding: "5px 12px", whiteSpace: "nowrap" }}>
-          {achievedCount} of {bandProgress.length} unlocked
+          {achievedCount} of {bandProgress.length} completed
         </span>
       </div>
 
@@ -162,7 +162,7 @@ export default function ProgressArcCard({ curriculumId, learnerId, hubId }) {
 
       {noThresholdsConfigured && nothingAchievedYet && (
         <p style={{ margin: "18px 0 0", fontSize: 11.5, color: T.inkFaint, fontStyle: "italic" }}>
-          No advancement threshold is set on these levels yet, so a level only counts as "Unlocked" once it's 100% complete — an admin can set a lower bar per level in Performance Bands.
+          No advancement threshold is set on these levels yet, so a level only counts as "Completed" (and the next one unlocks) once it's 100% complete — an admin can set a lower bar per level in Performance Bands.
         </p>
       )}
     </div>

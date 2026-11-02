@@ -17,9 +17,19 @@ export function deriveBandJourney(bandProgress = []) {
   const current = achieved.length ? achieved[achieved.length - 1] : null;
 
   const remaining = bandProgress.filter((bp) => !bp.thresholdMet);
-  const next = remaining.length
+  const working = remaining.length
     ? remaining.reduce((best, bp) => (bp.completion > best.completion ? bp : best), remaining[0])
     : null;
+
+  // `unlocks` — the level that finishing `next` opens up: the first locked one after it on the
+  // ladder (null when `next` is the last). The learner is ON `next` ("In progress" on the arc), so
+  // "what's left to unlock" talks about this one, never `next` itself.
+  let next = null;
+  if (working) {
+    const idx = bandProgress.findIndex((bp) => bp.bandId === working.bandId);
+    const following = bandProgress.slice(idx + 1).find((bp) => !bp.thresholdMet);
+    next = { ...working, unlocks: following?.name || null };
+  }
 
   return { current, next };
 }
@@ -30,19 +40,23 @@ export function effectiveThreshold(band) {
   return band.advancementThreshold > 0 ? band.advancementThreshold : 100;
 }
 
-// One short line: what's left to unlock the next level. Shared by the Progress Arc and the
-// Current Level Summary (profile hero, dashboard snapshot), so they always say the same thing.
+// One short line: what's left to unlock the next level — e.g. on Explorer, how much is left
+// before Builder unlocks. Shared by the Progress Arc and the Current Level Summary (profile hero,
+// dashboard snapshot), so they always say the same thing.
 export function levelCaption(current, next) {
   if (next) {
     const left = Math.max(0, Math.round(effectiveThreshold(next) - next.completion));
-    return left > 0 ? `${left}% left to unlock ${next.name}.` : `Almost there — ${next.name} is about to unlock.`;
+    if (next.unlocks) {
+      return left > 0 ? `${left}% left to unlock ${next.unlocks}.` : `Almost there — ${next.unlocks} is about to unlock.`;
+    }
+    return left > 0 ? `${left}% left to complete ${next.name}.` : `Almost there — ${next.name} is nearly complete.`;
   }
-  if (current) return `You've reached ${current.name}, the top level.`;
+  if (current) return `You've completed ${current.name}, the top level.`;
   return "Complete graded work to start unlocking levels.";
 }
 
-// The level the learner is in, as the Progress Arc shows it: the last one unlocked, or — before
-// any is — the one they're working on ("In progress" on the arc).
+// The level the learner is on, as the Progress Arc shows it: the one they're working on
+// ("In progress" on the arc), or — once every level is done — the last one completed.
 export function currentLevelName(current, next) {
-  return current?.name || next?.name || "Not started";
+  return next?.name || current?.name || "Not started";
 }
