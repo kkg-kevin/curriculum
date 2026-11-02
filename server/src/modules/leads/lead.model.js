@@ -38,8 +38,10 @@ const LeadModel = {
   },
 
   // The bootcamp enrolment an invoice was raised for (leads.invoiceId).
-  findByInvoiceId(invoiceId) {
-    return firstOrNull(db(TABLE).where({ invoiceId }));
+  // Every enquiry an invoice was raised for — a bootcamp enrolment of several children puts them
+  // all on one invoice.
+  findAllByInvoiceId(invoiceId) {
+    return db(TABLE).where({ invoiceId }).orderBy("createdAt", "asc");
   },
 
   update(id, data) {

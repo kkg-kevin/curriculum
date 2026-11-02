@@ -6,6 +6,7 @@ const LearnerModel = require("../learners/learner.model");
 const AuthService = require("../auth/auth.service");
 const UserModel = require("../auth/user.model");
 const { parentLoginFor } = require("../auth/parent-login");
+const { issueParentToken } = require("../auth/parent-signup");
 const BootcampModel = require("../bootcamps/bootcamp.model");
 const BootcampHubModel = require("../bootcamps/bootcamp-hub.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -34,7 +35,12 @@ const PublicDiagnosticAttemptModel = require("../public-site/public-diagnostic-a
 // The parent gets a login of their own too (email + the password they chose), as Home Learning and
 // Tech Club sign-ups do: a parent login sees every child whose guardianEmail is theirs. A family
 // that already has a Digifunzi login under that email signs the new child up with that login's
-// password instead — the child joins that account (see auth/parent-login.js).
+// password instead — the child joins that account (see auth/parent-login.js) — or with a parent
+// token, having proved the password earlier in the visit (auth/parent-signup.js).
+//
+// One enrolment can take several children (siblings): each gets their own enquiry, learner record,
+// login and class place, all under the one parent login, and one invoice covers them all (a line
+// per child); paying it switches every one of them on.
 //
 // Deliberately its own module (not folded into leads or learners) since it orchestrates all
 // three of those plus billing — same reasoning hub-visits was kept separate from billing.
@@ -84,6 +90,16 @@ async function resolveBootcampOffering(bootcampIdOrSlug, hubId) {
   return { bootcamp, offering };
 }
 
+// A child's chosen username must be free as a learner AND as a login — checked for every child
+// before an enrolment writes anything.
+async function assertUsernameFree(username) {
+  if (await LearnerModel.findByUsername(username) || await UserModel.findByUsername(username)) {
+    const err = new Error(`The username "${username}" is already taken — choose another.`);
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
 function splitName(fullName) {
   const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
   return { firstName: parts[0] || "Learner", lastName: parts.slice(1).join(" ") || "" };
@@ -92,119 +108,144 @@ function splitName(fullName) {
 const BootcampEnrollmentService = {
   resolveBootcampOffering,
 
-  // POST /api/public/bootcamp-enrollments — the single entry point the website's new
-  // BootcampEnrollForm calls. Creates the lead (for staff visibility/continuity with the
-  // existing Enquiries page), then the learner + login + enrollment. Learner-create and
-  // enroll must succeed together — a half-created, unenrolled learner is a genuinely broken
-  // state, so a failure after the learner is created rolls it back before rethrowing, unlike the
+  // POST /api/public/bootcamp-enrollments — the single entry point the website's
+  // BootcampEnrollForm calls. For each child: the lead (for staff visibility/continuity with the
+  // existing Enquiries page), then the learner + login + enrollment; then the parent's login.
+  // Every child's learner-create and enroll must succeed together — a half-created, unenrolled
+  // learner (or a family with one sibling in and one not) is a genuinely broken state, so a failure
+  // rolls back every learner (and a parent login) made so far before rethrowing, unlike the
   // lead-notification/acknowledgement-email side effects elsewhere in this app which already
   // tolerate failure.
   async submitBootcampEnrollment(data, visitSource = null) {
     const { bootcamp, offering } = await resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId);
     const classId = offering.classIds[0];
+    const children = data.children.map((child, i) => ({ ...child, attemptId: child.attemptId || (i === 0 ? data.attemptId : null) || null }));
 
-    const existingParent = await parentLoginFor(data.parentEmail, data.parentPassword);
+    const existingParent = await parentLoginFor(data.parentEmail, data.parentPassword, data.parentToken);
+    if (!existingParent && !data.parentPassword) throw badRequest("Choose a password for your account.");
+    // Every child's username is checked before anything is written: one taken name mustn't leave
+    // their brother or sister signed up alone, and a username that already has a login must never
+    // reset that login (setOrCreatePasswordByUsername would).
+    for (const child of children) await assertUsernameFree(child.username);
 
     const bootcampSlug = slugify(bootcamp.name) || "bootcamp";
-    const lead = await LeadModel.create({
-      source: "enroll",
-      name: data.parentName,
-      email: data.parentEmail,
-      phone: data.parentPhone,
-      learnerName: data.learnerName,
-      learnerAge: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge,
-      learnerDateOfBirth: data.learnerDateOfBirth || null,
-      interestedIn: "bootcamp",
-      referenceId: bootcampSlug,
-      message: data.attemptId ? `Diagnostic attempt: ${data.attemptId}` : null,
-      bootcampId: bootcamp.id,
-      hubId: offering.hubId,
-      visitSource,
-    });
-    await LeadService._notifyAdmins(lead);
-
-    const { firstName, lastName } = splitName(data.learnerName);
-
-    // The learner record's own username-uniqueness check (assertUsernameAvailable, inside
-    // createLearner) has to throw first — same ordering as learner.controller.js's createLearner:
-    // a colliding username must fail before any login is minted for it, so a typo'd/taken
-    // username can never silently reset a different learner's own login.
-    let learner;
+    const enrolled = []; // { child, lead, learner, age }
+    let parentUser = existingParent;
     let createdParentId = null;
     try {
-      learner = await LearnerService.createLearner({
-        firstName,
-        lastName,
-        gender: null, // the bootcamp form doesn't ask; male or female is set on the learner later
-        dateOfBirth: data.learnerDateOfBirth || "",
-        // No date of birth (an older website): the age they gave places them instead.
-        ...(data.learnerDateOfBirth ? {} : { statedAge: data.learnerAge, statedAgeOn: kenyaToday() }),
-        guardianName: data.parentName,
-        guardianPhone: data.parentPhone,
-        guardianEmail: data.parentEmail,
-        username: data.username,
-        accountStatus: "pending_payment",
-      });
-      await AuthService.setOrCreatePasswordByUsername({
-        name: data.learnerName,
-        username: data.username,
-        password: data.password,
-        role: "learner",
-      });
-      await LearnerService.enrollInHub(learner.id, { hubId: offering.hubId, classId, status: "active" });
+      for (const child of children) {
+        const age = ageFrom(child.learnerDateOfBirth) ?? child.learnerAge;
+        const lead = await LeadModel.create({
+          source: "enroll",
+          name: data.parentName,
+          email: data.parentEmail,
+          phone: data.parentPhone,
+          learnerName: child.learnerName,
+          learnerAge: age,
+          learnerDateOfBirth: child.learnerDateOfBirth || null,
+          interestedIn: "bootcamp",
+          referenceId: bootcampSlug,
+          message: child.attemptId ? `Diagnostic attempt: ${child.attemptId}` : null,
+          bootcampId: bootcamp.id,
+          hubId: offering.hubId,
+          visitSource,
+        });
+        const entry = { child, lead, learner: null, age };
+        enrolled.push(entry);
+        await LeadService._notifyAdmins(lead);
+
+        const { firstName, lastName } = splitName(child.learnerName);
+        // The learner record's own username-uniqueness check (assertUsernameAvailable, inside
+        // createLearner) still throws first — same ordering as learner.controller.js's createLearner.
+        entry.learner = await LearnerService.createLearner({
+          firstName,
+          lastName,
+          gender: null, // the bootcamp form doesn't ask; male or female is set on the learner later
+          dateOfBirth: child.learnerDateOfBirth || "",
+          // No date of birth (an older website): the age they gave places them instead.
+          ...(child.learnerDateOfBirth ? {} : { statedAge: child.learnerAge, statedAgeOn: kenyaToday() }),
+          guardianName: data.parentName,
+          guardianPhone: data.parentPhone,
+          guardianEmail: data.parentEmail,
+          username: child.username,
+          accountStatus: "pending_payment",
+        });
+        await AuthService.setOrCreatePasswordByUsername({
+          name: child.learnerName,
+          username: child.username,
+          password: child.password,
+          role: "learner",
+        });
+        await LearnerService.enrollInHub(entry.learner.id, { hubId: offering.hubId, classId, status: "active" });
+      }
       // The parent's login: a new one, or the family's existing one — which takes the parent role
       // if it signs in as something else (an educator who is also a parent; account-roles.js).
       if (!existingParent) {
-        const parent = await AuthService.createUser({ name: data.parentName, email: data.parentEmail, password: data.parentPassword, role: "learner" });
-        createdParentId = parent.id;
+        parentUser = await AuthService.createUser({ name: data.parentName, email: data.parentEmail, password: data.parentPassword, role: "learner" });
+        createdParentId = parentUser.id;
       } else if (existingParent.role !== "learner") {
         await AuthService.linkExistingLogin(data.parentEmail, "learner");
       }
     } catch (err) {
-      if (learner) await LearnerService.deleteLearner(learner.id).catch(() => {});
+      for (const entry of enrolled) {
+        if (!entry.learner) continue;
+        await LearnerService.deleteLearner(entry.learner.id).catch(() => {});
+        const login = await UserModel.findByUsername(entry.child.username).catch(() => null);
+        if (login) await UserModel.delete(login.id).catch(() => {});
+      }
       if (createdParentId) await UserModel.delete(createdParentId).catch(() => {});
       throw err;
     }
 
-    // The website diagnostic they took joins their record — its report, competencies and progress
-    // show on the profile like one taken in the portal (website-diagnostic.service.js).
-    if (data.attemptId) {
-      await require("../assessments/submissions/website-diagnostic.service").record(learner.id, data.attemptId)
-        .catch((err) => console.error("[bootcamp-enrollment] could not add the website diagnostic to the learner:", err.message));
+    for (const { child, learner, age } of enrolled) {
+      // The website diagnostic they took joins their record — its report, competencies and
+      // progress show on the profile like one taken in the portal (website-diagnostic.service.js).
+      if (child.attemptId) {
+        await require("../assessments/submissions/website-diagnostic.service").record(learner.id, child.attemptId)
+          .catch((err) => console.error("[bootcamp-enrollment] could not add the website diagnostic to the learner:", err.message));
+      }
+      // Their stage and pathway, so the profile shows them from day one. Never fails the enrolment.
+      await placeOnBootcampPathway(learner.id, bootcamp, offering.hubId, { attemptId: child.attemptId, age })
+        .catch((err) => console.error("[bootcamp-enrollment] could not place the learner on a pathway:", err.message));
     }
-    // Their stage and pathway, so the profile shows them from day one. Never fails the enrolment.
-    await placeOnBootcampPathway(learner.id, bootcamp, offering.hubId, { attemptId: data.attemptId, age: ageFrom(data.learnerDateOfBirth) ?? data.learnerAge })
-      .catch((err) => console.error("[bootcamp-enrollment] could not place the learner on a pathway:", err.message));
 
     // The confirmation screen shows "pay KES X at <hub>" — the price/hub the visitor needs to
     // complete the payment. A bootcamp priced by course/module (not a single whole-bootcamp
     // priceAmount) has no one number until resolveEffectiveBootcampPrice sums whichever mode is
     // actually in use — enrollment always signs the learner up for the whole bootcamp, never one
-    // course, so a single total is what's actually owed regardless of pricing mode.
+    // course, so a single total per child is what's actually owed regardless of pricing mode.
     const hub = await LearningHubModel.findById(offering.hubId);
     const price = resolveEffectiveBootcampPrice(bootcamp);
+    const perChild = Number(price.amount) > 0 ? money(price.amount) : null;
+    const total = perChild != null ? money(perChild * enrolled.length) : null;
 
-    // The invoice is raised now (as Home Learning and Tech Club sign-ups do), so the family can pay
-    // it by M-Pesa from the "payment pending" screen; paying it in full switches the learner on
+    // One invoice for the family, a line per child, raised now (as Home Learning and Tech Club
+    // sign-ups do), so they can pay it from the Payment step; paying it switches every child on
     // (activateForPaidInvoice). Staff can still take cash and press "Mark paid".
     let invoice = null;
-    if (Number(price.amount) > 0) {
-      invoice = await raiseEnrollmentInvoice({ lead, learnerId: learner.id, hubId: offering.hubId, bootcamp, amount: money(price.amount), currency: price.currency || "KES" })
+    if (perChild != null) {
+      invoice = await raiseEnrollmentInvoice({ enrolled, hubId: offering.hubId, bootcamp, amount: perChild, currency: price.currency || "KES" })
         .catch((err) => { console.error("[bootcamp-enrollment] could not raise the enrolment invoice:", err.message); return null; });
     }
-    await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
+    for (const { lead, learner } of enrolled) await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
     // The parent gets it by email too, with how to pay it (see billing.emails.js).
     if (invoice) require("../billing/billing.service").emailIssuedInvoice(invoice.id);
 
+    const first = enrolled[0];
     return {
-      lead: { ...lead, learnerId: learner.id, invoiceId: invoice?.id || null },
-      // The visitor already knows their own username/password (they just typed them) — nothing
-      // new to show them here, unlike the old auto-generated-credential flow.
-      learnerUsername: data.username,
+      lead: { ...first.lead, learnerId: first.learner.id, invoiceId: invoice?.id || null },
+      // The visitor already knows the usernames/passwords (they just typed them) — nothing new to
+      // show them here, unlike the old auto-generated-credential flow.
+      learners: enrolled.map(({ child }) => ({ name: child.learnerName, username: child.username })),
+      learnerUsername: first.child.username,
       // The parent signs in with their email: a login made just now, or the one they already had.
-      parentAccount: { email: data.parentEmail, existing: Boolean(existingParent) },
+      parentAccount: { email: data.parentEmail, existing: Boolean(existingParent), name: data.parentName, phone: data.parentPhone },
+      // "Enrol another child" sends this instead of the password (auth/parent-signup.js).
+      parentToken: parentUser ? issueParentToken(parentUser) : null,
       payment: {
-        amount: price.amount,
+        amount: total ?? price.amount,
+        perChild: perChild ?? price.amount,
+        children: enrolled.length,
         currency: price.currency,
         mode: price.mode,
         hubName: hub?.name || null,
@@ -312,23 +353,28 @@ const BootcampEnrollmentService = {
     return { invoice, learner };
   },
 
-  // A bootcamp enrolment's invoice was paid in full (by M-Pesa, or recorded in Billing) — switch
-  // the learner on, as "Mark paid" does. Does nothing for any other invoice.
+  // A bootcamp enrolment's invoice was paid (enough of it — billing.paid-hooks.js) — switch the
+  // learners on, as "Mark paid" does: every child the enrolment signed up on it. Does nothing for
+  // any other invoice.
   async activateForPaidInvoice(invoice, { amount, paidByUserId }) {
     if (invoice.invoiceType !== "bootcamp") return;
-    const lead = await LeadModel.findByInvoiceId(invoice.id);
-    if (!lead || lead.paidAt) return;
-    await activateLead(lead.id, { amount: amount ?? Number(invoice.total), currency: invoice.currency, paidByUserId, invoice });
+    const leads = (await LeadModel.findAllByInvoiceId(invoice.id)).filter((lead) => !lead.paidAt && lead.learnerId);
+    if (leads.length === 0) return;
+    // The payment shared across the children it covers, for each enquiry's "paid" figure.
+    const share = money((amount ?? Number(invoice.total)) / leads.length);
+    for (const lead of leads) await activateLead(lead.id, { amount: share, currency: invoice.currency, paidByUserId, invoice });
+    const lead = leads[0];
     const [bootcamp, hub] = await Promise.all([
       lead.bootcampId ? BootcampModel.findById(lead.bootcampId) : null,
       LearningHubModel.findById(lead.hubId),
     ]);
     // Staff who recorded the payment themselves don't need telling.
     if (hub?.ownerAdminId && !paidByUserId) {
+      const names = leads.map((l) => l.learnerName || "A learner").join(", ");
       await NotificationService._notify(hub.ownerAdminId, {
         type: "bootcamp_enrollment_paid",
         title: "Bootcamp enrolment paid",
-        message: `${lead.learnerName || "A learner"} (${lead.name}) paid invoice ${invoice.invoiceNumber} for ${bootcamp?.name || "a bootcamp"}, so their account is now active.`,
+        message: `${names} (${lead.name}) paid invoice ${invoice.invoiceNumber} for ${bootcamp?.name || "a bootcamp"}, so ${leads.length > 1 ? "their accounts are" : "their account is"} now active.`,
         payload: { route: `/enquiries?lead=${lead.id}` },
         dedupeKey: `bootcamp_enrollment_paid:${lead.id}`,
         ownerAdminId: hub.ownerAdminId,
@@ -339,9 +385,6 @@ const BootcampEnrollmentService = {
 
 const PAYABLE = ["issued", "partially_paid", "overdue"];
 
-// The enrolment's invoice, issued to the family at sign-up — the bootcamp at the hub the learner
-// was enrolled into. Written through BillingModel directly, like hub-visit charges: the generic
-// createInvoice route is for staff typing an invoice in.
 // A website bootcamp enrolment's learner onto the bootcamp's pathway (every stage of its picked
 // pathways — pathwayRowsFor):
 //   - the one whose website diagnostic they just took (attemptId), at the course their score earns
@@ -395,21 +438,30 @@ async function placeOnBootcampPathway(learnerId, bootcamp, hubId, { attemptId = 
   return pathway;
 }
 
-async function raiseEnrollmentInvoice({ lead, learnerId, hubId, bootcamp, amount, currency }) {
+// The enrolment's invoice for the family: one line per child signed up (`amount` each), the
+// bootcamp at the hub they were enrolled into; its learnerId is the first child's (every child is
+// on a line — billing.access.js pauses and resumes them all). Written through BillingModel
+// directly, like hub-visit charges: the generic createInvoice route is for staff typing an
+// invoice in.
+async function raiseEnrollmentInvoice({ enrolled, hubId, bootcamp, amount, currency }) {
   const now = new Date();
+  const total = money(amount * enrolled.length);
   let invoice;
   await BillingModel.transaction(async (trx) => {
     invoice = await BillingModel.createInvoice({
       invoiceNumber: await nextInvoiceNumber(trx),
       issuerType: "learning_hub", issuerHubId: hubId, payerUserId: null, payerHubId: null,
-      learnerId, hubId, invoiceType: "bootcamp", status: "issued", currency,
-      subtotal: amount, discount: 0, total: amount, amountPaid: 0, issuedAt: now, notes: null,
+      learnerId: enrolled[0].learner.id, hubId, invoiceType: "bootcamp", status: "issued", currency,
+      subtotal: total, discount: 0, total, amountPaid: 0, issuedAt: now, notes: null,
     }, trx);
-    await BillingModel.createItem({
-      invoiceId: invoice.id, learnerId, courseId: null, description: `${bootcamp.name} — enrolment`,
-      quantity: 1, unitAmount: amount, totalAmount: amount, metadata: { leadId: lead.id, bootcampId: bootcamp.id },
-    }, trx);
-    await BillingModel.createAuditEvent({ invoiceId: invoice.id, actorUserId: null, eventType: "invoice_issued", newStatus: "issued", amount, metadata: { source: "bootcamp_enrollment" } }, trx);
+    for (const { child, lead, learner } of enrolled) {
+      await BillingModel.createItem({
+        invoiceId: invoice.id, learnerId: learner.id, courseId: null,
+        description: enrolled.length > 1 ? `${bootcamp.name} — enrolment (${child.learnerName})` : `${bootcamp.name} — enrolment`,
+        quantity: 1, unitAmount: amount, totalAmount: amount, metadata: { leadId: lead.id, bootcampId: bootcamp.id },
+      }, trx);
+    }
+    await BillingModel.createAuditEvent({ invoiceId: invoice.id, actorUserId: null, eventType: "invoice_issued", newStatus: "issued", amount: total, metadata: { source: "bootcamp_enrollment" } }, trx);
   });
   return invoice;
 }

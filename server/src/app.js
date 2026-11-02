@@ -45,6 +45,7 @@ const orderRoutes = require("./modules/orders/orders.routes");
 const hubVisitRoutes = require("./modules/hub-visits/hub-visit.routes");
 const publicLeadRoutes = require("./modules/leads/public-lead.routes");
 const publicBootcampEnrollmentRoutes = require("./modules/bootcamp-enrollment/bootcamp-enrollment.routes");
+const publicParentSignupRoutes = require("./modules/auth/parent-signup.routes");
 const leadRoutes = require("./modules/leads/lead.routes");
 const publicSiteRoutes = require("./modules/public-site/public-site.routes");
 const publicDiagnosticRoutes = require("./modules/public-site/public-diagnostic.routes");
@@ -192,6 +193,9 @@ app.use("/api/public", publicDiagnosticRoutes);
 // follow up on. The admin-only "mark paid" counterpart lives on the existing protected
 // /api/leads router instead (see lead.routes.js).
 app.use("/api/public", publicBootcampEnrollmentRoutes);
+// Unauthenticated by design — "Already have an account? Sign in" on a website sign-up: a parent's
+// email + password give back a short-lived parent token for the form, never a portal session.
+app.use("/api/public", publicParentSignupRoutes);
 // Unauthenticated by design — the "choose which emails you get" link in an email's footer. The
 // token in the link opens one account's email preferences and nothing else.
 app.use("/api/public", publicEmailPreferenceRoutes);
