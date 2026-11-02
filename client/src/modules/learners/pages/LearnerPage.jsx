@@ -36,6 +36,7 @@ import AssessmentsOverview from "../../learner-portal/components/AssessmentsOver
 import ReportsOverview from "../../learner-portal/components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import LearnerStaffBar from "../components/staff/LearnerStaffBar";
+import LearnerLoginDialog from "../components/staff/LearnerLoginDialog";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
 import ParentTab from "../components/staff/ParentTab";
@@ -94,6 +95,8 @@ export default function LearnerPage() {
   const { mentors, mentorsLoading } = useLearnerMentors(hubs);
 
   const [preview, setPreview] = useState(false);
+  // The child's login window (username, password, set a new one) — LearnerLoginDialog.
+  const [loginOpen, setLoginOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   // The tab row — the Guardian card's "Parent's login…" link scrolls to it.
   const tabsRef = useRef(null);
@@ -154,6 +157,7 @@ export default function LearnerPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
+      {loginOpen && <LearnerLoginDialog learner={learner} onClose={() => setLoginOpen(false)} />}
       <LearnerStaffBar
         learner={learner}
         onBack={() => navigate(listPath)}
@@ -163,6 +167,7 @@ export default function LearnerPage() {
         onToggleAccount={isAdmin ? () => setConfirmAccountToggle(true) : undefined}
         accountTogglePending={accountTogglePending}
         onOpenFullForm={canManage ? () => navigate(learnerPath(user?.role, id, "edit")) : undefined}
+        onOpenLogin={canManage ? () => setLoginOpen(true) : undefined}
         onRemove={canManage && (!isSchool || schoolHubId) ? () => setConfirmRemove(true) : undefined}
         removeLabel={isSchool ? "Remove from hub" : "Remove"}
       />

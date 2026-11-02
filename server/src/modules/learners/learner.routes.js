@@ -5,6 +5,7 @@ const {
   getAllLearners,
   getLearnerById,
   getLearnerParent,
+  getLearnerLoginPassword,
   getLearnerWebsiteDiagnostics,
   linkLearnerWebsiteDiagnostic,
   updateLearner,
@@ -46,6 +47,8 @@ router.post("/bulk-import", authorize("admin", "school"), bulkImportLearners);
 
 // The learner's parent on its own — the staff learner page's Parent tab.
 router.get("/:id/parent", authorize("admin", "school"), getLearnerParent);
+// The child's own login password, for staff to tell a child who forgot it (recorded in Activity).
+router.get("/:id/login-password", authorize("admin", "school"), getLearnerLoginPassword);
 router.get("/:id/website-diagnostics", authorize("admin", "school"), getLearnerWebsiteDiagnostics);
 router.post("/:id/website-diagnostics/:attemptId", authorize("admin", "school"), linkLearnerWebsiteDiagnostic);
 router.route("/:id")
