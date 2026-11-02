@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
+import LearnerSessionAssessment from "../components/LearnerSessionAssessment";
 import RichContent from "../components/RichContent";
 import { sectionsForRole, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, groupSessionsByModule, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
@@ -668,7 +669,10 @@ export default function SectionViewPage() {
               )
             ) : isAssessmentsSection && effectiveItemId ? (
               activeAssessment ? (
-                <AssessmentContent assessment={activeAssessment} />
+                // A learner (or parent) never gets the staff view — it shows the answers.
+                isLearner
+                  ? <LearnerSessionAssessment assessment={activeAssessment} sessionId={sessionId} />
+                  : <AssessmentContent assessment={activeAssessment} />
               ) : (
                 <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>
                   This assessment is no longer attached to this session.

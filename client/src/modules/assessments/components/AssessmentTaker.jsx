@@ -186,7 +186,9 @@ function OrderingField({ item, value, onChange }) {
 
 function MatchingField({ item, value, onChange }) {
   const pairs = item.pairs || [];
-  const rights = pairs.map((p) => p.right);
+  // A learner receives the right-hand options shuffled in rightOptions, the pairs' own rights
+  // blanked (server: assessment-for-learner.js); staff previews still have them on the pairs.
+  const rights = item.rightOptions?.length ? item.rightOptions : pairs.map((p) => p.right);
   const answers = Array.isArray(value) ? value : [];
   const answerFor = (left) => answers.find((a) => a.left === left)?.right || "";
   const setAnswer = (left, right) => {
