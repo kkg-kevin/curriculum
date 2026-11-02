@@ -517,7 +517,9 @@ const LearnerService = {
     return resolved.filter(Boolean);
   },
 
-  async enrollInHub(learnerId, { hubId, classId, status, spaceId, pricingOverrideRate, pricingOverrideUnit }) {
+  // `autoClass: false` links the learner to the hub without a class (staff choose one later) —
+  // a website pathway enrolment; otherwise a hub with no class given gets its first active class.
+  async enrollInHub(learnerId, { hubId, classId, status, spaceId, pricingOverrideRate, pricingOverrideUnit, autoClass = true }) {
     if (!(await LearnerModel.findById(learnerId))) {
       const err = new Error("Learner not found");
       err.statusCode = 404;
@@ -547,7 +549,7 @@ const LearnerService = {
         throw err;
       }
       resolvedHubId = cls.schoolId;
-    } else {
+    } else if (autoClass) {
       // If no class specified, auto-assign to first active class at this hub
       const hubClasses = await ClassModel.findAll({ schoolId: hubId });
       cls = hubClasses.find((c) => c.status === "active");

@@ -8,6 +8,65 @@ const { slugify } = require("../../shared/utils/slugify");
 const { toAbsoluteMediaUrl } = require("../../shared/utils/media-url");
 const { requiresManualGrading } = require("../assessments/submissions/grading.utils");
 const { requirePublicContentAdminId, htmlToText } = require("../../shared/utils/public-content");
+const PathwayTemplateModel = require("../settings/pathways/pathway-template.model");
+const { pathwayPricing, coursePrice, isPriced } = require("../../shared/utils/pathway-pricing");
+const LearningHubModel = require("../learning-hubs/learning-hub.model");
+
+// Settings → Pathways → Website, per pathway name (the workspace's catalogue entries): whether the
+// website shows it and the hubs it runs at. A pathway with no entry is shown, with no hubs.
+async function websiteSettings() {
+  const { websiteOf } = require("../settings/pathways/pathway-template.service");
+  const entries = await PathwayTemplateModel.findAll({ ownerAdminId: requirePublicContentAdminId() });
+  return new Map(entries.map((e) => [String(e.name || "").trim().toLowerCase(), { ...websiteOf(e), pricing: pathwayPricing(e), templateId: e.id }]));
+}
+const settingsFor = (settings, name) => settings.get(String(name || "").trim().toLowerCase()) || { visible: true, hubIds: [], pricing: pathwayPricing(null), templateId: null };
+
+// What the website shows of a pathway's price: the whole price, or "from" its cheapest priced
+// course (a family pays for the course the learner starts at). null when it isn't priced.
+function priceSummary(pricing, resolved) {
+  if (!isPriced(pricing)) return null;
+  if (pricing.mode === "whole") return { mode: "whole", currency: pricing.currency, amount: pricing.amount };
+  const ids = new Set(resolved.stages.flatMap((s) => s.courses.map((c) => c.id)));
+  const prices = pricing.coursePrices.filter((p) => ids.has(p.courseId)).map((p) => p.amount);
+  return prices.length ? { mode: "by_course", currency: pricing.currency, from: Math.min(...prices) } : null;
+}
+
+const DELIVERY_LABELS = { in_person: "In person", virtual: "Online", hybrid: "In person or online" };
+
+// The hubs a pathway runs at, as the website shows them — still active ones only, in the order
+// picked. Never anything internal beyond the hub's own public details.
+// The hubs a pathway runs at: the ones ticked in Settings — or, for a priced pathway with none
+// ticked, the active hubs that teach its curriculum (learning_hub_curricula), else every active hub
+// of the website's workspace, so it can still be enrolled and paid for. Never the Home Learning
+// holder.
+async function effectiveHubIds(website, resolved) {
+  if (website.hubIds.length || !isPriced(website.pricing)) return website.hubIds;
+  const hubs = (await LearningHubModel.findAll({ ownerAdminId: requirePublicContentAdminId(), status: "active" }))
+    .filter((h) => !h.isHomeLearning)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const curriculumIds = new Set((resolved?.rows || []).map((r) => r.curriculumId));
+  const LinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
+  const teaching = [];
+  for (const hub of hubs) {
+    if ((await LinkModel.findByHubId(hub.id)).some((l) => curriculumIds.has(l.curriculumId))) teaching.push(hub.id);
+  }
+  return teaching.length ? teaching : hubs.map((h) => h.id);
+}
+
+async function publicHubs(hubIds) {
+  if (!hubIds.length) return [];
+  const hubs = await Promise.all(hubIds.map((id) => LearningHubModel.findById(id)));
+  return hubs
+    .filter((h) => h && h.status === "active" && !h.isHomeLearning)
+    .map((h) => {
+      const deliveryMode = h.deliveryMode || "in_person";
+      return {
+        id: h.id, name: h.name, hubType: h.hubType, deliveryMode,
+        deliveryLabel: DELIVERY_LABELS[deliveryMode] || deliveryMode,
+        town: deliveryMode === "virtual" ? "Online" : [h.address?.city, h.address?.county].filter(Boolean).join(", "),
+      };
+    });
+}
 
 // The designated admin's operational Pathways, across every curriculum they own.
 // `pathways` has no ownerAdminId of its own — it's tenant-scoped transitively via
@@ -195,9 +254,16 @@ const PublicSiteService = {
     const slugs = [...new Set(pathways.map(computedSlug))];
     const chosen = (await Promise.all(slugs.map((slug) => pickForSlug(pathways, slug)))).filter(Boolean);
 
+    // Switched off in Settings → Pathways → Website: not on the website.
+    const settings = await websiteSettings();
     return chosen
       .filter((c) => c.courseCount > 0)
-      .map(listItem)
+      .map((c) => {
+        const item = listItem(c);
+        const own = settingsFor(settings, item.name);
+        return own.visible ? { ...item, price: priceSummary(own.pricing, c) } : null;
+      })
+      .filter(Boolean)
       .sort((a, b) => a.name.localeCompare(b.name));
   },
 
@@ -216,6 +282,10 @@ const PublicSiteService = {
         )
       : await pickForSlug(pathways, idOrSlug);
     if (!resolved || resolved.courseCount === 0) return null;
+    const website = settingsFor(await websiteSettings(), (resolved.stages[0]?.row || resolved.rows[0])?.name);
+    if (!website.visible) return null;
+    // A course's own price under a per-course pathway (null otherwise).
+    const priced = (c) => ({ ...publicCourse(c), price: coursePrice(website.pricing, c.id) });
 
     // `stages` is the pathway as authored: each Developmental Stage with its own courses and
     // diagnostic. `courses` and `diagnostic` stay as the flat, whole-pathway view (every stage's
@@ -230,7 +300,11 @@ const PublicSiteService = {
             maxAge: Math.max(...offered.map((d) => d.maxAge)),
           }
         : { available: false, minAge: null, maxAge: null },
-      courses: resolved.stages.flatMap((s) => s.courses.map(publicCourse)),
+      courses: resolved.stages.flatMap((s) => s.courses.map(priced)),
+      // What it costs (Settings → Pathways → Website → Price) — null: an enquiry, not a paid enrolment.
+      price: priceSummary(website.pricing, resolved),
+      // Where it runs (Settings → Pathways → Website) — the family picks one when they enrol.
+      hubs: await publicHubs(await effectiveHubIds(website, resolved)),
       stages: resolved.stages.map((s, i) => ({
         slug: stageSlugs(resolved.stages)[i],
         name: s.stage?.name || null,
@@ -238,10 +312,26 @@ const PublicSiteService = {
         minAge: s.stage?.minAge ?? null,
         maxAge: s.stage?.maxAge ?? null,
         diagnostic: s.diagnostic,
-        courses: s.courses.map(publicCourse),
+        courses: s.courses.map(priced),
       })),
     };
   },
 };
 
 module.exports = PublicSiteService;
+
+// A website pathway enrolment (pathway-enrollment/) reads the pathway exactly as the website shows
+// it: { name, slug, resolved: { rows, stages: [{ row, stage, courses }] }, website: { hubIds,
+// pricing } } — null when it isn't on the website or has no courses.
+module.exports.resolveForEnrolment = async function resolveForEnrolment(idOrSlug) {
+  const pathways = await designatedAdminPathways();
+  const byId = pathways.find((p) => p.id === idOrSlug);
+  const resolved = byId
+    ? await resolvePathway(pathways.filter((p) => p.curriculumId === byId.curriculumId && computedSlug(p) === computedSlug(byId)))
+    : await pickForSlug(pathways, idOrSlug);
+  if (!resolved || resolved.courseCount === 0) return null;
+  const first = resolved.stages[0]?.row || resolved.rows[0];
+  const website = settingsFor(await websiteSettings(), first?.name);
+  if (!website.visible) return null;
+  return { name: first.name, slug: computedSlug(first), resolved, website: { ...website, hubIds: await effectiveHubIds(website, resolved) } };
+};

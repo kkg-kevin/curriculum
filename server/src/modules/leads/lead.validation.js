@@ -26,6 +26,9 @@ const createLeadSchema = z.object({
   learnerDateOfBirth,
   interestedIn: z.enum(INTEREST_VALUES).optional().default("general"),
   referenceId: z.string().trim().max(100).optional().nullable(),
+  // The hub the family picked for a pathway (one of the hubs it runs at — Settings → Pathways →
+  // Website). Kept only when it's an active hub of the website's workspace (lead.service.js).
+  hubId: z.string().trim().max(64).optional().nullable(),
   note: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 

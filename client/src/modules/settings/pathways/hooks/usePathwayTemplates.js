@@ -21,6 +21,43 @@ export function usePathwayTemplates() {
   });
 }
 
+// Settings → Pathways' read-only directory. Worked out from the curricula each time it's opened,
+// so a pathway added, renamed or changed in a curriculum shows here straight away.
+export function usePathwayDirectory() {
+  return useQuery({
+    queryKey: [...PATHWAY_TEMPLATE_KEYS.all, "directory"],
+    queryFn: pathwayTemplatesApi.getDirectory,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+}
+
+// Settings → Pathways → Website: show on the website, and the hubs it runs at.
+export function useSetPathwayWebsite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => pathwayTemplatesApi.setWebsite(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
+      toast.success("Website settings saved");
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Couldn't save the website settings"),
+  });
+}
+
+// Settings → Pathways → Website → Price.
+export function useSetPathwayPricing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => pathwayTemplatesApi.setPricing(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
+      toast.success("Price saved");
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Couldn't save the price"),
+  });
+}
+
 export function useCreatePathwayTemplate() {
   const qc = useQueryClient();
   return useMutation({
