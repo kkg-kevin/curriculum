@@ -102,6 +102,43 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Nov 2026, final) — The diagnostic inside enrolling; priced pathways without hubs ticked still enrol
+
+**Portal and backend** from `curriculum` (branch `modules`) at `0727eb1`. **Website** from
+`curriculum-web` (branch `new`) at `916c0bd`. Includes "This release (2 Nov 2026, night)" below and
+every earlier 2 Nov release — if those aren't uploaded yet, upload this one instead (database backup
+first; the night release adds three migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (627 files, 156 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CYqUzxkn.js`).
+3. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **The diagnostic is part of enrolling.** The pathway and stage pages no longer have their own
+  "Take the diagnostic" button. Every pathway Enrol (Enrol & pay, Enrol here, a stage's Enrol) starts
+  with the learner's date of birth, then — if there's a diagnostic for their age — the short quiz
+  (with "Skip — do it after enrolling instead") and its result, then the enrolment (hub → details →
+  payment for a priced pathway; the enquiry otherwise). The result places the learner at the course it
+  earns, and the name, date of birth and parent details typed for it carry over. From a stage page it's
+  that stage's diagnostic and ages.
+- **A priced pathway with no hubs ticked still enrols and takes payment.** It used to fall back to an
+  enquiry. With none ticked it now offers the hubs that teach its curriculum (or every active hub if
+  none do); ticking hubs in Settings → Pathways → On the website still chooses them exactly.
+
+### Verify
+
+1. A priced pathway → Enrol & pay: date of birth first, then the diagnostic (if any) with Skip, then
+   choose a hub → details → payment.
+2. A stage page → Enrol: the intro names that stage and its ages.
+
+---
+
 ## This release (2 Nov 2026, night) — Pathways in Settings as they really are; on the website at chosen hubs, priced and paid online
 
 **Portal and backend** from `curriculum` (branch `modules`) at `1d381e9`. **Website** from
