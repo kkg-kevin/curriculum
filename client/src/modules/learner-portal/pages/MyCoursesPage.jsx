@@ -56,7 +56,7 @@ export default function MyCoursesPage() {
         </div>
       </div>
 
-      {learner && <OnlineClassStrip who="learner" hub={selectedHub} classId={cls?.id} style={{ marginBottom: 16 }} />}
+      {learner && <OnlineClassStrip who="learner" hub={selectedHub} cls={cls} classId={cls?.id} style={{ marginBottom: 16 }} />}
 
       {isLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>

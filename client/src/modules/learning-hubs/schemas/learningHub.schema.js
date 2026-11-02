@@ -34,7 +34,7 @@ const isUsableMeetingLink = (value) => {
     return false;
   }
 };
-const meetingLinkSchema = z
+export const meetingLinkSchema = z
   .string()
   .url("Enter a valid URL")
   .refine(isUsableMeetingLink, "That Google Meet link has no meeting code — copy it from the meeting, e.g. https://meet.google.com/abc-defg-hij")

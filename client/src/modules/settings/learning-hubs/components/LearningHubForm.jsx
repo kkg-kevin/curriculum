@@ -824,15 +824,15 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
         <SectionCard
           icon={<LanguageIcon fontSize="small" />}
           title="Joining Link"
-          subtitle="Where learners join the online session (Zoom, Google Meet, etc.)"
+          subtitle="Where learners join the online session (Zoom, Google Meet, etc.). Each class can have its own link (Edit class); this one is for classes without."
         >
           <Input
             name="meetingLink"
-            label="Meeting link"
+            label="Default meeting link"
             placeholder="https://meet.google.com/... or https://zoom.us/j/..."
             hint={isVirtual
-              ? "Educators, learners and parents in this hub's classes get a Join button on their timetable and dashboard."
-              : "The online option for this hybrid hub — a Join button on its classes' timetables and dashboards."}
+              ? "Educators, learners and parents in this hub's classes get a Join button on their timetable and dashboard. Give classes that meet at the same time their own links."
+              : "The online option for this hybrid hub — a Join button on its classes' timetables and dashboards. Give classes that meet at the same time their own links."}
           />
         </SectionCard>
       )}

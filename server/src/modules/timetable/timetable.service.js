@@ -330,14 +330,15 @@ function skippedSessionsInRange(skipRows, from, to) {
     .map((s) => ({ id: s.id, classId: s.classId, courseId: s.courseId, date: s.date, sessionId: s.sessionId, mode: s.mode, reason: s.reason || "" }));
 }
 
-// An online / hybrid hub's joining link (learning_hubs.meetingLink) rides on each of its classes'
-// events, so every calendar built from them — educator, learner, parent, hub — can offer "Join".
-// Only people already scoped to that class's calendar ever receive it; the public site never does.
+// An online / hybrid hub's class rides its joining link on each of its events, so every calendar
+// built from them — educator, learner, parent, hub — can offer "Join": the class's own link
+// (classes.meetingLink) if it has one, else the hub's (learning_hubs.meetingLink). Only people
+// already scoped to that class's calendar ever receive it; the public site never does.
 async function onlineLinkForClass(classId) {
   const cls = await ClassModel.findById(classId);
   const hub = cls && (await LearningHubModel.findById(cls.schoolId));
-  if (!hub?.meetingLink || !["virtual", "hybrid"].includes(hub.deliveryMode)) return null;
-  return hub.meetingLink;
+  if (!hub || !["virtual", "hybrid"].includes(hub.deliveryMode)) return null;
+  return cls.meetingLink || hub.meetingLink || null;
 }
 
 const TimetableService = {

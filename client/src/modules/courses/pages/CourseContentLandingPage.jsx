@@ -81,6 +81,7 @@ export default function CourseContentLandingPage() {
       {onlineWho && (
         <OnlineClassStrip
           who={onlineWho} hub={portal.selectedHub} courseId={courseId}
+          cls={onlineWho === "learner" ? portal.cls : undefined}
           classId={onlineWho === "learner" ? portal.cls?.id : undefined} style={{ marginBottom: 16 }}
         />
       )}

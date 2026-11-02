@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { meetingLinkSchema } = require("../learning-hubs/learning-hub.validation");
 
 const createClassSchema = z.object({
   schoolId:        z.string().min(1, "School is required"),
@@ -20,6 +21,9 @@ const createClassSchema = z.object({
   // class; required for any additional class in that same group (enforced in class.service.js,
   // since it depends on what else already exists — not expressible as a Zod rule).
   streamName:      z.string().trim().min(1, "Stream name cannot be empty").nullable().optional().default(null),
+  // This class's own joining link when its hub teaches online — empty/null means it uses the
+  // hub's link (timetable.service.js's onlineLinkForClass). Same Meet-code check as the hub's.
+  meetingLink:     meetingLinkSchema.nullable().optional().default(null).transform((v) => v || null),
 });
 
 const updateClassSchema = createClassSchema.partial();
