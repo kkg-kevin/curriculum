@@ -85,7 +85,7 @@ function PricingSettings({ pathway }) {
         </div>
       )}
       {mode !== "none" && pathway.website.hubIds.length === 0 && (
-        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#B45309" }}>Tick at least one hub above (and save) — families pay once they’ve chosen where to attend.</p>
+        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6B7280" }}>No hub ticked above, so families choose from the hubs that teach this pathway’s curriculum (or every active hub if none do) before paying. Tick hubs to choose them yourself.</p>
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
         <button type="button" className="stg-btn-primary" disabled={isPending} onClick={submit}>{isPending ? "Saving…" : "Save price"}</button>

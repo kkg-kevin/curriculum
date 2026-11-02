@@ -35,6 +35,24 @@ const DELIVERY_LABELS = { in_person: "In person", virtual: "Online", hybrid: "In
 
 // The hubs a pathway runs at, as the website shows them — still active ones only, in the order
 // picked. Never anything internal beyond the hub's own public details.
+// The hubs a pathway runs at: the ones ticked in Settings — or, for a priced pathway with none
+// ticked, the active hubs that teach its curriculum (learning_hub_curricula), else every active hub
+// of the website's workspace, so it can still be enrolled and paid for. Never the Home Learning
+// holder.
+async function effectiveHubIds(website, resolved) {
+  if (website.hubIds.length || !isPriced(website.pricing)) return website.hubIds;
+  const hubs = (await LearningHubModel.findAll({ ownerAdminId: requirePublicContentAdminId(), status: "active" }))
+    .filter((h) => !h.isHomeLearning)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const curriculumIds = new Set((resolved?.rows || []).map((r) => r.curriculumId));
+  const LinkModel = require("../learning-hubs/learning-hub-curriculum-link.model");
+  const teaching = [];
+  for (const hub of hubs) {
+    if ((await LinkModel.findByHubId(hub.id)).some((l) => curriculumIds.has(l.curriculumId))) teaching.push(hub.id);
+  }
+  return teaching.length ? teaching : hubs.map((h) => h.id);
+}
+
 async function publicHubs(hubIds) {
   if (!hubIds.length) return [];
   const hubs = await Promise.all(hubIds.map((id) => LearningHubModel.findById(id)));
@@ -286,7 +304,7 @@ const PublicSiteService = {
       // What it costs (Settings → Pathways → Website → Price) — null: an enquiry, not a paid enrolment.
       price: priceSummary(website.pricing, resolved),
       // Where it runs (Settings → Pathways → Website) — the family picks one when they enrol.
-      hubs: await publicHubs(website.hubIds),
+      hubs: await publicHubs(await effectiveHubIds(website, resolved)),
       stages: resolved.stages.map((s, i) => ({
         slug: stageSlugs(resolved.stages)[i],
         name: s.stage?.name || null,
@@ -315,5 +333,5 @@ module.exports.resolveForEnrolment = async function resolveForEnrolment(idOrSlug
   const first = resolved.stages[0]?.row || resolved.rows[0];
   const website = settingsFor(await websiteSettings(), first?.name);
   if (!website.visible) return null;
-  return { name: first.name, slug: computedSlug(first), resolved, website };
+  return { name: first.name, slug: computedSlug(first), resolved, website: { ...website, hubIds: await effectiveHubIds(website, resolved) } };
 };
