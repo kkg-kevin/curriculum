@@ -5,11 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCourseQuery, useSessions, useModules } from "../hooks/useCourse";
 import AssessmentContent from "../../assessments/components/AssessmentContent";
 import RichContent from "../components/RichContent";
-import { sectionsForRole, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
+import { sectionsForRole, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, groupSessionsByModule, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
-import { markSectionComplete, setLastViewedSection, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete, isModuleSessionsComplete } from "../../learner-portal/utils/progressStorage";
+import { markSectionComplete, setLastViewedSection, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete, moduleLocks } from "../../learner-portal/utils/progressStorage";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
@@ -103,17 +103,7 @@ function SessionSidebar({ role, courseId, sessions, modules, lockedSessionIds, l
   // via buildModuleLocalSessionIndex, so each module's sessions are numbered 1..N of their own,
   // matching the admin authoring view instead of counting continuously across the whole course.
   const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
-  const sortedModules = [...(modules || [])].sort((a, b) => a.order - b.order);
-  const sessionsByModuleId = new Map(sortedModules.map((m) => [m.id, []]));
-  const ungroupedSessions = [];
-  sessions.forEach((s) => {
-    if (s.moduleId && sessionsByModuleId.has(s.moduleId)) sessionsByModuleId.get(s.moduleId).push(s);
-    else ungroupedSessions.push(s);
-  });
-  const groups = [
-    ...sortedModules.map((m) => ({ id: m.id, name: m.name, sessions: sessionsByModuleId.get(m.id) })),
-    ...(ungroupedSessions.length > 0 ? [{ id: null, name: null, sessions: ungroupedSessions }] : []),
-  ];
+  const groups = groupSessionsByModule(sessions, modules || []);
   const [expandedIds, setExpandedIds] = useState(() => new Set([activeSessionId]));
   // Keyed by `${sectionKey}:${sessionId}` so each repeatable section expands independently per session.
   // Assessments isn't in REPEATABLE_SECTIONS (its items are shared assessment docs, not
@@ -510,26 +500,10 @@ export default function SectionViewPage() {
   const sectionProgress = isLearner ? getCourseSectionProgress(progressKey, id) : null;
   const sessionCompletion = isLearner && sessionId ? getSessionCompletion(progressKey, id, sessionId) : null;
 
-  // Which sessions are locked behind an unfinished earlier module — learner-only. A session with
-  // no resolvable module is exempt (always accessible), and a course using no modules at all
-  // locks nothing, since sortedModules is then empty and the loop below never runs.
-  // lockedByModuleName names the specific module that's blocking each locked session, fixed to
-  // whichever module first failed the completeness check (not re-updated per subsequent module),
-  // so every session locked by the same gap points back to the same one to finish.
-  const lockedSessionIds = new Set();
-  const lockedByModuleName = new Map();
-  if (isLearner) {
-    const sortedModules = [...modules].sort((a, b) => a.order - b.order);
-    let blockingModuleName = null;
-    sortedModules.forEach((m) => {
-      const moduleSessionIds = sessions.filter((s) => s.moduleId === m.id).map((s) => s.id);
-      if (blockingModuleName) {
-        moduleSessionIds.forEach((sid) => { lockedSessionIds.add(sid); lockedByModuleName.set(sid, blockingModuleName); });
-      } else if (!isModuleSessionsComplete(progressKey, id, moduleSessionIds)) {
-        blockingModuleName = m.name;
-      }
-    });
-  }
+  // Which sessions are locked behind an unfinished earlier module — learner-only (moduleLocks).
+  const { lockedSessionIds, lockedByModuleName } = isLearner
+    ? moduleLocks(progressKey, id, sessions, modules)
+    : { lockedSessionIds: new Set(), lockedByModuleName: new Map() };
 
   const session = sessions.find((s) => s.id === sessionId);
   const isRepeatable = isRepeatableSection(sectionKey);

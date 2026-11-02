@@ -55,6 +55,24 @@ export function buildModuleLocalSessionIndex(sessions, modules = []) {
   return result;
 }
 
+// Each module in its order holding just the sessions that resolve to it, then one module-less
+// group ({ id: null, name: null }) for anything left over (no moduleId, or a deleted module). A
+// course with no modules is a single group of every session. Used by the session sidebar and the
+// course landing page so both list a course the way the admin authoring view does.
+export function groupSessionsByModule(sessions, modules = []) {
+  const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+  const sessionsByModuleId = new Map(sortedModules.map((m) => [m.id, []]));
+  const ungrouped = [];
+  sessions.forEach((s) => {
+    if (s.moduleId && sessionsByModuleId.has(s.moduleId)) sessionsByModuleId.get(s.moduleId).push(s);
+    else ungrouped.push(s);
+  });
+  return [
+    ...sortedModules.map((m) => ({ id: m.id, name: m.name, sessions: sessionsByModuleId.get(m.id) })),
+    ...(ungrouped.length > 0 ? [{ id: null, name: null, sessions: ungrouped }] : []),
+  ];
+}
+
 // Main Concepts, Activity, and Notes are repeatable lists, not single fields — each holds its own
 // singular label (used both as the fallback item name and in "+ Add X" buttons). Ice Breaker and
 // Wrap Activity live as Notes entries — see NOTE_QUICK_PICKS below.
