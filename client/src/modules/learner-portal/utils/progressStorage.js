@@ -85,7 +85,7 @@ export function getSessionCompletion(email, courseId, sessionId) {
 // "every SECTIONS key done" check SectionViewPage.jsx's SessionSidebar computes per-session for
 // its own checkmark, generalized to a list so a module's completion (all of its sessions) and a
 // single session's completion can share one implementation. An empty list (a module with no
-// sessions yet) is trivially complete — nothing in it to block on.
+// sessions yet) counts as complete.
 export function isModuleSessionsComplete(email, courseId, sessionIds) {
   if (sessionIds.length === 0) return true;
   const courseProgress = getCourseSectionProgress(email, courseId);
@@ -95,26 +95,7 @@ export function isModuleSessionsComplete(email, courseId, sessionIds) {
   });
 }
 
-// Which sessions a learner can't open yet: every session of a module after the first module
-// that isn't fully done. lockedByModuleName names, for each locked session, that first unfinished
-// module — the one to finish. Sessions with no module are never locked, and a course without
-// modules locks nothing. Shared by the course landing page and SectionViewPage.
-export function moduleLocks(email, courseId, sessions, modules) {
-  const lockedSessionIds = new Set();
-  const lockedByModuleName = new Map();
-  let blockingModuleName = null;
-  [...modules].sort((a, b) => a.order - b.order).forEach((m) => {
-    const moduleSessionIds = sessions.filter((s) => s.moduleId === m.id).map((s) => s.id);
-    if (blockingModuleName) {
-      moduleSessionIds.forEach((sid) => { lockedSessionIds.add(sid); lockedByModuleName.set(sid, blockingModuleName); });
-    } else if (!isModuleSessionsComplete(email, courseId, moduleSessionIds)) {
-      blockingModuleName = m.name;
-    }
-  });
-  return { lockedSessionIds, lockedByModuleName };
-}
-
-const NON_ASSESSMENT_SECTIONS =SECTIONS.filter((s) => s.key !== "assessments");
+const NON_ASSESSMENT_SECTIONS = SECTIONS.filter((s) => s.key !== "assessments");
 
 // Whether a session's content (everything except its own Assessments tab) is fully done —
 // the trigger condition for auto-issuing that session's attached assessment(s) to this learner

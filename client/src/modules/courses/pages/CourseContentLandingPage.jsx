@@ -1,11 +1,11 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { FiAlertTriangle, FiCheck, FiLock } from "react-icons/fi";
+import { FiAlertTriangle, FiCheck } from "react-icons/fi";
 import { useCourseQuery, useSessions, useModules, useCoursePathways } from "../hooks/useCourse";
 import { sessionLabel, buildModuleLocalSessionIndex, groupSessionsByModule } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { courseCatalogPath, sectionPath } from "../../../routes/portalPaths";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
-import { isModuleSessionsComplete, moduleLocks } from "../../learner-portal/utils/progressStorage";
+import { isModuleSessionsComplete } from "../../learner-portal/utils/progressStorage";
 import { isParentUser } from "../../parent/parentPaths";
 
 const ACCENT = "#25476a";
@@ -36,30 +36,26 @@ export default function CourseContentLandingPage() {
 
   const { data: course, isLoading: courseLoading } = useCourseQuery(courseId);
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(courseId);
-  const { data: modules = [] } = useModules(courseId);
+  const { data: modules = [], isLoading: modulesLoading } = useModules(courseId);
   const { data: pathways = [] } = useCoursePathways(courseId);
   // Numbers each session relative to its own module (Module 2 restarts at "Session 1") instead
   // of counting continuously across the whole course — matches the sidebar/admin authoring view.
   const sessionPosition = buildModuleLocalSessionIndex(sessions, modules);
   // Listed module by module, like the admin authoring view — a flat list repeats "Session 1" once
-  // per module, and a learner picking a later module's would land on its lock.
+  // per module. Every module is open; the order is only a guide.
   const groups = groupSessionsByModule(sessions, modules);
 
   // The learner's own way through (not a parent watching — their browser holds no progress):
-  // later modules locked until the earlier ones are done (moduleLocks, the same rule the session
-  // pages enforce), finished sessions ticked, and the first open unfinished one marked.
+  // finished sessions ticked, and the first unfinished one, in module order, marked.
   const showProgress = role === "learner" && !isParentUser(user);
   const progressKey = user?.email || user?.username;
-  const { lockedSessionIds, lockedByModuleName } = showProgress
-    ? moduleLocks(progressKey, courseId, sessions, modules)
-    : { lockedSessionIds: new Set(), lockedByModuleName: new Map() };
   const isDone = (sessionId) => isModuleSessionsComplete(progressKey, courseId, [sessionId]);
   const anyDone = showProgress && sessions.some((s) => isDone(s.id));
   const nextSessionId = showProgress
-    ? groups.flatMap((g) => g.sessions).find((s) => !lockedSessionIds.has(s.id) && !isDone(s.id))?.id
+    ? groups.flatMap((g) => g.sessions).find((s) => !isDone(s.id))?.id
     : null;
 
-  if (courseLoading || sessionsLoading) {
+  if (courseLoading || sessionsLoading || modulesLoading) {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#6B7280" }}>Loading…</div>;
   }
   if (!course) {
@@ -120,53 +116,43 @@ export default function CourseContentLandingPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
           {groups.map((group, groupIndex) => {
-            const groupLocked = group.sessions.length > 0 && group.sessions.every((s) => lockedSessionIds.has(s.id));
             const groupDone = showProgress && group.sessions.length > 0 && group.sessions.every((s) => isDone(s.id));
             return (
               <section key={group.id || "ungrouped"}>
                 {(group.name || groups.length > 1) && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "0 0 10px" }}>
-                    <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: groupLocked ? "#9CA3AF" : "#111827" }}>
+                    <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#111827" }}>
                       {group.name ? `Module ${groupIndex + 1}: ${group.name}` : "Other sessions"}
                     </h2>
                     <span style={{ fontSize: 12, color: "#9CA3AF" }}>{group.sessions.length} session{group.sessions.length !== 1 ? "s" : ""}</span>
                     {groupDone && <Pill color="#047857" bg="#D1FAE5" border="#6EE7B7"><FiCheck size={11} /> Done</Pill>}
-                    {groupLocked && (
-                      <Pill color="#B45309" bg="#FFFBEB" border="#FDE68A">
-                        <FiLock size={11} /> Unlocks after "{lockedByModuleName.get(group.sessions[0].id)}"
-                      </Pill>
-                    )}
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {group.sessions.map((session) => {
-                    const locked = lockedSessionIds.has(session.id);
                     const done = showProgress && isDone(session.id);
                     const isNext = session.id === nextSessionId;
                     return (
                       <div
                         key={session.id}
-                        role={locked ? undefined : "button"}
-                        onClick={locked ? undefined : () => navigate(sectionPath(role, courseId, session.id, "outcomes"))}
-                        title={locked ? `Finish "${lockedByModuleName.get(session.id)}" first` : undefined}
+                        role="button"
+                        onClick={() => navigate(sectionPath(role, courseId, session.id, "outcomes"))}
                         style={{
                           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px", borderRadius: 14, transition: "border-color 0.15s",
-                          backgroundColor: locked ? "#F9FAFB" : "#fff",
+                          backgroundColor: "#fff",
                           border: `1.5px solid ${isNext ? "#38aae1" : "#E5E7EB"}`,
-                          cursor: locked ? "not-allowed" : "pointer",
+                          cursor: "pointer",
                         }}
-                        onMouseEnter={locked || isNext ? undefined : (e) => (e.currentTarget.style.borderColor = "#a8d5ee")}
-                        onMouseLeave={locked || isNext ? undefined : (e) => (e.currentTarget.style.borderColor = "#E5E7EB")}
+                        onMouseEnter={isNext ? undefined : (e) => (e.currentTarget.style.borderColor = "#a8d5ee")}
+                        onMouseLeave={isNext ? undefined : (e) => (e.currentTarget.style.borderColor = "#E5E7EB")}
                       >
                         <div style={{ minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: locked ? "#9CA3AF" : "#111827" }}>{sessionLabel(session, sessionPosition.get(session.id)?.index ?? 0)}</p>
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>{sessionLabel(session, sessionPosition.get(session.id)?.index ?? 0)}</p>
                           <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>
                             {(session.outcomes?.length ?? 0)} learning outcome{(session.outcomes?.length ?? 0) !== 1 ? "s" : ""}
                           </p>
                         </div>
-                        {locked ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "#9CA3AF", flexShrink: 0 }}><FiLock size={13} /> Locked</span>
-                        ) : isNext ? (
+                        {isNext ? (
                           <span style={{ padding: "6px 14px", borderRadius: 20, backgroundColor: ACCENT, color: "#fff", fontSize: 12.5, fontWeight: 700, flexShrink: 0 }}>
                             {anyDone ? "Up next →" : "Start here →"}
                           </span>
