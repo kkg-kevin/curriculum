@@ -102,6 +102,103 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Nov 2026, night) — Pathways in Settings as they really are; on the website at chosen hubs, priced and paid online
+
+**Portal and backend** from `curriculum` (branch `modules`) at `1d381e9`. **Website** from
+`curriculum-web` (branch `new`) at `1b191d6`. Includes every earlier 2 Nov release; if any of them
+isn't uploaded yet, upload this one instead and read their notes. **Take a database backup first.**
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (627 files, 156 migrations), then Restart. Three new
+   migrations, applied on Restart:
+   - `20261102140000_backfill_pathway_catalogue.js` — adds a Settings pathway entry for every
+     pathway a curriculum uses that had none (additive only);
+   - `20261102150000_add_website_settings_to_pathway_catalogue.js` — `pathway_templates.websiteVisible`
+     (starts ON for every pathway, so the website shows exactly what it shows today) and `websiteHubIds`;
+   - `20261102160000_pathway_pricing_and_enrolment.js` — pathway prices (start at "No price") and a
+     `pathway` invoice type (appended to the existing list).
+   Check `SHOW COLUMNS FROM pathway_templates LIKE 'pricingMode';` and run Run JS script →
+   `db:migrate` if it's missing.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Dyx46Kq5.js`).
+3. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`, last: its paid enrolment and prices need the new backend.
+
+No environment variable, no cron, no npm package. Nothing changes for families until a pathway is
+given hubs or a price.
+
+### What changed
+
+- **Settings → Pathways shows the pathways your curricula really use**, read-only and always current
+  (it's worked out from the curricula each time it opens): In use / Not in use, the curricula using
+  each, their courses per developmental stage, learners on it, and "Open in curriculum". Pathways are
+  added and changed in the curriculum.
+- **On the website** (on each in-use pathway): show it or not, and **the hubs it runs at**. The website
+  lists them under "Where it runs" (with Enrol here), and a family's enquiry records the hub they chose.
+- **Price**: No price (an enquiry, as before), **Whole pathway** (per child) or **Per course** (each
+  course priced; a family pays for the course the learner starts at — by age or diagnostic result).
+- **Paid enrolment on the website** for a priced pathway with hubs — "Enrol & pay": choose a hub →
+  parent and children (Sign in, + Add another child, each child's starting course and price shown) →
+  payment. It creates the logins, links each child to the hub **without a class** at their stage and
+  starting course, and one invoice (Billing → **Pathways** tab). Paying switches the children on, and
+  the hub's admins are told they need a class.
+- **Website prices**: on pathway cards, the pathway page (a Price box), stage pages and every course.
+- **Diagnostic age ranges**: from a stage page it's that stage's diagnostic and ages; from the pathway
+  page, the whole pathway's range — said up front.
+- **"Where to from here"** under a diagnostic report: Enrol opens the hubs, See the full pathway opens
+  every course by stage, and the WhatsApp "Talk it through with a mentor" option is gone.
+
+### Verify
+
+1. Settings → Pathways: pathways listed In use / Not in use; open one → its curricula and courses.
+2. On a pathway: tick a hub, save; set a whole price, save. On the website its card shows the price,
+   its page shows "Where it runs" and "Enrol & pay".
+3. Enrol a test child on the website → the payment step and an invoice under Billing → Pathways; the
+   child sits at the hub with no class.
+
+---
+
+## This release (2 Nov 2026, late) — Staff can show a child's login password, and set a new one
+
+**Portal and backend** from `curriculum` (branch `modules`) at `25ccfb8`. **Website** rebuilt from
+`curriculum-web` (branch `new`) at `0c83b0f` — the same code as "This release (2 Nov 2026,
+evening)" below (same `index-…js`), so re-uploading it is optional. Includes all three earlier 2 Nov
+releases; if they aren't uploaded yet, upload this one instead and read their notes (database
+backup first — this release and the morning one each add something to the database).
+
+### Upload in this order
+
+1. **Portal** — `index.html` + `assets.zip` (entry `index-C5ErU55V.js`).
+2. **Backend** — `backend-deploy.zip` (620 files, 153 migrations), then Restart. One new, additive
+   migration, `20261102130000_create_learner_login_secrets.js` (a new table,
+   `learner_login_secrets`), applied on Restart — check `SHOW TABLES LIKE 'learner_login_secrets';`
+   and run Run JS script → `db:migrate` if it's missing.
+3. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`, only if the evening release's website isn't up yet.
+
+One optional environment variable, `PASSWORD_VAULT_KEY` (any long random string) — leave it unset to
+use a key derived from `JWT_SECRET`. Whichever is used, don't change it later: kept passwords would
+become unreadable (sign-in is never affected). No cron, no npm package.
+
+### What changed
+
+- **Learner page → Login** (beside Full form): the child's username, their password on **Show**
+  (then Hide / Copy), and **Set a new password**. Every Show is recorded in the Activity log.
+  Admins, the hub and staff who manage learners can use it; Account Managers / Training Leads
+  (view-only) can't.
+- **Only passwords set from now on can be shown.** Until now passwords were stored only as a one-way
+  hash, so an existing password can't be recovered — the window says so, and a new one set there
+  (or on the Full form, a website sign-up, or by the learner) can be shown from then on.
+- **Children's own logins only**, encrypted (AES-256-GCM) in a table of their own. A parent's,
+  staff's or admin's password is never kept this way.
+
+### Verify
+
+1. Open a learner → **Login**: the username shows; Show says the password can't be shown (an older
+   one); set a new password, and Show now shows it.
+2. Sign in as that learner with the new password.
+3. Activity: "Viewed the learner's login password" for that learner.
+
+---
+
 ## This release (2 Nov 2026, evening) — Learners never see the answers; siblings in one bootcamp enrolment; parents sign in once; the Parents tab shows parents only
 
 **Portal and backend** from `curriculum` (branch `modules`) at `81e711c`. **Website** from
