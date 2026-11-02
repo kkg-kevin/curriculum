@@ -9,6 +9,19 @@ export const pathwayTemplatesApi = {
   getAll: () =>
     api.get(BASE).then((r) => r.data.data),
 
+  // Settings → Pathways (read-only): the pathways the curricula use — per curriculum, its stages
+  // and courses, learners on it — and the catalogue entries no curriculum uses.
+  getDirectory: () =>
+    api.get(`${BASE}/directory`).then((r) => r.data.data),
+
+  // Whether the website shows a pathway, and the hubs it runs at: { visible, hubIds }.
+  setWebsite: (id, data) =>
+    api.put(`${BASE}/${id}/website`, data).then((r) => r.data.data),
+
+  // Its price on the website: { mode: none | whole | by_course, priceAmount, currency, coursePrices }.
+  setPricing: (id, data) =>
+    api.put(`${BASE}/${id}/pricing`, data).then((r) => r.data.data),
+
   create: (data) =>
     api.post(BASE, data).then((r) => r.data.data),
 

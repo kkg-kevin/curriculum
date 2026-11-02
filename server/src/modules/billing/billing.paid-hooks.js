@@ -28,6 +28,7 @@ function runInvoiceActivationHooks(invoice, { amount = null, paidByUserId = null
     () => require("../home-learning/home-learning-signup.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../tech-clubs/club-signup.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../bootcamp-enrollment/bootcamp-enrollment.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
+    () => require("../pathway-enrollment/pathway-enrollment.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
   ]);
 }
 

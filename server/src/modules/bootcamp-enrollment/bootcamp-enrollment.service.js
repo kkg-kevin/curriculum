@@ -486,3 +486,6 @@ async function activateLead(leadId, { amount, currency, paidByUserId = null, inv
 
 module.exports = BootcampEnrollmentService;
 module.exports.placeOnBootcampPathway = placeOnBootcampPathway;
+// Shared with the website's pathway enrolment (pathway-enrollment/), which signs families up the
+// same way: usernames checked first, one invoice, paying it switches the learners on.
+module.exports.enrolmentHelpers = { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money, PAYABLE };

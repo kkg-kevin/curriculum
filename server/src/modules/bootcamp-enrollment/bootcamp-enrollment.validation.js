@@ -83,4 +83,4 @@ const markLeadPaidSchema = z.object({
   description: z.string().trim().max(255).optional().nullable(),
 });
 
-module.exports = { submitBootcampEnrollmentSchema, markLeadPaidSchema };
+module.exports = { submitBootcampEnrollmentSchema, markLeadPaidSchema, enrollmentChildSchema, withChildren, phone };

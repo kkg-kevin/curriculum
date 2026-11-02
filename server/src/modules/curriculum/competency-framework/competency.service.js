@@ -61,6 +61,34 @@ function samePathwayName(a, b) {
   return (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
 }
 
+// The workspace's pathway catalogue (pathway_templates — what courses and assessments are tagged
+// with, and the "not in use" list in Settings → Pathways) follows its curricula: a pathway a
+// curriculum starts using gets an entry if none has its name, and a renamed pathway takes its
+// entry (and so the tags on it) to the new name once no curriculum uses the old name. Best-effort
+// — never fails the curriculum change.
+async function syncCatalogue(curriculumId, { name, description = "", color = null, previousName = null }) {
+  try {
+    const curriculum = await CurriculumModel.findById(curriculumId);
+    const ownerAdminId = curriculum?.ownerAdminId;
+    if (!ownerAdminId || !String(name || "").trim()) return;
+    const entries = await PathwayTemplateModel.findAll({ ownerAdminId });
+    if (entries.some((e) => samePathwayName(e.name, name))) return;
+    const old = previousName ? entries.find((e) => samePathwayName(e.name, previousName)) : null;
+    if (old) {
+      const curricula = await CurriculumModel.findAll({ ownerAdminId });
+      const stillUsed = (await Promise.all(curricula.map((c) => PathwayModel.findByCurriculumId(c.id)))).flat()
+        .some((p) => samePathwayName(p.name, previousName));
+      if (!stillUsed) {
+        await PathwayTemplateModel.update(old.id, { name: String(name).trim() });
+        return;
+      }
+    }
+    await PathwayTemplateModel.create({ name: String(name).trim(), description: description || "", color: color || "#25476a", courses: [], ownerAdminId });
+  } catch (err) {
+    console.error("[pathways] could not update the pathway catalogue:", err.message);
+  }
+}
+
 function fail(statusCode, message) {
   const err = new Error(message);
   err.statusCode = statusCode;
@@ -265,6 +293,7 @@ const CompetencyService = {
       ? { name: group[0].name, description: group[0].description, color: group[0].color }
       : {};
     const created = await PathwayModel.create({ curriculumId, ...data, ...shared });
+    await syncCatalogue(curriculumId, { name: created.name, description: created.description, color: created.color });
     // Once the pathway has a real stage, an empty "not placed yet" holder has no job left.
     if (stageId) {
       const emptyHolders = group.filter(
@@ -312,6 +341,9 @@ const CompetencyService = {
     }
     if (Object.keys(shared).length > 0) {
       await Promise.all(siblings.map((p) => PathwayModel.update(p.id, shared)));
+    }
+    if (data.name && !samePathwayName(data.name, pathway.name)) {
+      await syncCatalogue(curriculumId, { name: updated.name, description: updated.description, color: updated.color, previousName: pathway.name });
     }
     return updated;
   },

@@ -8,7 +8,7 @@ const {
 } = require("../../../shared/utils/model.utils");
 
 const TABLE = "pathway_templates";
-const JSON_FIELDS = ["courses"];
+const JSON_FIELDS = ["courses", "websiteHubIds", "coursePrices"];
 
 const PathwayModel = {
   findAll({ ownerAdminId } = {}) {

@@ -24,6 +24,13 @@ const LeadService = {
   // onto the shared `message` column. `visitSource` = how the family found the website, or null
   // (visit-source.js) — the same on every lead the website creates.
   async submitLead(data, visitSource = null) {
+    // The hub picked on the website, when it's a real, active hub of the website's workspace.
+    let hubId = null;
+    if (data.hubId) {
+      const hub = await LearningHubModel.findById(data.hubId);
+      const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
+      if (hub && hub.status === "active" && hub.ownerAdminId === requirePublicContentAdminId()) hubId = hub.id;
+    }
     const record = await LeadModel.create({
       source: "enroll",
       name: data.parentName,
@@ -35,6 +42,7 @@ const LeadService = {
       interestedIn: data.interestedIn,
       referenceId: data.referenceId || null,
       message: data.note || null,
+      hubId,
       visitSource,
     });
     await LeadService._notifyAdmins(record);
