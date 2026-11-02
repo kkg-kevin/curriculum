@@ -102,6 +102,35 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Nov 2026, afternoon) — Every module of a course open
+
+**Portal only**, from `curriculum` (branch `modules`) at `7ab5e3a`. The backend and the website
+are the same as "This release (2 Nov 2026)" below — if that one isn't uploaded yet, upload its
+backend (database backup first, one new column) and website first, then this portal instead of its
+portal.
+
+### What changed
+
+- **No more module locks.** A learner no longer has to finish one module before opening the next:
+  every session of every module opens, in any order. "This session is locked — finish … first" is
+  gone, including from the course card, which used to reopen a locked session saved as the last
+  one opened.
+- The course page still lists sessions under their modules, ticks finished ones and marks the first
+  unfinished one **Start here** / **Up next** — as a guide only. Next / Previous inside a session
+  follow the module order.
+
+### Upload
+
+The portal: `index.html` + `assets.zip` (entry `index-DOG35ZxQ.js`), unzip into the portal's folder, replacing
+`assets/`. No migration, no environment variable, no cron, no npm package.
+
+### Verify
+
+1. As a learner, open a course with several modules: every session in every module opens.
+2. Click the course card on My Courses: it opens where the learner last was, with no lock message.
+
+---
+
 ## This release (2 Nov 2026) — A meeting link per online class; the course page grouped by module; show / hide passwords on the website
 
 **Portal and backend** from `curriculum` (branch `modules`) at `371435d`. **Website** from
