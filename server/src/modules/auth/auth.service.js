@@ -14,6 +14,7 @@ const PasswordResetTokenModel = require("./password-reset-token.model");
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.emails");
 const AccessService = require("../access/access.service");
 const { releaseIfLeftover, isLeftoverLogin } = require("./leftover-login");
+const LearnerPasswordVault = require("./learner-password-vault");
 const { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, extraRolesOf, rolesOf, availableRoles, withoutRole } = require("./account-roles");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
@@ -267,10 +268,15 @@ const AuthService = {
         throw err;
       }
       const passwordHash = await passwords.hash(password, SALT_ROUNDS);
-      return sanitize(await UserModel.update(existing.id, { passwordHash }));
+      const updated = await UserModel.update(existing.id, { passwordHash });
+      // A child's login: kept so staff can show it again (learner-password-vault.js).
+      await LearnerPasswordVault.remember(updated, password);
+      return sanitize(updated);
     }
     const passwordHash = await passwords.hash(password, SALT_ROUNDS);
-    return sanitize(await UserModel.create({ name, username, passwordHash, role }));
+    const created = await UserModel.create({ name, username, passwordHash, role });
+    await LearnerPasswordVault.remember(created, password);
+    return sanitize(created);
   },
 
   // Keeps a learner's own dedicated login attached to their current username when it's renamed
@@ -445,6 +451,7 @@ const AuthService = {
     }
     const passwordHash = await passwords.hash(newPassword, SALT_ROUNDS);
     await UserModel.update(id, { passwordHash });
+    await LearnerPasswordVault.remember(user, newPassword);
     // Fire-and-forget — the change itself is done; this just tells the account's owner it happened.
     accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});
     return { message: "Password changed successfully" };
@@ -488,6 +495,7 @@ const AuthService = {
     if (!user) throw invalidResetLink();
     const passwordHash = await passwords.hash(newPassword, SALT_ROUNDS);
     await UserModel.update(user.id, { passwordHash });
+    await LearnerPasswordVault.remember(user, newPassword);
     await PasswordResetTokenModel.markAllUsedForUser(user.id);
     await UserSessionModel.deleteByUserId(user.id);
     accountEmailTarget(user).then((target) => target && sendPasswordChangedEmail(target)).catch(() => {});

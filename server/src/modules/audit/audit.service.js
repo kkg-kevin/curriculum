@@ -302,6 +302,32 @@ const AuditService = {
     }
   },
 
+  // A look at something sensitive that isn't a change — staff showing a child's login password.
+  // Recorded like a change (who, which record, from where) so the Activity page shows it.
+  async recordViewed(req, { module, entityType, entityId, entityLabel, summary }) {
+    try {
+      await write({
+        ownerAdminId: await workspaceOf(req),
+        ...(await actorOf(req.user)),
+        action: "viewed",
+        module,
+        entityType,
+        entityId,
+        entityLabel: clip(entityLabel, 255),
+        summary: clip(summary, 500),
+        changes: null,
+        outcome: "success",
+        statusCode: 200,
+        reason: null,
+        method: req.method,
+        path: clip(String(req.originalUrl || "").split("?")[0], 255),
+        ...clientOf(req),
+      });
+    } catch (err) {
+      console.error("[audit] could not record:", err.message);
+    }
+  },
+
   // ── What the Activity page reads ──────────────────────────────────────────────────────────
 
   async list(ownerAdminId, filters = {}, { page = 1, pageSize = 50 } = {}) {

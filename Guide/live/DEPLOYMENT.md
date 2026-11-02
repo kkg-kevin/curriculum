@@ -102,6 +102,60 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Nov 2026, evening) — Learners never see the answers; siblings in one bootcamp enrolment; parents sign in once; the Parents tab shows parents only
+
+**Portal and backend** from `curriculum` (branch `modules`) at `81e711c`. **Website** from
+`curriculum-web` (branch `new`) at `0c83b0f`. Includes everything in "This release (2 Nov 2026,
+afternoon)" and "This release (2 Nov 2026)" below — if those aren't uploaded yet, upload this one
+instead (database backup first: the morning release adds one column).
+
+### Upload in this order
+
+1. **Portal first** — `index.html` + `assets.zip` (entry `index-DfqlZXZI.js`), unzip into the portal's folder,
+   replacing `assets/`. (A new backend with the old portal leaves matching questions with empty
+   choice lists, so the portal goes first; the new portal works with either backend.)
+2. **Backend** — `backend-deploy.zip` (618 files, 152 migrations), then Restart. No new migration in
+   this one (the morning release's `20261102100000` is the last — check
+   `SHOW COLUMNS FROM classes LIKE 'meetingLink';` if that release wasn't uploaded).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`, **after** the backend: the new enrolment form sends its
+   children in a shape only the new backend reads.
+
+No environment variable, no cron, no npm package. Learners refresh the page (or sign in again) to get
+the new portal.
+
+### What changed
+
+- **Learners never see the answers.** A course session's Assessments tab showed learners the staff
+  view of an assessment — the answer key (correct options ticked, "Model answer" under written
+  questions, accepted fill-in answers, matching pairs, the right order). Learners and parents now see
+  its name, type, instructions and an **Open assessment** button (Continue / View my answers / See my
+  results) to their own assessment page. The server also no longer sends learners the answers at all:
+  correct answers removed, fill-in answers blanked, ordering steps and matching choices shuffled (an
+  ordering question used to start in the correct order). Marking still uses the answers set on the
+  admin side, on the server — auto-marked questions mark on submit as before, written ones go to the
+  educator. Every assessment already issued takes this at once (they read the assessment live).
+- **Several children in one bootcamp enrolment.** The website form has **+ Add another child** (up to
+  6): each child gets their own login, all under the one parent login, on **one invoice** with a line
+  per child; paying it switches every child on. A taken username refuses the whole enrolment, so a
+  family is never half signed up.
+- **Parents type their password once.** "Already have a Digifunzi account? Sign in" on the form fills
+  the parent's details and skips their password; after enrolling, **Enrol another child** starts again
+  signed in. Both use a 2-hour code the server hands back, tied to that email and never usable to sign
+  in to the portal. The parent's field now says "Your name (parent or guardian)".
+- **Learners → Parents shows parents only** — name, contact and login (and the CSV the same); the
+  name opens the child's page, where the parent's details are edited.
+
+### Verify
+
+1. As a learner, open a course session's Assessments tab: no answers, an Open assessment button; on
+   the assessment page an ordering question starts shuffled; submit and the auto-marked questions
+   are marked.
+2. On the website, enrol two children in a bootcamp: one invoice for both, a login card each, and
+   Enrol another child opens signed in.
+3. Learners → Parents: three columns (Parent, Contact, Login).
+
+---
+
 ## This release (2 Nov 2026, afternoon) — Every module of a course open
 
 **Portal only**, from `curriculum` (branch `modules`) at `7ab5e3a`. The backend and the website

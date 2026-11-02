@@ -6,8 +6,10 @@ const { releaseIfLeftover } = require("./leftover-login");
 // (null — the caller creates one), or the existing login under that email — whose password must
 // match, so nobody can attach a child to someone else's account by typing their email. A login
 // nothing points at any more (leftover-login.js) gives its email up. Used by bootcamp enrolments
-// and Store orders with projects.
-async function parentLoginFor(email, password) {
+// and Store orders with projects. A parent token (parent-signup.js) proves the password instead —
+// the parent typed it earlier in the same visit.
+async function parentLoginFor(email, password, parentToken = null) {
+  if (parentToken) return require("./parent-signup").userFromParentToken(parentToken, email);
   let existing = await UserModel.findByEmail(email);
   if (existing && (await releaseIfLeftover(existing))) existing = null;
   if (!existing) return null;

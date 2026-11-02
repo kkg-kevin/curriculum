@@ -15,13 +15,15 @@ const { generateId } = require("../../shared/utils/model.utils");
 const PAUSES = "billing_access_pauses";
 
 // The learner accounts a family's invoice pays for: its learner, a Home Learning household's
-// children, a Tech Club membership's children.
+// children, a Tech Club membership's children, every child a bootcamp enrolment put on it (a line
+// each).
 async function learnersOfInvoice(invoice) {
   if (!invoice || invoice.payerHubId || invoice.invoiceType === "store_order") return [];
   const ids = new Set();
   if (invoice.learnerId) ids.add(invoice.learnerId);
   if (invoice.householdId) (await db("home_learning_enrollments").where({ householdId: invoice.householdId }).pluck("learnerId")).forEach((id) => ids.add(id));
   if (invoice.clubMembershipId) (await db("club_membership_children").where({ membershipId: invoice.clubMembershipId }).pluck("learnerId")).forEach((id) => ids.add(id));
+  if (invoice.invoiceType === "bootcamp") (await db("billing_invoice_items").where({ invoiceId: invoice.id }).whereNotNull("learnerId").pluck("learnerId")).forEach((id) => ids.add(id));
   return [...ids].filter(Boolean);
 }
 

@@ -10,6 +10,9 @@ const env = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET,
+  // Optional — the key children's login passwords are kept under so staff can show them
+  // (auth/learner-password-vault.js); unset, one is derived from JWT_SECRET.
+  PASSWORD_VAULT_KEY: process.env.PASSWORD_VAULT_KEY,
   // Hard cap on one sign-in, however active the user is. The idle limit below is what normally
   // ends a session; this is the backstop.
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "12h",

@@ -34,9 +34,10 @@ const th = { padding: "9px 12px", fontSize: 11, fontWeight: 700, color: "#9CA3AF
 const td = { padding: "11px 12px", fontSize: 13, color: "#374151", borderBottom: "1px solid #F3F4F6", verticalAlign: "top" };
 
 // Learners → Parents: every parent in the workspace, one row per family — taken from the learners'
-// guardian details (grouped by email, else phone, else name) — with their children, the hubs those
-// children are at, and the parent's own login (from the logins list, when this viewer can read it).
-// Copy the emails, or download the list as a spreadsheet.
+// guardian details (grouped by email, else phone, else name) — showing only the parent: name,
+// contact and their own login (from the logins list, when this viewer can read it). The hub picker
+// still narrows it to the parents of a hub's learners; the name opens a child's page, where the
+// parent's details are edited. Copy the emails, or download the list as a spreadsheet.
 export default function ParentsPanel() {
   const { data: learnersData, isLoading } = useAllLearnersQuery();
   const { data: hubsData } = useAllLearningHubsQuery();
@@ -69,7 +70,6 @@ export default function ParentsPanel() {
       return {
         ...f,
         hubIds: [...f.hubIds],
-        hubs: [...f.hubIds].map((id) => hubName.get(id)).filter(Boolean),
         login,
         loginStatus: login ? login.status : "none",
       };
@@ -79,7 +79,7 @@ export default function ParentsPanel() {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const shown = families.filter((f) =>
     (!hubFilter || f.hubIds.includes(hubFilter))
-    && (!words.length || words.every((w) => [f.name, f.email, f.phone, ...f.children.map((c) => c.name), ...f.hubs].join(" ").toLowerCase().includes(w))));
+    && (!words.length || words.every((w) => [f.name, f.email, f.phone].join(" ").toLowerCase().includes(w))));
   const hubsInUse = [...new Set(families.flatMap((f) => f.hubIds))].map((id) => ({ id, name: hubName.get(id) })).filter((h) => h.name).sort((a, b) => a.name.localeCompare(b.name));
   const emails = [...new Set(shown.map((f) => lower(f.email)).filter(Boolean))];
 
@@ -92,8 +92,8 @@ export default function ParentsPanel() {
     }
   };
   const download = () => downloadCsv("parents.csv",
-    ["Parent", "Email", "Phone", "Children", "Hubs", "Login", "Last signed in"],
-    shown.map((f) => [f.name, f.email, f.phone, f.children.map((c) => c.name).join("; "), f.hubs.join("; "), (LOGIN[f.loginStatus] || LOGIN.none).label, fmt(f.login?.lastActiveAt)]));
+    ["Parent", "Email", "Phone", "Login", "Last signed in"],
+    shown.map((f) => [f.name, f.email, f.phone, (LOGIN[f.loginStatus] || LOGIN.none).label, fmt(f.login?.lastActiveAt)]));
 
   const btn = (enabled, primary) => ({
     display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif",
@@ -107,7 +107,7 @@ export default function ParentsPanel() {
         <div>
           <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: "#111827" }}>Parents</h2>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>
-            {isLoading ? "Loading…" : `${families.length} famil${families.length === 1 ? "y" : "ies"} — each parent's details, their children, and their login. Edit a parent's details from a child's page.`}
+            {isLoading ? "Loading…" : `${families.length} famil${families.length === 1 ? "y" : "ies"} — each parent's details and login. Click a name to open their child's page, where the parent's details are edited.`}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -119,7 +119,7 @@ export default function ParentsPanel() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
         <div style={{ position: "relative", flex: "1 1 280px", maxWidth: 380 }}>
           <FiSearch size={14} color="#9CA3AF" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search parent, email, phone, child or hub" aria-label="Search parents" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px 9px 32px", borderRadius: 9, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search parent, email or phone" aria-label="Search parents" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px 9px 32px", borderRadius: 9, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none" }} />
         </div>
         {hubsInUse.length > 1 && (
           <select value={hubFilter} onChange={(e) => setHubFilter(e.target.value)} aria-label="Hub" style={{ padding: "9px 10px", borderRadius: 9, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", background: "#fff" }}>
@@ -133,26 +133,20 @@ export default function ParentsPanel() {
         <p style={{ margin: 0, padding: "18px 0", fontSize: 13, color: "#9CA3AF" }}>No parent details yet. They come from each learner&apos;s guardian details.</p>
       ) : (
         <div style={{ overflowX: "auto", border: "1px solid #F3F4F6", borderRadius: 12 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "Inter, sans-serif", minWidth: 820 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "Inter, sans-serif", minWidth: 560 }}>
             <thead><tr>
-              <th style={th}>Parent</th><th style={th}>Contact</th><th style={th}>Children</th><th style={th}>Hubs</th><th style={th}>Login</th>
+              <th style={th}>Parent</th><th style={th}>Contact</th><th style={th}>Login</th>
             </tr></thead>
             <tbody>
               {shown.map((f) => {
                 const look = LOGIN[f.loginStatus] || LOGIN.none;
                 return (
                   <tr key={f.key}>
-                    <td style={td}><strong style={{ color: "#111827" }}>{f.name || "—"}</strong>{f.addedAt && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>Since {fmt(f.addedAt)}</div>}</td>
+                    <td style={td}><Link to={`/learners/${f.children[0].id}`} style={{ color: "#111827", fontWeight: 700, textDecoration: "none" }}>{f.name || "—"}</Link>{f.addedAt && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>Since {fmt(f.addedAt)}</div>}</td>
                     <td style={td}>
                       {f.email ? <a href={`mailto:${f.email}`} style={{ color: "#2e7db5", textDecoration: "none" }}>{f.email}</a> : <span style={{ color: "#9CA3AF" }}>No email</span>}
                       <div style={{ marginTop: 2 }}>{f.phone ? <a href={`tel:${f.phone}`} style={{ color: "#374151", textDecoration: "none", fontSize: 12.5 }}>{f.phone}</a> : <span style={{ color: "#9CA3AF", fontSize: 12.5 }}>No phone</span>}</div>
                     </td>
-                    <td style={td}>
-                      {f.children.map((c, i) => (
-                        <span key={c.id}>{i > 0 && ", "}<Link to={`/learners/${c.id}`} style={{ color: "#111827", fontWeight: 600, textDecoration: "none" }}>{c.name}</Link></span>
-                      ))}
-                    </td>
-                    <td style={td}>{f.hubs.join(", ") || <span style={{ color: "#9CA3AF" }}>No hub yet</span>}</td>
                     <td style={td}>
                       <Pill look={look} />
                       {f.login?.lastActiveAt && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>Last used {fmt(f.login.lastActiveAt)}</div>}

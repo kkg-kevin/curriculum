@@ -35,7 +35,9 @@ const UserModel = {
     return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  delete(id) {
+  // A login's kept password (learner-password-vault.js) goes with it.
+  async delete(id) {
+    await db("learner_login_secrets").where({ userId: id }).del().catch(() => {});
     return deleteRecord(db, TABLE, id);
   },
 };

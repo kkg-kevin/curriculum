@@ -15,6 +15,8 @@ const { cleanImportRow, sameLearner } = require("./learner.import");
 const { kenyaToday } = require("../../shared/utils/age");
 const { originOf } = require("./learner-origin");
 const WebsiteDiagnosticService = require("../assessments/submissions/website-diagnostic.service");
+const LearnerPasswordVault = require("../auth/learner-password-vault");
+const AuditService = require("../audit/audit.service");
 
 // A learner has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -281,6 +283,28 @@ const getLearnerParent = asyncHandler(async (req, res) => {
   const visibleHubIds = isAdmin ? await adminOwnedHubIds(req) : [req.ownSchool?.id].filter(Boolean);
   const data = await LearnerParentService.forLearner(record, { visibleHubIds, ownerAdminId: isAdmin ? req.ownerAdminId : null, isAdmin });
   res.json({ success: true, data });
+});
+
+// The learner page's Login card: the child's own username login and, when someone clicks Show,
+// its password — kept for children's logins only (auth/learner-password-vault.js). Same access as
+// the Parent tab; every look is recorded in the Activity log. `password` is null when none is kept
+// (set before passwords were kept, or there's no login yet) — staff set a new one instead.
+const getLearnerLoginPassword = asyncHandler(async (req, res) => {
+  // An Account Manager / Training Lead has view-only hub access — not a child's password.
+  if (req.user.hubLead) throw Object.assign(new Error("Only staff who manage learners can see a learner's password"), { statusCode: 403 });
+  const record = await LearnerService.getLearnerById(req.params.id);
+  assertOwn(await isLinkedToOwnHub(req, record.id));
+  const login = record.username ? await UserModel.findByUsername(record.username) : null;
+  const childLogin = LearnerPasswordVault.isChildLogin(login) ? login : null;
+  const { password, setAt } = childLogin ? await LearnerPasswordVault.reveal(childLogin.id) : { password: null, setAt: null };
+  if (childLogin) {
+    AuditService.recordViewed(req, {
+      module: "learners", entityType: "learners", entityId: record.id,
+      entityLabel: `${record.firstName} ${record.lastName}`.trim(),
+      summary: password ? "Viewed the learner's login password" : "Looked for the learner's login password (none kept)",
+    });
+  }
+  res.json({ success: true, data: { username: record.username || null, hasLogin: Boolean(childLogin), password, setAt } });
 });
 
 // Website diagnostics staff can link to a learner they added (the family took one, then enquired
@@ -552,6 +576,7 @@ const getPublicProfile = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getLearnerLoginPassword,
   createLearner,
   bulkImportLearners,
   getAllLearners,

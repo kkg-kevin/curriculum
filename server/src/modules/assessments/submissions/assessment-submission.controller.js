@@ -9,6 +9,7 @@ const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-
 const LearningHubModel = require("../../learning-hubs/learning-hub.model");
 const { assertOwn, isOwnHub } = require("../../../shared/middleware/scope.middleware");
 const TotService = require("../../tot/tot.service");
+const { withLearnerSafeAssessment } = require("../../../shared/utils/assessment-for-learner");
 
 // A supervisor marks the work of the educators they supervise who are learning (training of
 // trainers — modules/tot/): only those educators' own learner records, in whatever class.
@@ -195,7 +196,8 @@ async function issuedRowsAsLearnerSeesThem(learnerId) {
 const getIssuedForLearner = asyncHandler(async (req, res) => {
   const learner = req.ownLearner;
   if (!learner) return res.json({ success: true, data: [] });
-  const rows = await issuedRowsAsLearnerSeesThem(learner.id);
+  // The questions without their answers (assessment-for-learner.js) — marking is done on the server.
+  const rows = (await issuedRowsAsLearnerSeesThem(learner.id)).map(withLearnerSafeAssessment);
   res.json({ success: true, data: rows, count: rows.length });
 });
 
@@ -224,7 +226,7 @@ const getDiagnosticForLearner = asyncHandler(async (req, res) => {
     await assertLearnerHubAccess(req, req.params.learnerId);
   }
   const row = await AssessmentSubmissionService.getDiagnosticForLearner(req.params.learnerId, req.query.curriculumId || null);
-  res.json({ success: true, data: row });
+  res.json({ success: true, data: req.user.role === "learner" ? withLearnerSafeAssessment(row) : row });
 });
 
 // Same access shape as getDiagnosticForLearner, plural — this learner's Pathway
@@ -237,7 +239,8 @@ const getPathwayDiagnosticsForLearner = asyncHandler(async (req, res) => {
   } else {
     await assertLearnerHubAccess(req, req.params.learnerId);
   }
-  const rows = await AssessmentSubmissionService.getPathwayDiagnosticsForLearner(req.params.learnerId);
+  const all = await AssessmentSubmissionService.getPathwayDiagnosticsForLearner(req.params.learnerId);
+  const rows = req.user.role === "learner" ? all.map(withLearnerSafeAssessment) : all;
   res.json({ success: true, data: rows, count: rows.length });
 });
 

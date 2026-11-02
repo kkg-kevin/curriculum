@@ -18,6 +18,7 @@ const { computeEntryMarks } = require("../assessments/assessment.utils");
 const EvidenceTypeModel = require("../curriculum/competency-framework/evidence-type.model");
 const AssessmentTypeModel = require("../curriculum/competency-framework/assessment-type.model");
 const { normalizeAssessmentAttachments, sessionHasAssessment } = require("./sessionAssessment.utils");
+const { learnerSafeAssessment } = require("../../shared/utils/assessment-for-learner");
 
 const generateId = () =>
   typeof crypto.randomUUID === "function"
@@ -145,6 +146,8 @@ function shapeSessionForViewer(session, role) {
   const shaped = { ...session };
   for (const field of EDUCATOR_ONLY_FIELDS) shaped[field] = [];
   if (role === "learner") {
+    // Their issued assessments without the answers (assessment-for-learner.js).
+    shaped.attachedAssessments = session.attachedAssessments.map(learnerSafeAssessment);
     const visibleIds = new Set(session.attachedAssessments.map((a) => a.id));
     shaped.assessmentIds = (session.assessmentIds || []).filter((id) => visibleIds.has(id));
     shaped.assessmentAttachments = (session.assessmentAttachments || []).filter((a) => visibleIds.has(a?.assessmentId || a?.id));
