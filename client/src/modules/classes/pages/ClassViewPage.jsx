@@ -231,6 +231,15 @@ export default function ClassViewPage() {
             <DetailRow label="Stream"        value={cls.streamName} empty="Not set" />
             <DetailRow label="Academic Year" value={cls.academicYear} />
             <DetailRow label="Tag"           value={cls.tag} empty="Not set" />
+            {["virtual", "hybrid"].includes(school?.deliveryMode) && (
+              <DetailRow
+                label="Meeting link"
+                value={cls.meetingLink
+                  ? <span style={{ wordBreak: "break-all" }}>{cls.meetingLink}</span>
+                  : school.meetingLink && <span style={{ wordBreak: "break-all", color: "#6B7280" }}>Hub's link · {school.meetingLink}</span>}
+                empty="Not set — no Join button"
+              />
+            )}
             <CapacityRow enrolled={classLearners.length} capacity={cls.capacity} />
             <DetailRow label="Status"        value={cls.status === "active" ? "Active" : "Inactive"} />
           </div>

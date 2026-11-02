@@ -10,14 +10,18 @@ const T = {
 
 const at = (date, time) => dayjs(`${date}T${String(time || "00:00").slice(0, 5)}`);
 
-// The hub's joining link when it teaches online (virtual / hybrid) — the same rule the server
-// applies to calendar events in onlineLinkForClass (timetable.service.js).
-export function onlineLinkOf(hub) {
-  return hub?.meetingLink && ["virtual", "hybrid"].includes(hub.deliveryMode) ? hub.meetingLink : null;
+const isOnlineHub = (hub) => ["virtual", "hybrid"].includes(hub?.deliveryMode);
+
+// A class's joining link when its hub teaches online (virtual / hybrid): the class's own link,
+// else the hub's — the same rule the server applies to calendar events in onlineLinkForClass
+// (timetable.service.js).
+export function onlineLinkOf(hub, cls) {
+  if (!isOnlineHub(hub)) return null;
+  return cls?.meetingLink || hub.meetingLink || null;
 }
 
 // A session counts as "live" from 15 minutes before it starts until it ends — the Join button
-// turns green then. Joining is never blocked outside that window; the meeting room is the hub's.
+// turns green then. Joining is never blocked outside that window.
 export function isLive(event, now = dayjs()) {
   return now.isAfter(at(event.date, event.startTime).subtract(15, "minute")) && now.isBefore(at(event.date, event.endTime || event.startTime));
 }
@@ -78,16 +82,19 @@ const whenText = (event) =>
 
 // "Online class" on a hub's own pages — My Courses, a course, an educator's class. Shown whenever
 // the hub teaches online, with or without a session this week, so the meeting room is always one
-// click from the course. Narrowed to one class and/or course when given.
-export function OnlineClassStrip({ who, hub, classId, courseId, compact = false, style }) {
-  const link = onlineLinkOf(hub);
-  const { events, now } = useUpcomingSessions(link ? who : null);
-  if (!link) return null;
+// click from the course. Narrowed to one class and/or course when given; the link is that class's
+// (`cls`), or else the next session's own — each class may have its own room.
+export function OnlineClassStrip({ who, hub, cls, classId, courseId, compact = false, style }) {
+  const online = isOnlineHub(hub);
+  const { events, now } = useUpcomingSessions(online ? who : null);
+  if (!online) return null;
 
   const event = nextOnlineEvent(
-    events.filter((e) => e.meetingLink === link && (!classId || e.classId === classId) && (!courseId || e.courseId === courseId)),
+    events.filter((e) => (!classId || e.classId === classId) && (!courseId || e.courseId === courseId)),
     now,
   );
+  const link = event?.meetingLink || onlineLinkOf(hub, cls);
+  if (!link) return null;
   const live = !!event && isLive(event, now);
   const label = who === "teacher" ? "Start online class" : "Join online class";
   const status = live ? "Live now" : event ? `Next: ${whenText(event)}` : "No session in the next 7 days";

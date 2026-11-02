@@ -85,7 +85,7 @@ export function getSessionCompletion(email, courseId, sessionId) {
 // "every SECTIONS key done" check SectionViewPage.jsx's SessionSidebar computes per-session for
 // its own checkmark, generalized to a list so a module's completion (all of its sessions) and a
 // single session's completion can share one implementation. An empty list (a module with no
-// sessions yet) is trivially complete — nothing in it to block on.
+// sessions yet) counts as complete.
 export function isModuleSessionsComplete(email, courseId, sessionIds) {
   if (sessionIds.length === 0) return true;
   const courseProgress = getCourseSectionProgress(email, courseId);

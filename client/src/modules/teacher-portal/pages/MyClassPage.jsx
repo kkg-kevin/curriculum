@@ -117,7 +117,7 @@ export default function MyClassPage() {
         </button>
       </div>
 
-      <OnlineClassStrip who="teacher" hub={hubs.find((h) => h.id === cls.schoolId)} classId={classId} style={{ marginBottom: 20 }} />
+      <OnlineClassStrip who="teacher" hub={hubs.find((h) => h.id === cls.schoolId)} cls={cls} classId={classId} style={{ marginBottom: 20 }} />
 
       <div style={{ backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
         {learnersLoading ? (

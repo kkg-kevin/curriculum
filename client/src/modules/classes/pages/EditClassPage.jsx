@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClassQuery, useUpdateClass } from "../hooks/useClasses";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
+import { useLearningHubQuery } from "../../learning-hubs/hooks/useLearningHub";
+import { meetingLinkSchema } from "../../learning-hubs/schemas/learningHub.schema";
 import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
@@ -17,6 +19,7 @@ const editSchema = z.object({
   status:     z.enum(["active", "inactive"]).default("active"),
   tag:        z.string().trim().optional(),
   streamName: z.string().trim().optional(),
+  meetingLink: z.string().trim().pipe(meetingLinkSchema).optional(),
 });
 
 const S = {
@@ -54,27 +57,39 @@ export default function EditClassPage() {
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const { data: curriculum } = useCurriculumQuery(cls?.curriculumId);
+  const { data: hub } = useLearningHubQuery(cls?.schoolId);
+  // Only a class of an online / hybrid hub has a joining link.
+  const hubIsOnline = ["virtual", "hybrid"].includes(hub?.deliveryMode);
 
   const { register, control, handleSubmit, reset, formState: { isDirty, errors } } = useForm({
     resolver: zodResolver(editSchema),
-    defaultValues: { capacity: null, status: "active", tag: "", streamName: "" },
+    defaultValues: { capacity: null, status: "active", tag: "", streamName: "", meetingLink: "" },
     mode: "onTouched",
   });
 
   useEffect(() => {
     if (cls) {
       reset({
-        capacity:   cls.capacity   || null,
-        status:     cls.status     || "active",
-        tag:        cls.tag        || "",
-        streamName: cls.streamName || "",
+        capacity:    cls.capacity    || null,
+        status:      cls.status      || "active",
+        tag:         cls.tag         || "",
+        streamName:  cls.streamName  || "",
+        meetingLink: cls.meetingLink || "",
       });
     }
   }, [cls, reset]);
 
   const onSubmit = (data) => {
+    const { meetingLink, ...rest } = data;
     updateClass(
-      { id, data: { ...data, tag: data.tag?.trim() || null, streamName: data.streamName?.trim() || null } },
+      {
+        id,
+        data: {
+          ...rest, tag: data.tag?.trim() || null, streamName: data.streamName?.trim() || null,
+          // Sent only when the field is on screen, so saving an in-person class never touches it.
+          ...(hubIsOnline ? { meetingLink: meetingLink?.trim() || null } : {}),
+        },
+      },
       { onSuccess: () => navigate(classPath(user?.role, id, "view")) }
     );
   };
@@ -108,7 +123,7 @@ export default function EditClassPage() {
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>Edit</span>
           </div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Edit Class</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Set capacity or change status. Assign educators to courses from the class's own page.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>Set capacity, status{hubIsOnline ? " or the online meeting link" : ""}. Assign educators to courses from the class's own page.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={handleCancel} style={{ padding: "10px 20px", backgroundColor: "transparent", color: "#374151", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -210,6 +225,23 @@ export default function EditClassPage() {
               <span style={S.hint}>Required only if this grade already has another class at this school for this year.</span>
               {errors.streamName && <span style={S.error}>{errors.streamName.message}</span>}
             </div>
+
+            {hubIsOnline && (
+              <div style={S.field}>
+                <label style={S.label}>Meeting link</label>
+                <input
+                  {...register("meetingLink")}
+                  style={S.input}
+                  className="ec-input"
+                  placeholder={hub?.meetingLink || "https://meet.google.com/abc-defg-hij or https://zoom.us/j/..."}
+                />
+                <span style={S.hint}>
+                  This class's own online room — its educators, learners and parents get it on their Join buttons.
+                  {hub?.meetingLink ? " Leave blank to use the hub's link (shown greyed in the box)." : " Leave blank and this class has no Join button, since the hub has no link either."}
+                </span>
+                {errors.meetingLink && <span style={S.error}>{errors.meetingLink.message}</span>}
+              </div>
+            )}
           </div>
           </div>
         </form>

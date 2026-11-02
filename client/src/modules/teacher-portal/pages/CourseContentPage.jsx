@@ -79,7 +79,7 @@ function ClassCard({ cls, hub, courses, teacherName, isOpen, onToggleOpen, showF
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}><FiUser size={13} /> {teacherName}</span>
         </div>
 
-        <OnlineClassStrip who="teacher" hub={hub} classId={cls.id} compact />
+        <OnlineClassStrip who="teacher" hub={hub} cls={cls} classId={cls.id} compact />
 
         <button
           type="button"

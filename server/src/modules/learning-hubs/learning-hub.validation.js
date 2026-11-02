@@ -192,5 +192,6 @@ module.exports = {
   updateHubCurriculumStatusSchema,
   LEARNING_HUB_TYPES,
   DELIVERY_MODES,
+  meetingLinkSchema,
   KENYA_COUNTIES,
 };
