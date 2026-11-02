@@ -102,6 +102,55 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (2 Nov 2026) — A meeting link per online class; the course page grouped by module; show / hide passwords on the website
+
+**Portal and backend** from `curriculum` (branch `modules`) at `371435d`. **Website** from
+`curriculum-web` (branch `new`) at `0dc34ae`. Take a database backup first (one new column),
+**upload the backend first**, then the portal and the website. If "This release (30 Oct 2026,
+night)" below isn't uploaded yet, read its notes first (families will be invoiced) — this backend
+includes it.
+
+### What changed
+
+- **Each class of an online hub can have its own meeting link.** Edit class → **Meeting link**
+  (shown only when the class's hub is Online or Hybrid; a Google Meet link needs its meeting code,
+  like on the hub form). That class's educators, learners and parents get it on every Join button
+  (timetable, session pop-up, dashboards, My Courses, course pages, My Class, the parent's next
+  session). A class left blank uses the hub's link, now called **Default meeting link** on the hub
+  form; the class page shows which link a class uses. Make one recurring Google Calendar event with
+  Meet per class — its link stays the same every week — and paste it on the class.
+- **The learner's course page lists sessions under their modules.** It used to list every session
+  in one list, so a course with four modules showed "Session 1" four times, and a learner who
+  picked a later module's landed on "This session is locked — finish … first". Now each module is a
+  heading in order; for the learner, later modules show as locked before they click ("Unlocks after
+  …"), finished sessions are ticked, and the session to open is marked **Start here** / **Up next**.
+  The unlocking rule hasn't changed (a module opens once every tab of every session in the modules
+  before it has been opened). A parent watching a child sees the grouped list only.
+- **Website: show / hide on every password box.** Bootcamp enrolment and the shop checkout's
+  password boxes get the eye button the Home Learning and Tech Club sign-ups already had.
+
+### Upload
+
+1. Backend: `backend-deploy.zip` (615 files, 152 migrations), then Restart. One new migration,
+   `20261102100000_add_meeting_link_to_classes.js` (`classes.meetingLink`, nullable — every existing
+   class keeps using its hub's link). Check `SHOW COLUMNS FROM classes LIKE 'meetingLink';` and run
+   Run JS script → `db:migrate` if it's missing.
+2. Portal: `index.html` + `assets.zip` (entry `index-D42lZ1n5.js`), unzip into the portal's folder,
+   replacing `assets/`.
+3. Website (africa.digifunzi.com): `africa-digifunzi-com-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### Verify
+
+1. Edit a class of an online / hybrid hub: the Meeting link field is there; save a link and the
+   class page shows it; a learner of that class gets it on their timetable's Join.
+2. As a learner, open a course with several modules: sessions sit under "Module 1: …", "Module 2:
+   …"; the first session is marked Start here and later modules show the lock.
+3. On the website, start a bootcamp enrolment: the password boxes have the eye button.
+
+---
+
 ## This release (31 Oct 2026) — What's left to unlock the next level; a pathway's courses on the learner page; drafts cleared on save
 
 **Portal and backend** from `curriculum` (branch `modules`) at `2874c05`. Only the portal changed:
