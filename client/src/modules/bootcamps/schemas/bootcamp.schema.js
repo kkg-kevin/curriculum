@@ -45,6 +45,9 @@ const coursePriceSchema = z.object({
 export const bootcampSchema = z
   .object({
     name:          z.string().trim().min(1, "Bootcamp name is required").max(150, "Max 150 characters"),
+    // Who it's for — "educators" is a TOT (training of trainers) bootcamp. Listed here so the
+    // form's validation keeps it (an unlisted field is dropped before saving).
+    audience:      z.enum(["learners", "educators"]).default("learners"),
     // Rich text (TipTap HTML) — capped generously above the old 3000-char plain-text limit
     // (the 150-word limit above is the real content-length guard; see wordCount above).
     description:   z.string().trim().max(15000).default(""),
@@ -64,8 +67,8 @@ export const bootcampSchema = z
     saleStatus:    z.enum(["internal", "for_sale"]).default("internal"),
     format:        z.enum(["holiday", "weekend", "after_school", "online"]).nullable().default(null),
     durationLabel: z.string().trim().max(60).default(""),
-    ageMin:        z.coerce.number().int().min(0).max(25).nullable().default(null),
-    ageMax:        z.coerce.number().int().min(0).max(25).nullable().default(null),
+    ageMin:        z.coerce.number().int().min(0).max(100).nullable().default(null),
+    ageMax:        z.coerce.number().int().min(0).max(100).nullable().default(null),
     priceAmount:   z.coerce.number().int().min(0).max(10000000).nullable().default(null),
     priceCurrency: z.string().trim().max(8).default("KES"),
     // Applies regardless of which pricing mode is active — see CreateBootcampPage.jsx.

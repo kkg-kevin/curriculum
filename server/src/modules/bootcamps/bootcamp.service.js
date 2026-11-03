@@ -161,9 +161,12 @@ function assertCourseEntryPricingValid(coursePricing) {
 }
 
 const BootcampHubService = require("./bootcamp-hub.service");
+const { TOT_AGE_RANGE } = require("./bootcamp.validation");
 
 const BootcampService = {
   async createBootcamp(data) {
+    // A TOT bootcamp is for educators of any age — no age range to choose.
+    if (data.audience === "educators") Object.assign(data, TOT_AGE_RANGE);
     await assertCurriculumOwnedBy(data.curriculumId, data.ownerAdminId);
     await assertAudienceMatchesCurriculum(data.audience, data.curriculumId);
     await assertCoursePricingValid(data.coursePricing, data.curriculumId);
@@ -197,6 +200,8 @@ const BootcampService = {
       err.statusCode = 404;
       throw err;
     }
+    // A TOT bootcamp is for educators of any age — no age range to choose.
+    if (("audience" in data ? data.audience : existing.audience) === "educators") Object.assign(data, TOT_AGE_RANGE);
     // curriculumId may be absent from a partial patch — only re-check when it's actually changing.
     if ("curriculumId" in data) await assertCurriculumOwnedBy(data.curriculumId, ownerAdminId);
     if ("curriculumId" in data || "audience" in data) {
