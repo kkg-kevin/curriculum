@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { authApi } from "../modules/auth/services/authApi";
+import { readLocal, readSession, removeSession, writeLocal, writeSession } from "../utils/safeStorage";
 
 // Session rules (server side: user-session.model.js / auth.middleware.js):
 //   1. 30 minutes without user activity signs you out (SESSION_IDLE_MINUTES on the server).
@@ -16,15 +17,12 @@ const CHANNEL_NAME = "digifunzi-session";
 // there, not every click. Its idle check allows a minute of slack for this (see auth.service.js).
 const ACTIVITY_PING_MS = 30 * 1000;
 
-function safe(fn, fallback = null) {
-  try { return fn(); } catch { return fallback; }
-}
-
 /* ── This tab's "signed in here" marker ─────────────────────────────────────────────────── */
 
-export const markTabSignedIn = () => safe(() => sessionStorage.setItem(TAB_KEY, "1"));
-export const clearTabSignedIn = () => safe(() => sessionStorage.removeItem(TAB_KEY));
-export const isTabSignedIn = () => safe(() => sessionStorage.getItem(TAB_KEY) === "1", false);
+// Through safeStorage's tab store, so it holds even where the browser blocks sessionStorage.
+export const markTabSignedIn = () => writeSession(TAB_KEY, "1");
+export const clearTabSignedIn = () => removeSession(TAB_KEY);
+export const isTabSignedIn = () => readSession(TAB_KEY) === "1";
 
 /* ── Messages between this app's open tabs ──────────────────────────────────────────────── */
 
@@ -69,7 +67,7 @@ export function askOtherTabsForSession(waitMs = 350) {
 let lastPingAt = 0;
 
 export function getLastActivity() {
-  return safe(() => Number(localStorage.getItem(ACTIVITY_KEY)) || 0, 0);
+  return Number(readLocal(ACTIVITY_KEY)) || 0;
 }
 
 // Records that the user is active right now (in this tab — every tab reads the same value), and
@@ -77,7 +75,7 @@ export function getLastActivity() {
 // "Stay signed in" button). Errors are ignored: a 401 is handled globally by the api client.
 export function noteUserActivity({ force = false } = {}) {
   const now = Date.now();
-  safe(() => localStorage.setItem(ACTIVITY_KEY, String(now)));
+  writeLocal(ACTIVITY_KEY, String(now));
   if (force || now - lastPingAt >= ACTIVITY_PING_MS) {
     lastPingAt = now;
     authApi.activity().catch(() => {});
@@ -87,7 +85,7 @@ export function noteUserActivity({ force = false } = {}) {
 // A fresh sign-in starts the idle clock from zero (the shared value may be hours old).
 export function resetActivityClock() {
   lastPingAt = Date.now();
-  safe(() => localStorage.setItem(ACTIVITY_KEY, String(Date.now())));
+  writeLocal(ACTIVITY_KEY, String(Date.now()));
 }
 
 /* ── Why the user was signed out (shown once on the login page) ─────────────────────────── */
@@ -95,9 +93,9 @@ export function resetActivityClock() {
 // "idle:<minutes>" (timed out here) or "expired" (the server ended the session). Read and cleared
 // separately — React's StrictMode double-runs initializers, so "read and clear" in one go would
 // lose the notice in development.
-export const setSignedOutReason = (reason) => safe(() => sessionStorage.setItem(SIGNED_OUT_KEY, reason));
-export const peekSignedOutReason = () => safe(() => sessionStorage.getItem(SIGNED_OUT_KEY));
-export const clearSignedOutReason = () => safe(() => sessionStorage.removeItem(SIGNED_OUT_KEY));
+export const setSignedOutReason = (reason) => writeSession(SIGNED_OUT_KEY, reason);
+export const peekSignedOutReason = () => readSession(SIGNED_OUT_KEY);
+export const clearSignedOutReason = () => removeSession(SIGNED_OUT_KEY);
 
 /* ── Keep-alive for screens where the user can be busy without touching anything ───────── */
 

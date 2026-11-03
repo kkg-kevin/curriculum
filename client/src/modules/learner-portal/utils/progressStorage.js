@@ -1,3 +1,4 @@
+import { readLocal, writeLocal } from "../../../utils/safeStorage";
 // Learner progress counts only the sections a learner can see (Notes are educator-only).
 import { LEARNER_SECTIONS as SECTIONS } from "../../courses/sectionConfig";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
@@ -5,17 +6,15 @@ import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 const STORAGE_KEY = "digifunzi.learner-progress";
 
 function readStore() {
-  if (typeof window === "undefined") return {};
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return JSON.parse(readLocal(STORAGE_KEY) || "{}");
   } catch {
     return {};
   }
 }
 
 function writeStore(data) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  writeLocal(STORAGE_KEY, JSON.stringify(data));
 }
 
 function normalizeEmail(email) {

@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET, COOKIE_NAME, AUTH_ENABLED } = require("../../config/env");
+const { JWT_SECRET, AUTH_ENABLED } = require("../../config/env");
+const { sessionTokenFrom } = require("../utils/session-token");
 const RevokedTokenModel = require("../../modules/auth/revoked-token.model");
 const AuthService = require("../../modules/auth/auth.service");
 
@@ -22,7 +23,7 @@ async function protect(req, res, next) {
     return next();
   }
 
-  const token = req.cookies?.[COOKIE_NAME];
+  const token = sessionTokenFrom(req);
   if (!token) {
     const err = new Error("Not authenticated");
     err.statusCode = 401;

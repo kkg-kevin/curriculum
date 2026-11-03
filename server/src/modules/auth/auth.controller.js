@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const AuditService = require("../audit/audit.service");
 const UserModel = require("./user.model");
 const { organisationIdOf, forgetAdmins } = require("../../shared/utils/organisation");
+const { sessionTokenFrom } = require("../../shared/utils/session-token");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
 // fine locally where client and server share the "localhost" site across ports, but breaks
@@ -40,22 +41,24 @@ const login = asyncHandler(async (req, res) => {
   }
   AuditService.recordAuth(req, "login", { user });
   res.cookie(COOKIE_NAME, token, cookieOptions);
-  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
+  // `sessionToken`: used by the portal only when the browser won't keep the cookie (it then sends
+  // it as a Bearer header — shared/utils/session-token.js). Otherwise it's dropped.
+  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings(), sessionToken: token } });
 });
 
 // Moves the signed-in session to another of the account's roles (the header's role switcher, or
 // the choice right after signing in). A new cookie replaces the old one.
 const switchRole = asyncHandler(async (req, res) => {
   const { role } = switchRoleSchema.parse(req.body);
-  const { user, token } = await AuthService.switchRole(req.cookies?.[COOKIE_NAME], role);
+  const { user, token } = await AuthService.switchRole(sessionTokenFrom(req), role);
   AuditService.recordAuth(req, "role_switched", { user, reason: role });
   res.cookie(COOKIE_NAME, token, cookieOptions);
-  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings() } });
+  res.json({ success: true, data: { ...user, session: AuthService.sessionSettings(), sessionToken: token } });
 });
 
 const logout = asyncHandler(async (req, res) => {
-  const signedInAs = jwt.decode(req.cookies?.[COOKIE_NAME] || "")?.sub;
-  await AuthService.logout(req.cookies?.[COOKIE_NAME]);
+  const signedInAs = jwt.decode(sessionTokenFrom(req) || "")?.sub;
+  await AuthService.logout(sessionTokenFrom(req));
   if (signedInAs) AuditService.recordAuth(req, "logout", { user: { id: signedInAs } });
   res.clearCookie(COOKIE_NAME, baseCookieOptions);
   res.json({ success: true });

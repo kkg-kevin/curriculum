@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { ipKeyGenerator } = require("express-rate-limit");
-const { JWT_SECRET, COOKIE_NAME } = require("../../config/env");
+const { JWT_SECRET } = require("../../config/env");
+const { sessionTokenFrom } = require("../utils/session-token");
 
 // Who a request is counted against by the general /api limiter (app.js).
 //
@@ -10,7 +11,7 @@ const { JWT_SECRET, COOKIE_NAME } = require("../../config/env");
 // single allowance and could be refused together. Only the token's signature is checked here (no
 // database lookup); whether the session is still live is `protect`'s job, later.
 function apiRateLimitKey(req) {
-  const token = req.cookies?.[COOKIE_NAME];
+  const token = sessionTokenFrom(req);
   if (token) {
     try {
       const { sub } = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
