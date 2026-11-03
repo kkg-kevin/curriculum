@@ -13,7 +13,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
 import { classApi } from "../../classes/services/classApi";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { useCurriculumCoursesByGrade, useCurriculumCurrentCoursesForGrades } from "../../curriculum/hooks/useCurriculumVersion";
+import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
 import { attendanceApi } from "../../attendance/services/attendanceApi";
 import Avatar from "../../../components/ui/Avatar";
@@ -55,18 +55,17 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
-  const { data: curriculum } = useCurriculumQuery(selectedHub?.curriculumId);
-
   const { data: classesData, isLoading: classesLoading } = useQuery({
     queryKey: ["classes", "byTeacherHub", teacher?.id, selectedHubId],
     queryFn: () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const gradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeIds);
-  const { data: allMyCourses }   = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeIds);
+  // The hub's curriculum, else the one its classes run (the Home Learning hub has none of its own).
+  const { data: curriculum } = useCurriculumQuery(selectedHub?.curriculumId || myClasses.find((c) => c.curriculumId)?.curriculumId);
+  // Each class's courses from its own curriculum.
+  const { courses: allMyCourses, forClass } = useClassCourses(myClasses, selectedHub?.curriculumId);
 
   const totalLearners = myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0);
 
@@ -170,7 +169,7 @@ export default function DashboardPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {myClasses.map((c) => {
-              const courseCount = (coursesByGrade?.get(c.gradeId) || []).length;
+              const courseCount = forClass(c).length;
               return (
                 <div key={c.id} style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

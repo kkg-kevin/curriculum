@@ -6,6 +6,7 @@ import { useLearnerMentors } from "./useLearnerMentors";
 import { useLearnerHubsQuery } from "../../learners/hooks/useLearners";
 import { getActiveLearnerId, setActiveLearnerId } from "../utils/activeLearner";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
+import { readLocal, writeLocal } from "../../../utils/safeStorage";
 
 const STORAGE_KEY = "learnerPortal.selectedHubId";
 
@@ -63,7 +64,7 @@ export function useLearnerPortalScope() {
   const activeHomeEnrollment = homeEnrollments.find((enrollment) => enrollment.status === "active" && enrollment.curriculumId) || null;
 
   const urlHubId = searchParams.get("hub");
-  const storedHubId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+  const storedHubId = readLocal(STORAGE_KEY);
 
   let selectedHubId;
   if (urlHubId && hubs.some((h) => h.id === urlHubId)) selectedHubId = urlHubId;
@@ -74,7 +75,7 @@ export function useLearnerPortalScope() {
   const cls = selectedHub?.class || null;
 
   const setSelectedHubId = (hubId) => {
-    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, hubId);
+    writeLocal(STORAGE_KEY, hubId);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("hub", hubId);
@@ -82,7 +83,7 @@ export function useLearnerPortalScope() {
     });
   };
 
-  const { mentors, mentorsLoading } = useLearnerMentors(hubs, activeHomeEnrollment?.educator || null);
+  const { mentors, mentorsLoading } = useLearnerMentors(hubs, activeHomeEnrollment?.educator || null, activeHomeEnrollment?.classId || null);
 
   const hasNoHubs = !learnerLoading && !hubsLoading && !!learner && hubs.length === 0;
 

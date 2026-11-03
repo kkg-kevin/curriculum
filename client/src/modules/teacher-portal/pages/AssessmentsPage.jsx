@@ -14,7 +14,7 @@ import {
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
-import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
+import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
 import { useIssueAssessment, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
@@ -460,10 +460,9 @@ export default function AssessmentsPage() {
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const gradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: courses = [], isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, gradeIds);
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeIds);
+  // Each class's courses from its own curriculum (the Home Learning hub has none of its own).
+  const { courses, forClass, hasCurriculum, isLoading: coursesLoading } = useClassCourses(myClasses, selectedHub?.curriculumId);
 
   const sessionsResults = useQueries({
     queries: courses.map((course) => ({
@@ -535,7 +534,7 @@ export default function AssessmentsPage() {
     const rows = [];
     sessionsResults.forEach((result, index) => {
       const course = courses[index];
-      const eligibleClasses = myClasses.filter((cls) => (coursesByGrade?.get(cls.gradeId) || []).some((c) => c.id === course.id));
+      const eligibleClasses = myClasses.filter((cls) => forClass(cls).some((c) => c.id === course.id));
       (result.data || []).forEach((session) => {
         (session.attachedAssessments || []).forEach((assessment) => {
           rows.push({
@@ -551,7 +550,7 @@ export default function AssessmentsPage() {
       });
     });
     return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }, [courses, sessionsResults, myClasses, coursesByGrade]);
+  }, [courses, sessionsResults, myClasses, forClass]);
 
   // Full session list per course (every session, not just ones with assessments) — the carousel
   // needs to page through all of them in order. Keyed to the same sessionsResults the attachments
@@ -613,7 +612,7 @@ export default function AssessmentsPage() {
     );
   }
 
-  if (!selectedHub?.curriculumId) {
+  if (!hasCurriculum) {
     return (
       <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
         <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No curriculum assigned yet</h3>

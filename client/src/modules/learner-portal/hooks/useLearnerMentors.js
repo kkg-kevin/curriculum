@@ -8,9 +8,10 @@ import { classApi } from "../../classes/services/classApi";
 // the old single-class-teacher lookup. Hubs with no educators assigned are simply omitted.
 // Built from the FULL hub list passed in, not just one selected hub — this list is meant to
 // stay unscoped (every hub's educators), same as the hub list itself. `homeEducator`, when
-// given, is the learner's Home Learning educator, added last.
+// given, is the learner's Home Learning educator, added last — unless the Home Learning class
+// (`homeClassId`) already lists them, as it does once they're linked to its courses.
 // Used by the learner portal (useLearnerPortalScope) and by the learner's profile as staff see it.
-export function useLearnerMentors(hubs, homeEducator = null) {
+export function useLearnerMentors(hubs, homeEducator = null, homeClassId = null) {
   const classIds = useMemo(() => [...new Set(hubs.map((h) => h.class?.id).filter(Boolean))], [hubs]);
   const { data: mentorLinks = [], isLoading: mentorLinksLoading } = useQuery({
     queryKey: ["learner-mentor-links", classIds],
@@ -29,15 +30,13 @@ export function useLearnerMentors(hubs, homeEducator = null) {
         if (seen.has(key)) return;
         seen.add(key);
         const link = links.find((l) => l.teacherId === teacherId);
-        if (link?.teacher) result.push({ teacher: link.teacher, hubName: h.name });
+        if (link?.teacher) result.push({ teacher: link.teacher, hubName: h.name, classId: h.class.id, teacherId });
       });
     });
-    if (homeEducator) {
-      const key = `home:${homeEducator.id}`;
-      if (!seen.has(key)) result.push({ teacher: homeEducator, hubName: "Home Learning" });
-    }
+    const listedInHomeClass = homeEducator && result.some((m) => m.teacherId === homeEducator.id && (!homeClassId || m.classId === homeClassId));
+    if (homeEducator && !listedInHomeClass) result.push({ teacher: homeEducator, hubName: "Home Learning" });
     return result;
-  }, [hubs, mentorLinks, homeEducator]);
+  }, [hubs, mentorLinks, homeEducator, homeClassId]);
 
   return { mentors, mentorsLoading: classIds.length > 0 && mentorLinksLoading };
 }
