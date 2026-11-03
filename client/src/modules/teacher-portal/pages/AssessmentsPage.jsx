@@ -16,7 +16,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
-import { useIssueAssessment, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { useIssueAssessment, useGradeSubmission, useRevokeIssue } from "../../assessments/hooks/useAssessmentSubmission";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 
@@ -106,15 +106,29 @@ function assessmentSummary(assessment) {
 // a "not yet issued" CTA, or a shortcut into the roster if it already has been.
 function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
   const navigate = useNavigate();
+  const { mutate: revoke, isPending: revoking } = useRevokeIssue();
   if (issue) {
     return (
-      <button
-        type="button"
-        onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
-        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-      >
-        <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster
-      </button>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <button
+          type="button"
+          onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+        >
+          <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster
+        </button>
+        <button
+          type="button"
+          disabled={revoking}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm(`Revoke "${item.assessmentName}" from ${cls.gradeName}? It disappears from every learner's assessments. Work already handed in is kept but no longer counts in their reports.`)) revoke(issue.id);
+          }}
+          style={{ padding: "6px 10px", background: "none", border: "1.5px solid #FECACA", borderRadius: 20, color: "#B91C1C", fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: revoking ? "wait" : "pointer" }}
+        >
+          {revoking ? "Revoking…" : "Revoke"}
+        </button>
+      </span>
     );
   }
   return (
@@ -149,7 +163,7 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
           <span style={badgeStyle(MODE_COLORS[modeKey])}>{MODE_LABELS[modeKey]}</span>
         </div>
         <p style={{ margin: "0 0 4px", fontSize: 13, color: T.inkMuted }}>
-          Issuing <strong>{item.sessionLabel}</strong> to <strong>{cls.gradeName}</strong>.
+          Issuing <strong>{item.moduleName ? `${item.moduleName} · ` : ""}{item.sessionLabel}</strong> to <strong>{cls.gradeName}</strong>.
         </p>
         <label style={{ display: "block", marginTop: 16, fontSize: 12, fontWeight: 700, color: T.inkMuted }}>
           Due date (optional)
@@ -202,7 +216,7 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
 // per-class Issue / roster button. Trimmed from the old per-course "AssessmentGroupCard": now
 // that the carousel shows one session at a time, an assessment only ever appears once per slide,
 // so the "N sessions" roll-up and the nested session-row list are gone.
-function SessionAssessmentCard({ assessment, sessionId, courseId, eligibleClasses, issuesByKey, onIssue, issuingKey }) {
+function SessionAssessmentCard({ assessment, sessionId, courseId, moduleName, eligibleClasses, issuesByKey, onIssue, issuingKey }) {
   const color = TYPE_COLORS[assessment.type] || T.accentLight;
   const modeColor = MODE_COLORS[assessment.mode] || T.inkMuted;
   const [groupMode, setGroupMode] = useState(assessment.mode === "group");
@@ -243,6 +257,7 @@ function SessionAssessmentCard({ assessment, sessionId, courseId, eligibleClasse
             assessmentName: assessment.name,
             assessmentType: assessment.type,
             sessionLabel: assessment.sessionLabel,
+            moduleName,
           };
           return (
             <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
@@ -254,10 +269,12 @@ function SessionAssessmentCard({ assessment, sessionId, courseId, eligibleClasse
 }
 
 // Builds, per course, an ordered list of EVERY session (not just the ones that have assessments),
-// each carrying its attached assessments (possibly empty) and the classes eligible to be issued
-// them. `allSessionsByCourse` is the full session list from courseApi.getSessions; `attachments`
-// is the flattened (course, session, assessment) list already resolved with eligibleClasses.
-function buildCourseCarousels(courses, allSessionsByCourse, attachments) {
+// each carrying its attached assessments (possibly empty), the classes eligible to be issued them,
+// and its module — sessions in module order (then their own order), as the course page shows them,
+// with sessions in no module last. `allSessionsByCourse` is the full session list from
+// courseApi.getSessions; `modulesByCourse` each course's modules (courseApi.getModules);
+// `attachments` the flattened (course, session, assessment) list already resolved with eligibleClasses.
+function buildCourseCarousels(courses, allSessionsByCourse, attachments, modulesByCourse = new Map()) {
   const attByCourseSession = new Map();
   attachments.forEach((att) => {
     const k = `${att.courseId}:${att.sessionId}`;
@@ -266,19 +283,31 @@ function buildCourseCarousels(courses, allSessionsByCourse, attachments) {
   });
 
   return courses.map((course) => {
+    const modules = [...(modulesByCourse.get(course.id) || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const moduleIndex = new Map(modules.map((m, i) => [m.id, i]));
+    const moduleById = new Map(modules.map((m) => [m.id, m]));
+    const rank = (session) => (moduleIndex.has(session.moduleId) ? moduleIndex.get(session.moduleId) : modules.length);
     const sessions = [...(allSessionsByCourse.get(course.id) || [])]
-      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .sort((a, b) => rank(a) - rank(b) || (a.order || 0) - (b.order || 0))
       .map((session) => {
         const atts = attByCourseSession.get(`${course.id}:${session.id}`) || [];
+        const module = moduleById.get(session.moduleId) || null;
         return {
           sessionId: session.id,
           sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
           order: session.order || 0,
+          moduleId: module?.id || null,
+          moduleName: module ? module.name || `Module ${moduleIndex.get(module.id) + 1}` : null,
           assessments: atts,
         };
       });
+    // The modules this course's sessions are in, each with where its first session sits — the
+    // carousel's module picker jumps there.
+    const moduleStops = modules
+      .map((m) => ({ moduleId: m.id, name: m.name || `Module ${moduleIndex.get(m.id) + 1}`, firstIndex: sessions.findIndex((s) => s.moduleId === m.id) }))
+      .filter((m) => m.firstIndex >= 0);
     const assessmentCount = sessions.reduce((n, s) => n + s.assessments.length, 0);
-    return { courseId: course.id, courseName: course.name, sessions, assessmentCount };
+    return { courseId: course.id, courseName: course.name, sessions, moduleStops, assessmentCount };
   }).filter((c) => c.sessions.length > 0);
 }
 
@@ -337,12 +366,41 @@ function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
         ))}
       </div>
 
+      {/* Module picker — a course with modules: jump to a module's first session */}
+      {course.moduleStops.length > 0 && (
+        <div style={{ padding: "12px 20px 0", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Module</span>
+          {course.moduleStops.map((m) => {
+            const current = session.moduleId === m.moduleId;
+            return (
+              <button
+                key={m.moduleId}
+                type="button"
+                onClick={() => setSessionIdx(m.firstIndex)}
+                style={{
+                  padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                  fontFamily: "Inter, sans-serif", cursor: "pointer",
+                  border: `1.5px solid ${current ? T.accentMid : T.border}`,
+                  backgroundColor: current ? T.tintBg : "#fff",
+                  color: current ? T.accent : T.inkMuted,
+                }}
+              >
+                {m.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Session pager header */}
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}`, marginTop: 14 }}>
         <button type="button" onClick={() => canPrev && setSessionIdx(sIdx - 1)} disabled={!canPrev} style={navBtn(!canPrev)} title="Previous session">
           <ChevronLeftIcon sx={{ fontSize: 20 }} />
         </button>
         <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+          {session.moduleName && (
+            <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 800, color: T.accentMid, textTransform: "uppercase", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.moduleName}</p>
+          )}
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.sessionLabel}</h3>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint }}>
             Session {sIdx + 1} of {course.sessions.length} · {session.assessments.length} assessment{session.assessments.length === 1 ? "" : "s"}
@@ -366,6 +424,7 @@ function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
               assessment={assessment}
               sessionId={session.sessionId}
               courseId={course.courseId}
+              moduleName={session.moduleName}
               eligibleClasses={assessment.eligibleClasses || []}
               issuesByKey={issuesByKey}
               onIssue={onIssue}
@@ -383,7 +442,7 @@ function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
               key={s.sessionId}
               type="button"
               onClick={() => setSessionIdx(i)}
-              title={s.sessionLabel}
+              title={s.moduleName ? `${s.moduleName} · ${s.sessionLabel}` : s.sessionLabel}
               style={{
                 width: i === sIdx ? 22 : 8, height: 8, borderRadius: 20, border: "none", padding: 0,
                 cursor: "pointer", transition: "width 0.15s",
@@ -468,6 +527,15 @@ export default function AssessmentsPage() {
     queries: courses.map((course) => ({
       queryKey: ["teacher-portal", "course-sessions", course.id],
       queryFn: () => courseApi.getSessions(course.id),
+      enabled: !!course.id,
+    })),
+  });
+
+  // Each course's modules — sessions are grouped and labelled by them (buildCourseCarousels).
+  const modulesResults = useQueries({
+    queries: courses.map((course) => ({
+      queryKey: ["teacher-portal", "course-modules", course.id],
+      queryFn: () => courseApi.getModules(course.id),
       enabled: !!course.id,
     })),
   });
@@ -564,9 +632,19 @@ export default function AssessmentsPage() {
     return map;
   }, [courses, sessionsResults]);
 
+  const modulesByCourse = useMemo(() => {
+    const map = new Map();
+    modulesResults.forEach((result, index) => {
+      const course = courses[index];
+      if (course) map.set(course.id, result.data || []);
+    });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, modulesResults.map((r) => r.dataUpdatedAt).join(",")]);
+
   const courseCarousels = useMemo(
-    () => buildCourseCarousels(courses, allSessionsByCourse, attachments),
-    [courses, allSessionsByCourse, attachments]
+    () => buildCourseCarousels(courses, allSessionsByCourse, attachments, modulesByCourse),
+    [courses, allSessionsByCourse, attachments, modulesByCourse]
   );
 
   const { mutate: issueAssessment, isPending: issuing, variables: issuingVariables } = useIssueAssessment();

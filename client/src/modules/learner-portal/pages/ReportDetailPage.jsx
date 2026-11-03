@@ -126,6 +126,14 @@ export default function ReportDetailPage() {
           </div>
         </div>
 
+        {/* A session report goes out as soon as one of its assessments is marked, and grows as
+            the rest are — say so while some are still to come. */}
+        {report.sessionId && content.complete === false && content.pendingCount > 0 && (
+          <div style={{ ...cardStyle, padding: "12px 18px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", fontSize: 13, color: "#92400E", fontWeight: 600 }}>
+            {content.pendingCount} more {content.pendingCount === 1 ? "assessment" : "assessments"} from this session still to be marked — this report updates as {content.pendingCount === 1 ? "it is" : "they are"}.
+          </div>
+        )}
+
         {report.remarks && (
           <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
             <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Educator Remarks</p>

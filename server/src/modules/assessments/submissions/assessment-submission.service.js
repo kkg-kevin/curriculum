@@ -186,6 +186,28 @@ async function createOrExisting(data) {
   }
 }
 
+// The learner's session report follows their marked work straight away (report.service.js's
+// refreshSessionReportsForAssessment) — for a group submission, every member's. Required lazily:
+// report.service.js requires this module. Never throws — marking must not fail because of it.
+async function refreshSessionReport(submission) {
+  try {
+    if (!submission?.issueId) return;
+    const issue = await AssessmentIssueModel.findById(submission.issueId);
+    if (!issue?.classId || !issue?.courseId) return;
+    const learnerIds = [submission.learnerId];
+    if (submission.groupId) {
+      const siblings = await AssessmentSubmissionModel.findGroupSiblings(submission.issueId, submission.groupId);
+      learnerIds.push(...siblings.map((s) => s.learnerId));
+    }
+    await require("../../reports/report.service").refreshSessionReportsForAssessment({
+      classId: issue.classId, courseId: issue.courseId, sessionId: issue.sessionId || null,
+      assessmentId: submission.assessmentId, learnerIds,
+    });
+  } catch (err) {
+    console.error("[assessments] session report refresh failed:", err.message);
+  }
+}
+
 async function fanOutToGroup(submission, updates) {
   if (!submission.groupId) return;
   const siblings = await AssessmentSubmissionModel.findGroupSiblings(submission.issueId, submission.groupId);
@@ -487,8 +509,20 @@ const AssessmentSubmissionService = {
     return results.filter(Boolean);
   },
 
+  // Revoked: the issue goes, so it disappears from every learner's list. Their work on it is kept
+  // (never deleted) but no longer counts — their session reports are rebuilt without it (a report
+  // left with nothing marked is removed).
   async revokeIssue(issueId) {
-    return AssessmentIssueModel.delete(issueId);
+    const issue = await AssessmentIssueModel.findById(issueId);
+    const learnerIds = issue ? [...new Set((await AssessmentSubmissionModel.findAll({ issueId })).map((s) => s.learnerId))] : [];
+    const result = await AssessmentIssueModel.delete(issueId);
+    if (issue?.classId && issue?.courseId && learnerIds.length) {
+      await require("../../reports/report.service").refreshSessionReportsForAssessment({
+        classId: issue.classId, courseId: issue.courseId, sessionId: issue.sessionId || null,
+        assessmentId: issue.assessmentId, learnerIds,
+      }).catch(() => {});
+    }
+    return result;
   },
 
   async getIssue(issueId) {
@@ -794,6 +828,7 @@ const AssessmentSubmissionService = {
       await maybeAdvancePathwayForCourse(updated);
       await NotificationService.assessmentGraded(updated);
       await NotificationService.maybeNotifyLevelUp(updated.learnerId, updated.classId);
+      await refreshSessionReport(updated);
     } else {
       await NotificationService.assessmentSubmitted(updated);
     }
@@ -841,6 +876,7 @@ const AssessmentSubmissionService = {
     await maybeAdvancePathwayForCourse(graded);
     await NotificationService.assessmentGraded(graded);
     await NotificationService.maybeNotifyLevelUp(graded.learnerId, graded.classId);
+    await refreshSessionReport(graded);
     return graded;
   },
 
@@ -904,11 +940,13 @@ const AssessmentSubmissionService = {
       throw err;
     }
     if (submission.reportPublished) return submission;
-    return AssessmentSubmissionModel.update(submissionId, {
+    const released = await AssessmentSubmissionModel.update(submissionId, {
       reportPublished: true,
       reportPublishedAt: new Date(),
       reportPublishedBy: publishedBy,
     });
+    await refreshSessionReport(released);
+    return released;
   },
 
   async getSubmission(id) {

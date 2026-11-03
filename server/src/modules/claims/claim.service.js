@@ -474,7 +474,11 @@ const ClaimService = {
         if (required > 0) assignment = graded >= required ? "graded" : graded > 0 ? "partial" : "pending";
         let report = "none";
         if (required > 0) {
-          if (work?.report?.status === "published") report = work.report.content?.notSubmitted ? "not_submitted" : "done";
+          // A session report now goes out once ONE of its assessments is marked (report.service.js),
+          // so it only counts as done when all of them are — or it was filed "not submitted".
+          const published = work?.report?.status === "published";
+          if (published && work.report.content?.notSubmitted) report = "not_submitted";
+          else if (published && graded >= required) report = "done";
           else report = "pending";
         }
         return {

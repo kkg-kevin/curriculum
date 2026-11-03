@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiUsers, FiCheck } from "react-icons/fi";
-import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRevokeIssue } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -200,6 +200,7 @@ export default function AssessmentRosterPage() {
   const { data, isLoading } = useRosterForIssue(issueId);
   const { mutate: grade, isPending: saving } = useGradeSubmission();
   const { mutate: startObservation, isPending: starting } = useStartObservationSubmission();
+  const { mutate: revoke, isPending: revoking } = useRevokeIssue();
   const [selectedLearnerId, setSelectedLearnerId] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   // Holds the freshly created submission for the brief window between "Begin Observation" and
@@ -268,6 +269,21 @@ export default function AssessmentRosterPage() {
             )}
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{submitted} of {totalCount} submitted · {gradedCount} graded · {publishedCount} reports published</p>
+          {/* Revoke: the assessment disappears from every learner's list. Their handed-in work is
+              kept (never deleted) but stops counting in their reports. */}
+          <button
+            type="button"
+            disabled={revoking}
+            onClick={() => {
+              const handedIn = submitted > 0 ? ` ${submitted} ${submitted === 1 ? "learner has" : "learners have"} handed in — that work is kept but no longer counts in their reports.` : "";
+              if (window.confirm(`Revoke "${assessment.name}"? It disappears from every learner's assessments.${handedIn}`)) {
+                revoke(issue.id, { onSuccess: () => navigate("/teacher-portal/assessments") });
+              }
+            }}
+            style={{ marginTop: 12, padding: "7px 14px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: revoking ? "wait" : "pointer" }}
+          >
+            {revoking ? "Revoking…" : "Revoke this assessment"}
+          </button>
         </div>
       </div>
 

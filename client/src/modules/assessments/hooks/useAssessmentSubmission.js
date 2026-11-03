@@ -58,7 +58,7 @@ export function useRevokeIssue() {
     mutationFn: assessmentSubmissionApi.revokeIssue,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assessment-issues"] });
-      toast.success("Issue revoked");
+      toast.success("Assessment revoked — learners no longer see it");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to revoke"),
   });
