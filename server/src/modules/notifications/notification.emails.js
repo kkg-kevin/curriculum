@@ -140,6 +140,13 @@ const EMAIL_TYPES = {
   qa_review_submitted: { label: "A QA report on you is ready", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA report" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
   qa_visit_due: { label: "A QA visit of yours is due — fill in the review", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/qa") },
   qa_review_reply: { label: "An educator replies to a QA report", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "pencil", eyebrow: "QA report" }, path: (p) => routeOr(p, "/qa") },
+  tot_work_submitted: {
+    label: "An educator in training hands in work for you to mark",
+    roles: CLAIM_REVIEWER_ROLES,
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Training of trainers" },
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/supervisor-portal/marking"),
+  },
   claim_submitted: {
     label: "An educator submits a claim for you to review",
     roles: CLAIM_REVIEWER_ROLES,

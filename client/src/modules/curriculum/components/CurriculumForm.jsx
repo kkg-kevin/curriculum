@@ -241,7 +241,7 @@ export default function CurriculumForm() {
           ))}
         </div>
         <p style={hintStyle}>{audience === "educators"
-          ? "Training of trainers: educators learn on it while they teach — enrolled by an admin or through a TOT bootcamp, marked by their supervisor. Each course they finish qualifies them to teach it."
+          ? "Training of trainers: educators learn on it while they teach — enrolled by an admin or through a TOT bootcamp, marked by their supervisor. Its courses are the same ones learners take."
           : "For the children and young people you teach."}</p>
       </div>
 

@@ -14,16 +14,13 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 //   marked X-Teacher-Learning runs as their own learner record).
 //
 //   Their work is marked by their supervisor (teachers.supervisorId) — or, with none, the
-//   workspace's admins. A course certificate qualifies them to teach that course
-//   (qualifiedCourseIds); a certificate for every course of the curriculum raises their educator
-//   level to the curriculum's completionTeacherLevel.
+//   workspace's admins. A certificate for every course of the curriculum raises their educator
+//   level to the curriculum's completionTeacherLevel. Finishing a course does NOT change what they
+//   may teach (3 Nov 2026: no qualifications — courses are shared by learners and educators, and
+//   writing qualifiedCourseIds locked an educator out of every other course).
 
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 const fullName = (p) => [p?.firstName, p?.lastName].filter(Boolean).join(" ").trim();
-const asArray = (v) => {
-  if (Array.isArray(v)) return v;
-  try { const parsed = JSON.parse(v || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
-};
 
 // An educator's own learner record, or null.
 function traineeOf(teacherId) {
@@ -99,7 +96,10 @@ const TotService = {
     }
     const already = await db("learner_hub_links").where({ learnerId: learner.id, hubId }).first();
     if (already) {
-      if (already.classId !== classId) await db("learner_hub_links").where({ id: already.id }).update({ classId, status: "active", updatedAt: new Date() });
+      // Another class at the hub, or the same one after being withdrawn — active again.
+      if (already.classId !== classId || already.status !== "active") {
+        await db("learner_hub_links").where({ id: already.id }).update({ classId, status: "active", updatedAt: new Date() });
+      }
     } else {
       await LearnerService.enrollInHub(learner.id, { hubId, classId, status: "active" });
     }
@@ -129,8 +129,17 @@ const TotService = {
       ? Number((await db("assessment_submissions").where({ learnerId: learner.id, status: "submitted" }).count({ n: "*" }).first())?.n || 0)
       : 0;
     const totClassIds = new Set(links.map((l) => l.classId));
-    // Courses still in progress (a course with a certificate is in `certificates` instead).
-    const courses = (progress?.courses || []).filter((item) => totClassIds.has(item.classId));
+    // Courses still in progress (a course with a certificate is in `certificates` instead), each
+    // with where its final report stands: `ready` once every session's work is marked and
+    // released (session reports publish themselves), `reportStatus` none | draft. Publishing it
+    // (publishCourseReport) issues the certificate.
+    const ReportService = require("../reports/report.service");
+    const courses = await Promise.all((progress?.courses || []).filter((item) => totClassIds.has(item.classId)).map(async (item) => {
+      await ReportService.refreshSessionReports(learner.id, item.classId, item.id).catch(() => {});
+      const now = await ReportService.getCourseProgressForLearner(item.id, item.classId, learner.id);
+      const report = await db("reports").where({ learnerId: learner.id, courseId: item.id, classId: item.classId }).whereNull("sessionId").first("id", "status");
+      return { ...item, done: now.doneSessions, total: now.totalSessions, ready: now.totalSessions > 0 && now.doneSessions === now.totalSessions, reportStatus: report?.status || "none" };
+    }));
     return {
       learnerId: learner.id,
       accountStatus: learner.accountStatus || "active",
@@ -139,6 +148,46 @@ const TotService = {
       certificates,
       toMark,
     };
+  },
+
+  // The final report of one course of an educator's training, generated and published in one
+  // step — by their supervisor or an admin (a supervisor marks the work, so the certificate
+  // shouldn't wait on anyone else). Publishing issues the course certificate, and with it any
+  // level the TOT curriculum gives (onCourseCertificate). Only a course of one of their TOT classes.
+  async publishCourseReport(teacherId, { classId, courseId, remarks = "" }, publishedBy) {
+    const learner = await traineeOf(teacherId);
+    if (!learner) fail("Not in training", 404);
+    const link = await db("learner_hub_links as l")
+      .join("classes as c", "c.id", "l.classId")
+      .join("curricula as cu", "cu.id", "c.curriculumId")
+      .where({ "l.learnerId": learner.id, "l.classId": classId, "cu.audience": "educators" })
+      .first("l.id");
+    if (!link) fail("That isn't one of their training classes", 404);
+    const ReportService = require("../reports/report.service");
+    await ReportService.refreshSessionReports(learner.id, classId, courseId);
+    let report;
+    try {
+      report = await ReportService.generateReport({ learnerId: learner.id, courseId, classId, generatedBy: publishedBy });
+    } catch (err) {
+      if (err.statusCode === 409) fail("Some of this course's work still needs marking and releasing before its report", 409);
+      throw err;
+    }
+    if (report.status !== "published") {
+      if (remarks) await ReportService.updateRemarks(report.id, remarks);
+      await ReportService.publishReport(report.id, publishedBy);
+    }
+    return TotService.progressFor(teacherId);
+  },
+
+  // Ends an educator's training in one TOT class (admin): their place there is set inactive —
+  // nothing is deleted, so their certificates, reports and marked work stay, and enrolling them
+  // again picks up where they left off.
+  async withdraw(teacherId, { classId }) {
+    const learner = await traineeOf(teacherId);
+    if (!learner) fail("Not in training", 404);
+    const updated = await db("learner_hub_links").where({ learnerId: learner.id, classId }).update({ status: "inactive", updatedAt: new Date() });
+    if (!updated) fail("That isn't one of their training classes", 404);
+    return TotService.progressFor(teacherId);
   },
 
   // Work waiting to be marked: a supervisor's — their own educators'; an admin's — the
@@ -161,19 +210,17 @@ const TotService = {
     return hydrateQueue(submissions.filter((s) => learnerIds.includes(s.learnerId)));
   },
 
-  // A course certificate was issued to someone: if they're an educator in training, they're now
-  // qualified to teach that course, and a certificate for every course of a TOT curriculum raises
-  // their educator level. Never throws — a certificate must not fail because of this.
+  // A course certificate was issued to someone: if they're an educator in training and now hold a
+  // certificate for every course of a TOT curriculum, their educator level rises to that
+  // curriculum's level. Never throws — a certificate must not fail because of this.
   async onCourseCertificate(certificate) {
     try {
       if (!certificate || certificate.kind !== "course" || !certificate.courseId) return;
       const learner = await db("learners").where({ id: certificate.learnerId }).first("id", "teacherId");
       if (!learner?.teacherId) return;
-      const teacher = await db("teachers").where({ id: learner.teacherId }).first("id", "qualifiedCourseIds", "teacherLevel");
+      const teacher = await db("teachers").where({ id: learner.teacherId }).first("id", "teacherLevel");
       if (!teacher) return;
-      const qualified = asArray(teacher.qualifiedCourseIds);
       const patch = {};
-      if (!qualified.includes(certificate.courseId)) patch.qualifiedCourseIds = JSON.stringify([...qualified, certificate.courseId]);
 
       const cls = certificate.classId ? await db("classes").where({ id: certificate.classId }).first("curriculumId") : null;
       const curriculum = cls?.curriculumId ? await db("curricula").where({ id: cls.curriculumId }).first("id", "audience", "completionTeacherLevel") : null;

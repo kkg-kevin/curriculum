@@ -378,7 +378,7 @@ const LearnerService = {
   // learner record itself. A learner can have at most one link per hub and at most one link per
   // class, so this merge is always unambiguous. Unscoped (no schoolId/classId) returns bare
   // identity records — there's no single enrollment to merge.
-  async getAllLearners({ schoolId, classId, status, guardianEmail, ids, limit, offset } = {}) {
+  async getAllLearners({ schoolId, classId, status, guardianEmail, ids, limit, offset, excludeTrainees = false } = {}) {
     if (!schoolId && !classId) {
       // No single admissionNumber applies across hubs, but a hub count is real, cheap to
       // compute here, and lets the flat cross-hub card show something more honest than
@@ -386,7 +386,7 @@ const LearnerService = {
       // genuinely unbounded case (no hub/class to narrow it) — limit/offset matter most here.
       // hubIds — which hubs, so the Learners page can group learners by hub (a learner at two
       // hubs is listed under both). The controller trims it to the caller's own hubs.
-      const learners = await LearnerModel.findAll({ guardianEmail, ids, limit, offset });
+      const learners = await LearnerModel.findAll({ guardianEmail, ids, limit, offset, excludeTrainees });
       return Promise.all(
         learners.map(async (l) => {
           const links = await LearnerHubLinkModel.findByLearnerId(l.id);
@@ -399,7 +399,7 @@ const LearnerService = {
     if (status) links = links.filter((l) => l.status === status);
     const linkByLearnerId = new Map(links.map((l) => [l.learnerId, l]));
     if (linkByLearnerId.size === 0) return [];
-    const learners = await LearnerModel.findAll({ guardianEmail, ids: [...linkByLearnerId.keys()] });
+    const learners = await LearnerModel.findAll({ guardianEmail, ids: [...linkByLearnerId.keys()], excludeTrainees });
 
     // className/courses are resolved once per distinct classId across the whole roster, not per
     // learner — a hub_usage invoice line item (hub-visit.service.js) and LogVisitModal both want

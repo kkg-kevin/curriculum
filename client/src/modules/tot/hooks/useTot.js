@@ -17,3 +17,21 @@ export function useEnrolInTot(teacherId) {
     onError: (err) => toast.error(err?.errors?.[0]?.message || err.message || "Couldn't enrol"),
   });
 }
+
+export function usePublishTotCourseReport(teacherId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => totApi.publishCourseReport(teacherId, body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Report published — certificate issued"); },
+    onError: (err) => toast.error(err?.errors?.[0]?.message || err.message || "Couldn't publish the report"),
+  });
+}
+
+export function useWithdrawFromTot(teacherId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => totApi.withdraw(teacherId, body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Withdrawn from training"); },
+    onError: (err) => toast.error(err?.errors?.[0]?.message || err.message || "Couldn't withdraw"),
+  });
+}

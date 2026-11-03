@@ -53,6 +53,26 @@ router.get("/educators/:teacherId", authorize("admin", "supervisor", "school"), 
   res.json({ success: true, data: await TotService.progressFor(req.params.teacherId, { hubIds }) });
 }));
 
+// A course's final report for an educator in training: generated and published, which issues
+// the certificate — their supervisor or an admin (never the hub).
+const courseReportSchema = z.object({
+  classId: z.string().min(1).max(36),
+  courseId: z.string().min(1).max(36),
+  remarks: z.string().trim().max(5000).optional().default(""),
+});
+router.post("/educators/:teacherId/course-report", authorize("admin", "supervisor"), asyncHandler(async (req, res) => {
+  await teacherFor(req, req.params.teacherId);
+  const data = courseReportSchema.parse(req.body);
+  res.json({ success: true, data: await TotService.publishCourseReport(req.params.teacherId, data, req.user.id) });
+}));
+
+// Ends an educator's training in one TOT class (nothing deleted — enrol again to resume).
+const withdrawSchema = z.object({ classId: z.string().min(1).max(36) });
+router.post("/educators/:teacherId/withdraw", authorize("admin"), asyncHandler(async (req, res) => {
+  await teacherFor(req, req.params.teacherId);
+  res.json({ success: true, data: await TotService.withdraw(req.params.teacherId, withdrawSchema.parse(req.body)) });
+}));
+
 // Work waiting to be marked. An admin sees their educators with no supervisor (?all=1: every one).
 router.get("/marking", authorize("admin", "supervisor"), asyncHandler(async (req, res) => {
   const rows = await TotService.markingQueue({ supervisorId: supervisorOf(req), ownerAdminId: ownerOf(req), all: req.query.all === "1" });

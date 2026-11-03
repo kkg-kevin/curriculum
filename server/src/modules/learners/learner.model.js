@@ -14,8 +14,10 @@ const LearnerModel = {
   // pattern as teacher.model.js's `ids` filter, fed by teacher-hub-link lookups).
   // limit/offset are optional and additive — omitted (as every current caller does), this
   // returns the full result set exactly as before.
-  findAll({ ids, guardianEmail, limit, offset } = {}) {
+  findAll({ ids, guardianEmail, limit, offset, excludeTrainees = false } = {}) {
     let query = db(TABLE);
+    // An educator's own learner record (TOT — learners.teacherId) isn't one of the hub's learners.
+    if (excludeTrainees) query = query.whereNull("teacherId");
     if (ids) query = query.whereIn("id", ids);
     if (guardianEmail) query = query.whereRaw("LOWER(guardianEmail) = ?", [guardianEmail.toLowerCase()]);
     // id as a secondary sort key — see class.model.js's findAll for why a tie-breaker matters

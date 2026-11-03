@@ -168,11 +168,13 @@ const NotificationService = {
   // diagnostic/course-progress issue (classId: null) has no single (class, course) owner, so
   // it's skipped rather than guessed at.
   async assessmentSubmitted(submission) {
+    const learner = await LearnerModel.findById(submission.learnerId);
+    // An educator in training (TOT — learners.teacherId): whoever marks it hears too.
+    if (learner?.teacherId) await NotificationService.totWorkSubmitted(submission, learner);
     if (!submission.classId) return;
     const issue = await AssessmentIssueModel.findById(submission.issueId);
     if (!issue?.courseId) return;
     const assessment = await AssessmentModel.findById(submission.assessmentId);
-    const learner = await LearnerModel.findById(submission.learnerId);
     await NotificationService.notifyClassCourseTeacher(submission.classId, issue.courseId, {
       type: "assessment_submitted",
       title: "New submission to grade",
@@ -181,6 +183,34 @@ const NotificationService = {
       // keys off — see NotificationBell.jsx's click handler.
       payload: { assessmentId: submission.assessmentId, submissionId: submission.id, classId: submission.classId, issueId: submission.issueId },
     });
+  },
+
+  // Work handed in by an educator in training (TOT): their supervisor marks it ("Work to mark" in
+  // the supervisor portal) — or, with no supervisor, the workspace's admins (Educators → Training).
+  // Once per submission.
+  async totWorkSubmitted(submission, learner) {
+    const teacher = await TeacherModel.findById(learner.teacherId);
+    if (!teacher) return;
+    const assessment = await AssessmentModel.findById(submission.assessmentId);
+    const name = [teacher.firstName, teacher.lastName].filter(Boolean).join(" ") || "An educator";
+    const event = (route) => ({
+      type: "tot_work_submitted",
+      title: "Training work to mark",
+      message: `${name} handed in "${assessment?.name || "an assessment"}" for their training.`,
+      payload: { route, submissionId: submission.id, learnerId: learner.id },
+      dedupeKey: `tot_work_submitted:${submission.id}`,
+    });
+    if (teacher.supervisorId) {
+      await NotificationService.notifyPerson(teacher.supervisorId, event("/supervisor-portal/marking"));
+      return;
+    }
+    let ownerAdminId = learner.createdByAdminId || null;
+    if (!ownerAdminId && submission.classId) {
+      const cls = await ClassModel.findById(submission.classId);
+      const LearningHubModel = require("../learning-hubs/learning-hub.model");
+      ownerAdminId = cls?.schoolId ? (await LearningHubModel.findById(cls.schoolId))?.ownerAdminId || null : null;
+    }
+    if (ownerAdminId) await NotificationService._notify(ownerAdminId, { ...event("/teachers/training"), ownerAdminId });
   },
 
   async sessionReportPublished(report) {
