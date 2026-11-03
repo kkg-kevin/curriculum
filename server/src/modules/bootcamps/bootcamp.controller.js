@@ -31,7 +31,9 @@ const createBootcamp = asyncHandler(async (req, res) => {
 
 const getAllBootcamps = asyncHandler(async (req, res) => {
   const { curriculumId, saleStatus } = req.query;
-  const records = await BootcampService.getAllBootcamps({ ownerAdminId: req.ownerAdminId, curriculumId, saleStatus });
+  // ?audience=educators — only the TOT (training of trainers) bootcamps; learners — only the rest.
+  const audience = ["learners", "educators"].includes(req.query.audience) ? req.query.audience : undefined;
+  const records = await BootcampService.getAllBootcamps({ ownerAdminId: req.ownerAdminId, curriculumId, saleStatus, audience });
   res.json({ success: true, data: records, count: records.length });
 });
 

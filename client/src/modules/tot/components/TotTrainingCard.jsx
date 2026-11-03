@@ -3,15 +3,16 @@ import { Link } from "react-router-dom";
 import { FiAward, FiBookOpen, FiEdit3 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { usePermissions } from "../../../hooks/usePermissions";
-import { useEducatorTraining, useEnrolInTot, useTotClasses } from "../hooks/useTot";
+import { useEducatorTraining, useEnrolInTot, usePublishTotCourseReport, useTotClasses, useWithdrawFromTot } from "../hooks/useTot";
 
 const fmt = (v) => (v ? new Date(v).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 const select = { flex: "1 1 220px", minWidth: 0, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", background: "#fff" };
 
 // An educator's training of trainers (modules/tot) on their page — the admin app's and the hub
 // portal's educator page, and the supervisor portal's: their TOT class, each course in progress,
-// their certificates (each one qualifies them to teach that course), and work waiting to be marked.
-// An admin can enrol them in a TOT class here.
+// their course certificates, and work waiting to be marked.
+// An admin can enrol them in a TOT class here, or withdraw them from one; their supervisor or an
+// admin publishes a finished course's report here, which issues its certificate.
 export default function TotTrainingCard({ teacherId }) {
   const { user } = useAuth();
   const { can } = usePermissions();
@@ -20,6 +21,9 @@ export default function TotTrainingCard({ teacherId }) {
   const { data: training, isLoading } = useEducatorTraining(teacherId);
   const { data: classes = [] } = useTotClasses({ enabled: canEnrol });
   const enrol = useEnrolInTot(teacherId);
+  const publish = usePublishTotCourseReport(teacherId);
+  const withdraw = useWithdrawFromTot(teacherId);
+  const canPublish = isAdmin || user?.role === "supervisor";
   const [classId, setClassId] = useState("");
   const [adding, setAdding] = useState(false);
   const markingPath = user?.role === "supervisor" ? "/supervisor-portal/marking" : isAdmin ? "/teachers/training" : null;
@@ -65,11 +69,34 @@ export default function TotTrainingCard({ teacherId }) {
         ) : (
           <>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {training.classes.map((c) => (
-                <span key={c.classId} style={{ padding: "4px 10px", borderRadius: 999, background: "#e8f5fb", border: "1px solid #a8d5ee", color: "#25476a", fontSize: 12, fontWeight: 700 }}>
-                  {c.curriculumName} · {c.className} — {c.hubName}
-                </span>
-              ))}
+              {training.classes.map((c) => {
+                const active = c.status === "active";
+                return (
+                  <span key={c.classId} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, background: active ? "#e8f5fb" : "#F3F4F6", border: `1px solid ${active ? "#a8d5ee" : "#E5E7EB"}`, color: active ? "#25476a" : "#6B7280", fontSize: 12, fontWeight: 700 }}>
+                    {c.curriculumName} · {c.className} — {c.hubName}{active ? "" : " · withdrawn"}
+                    {canEnrol && active && (
+                      <button
+                        type="button"
+                        disabled={withdraw.isPending}
+                        onClick={() => { if (window.confirm(`Withdraw them from ${c.curriculumName}? Their certificates and marked work stay; enrol them again to resume.`)) withdraw.mutate({ classId: c.classId }); }}
+                        style={{ border: "none", background: "none", padding: 0, color: "#B91C1C", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Withdraw
+                      </button>
+                    )}
+                    {canEnrol && !active && (
+                      <button
+                        type="button"
+                        disabled={enrol.isPending}
+                        onClick={() => enrol.mutate({ hubId: c.hubId, classId: c.classId })}
+                        style={{ border: "none", background: "none", padding: 0, color: "#2e7db5", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Enrol again
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
             </div>
 
             {training.courses.length > 0 && (
@@ -82,7 +109,22 @@ export default function TotTrainingCard({ teacherId }) {
                         <span style={{ fontWeight: 700 }}>{course.title}</span>
                         <span style={{ color: "#6B7280" }}>{course.done} of {course.total} sessions</span>
                       </div>
-                      <div style={{ height: 7, borderRadius: 999, background: "#EEF1F4", overflow: "hidden" }}><div style={{ width: `${Math.max(3, pct)}%`, height: "100%", background: "#2e7db5", borderRadius: 999 }} /></div>
+                      <div style={{ height: 7, borderRadius: 999, background: "#EEF1F4", overflow: "hidden" }}><div style={{ width: `${Math.max(3, pct)}%`, height: "100%", background: course.ready ? "#16A34A" : "#2e7db5", borderRadius: 999 }} /></div>
+                      {course.ready && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, color: "#15803D", fontWeight: 600 }}>All work marked — ready for its report and certificate</span>
+                          {canPublish && (
+                            <button
+                              type="button"
+                              disabled={publish.isPending}
+                              onClick={() => publish.mutate({ classId: course.classId, courseId: course.id })}
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: publish.isPending ? "#b8d9ee" : "#16A34A", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publish.isPending ? "wait" : "pointer" }}
+                            >
+                              {publish.isPending ? "Publishing…" : "Publish report"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -90,9 +132,9 @@ export default function TotTrainingCard({ teacherId }) {
             )}
 
             <div>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Certificates — qualified to teach</p>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Certificates</p>
               {training.certificates.filter((c) => c.kind === "course").length === 0 ? (
-                <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>None yet. Each course they finish qualifies them to teach it.</p>
+                <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>None yet — one for each course they finish.</p>
               ) : (
                 <div style={{ display: "grid", gap: 6 }}>
                   {training.certificates.filter((c) => c.kind === "course").map((c) => (

@@ -386,6 +386,13 @@ const ReportService = {
   // How far one learner is through a course, counted the way a certificate is earned: of the
   // sessions that have something to assess, how many already have a published report for them.
   // (When every one does, the course is ready for its final report — isCourseReadyForLearner.)
+  // Brings one learner's session reports for a course up to date (each publishes itself once
+  // its work is marked and released) — normally a side effect of the Reports page's readiness
+  // check; the TOT training card (tot.service.js) needs it without that page.
+  async refreshSessionReports(learnerId, classId, courseId) {
+    await ensureSessionReportsGenerated(classId, courseId, [learnerId]);
+  },
+
   async getCourseProgressForLearner(courseId, classId, learnerId) {
     const allSessions = await SessionModel.findByCourseId(courseId);
     const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { setActiveHubId } from "../utils/activeHub";
+import { readLocal, writeLocal } from "../../../utils/safeStorage";
 
 const STORAGE_KEY = "schoolPortal.selectedHubId";
 
@@ -28,7 +29,7 @@ export function useSchoolPortalScope() {
   const hubs = hubsData || [];
 
   const urlHubId = searchParams.get("hub");
-  const storedHubId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+  const storedHubId = readLocal(STORAGE_KEY);
 
   let selectedHubId;
   if (urlHubId && hubs.some((h) => h.id === urlHubId)) selectedHubId = urlHubId;
@@ -41,7 +42,7 @@ export function useSchoolPortalScope() {
   if (typeof window !== "undefined" && selectedHubId) setActiveHubId(selectedHubId);
 
   const setSelectedHubId = (hubId) => {
-    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, hubId);
+    writeLocal(STORAGE_KEY, hubId);
     setActiveHubId(hubId);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);

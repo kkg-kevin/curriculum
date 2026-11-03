@@ -74,6 +74,11 @@ async function nextInvoiceNumber(trx) {
 async function resolveBootcampOffering(bootcampIdOrSlug, hubId) {
   const bootcamp = await resolveForSaleBootcamp(bootcampIdOrSlug);
   if (!bootcamp) throw notFound("Bootcamp not found");
+  // This sign-up enrols CHILDREN under a parent. A TOT bootcamp is for educators, whose website
+  // sign-up isn't built yet — they're enrolled by an admin (educator page → Training (TOT)).
+  if (bootcamp.audience === "educators") {
+    throw badRequest("This is a training of trainers bootcamp for educators — contact us to join it.");
+  }
   const offerings = (await BootcampHubModel.findByBootcampId(bootcamp.id))
     .filter((o) => Array.isArray(o.classIds) && o.classIds.length > 0);
 

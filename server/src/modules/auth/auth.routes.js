@@ -3,15 +3,17 @@ const rateLimit = require("express-rate-limit");
 const { signup, login, switchRole, logout, me, recordActivity, updateMe, verifyPassword, changePassword, forgotPassword, checkResetToken, resetPassword, createAdmin } = require("./auth.controller");
 const { protect, authorize } = require("../../shared/middleware/auth.middleware");
 const { initiateForPendingSignup } = require("../payments/mpesa/mpesa.controller");
+const { perAccountKey } = require("../../shared/middleware/rate-limit.middleware");
 
 const router = express.Router();
 
-// Limit is generous because school/office networks put many real users behind one shared IP —
-// skipSuccessfulRequests means only repeated *failures* count, so normal concurrent logins from
-// a shared IP never trip it; only sustained credential-guessing does.
+// Failed sign-ins, counted per account (address + the username / email typed — perAccountKey):
+// 20 wrong passwords for one account in 15 minutes and that account waits; nobody else does.
+// skipSuccessfulRequests means only failures count.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  keyGenerator: perAccountKey((req) => req.body?.identifier),
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
@@ -24,6 +26,7 @@ const loginLimiter = rateLimit({
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  keyGenerator: perAccountKey((req) => req.body?.email || req.body?.identifier),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many password reset requests. Please try again later." },
@@ -33,6 +36,7 @@ const forgotPasswordLimiter = rateLimit({
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  keyGenerator: perAccountKey((req) => req.params?.token || req.body?.token),
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,

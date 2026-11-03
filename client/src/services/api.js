@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getActiveLearnerId } from "../modules/learner-portal/utils/activeLearner";
 import { getActiveHubId } from "../modules/school-portal/utils/activeHub";
+import { getFallbackToken } from "./fallbackSession";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -26,6 +27,9 @@ const api = axios.create({
 const EDUCATOR_FRAME_REQUESTS = /^\/api\/(teachers|checkins|notifications|auth|tot|qa|claims|uploads)(\/|$|\?)|^\/api\/home-learning\/(educator|my-assignments)/;
 
 api.interceptors.request.use((config) => {
+  // Only for a browser that won't keep the sign-in cookie (services/fallbackSession.js).
+  const sessionToken = getFallbackToken();
+  if (sessionToken) config.headers["X-Session-Token"] = sessionToken;
   const learnerId = getActiveLearnerId();
   if (learnerId) config.headers["X-Active-Learner-Id"] = learnerId;
   const hubId = getActiveHubId();

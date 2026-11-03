@@ -19,7 +19,19 @@ async function websiteSettings() {
   const entries = await PathwayTemplateModel.findAll({ ownerAdminId: requirePublicContentAdminId() });
   return new Map(entries.map((e) => [String(e.name || "").trim().toLowerCase(), { ...websiteOf(e), pricing: pathwayPricing(e), templateId: e.id }]));
 }
-const settingsFor = (settings, name) => settings.get(String(name || "").trim().toLowerCase()) || { visible: true, hubIds: [], pricing: pathwayPricing(null), templateId: null };
+const settingsFor = (settings, name) => settings.get(String(name || "").trim().toLowerCase()) || { visible: true, hubIds: [], image: null, pricing: pathwayPricing(null), templateId: null };
+
+// The pathway's picture on the website: the one chosen in Settings → Pathways → Website, else the
+// first course cover along the pathway (youngest stage first). null — the website draws its own.
+function pathwayImage(website, resolved) {
+  const own = website.image || resolved.stages.flatMap((s) => s.courses).find((c) => c.coverImage)?.coverImage;
+  return own ? toAbsoluteMediaUrl(own) : null;
+}
+
+// Where a pathway runs, in short, for its card on the list: each town (or "Online") once.
+function placesOf(hubs) {
+  return [...new Set(hubs.map((h) => (h.town || h.name || "").split(",")[0].trim()).filter(Boolean))];
+}
 
 // What the website shows of a pathway's price: the whole price, or "from" its cheapest priced
 // course (a family pays for the course the learner starts at). null when it isn't priced.
@@ -63,7 +75,7 @@ async function publicHubs(hubIds) {
       return {
         id: h.id, name: h.name, hubType: h.hubType, deliveryMode,
         deliveryLabel: DELIVERY_LABELS[deliveryMode] || deliveryMode,
-        town: deliveryMode === "virtual" ? "Online" : [h.address?.city, h.address?.county].filter(Boolean).join(", "),
+        town: deliveryMode === "virtual" ? "Online" : [...new Set([h.address?.city, h.address?.county].map((x) => String(x || "").trim()).filter(Boolean))].join(", "),
       };
     });
 }
@@ -243,7 +255,7 @@ const PublicSiteService = {
   // own "reusable template" feature — the public site just no longer reads them.)
   //
   // Scoped to PUBLIC_CONTENT_ADMIN_ID (503 if unset). List item shape:
-  // { id, slug, name, description, color, courseCount }. A pathway with 0 active courses is
+  // { id, slug, name, description, color, courseCount, stages, price, image, places, hubCount }. A pathway with 0 active courses is
   // OMITTED — a visitor can't open it (its detail 404s) so listing it is just noise. When two
   // of the admin's pathways share a computed slug, only one appears (see pickForSlug).
   async listPathways() {
@@ -256,15 +268,18 @@ const PublicSiteService = {
 
     // Switched off in Settings → Pathways → Website: not on the website.
     const settings = await websiteSettings();
-    return chosen
-      .filter((c) => c.courseCount > 0)
-      .map((c) => {
-        const item = listItem(c);
-        const own = settingsFor(settings, item.name);
-        return own.visible ? { ...item, price: priceSummary(own.pricing, c) } : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const items = await Promise.all(
+      chosen
+        .filter((c) => c.courseCount > 0)
+        .map(async (c) => {
+          const item = listItem(c);
+          const own = settingsFor(settings, item.name);
+          if (!own.visible) return null;
+          const hubs = await publicHubs(await effectiveHubIds(own, c));
+          return { ...item, price: priceSummary(own.pricing, c), image: pathwayImage(own, c), places: placesOf(hubs), hubCount: hubs.length };
+        }),
+    );
+    return items.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
   },
 
   // Detail: list item + `diagnostic` + `courses` (resolved, still-active, in learning order).
@@ -293,6 +308,7 @@ const PublicSiteService = {
     const offered = resolved.stages.map((s) => s.diagnostic).filter((d) => d.available);
     return {
       ...listItem(resolved),
+      image: pathwayImage(website, resolved),
       diagnostic: offered.length
         ? {
             available: true,

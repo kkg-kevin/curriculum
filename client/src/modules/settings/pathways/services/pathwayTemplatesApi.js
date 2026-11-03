@@ -14,7 +14,7 @@ export const pathwayTemplatesApi = {
   getDirectory: () =>
     api.get(`${BASE}/directory`).then((r) => r.data.data),
 
-  // Whether the website shows a pathway, and the hubs it runs at: { visible, hubIds }.
+  // Whether the website shows a pathway, the hubs it runs at and its picture: { visible, hubIds, image }.
   setWebsite: (id, data) =>
     api.put(`${BASE}/${id}/website`, data).then((r) => r.data.data),
 

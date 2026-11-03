@@ -7,6 +7,7 @@ import {
   askOtherTabsForSession, broadcast, clearTabSignedIn, isTabSignedIn, markTabSignedIn, onTabMessage,
   resetActivityClock, setSignedOutReason,
 } from "./session";
+import { clearFallbackToken, getFallbackToken, setFallbackToken } from "../services/fallbackSession";
 
 const AuthContext = createContext(null);
 
@@ -32,6 +33,7 @@ export function AuthProvider({ children }) {
   // in another tab, or refused by the server). `reason` is shown once on the login page.
   const endLocally = useCallback((reason) => {
     clearTabSignedIn();
+    clearFallbackToken();
     if (reason) setSignedOutReason(reason);
     setUser(null);
     queryClient.clear();
@@ -112,7 +114,17 @@ export function AuthProvider({ children }) {
     await bootRef.current;
     epochRef.current += 1;
     queryClient.clear();
-    const loggedInUser = await authApi.login(identifier, password);
+    clearFallbackToken();
+    const { sessionToken, ...loggedInUser } = await authApi.login(identifier, password);
+    // The sign-in lives in a cookie. A browser that won't keep cookies for this site accepts the
+    // password but drops the cookie — so check straight away, and if it was dropped, carry the
+    // sign-in with each request instead (services/fallbackSession.js). Nothing is shown: the person
+    // is simply signed in. Any other failure of the check (a network blip) is left to the next
+    // request, as before.
+    if (AUTH_ENABLED && sessionToken) {
+      const cookieKept = await authApi.me().then(() => true, (err) => err?.statusCode !== 401);
+      if (!cookieKept) setFallbackToken(sessionToken);
+    }
     markTabSignedIn();
     resetActivityClock();
     setUser(loggedInUser);
@@ -124,7 +136,9 @@ export function AuthProvider({ children }) {
   const switchRole = useCallback(async (role) => {
     epochRef.current += 1;
     queryClient.clear();
-    const switched = await authApi.switchRole(role);
+    const { sessionToken, ...switched } = await authApi.switchRole(role);
+    // The new role's sign-in replaces the old one wherever it's kept.
+    if (getFallbackToken() && sessionToken) setFallbackToken(sessionToken);
     resetActivityClock();
     setUser(switched);
     broadcast({ type: "role-switched", role: switched.role });

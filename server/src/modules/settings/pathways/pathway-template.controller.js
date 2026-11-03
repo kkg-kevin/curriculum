@@ -25,7 +25,7 @@ exports.setPricing = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-// Settings → Pathways → Website: { visible, hubIds }.
+// Settings → Pathways → Website: { visible, hubIds, image? }.
 exports.setWebsite = asyncHandler(async (req, res) => {
   const body = setWebsiteSchema.parse(req.body);
   const data = await PathwayTemplateService.setWebsite(req.params.aId, body, req.ownerAdminId);

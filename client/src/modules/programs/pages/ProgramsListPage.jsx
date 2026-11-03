@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff } from "react-icons/fi";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
 import { useBootcampsQuery } from "../../bootcamps/hooks/useBootcamps";
+import TotBadge from "../../bootcamps/components/TotBadge";
 import GamesLibrarySection from "../games/components/GamesLibrarySection";
 
 const COMP_STATUS = {
@@ -47,7 +48,7 @@ const sortStyle = { padding: "7px 10px", borderRadius: 8, border: "1.5px solid #
 // One toolbar shared by both sections — "published only" toggle + a date sort. Kept simple
 // (no search box, no hub filter) since these lists are still small; the sort/filter state lives
 // in the parent so it survives whichever section re-renders.
-function ListToolbar({ publishedOnly, onPublishedOnlyChange, sort, onSortChange, count, totalCount }) {
+function ListToolbar({ publishedOnly, onPublishedOnlyChange, sort, onSortChange, count, totalCount, children }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
       <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: "#374151", cursor: "pointer", userSelect: "none" }}>
@@ -59,7 +60,8 @@ function ListToolbar({ publishedOnly, onPublishedOnlyChange, sort, onSortChange,
         <option value="startDate">Start date</option>
         <option value="name">Name (A–Z)</option>
       </select>
-      {publishedOnly && (
+      {children}
+      {(publishedOnly || count !== totalCount) && (
         <span style={{ fontSize: 12, color: "#9CA3AF" }}>Showing {count} of {totalCount}</span>
       )}
     </div>
@@ -132,6 +134,7 @@ function BootcampCard({ bootcamp, onOpen }) {
       <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
           <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#111827", lineHeight: 1.35 }}>{bootcamp.name}</h3>
+          <TotBadge bootcamp={bootcamp} style={{ flexShrink: 0 }} />
         </div>
         <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", marginTop: "auto" }}>
           {[bootcamp.format && BOOTCAMP_FORMAT_LABEL[bootcamp.format], formatBootcampPrice(bootcamp), formatDateRange(bootcamp), bootcamp.curriculumName].filter(Boolean).join(" · ")}
@@ -171,14 +174,19 @@ export default function ProgramsListPage() {
   const [compSort, setCompSort] = useState("newest");
   const [bootcampPublishedOnly, setBootcampPublishedOnly] = useState(false);
   const [bootcampSort, setBootcampSort] = useState("newest");
+  // Who they're for: every bootcamp, the learners' ones, or the TOT (training of trainers) ones.
+  const [bootcampAudience, setBootcampAudience] = useState("all");
 
   const visibleCompetitions = useMemo(
     () => filterAndSort(competitions, { publishedOnly: compPublishedOnly, sort: compSort, isLive: (c) => c.isPublic && c.status !== "draft" }),
     [competitions, compPublishedOnly, compSort]
   );
   const visibleBootcamps = useMemo(
-    () => filterAndSort(bootcamps, { publishedOnly: bootcampPublishedOnly, sort: bootcampSort, isLive: (b) => b.saleStatus === "for_sale" }),
-    [bootcamps, bootcampPublishedOnly, bootcampSort]
+    () => filterAndSort(
+      bootcampAudience === "all" ? bootcamps : bootcamps.filter((b) => (b.audience || "learners") === bootcampAudience),
+      { publishedOnly: bootcampPublishedOnly, sort: bootcampSort, isLive: (b) => b.saleStatus === "for_sale" },
+    ),
+    [bootcamps, bootcampPublishedOnly, bootcampSort, bootcampAudience]
   );
 
   return (
@@ -316,9 +324,19 @@ export default function ProgramsListPage() {
               onSortChange={setBootcampSort}
               count={visibleBootcamps.length}
               totalCount={bootcamps.length}
-            />
+            >
+              <select value={bootcampAudience} onChange={(e) => setBootcampAudience(e.target.value)} style={sortStyle} aria-label="Who it's for">
+                <option value="all">All bootcamps</option>
+                <option value="learners">For learners</option>
+                <option value="educators">TOT (educators)</option>
+              </select>
+            </ListToolbar>
             {visibleBootcamps.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", padding: "8px 2px" }}>No published bootcamps — turn off "Published only" to see drafts.</p>
+              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", padding: "8px 2px" }}>
+                {bootcampAudience === "educators" && !bootcampPublishedOnly
+                  ? "No TOT bootcamps yet — set a bootcamp's \"Who it's for\" to Educators (TOT)."
+                  : bootcampPublishedOnly ? "No published bootcamps here — turn off \"Published only\" to see drafts." : "No bootcamps here."}
+              </p>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
                 {visibleBootcamps.map((b) => (

@@ -102,6 +102,158 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026, evening) — Sign in from any browser; Home Learning educators; any meeting link; TOT loop closed
+
+**Portal and backend** from `curriculum` (branch `modules`) at `37abdaa`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778` (unchanged since the morning release — rebuilt with
+today's content). Includes "This release (3 Nov 2026)" below — if that isn't uploaded yet, upload
+this one instead (database backup first; that release adds two migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (630 files, 158 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-WO2PAB8Y.js`).
+3. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Signing in works in any browser.** A parent whose browser blocks site data got "Failed to read
+  'localStorage'… Access is denied" and couldn't sign in. Now the portal never trips over blocked
+  storage, and a browser that won't keep the sign-in cookie still signs the person in, quietly,
+  and keeps them signed in after a refresh. Nothing to do for anyone.
+- **Home Learning educators see their courses.** Course Content, Assessments, the Dashboard and
+  Reports took courses from the hub's curriculum — the Home Learning hub has none of its own, so they
+  showed "This hub hasn't been assigned a curriculum yet". Each class now uses its own curriculum.
+  A Home Learning educator no longer appears twice under "My Teachers & Mentors".
+- **Any meeting link is accepted** on the hub form and Edit class — scheduled or instant Meet,
+  Zoom, Teams. Meet links with a code are saved in the standard form. (Note: `meet.google.com/new`
+  starts a separate meeting for each person who clicks it.)
+- **TOT:**
+  - No qualifications. A TOT certificate no longer limits which courses an educator may be given.
+  - The supervisor is told when work is handed in (in the portal and by email); with no
+    supervisor, the admins are.
+  - The educator's Training card has **Publish report** once a course's work is all marked, which
+    issues the certificate. Admins can **Withdraw** an educator from a TOT class (nothing deleted)
+    and **Enrol again**.
+  - Educators in training no longer appear in hub learner lists.
+
+### After uploading — once, in phpMyAdmin
+
+Educators may already be restricted by earlier TOT certificates. List them:
+
+```sql
+SELECT firstName, lastName, email, qualifiedCourseIds FROM teachers
+WHERE qualifiedCourseIds IS NOT NULL AND JSON_LENGTH(qualifiedCourseIds) > 0;
+```
+
+If none of those were set on purpose, clear them:
+
+```sql
+UPDATE teachers SET qualifiedCourseIds = JSON_ARRAY()
+WHERE qualifiedCourseIds IS NOT NULL AND JSON_LENGTH(qualifiedCourseIds) > 0;
+```
+
+### Verify
+
+1. Sign in as a parent, then refresh — still signed in.
+2. As a Home Learning educator: Course Content and Assessments list the child's courses.
+3. Edit a class → paste a Meet link with capitals (`https://meet.google.com/ABC-DEFG-HIJ`) — it saves.
+4. An educator in training hands in work → their supervisor gets "Training work to mark".
+
+---
+
+## This release (3 Nov 2026) — Sign-in no longer locks everyone out; new pathway pages; TOT bootcamps
+
+**Portal and backend** from `curriculum` (branch `modules`) at `7b245d8`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778`. Includes every 2 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first).
+
+**Urgent on Dev:** if people are being told "Too many login attempts" right now, Setup
+Node.js App → **Restart** clears it at once (the counts are kept in memory). Uploading this backend
+stops it happening again.
+
+### Upload in this order
+
+1. **Database backup** — two new migrations.
+2. **Backend** — `backend-deploy.zip` (629 files, 158 migrations), then Restart. The migrations run on
+   Restart; check `SHOW COLUMNS FROM bootcamps LIKE 'audience';` and
+   `SHOW COLUMNS FROM pathway_templates LIKE 'websiteImage';` and run Run JS script → `db:migrate` if
+   either is missing.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-CiUF9kqz.js`).
+4. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`, after the backend (its pathway cards use the new picture and towns).
+
+No environment variable, no cron, no npm package. (`TRUST_PROXY` can still stay unset — the sign-in
+limits no longer depend on it.)
+
+### What changed
+
+- **Sign-in no longer locks everyone out.** Behind the hosting's web server every person looked like
+  one address, so 20 failed sign-ins by anyone in 15 minutes locked every account ("Too many login
+  attempts"). Failed sign-ins are now counted per account: only the account that keeps getting its
+  password wrong waits 15 minutes. Same for forgot / reset password and the website's parent sign-in.
+- **Website pathway pages, redesigned.** The list has a "My child is [age]" picker and cards with a
+  picture, ages, stages, towns and price. A pathway's page shows its stages as a row — choosing one
+  shows its courses on the page — plus "How enrolling works", the hubs, and one Enrol button that stays
+  in view (a bar along the bottom on a phone). Stage pages match.
+- **A picture per pathway:** Settings → Pathways → On the website → Picture (optional — without one the
+  website uses the pathway's first course cover).
+- **TOT bootcamps.** A bootcamp now says who it's for — Learners or Educators (TOT). The form lists only
+  the matching curricula and refuses a mismatch; Events shows a "TOT · Educators" badge and a filter.
+  Bootcamps already linked to a TOT curriculum become TOT bootcamps on Restart. On the website a TOT
+  bootcamp shows "Contact us to join" (its online sign-up isn't built yet) and the children's sign-up
+  refuses it.
+- **Bootcamp and competition forms** run the full width of the screen and stack on a phone.
+
+### Verify
+
+1. Sign in with a wrong password for one account a few times, then sign in to another account — it
+   works.
+2. Events → Bootcamps: the "All bootcamps / For learners / TOT (educators)" filter; open a bootcamp's
+   Edit — "Who it's for" under the name.
+3. Website → Pathways: pick an age; open a pathway, choose a stage — its courses show below.
+
+---
+
+## This release (2 Nov 2026, final) — The diagnostic inside enrolling; priced pathways without hubs ticked still enrol
+
+**Portal and backend** from `curriculum` (branch `modules`) at `0727eb1`. **Website** from
+`curriculum-web` (branch `new`) at `916c0bd`. Includes "This release (2 Nov 2026, night)" below and
+every earlier 2 Nov release — if those aren't uploaded yet, upload this one instead (database backup
+first; the night release adds three migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (627 files, 156 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CYqUzxkn.js`).
+3. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **The diagnostic is part of enrolling.** The pathway and stage pages no longer have their own
+  "Take the diagnostic" button. Every pathway Enrol (Enrol & pay, Enrol here, a stage's Enrol) starts
+  with the learner's date of birth, then — if there's a diagnostic for their age — the short quiz
+  (with "Skip — do it after enrolling instead") and its result, then the enrolment (hub → details →
+  payment for a priced pathway; the enquiry otherwise). The result places the learner at the course it
+  earns, and the name, date of birth and parent details typed for it carry over. From a stage page it's
+  that stage's diagnostic and ages.
+- **A priced pathway with no hubs ticked still enrols and takes payment.** It used to fall back to an
+  enquiry. With none ticked it now offers the hubs that teach its curriculum (or every active hub if
+  none do); ticking hubs in Settings → Pathways → On the website still chooses them exactly.
+
+### Verify
+
+1. A priced pathway → Enrol & pay: date of birth first, then the diagnostic (if any) with Skip, then
+   choose a hub → details → payment.
+2. A stage page → Enrol: the intro names that stage and its ages.
+
+---
+
 ## This release (2 Nov 2026, night) — Pathways in Settings as they really are; on the website at chosen hubs, priced and paid online
 
 **Portal and backend** from `curriculum` (branch `modules`) at `1d381e9`. **Website** from

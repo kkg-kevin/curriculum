@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { fallbackHeaders } from "../services/fallbackSession";
 
 // A long form's unsaved work (the assessment builder, Add/Edit Course, the session editor),
 // written to the workspace as it is typed (server: modules/drafts/) so nothing is lost if the page
@@ -37,12 +38,13 @@ export function isSameContent(a, b) {
 }
 
 // fetch rather than the shared axios instance: only fetch can finish a request after the tab
-// has closed. The session cookie goes with it the same way.
+// has closed. The session cookie goes with it the same way (or, where the browser won't keep it,
+// the X-Session-Token header — services/fallbackSession.js).
 async function request(method, url, body, keepalive) {
   const res = await fetch(url, {
     method,
     credentials: "include",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...fallbackHeaders() },
     body,
     keepalive,
   });

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { curriculumVersionApi } from "../services/curriculumVersionApi";
@@ -98,6 +99,51 @@ export function useCoursesForPairs(pairs) {
 
   return {
     data:      byId,
+    isLoading: results.some((r) => r.isLoading),
+  };
+}
+
+// The courses of each class from the class's OWN curriculum + grade — a hub's classes don't all
+// share the hub's curriculum: the Home Learning hub has none of its own and every child's class
+// carries the curriculum they were placed on. A class without one falls back to the hub's
+// (`fallbackCurriculumId`). `forClass(cls)` → that class's courses; `courses` → every course across
+// the classes, once each; `hasCurriculum` → at least one class has a curriculum to show.
+export function useClassCourses(classes, fallbackCurriculumId) {
+  const curriculumOf = (cls) => cls?.curriculumId || fallbackCurriculumId || null;
+  const pairs = [];
+  const seen = new Set();
+  for (const cls of classes || []) {
+    const curriculumId = curriculumOf(cls);
+    if (!curriculumId || !cls.gradeId) continue;
+    const key = `${curriculumId}:${cls.gradeId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ key, curriculumId, gradeId: cls.gradeId });
+  }
+  const results = useQueries({
+    queries: pairs.map(({ curriculumId, gradeId }) => ({
+      queryKey: KEYS.currentCourses(curriculumId, gradeId),
+      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
+    })),
+  });
+
+  // Rebuilt only when a result changes, so `forClass` and `courses` are stable enough for the
+  // useMemo dependencies of the pages using them.
+  const stamp = pairs.map((p, i) => `${p.key}@${results[i]?.dataUpdatedAt || 0}`).join("|");
+  const value = useMemo(() => {
+    const byPair = new Map(pairs.map((p, i) => [p.key, results[i]?.data || []]));
+    const byId = new Map();
+    byPair.forEach((list) => list.forEach((c) => byId.set(c.id, c)));
+    return {
+      courses: [...byId.values()],
+      forClass: (cls) => byPair.get(`${curriculumOf(cls)}:${cls?.gradeId}`) || [],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stamp, fallbackCurriculumId]);
+
+  return {
+    ...value,
+    hasCurriculum: pairs.length > 0 || Boolean(fallbackCurriculumId),
     isLoading: results.some((r) => r.isLoading),
   };
 }

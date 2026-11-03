@@ -65,6 +65,8 @@ function listItem(bootcamp) {
     id: bootcamp.id,
     slug: computedSlug(bootcamp),
     name: bootcamp.name,
+    // "educators" — a TOT (training of trainers) bootcamp, for adults; "learners" — for children.
+    audience: bootcamp.audience || "learners",
     tagline: bootcamp.tagline || "",
     format: bootcamp.format || null,
     duration: bootcamp.durationLabel || "",

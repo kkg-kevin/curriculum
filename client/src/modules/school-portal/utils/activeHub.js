@@ -1,3 +1,5 @@
+import { readLocal, writeLocal } from "../../../utils/safeStorage";
+
 const STORAGE_KEY = "schoolPortal.activeHubId";
 
 // Single source of truth for which hub (a school account's own hub, or one of its branch hubs)
@@ -5,9 +7,9 @@ const STORAGE_KEY = "schoolPortal.activeHubId";
 // and written by useSchoolPortalScope.js when the admin switches hub, so the two never drift
 // apart. Mirrors learner-portal/utils/activeLearner.js exactly.
 export function getActiveHubId() {
-  return typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+  return readLocal(STORAGE_KEY);
 }
 
 export function setActiveHubId(id) {
-  if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, id);
+  writeLocal(STORAGE_KEY, id);
 }

@@ -218,6 +218,10 @@ const getAllLearners = asyncHandler(async (req, res) => {
     schoolId, classId, status, guardianEmail,
     limit: limit ? Number(limit) : undefined,
     offset: offset ? Number(offset) : undefined,
+    // Educators in training (TOT) aren't the hub's learners — left out of hub and workspace lists,
+    // but kept in a class's own roster (a TOT class is made of them) and in a learner's own view.
+    // ?trainees=1 keeps them anywhere.
+    excludeTrainees: !classId && req.user.role !== "learner" && req.query.trainees !== "1",
   };
   if (req.user.role === "school") {
     if (!req.ownSchool) return res.json({ success: true, data: [], count: 0 });

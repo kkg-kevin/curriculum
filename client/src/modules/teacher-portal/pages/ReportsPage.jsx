@@ -9,7 +9,7 @@ import {
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
-import { useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
+import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { reportApi } from "../../reports/services/reportApi";
 import { useGenerateReport } from "../../reports/hooks/useReports";
 
@@ -259,17 +259,17 @@ export default function ReportsPage() {
     enabled:  !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const gradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, gradeIds);
+  // Each class's courses from its own curriculum (the Home Learning hub has none of its own).
+  const { forClass } = useClassCourses(myClasses, selectedHub?.curriculumId);
 
   const classCoursePairs = useMemo(() => {
     const pairs = [];
     myClasses.forEach((cls) => {
-      (coursesByGrade?.get(cls.gradeId) || []).forEach((course) => pairs.push({ cls, course }));
+      forClass(cls).forEach((course) => pairs.push({ cls, course }));
     });
     return pairs;
-  }, [myClasses, coursesByGrade]);
+  }, [myClasses, forClass]);
 
   // One batched request per class (returning { [courseId]: rows }) rather than one per
   // class × course pair — a teacher with several classes each exposing several courses was

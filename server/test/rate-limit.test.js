@@ -25,3 +25,37 @@ test("a request with no token, or a token we did not sign, is counted by address
   assert.equal(apiRateLimitKey({ ip: "41.90.1.1", cookies: { token: "garbage" } }), "41.90.1.1");
   assert.equal(apiRateLimitKey({ ip: "41.90.1.1", cookies: { token: signed("user-a", "someone-else") } }), "41.90.1.1");
 });
+
+const { perAccountKey } = require("../src/shared/middleware/rate-limit.middleware");
+
+test("sign-in attempts are counted per account, not per address", () => {
+  const key = perAccountKey((req) => req.body?.identifier);
+  const a = key({ ip: "41.90.1.1", body: { identifier: "Amina.K" } });
+  const b = key({ ip: "41.90.1.1", body: { identifier: "brian" } });
+  assert.notEqual(a, b);
+  // The same account typed differently is still one account.
+  assert.equal(a, key({ ip: "41.90.1.1", body: { identifier: "  amina.k " } }));
+});
+
+test("one account's failed sign-ins never lock out another account on the same address", async () => {
+  const express = require("express");
+  const rateLimit = require("express-rate-limit");
+  const app = express();
+  app.use(express.json());
+  app.post(
+    "/login",
+    rateLimit({ windowMs: 60000, limit: 3, skipSuccessfulRequests: true, keyGenerator: perAccountKey((req) => req.body?.identifier) }),
+    (req, res) => res.status(req.body.password === "right" ? 200 : 401).end(),
+  );
+  const server = app.listen(0);
+  const url = `http://127.0.0.1:${server.address().port}/login`;
+  const attempt = (identifier, password) =>
+    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier, password }) }).then((r) => r.status);
+  try {
+    for (let i = 0; i < 3; i += 1) assert.equal(await attempt("amina", "wrong"), 401);
+    assert.equal(await attempt("amina", "right"), 429, "the account that kept failing waits");
+    assert.equal(await attempt("brian", "right"), 200, "everyone else on the same address signs in");
+  } finally {
+    server.close();
+  }
+});

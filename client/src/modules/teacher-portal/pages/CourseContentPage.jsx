@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiBookOpen, FiChevronDown, FiChevronUp, FiLayers, FiUser, FiUsers } from "react-icons/fi";
 import { School as SchoolIcon } from "@mui/icons-material";
 import { classApi } from "../../classes/services/classApi";
-import { useCurriculumCurrentCoursesForGrades, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
+import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseHomePath } from "../../../routes/portalPaths";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
@@ -132,10 +132,9 @@ export default function CourseContentPage() {
     enabled: !!teacher?.id && !!selectedHubId,
   });
   const myClasses = classesData?.data || [];
-  const myGradeIds = [...new Set(myClasses.map((c) => c.gradeId))];
 
-  const { data: courses, isLoading: coursesLoading } = useCurriculumCurrentCoursesForGrades(selectedHub?.curriculumId, myGradeIds);
-  const { data: coursesByGrade } = useCurriculumCoursesByGrade(selectedHub?.curriculumId, myGradeIds);
+  // Each class's courses from its own curriculum (the Home Learning hub has none of its own).
+  const { courses, forClass, hasCurriculum, isLoading: coursesLoading } = useClassCourses(myClasses, selectedHub?.curriculumId);
 
   const totalLearners = useMemo(() => myClasses.reduce((sum, c) => sum + (c.learnerCount ?? 0), 0), [myClasses]);
 
@@ -180,7 +179,7 @@ export default function CourseContentPage() {
             Ask your school admin to add you as a teacher using this same email address.
           </p>
         </div>
-      ) : !selectedHub?.curriculumId ? (
+      ) : !classesLoading && !hasCurriculum ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>This hub hasn't been assigned a curriculum yet.</p>
@@ -206,7 +205,7 @@ export default function CourseContentPage() {
                 key={cls.id}
                 cls={cls}
                 hub={selectedHub}
-                courses={coursesByGrade?.get(cls.gradeId) || []}
+                courses={forClass(cls)}
                 teacherName={teacherName}
                 isOpen={openClassIds.has(cls.id)}
                 onToggleOpen={() => toggleOpen(cls.id)}

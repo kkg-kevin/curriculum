@@ -21,8 +21,9 @@ const BootcampModel = {
   // ownerAdminId optional here so the same findAll can serve callers that scope a different
   // way (none yet — but matches the pattern in curriculum/learning-hub models). Admin-facing
   // controllers always pass it.
-  findAll({ ownerAdminId, curriculumId, saleStatus } = {}) {
+  findAll({ ownerAdminId, curriculumId, saleStatus, audience } = {}) {
     let query = db(TABLE);
+    if (audience) query = query.where({ audience });
     if (ownerAdminId) query = query.where({ ownerAdminId });
     if (curriculumId) query = query.where({ curriculumId });
     if (saleStatus) query = query.where({ saleStatus });

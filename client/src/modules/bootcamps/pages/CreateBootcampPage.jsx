@@ -23,8 +23,9 @@ const ACCENT = "#25476a";
 const S = {
   card:      { backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 },
   cardTitle: { margin: 0, fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" },
-  row:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
-  row3:      { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 },
+  // Side by side while each field gets 220px, stacked on a phone.
+  row:       { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 },
+  row3:      { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 },
   field:     { display: "flex", flexDirection: "column", gap: 6 },
   label:     { fontSize: 13, fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 3 },
   input:     { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
@@ -36,6 +37,7 @@ const S = {
 
 const toFormValues = (b) => ({
   name: b?.name || "",
+  audience: b?.audience || "learners",
   description: b?.description || "",
   tagline: b?.tagline || "",
   coverImage: b?.coverImage || null,
@@ -283,6 +285,25 @@ export default function CreateBootcampPage() {
 
   const isPending = creating || updating;
   const selectedCurriculumId = useWatch({ control, name: "curriculumId" });
+  const audience = useWatch({ control, name: "audience" }) || "learners";
+  // A bootcamp runs a curriculum for the same people (the server checks it too): the dropdown
+  // offers only those, and a curriculum arriving some other way (the "+ New Bootcamp" link on a
+  // TOT curriculum) brings its audience with it.
+  const audienceOf = (c) => c?.audience || "learners";
+  const curriculaForAudience = curricula.filter((c) => audienceOf(c) === audience || c.id === selectedCurriculumId);
+  useEffect(() => {
+    const picked = curricula.find((c) => c.id === selectedCurriculumId);
+    if (picked && audienceOf(picked) !== audience) setValue("audience", audienceOf(picked), { shouldDirty: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCurriculumId, curricula]);
+  const chooseAudience = (value) => {
+    setValue("audience", value, { shouldDirty: true });
+    const picked = curricula.find((c) => c.id === selectedCurriculumId);
+    if (picked && audienceOf(picked) !== value) {
+      setValue("curriculumId", null, { shouldDirty: true });
+      setValue("pathwayIds", [], { shouldDirty: true });
+    }
+  };
   const selectedPathwayIds = useWatch({ control, name: "pathwayIds" });
   const descriptionWordCount = wordCount(useWatch({ control, name: "description" }));
 
@@ -342,7 +363,7 @@ export default function CreateBootcampPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -371,7 +392,7 @@ export default function CreateBootcampPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 780 }}>
+      <div style={{ width: "100%" }}>
         <form id="bootcamp-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           <div style={S.card}>
@@ -380,6 +401,24 @@ export default function CreateBootcampPage() {
               <label style={S.label}>Name <span style={{ color: "#EF4444" }}>*</span></label>
               <input {...register("name")} style={S.input} placeholder="Robot Builders Holiday Bootcamp" />
               {errors.name && <span style={S.error}>{errors.name.message}</span>}
+            </div>
+
+            {/* Who it's for — a TOT (training of trainers) bootcamp is for educators. */}
+            <div style={S.field}>
+              <label style={S.label}>Who it&rsquo;s for</label>
+              <div role="radiogroup" aria-label="Who it's for" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[["learners", "Learners"], ["educators", "Educators (TOT)"]].map(([value, text]) => (
+                  <button key={value} type="button" role="radio" aria-checked={audience === value} onClick={() => chooseAudience(value)}
+                    style={{ padding: "8px 16px", borderRadius: 999, border: `1.5px solid ${audience === value ? "#25476a" : "#E5E7EB"}`, background: audience === value ? "#25476a" : "#fff", color: audience === value ? "#fff" : "#374151", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <span style={S.hint}>
+                {audience === "educators"
+                  ? "Training of trainers: educators learn on a TOT curriculum while they teach. Enrol them from the educator's page (Training (TOT)) — families can't sign children up for it on the website."
+                  : "For the children and young people you teach."}
+              </span>
             </div>
 
             <div style={S.field}>
@@ -444,9 +483,12 @@ export default function CreateBootcampPage() {
               <label style={S.label}>Curriculum</label>
               <select {...register("curriculumId")} style={S.select}>
                 <option value="">Standalone — not linked to a curriculum</option>
-                {curricula.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {curriculaForAudience.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <span style={S.hint}>The curriculum whose cohorts and course structure this bootcamp runs. Required to run it at a hub.</span>
+              <span style={S.hint}>
+                The curriculum whose cohorts and course structure this bootcamp runs. Required to run it at a hub.
+                {audience === "educators" ? " Only TOT curricula (for educators) are listed." : ""}
+              </span>
             </div>
 
             {selectedCurriculumId && (

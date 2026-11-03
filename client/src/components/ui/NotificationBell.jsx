@@ -8,6 +8,7 @@ import EmailNotificationSettings from "./EmailNotificationSettings";
 const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
+  tot_work_submitted: { Icon: FiUpload, color: "#6D28D9" },
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
   certificate_issued: { Icon: FiAward, color: "#B45309" },
@@ -38,6 +39,9 @@ function resolveNotificationPath(n) {
       return p.issueId ? `/learner-portal/assessments/${p.issueId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/assessments";
     case "assessment_submitted":
       return p.issueId ? `/teacher-portal/assessments/${p.issueId}` : "/teacher-portal/assessments";
+    case "tot_work_submitted":
+      // An educator in training's work — the supervisor's "Work to mark", or the admin's.
+      return p.route || "/supervisor-portal/marking";
     case "session_report_published":
       return p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports";
     case "certificate_issued":

@@ -4,6 +4,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { teacherApi } from "../../teachers/services/teacherApi";
 import { useTeacherHubsQuery } from "../../teachers/hooks/useTeacher";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
+import { readLocal, writeLocal } from "../../../utils/safeStorage";
 
 export const HUB_STORAGE_KEY = "teacherPortal.selectedHubId";
 const STORAGE_KEY = HUB_STORAGE_KEY;
@@ -30,7 +31,7 @@ export function useTeacherPortalScope() {
   });
 
   const urlHubId = searchParams.get("hub");
-  const storedHubId = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+  const storedHubId = readLocal(STORAGE_KEY);
 
   let selectedHubId;
   if (urlHubId && hubs.some((h) => h.id === urlHubId)) selectedHubId = urlHubId;
@@ -40,7 +41,7 @@ export function useTeacherPortalScope() {
   const selectedHub = hubs.find((h) => h.id === selectedHubId) || null;
 
   const setSelectedHubId = (hubId) => {
-    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, hubId);
+    writeLocal(STORAGE_KEY, hubId);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("hub", hubId);
