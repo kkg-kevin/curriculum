@@ -26,8 +26,9 @@ const ACCENT = "#25476a";
 const S = {
   card:      { backgroundColor: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 },
   cardTitle: { margin: 0, fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" },
-  row:       { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
-  row3:      { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 },
+  // Side by side while each field gets 220px, stacked on a phone.
+  row:       { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 },
+  row3:      { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 },
   field:     { display: "flex", flexDirection: "column", gap: 6 },
   label:     { fontSize: 13, fontWeight: 600, color: "#374151", display: "flex", alignItems: "center", gap: 3 },
   input:     { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", background: "#fff" },
@@ -248,7 +249,7 @@ export default function CreateCompetitionPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <button type="button" onClick={handleCancel} style={{ padding: 0, background: "none", border: "none", color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
@@ -277,7 +278,7 @@ export default function CreateCompetitionPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 780 }}>
+      <div style={{ width: "100%" }}>
         <form id="competition-form" onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           <div style={S.card}>

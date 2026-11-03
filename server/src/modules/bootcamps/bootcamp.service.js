@@ -57,6 +57,24 @@ async function assertCurriculumOwnedBy(curriculumId, ownerAdminId) {
   }
 }
 
+// A bootcamp and its curriculum are for the same people: a TOT bootcamp (audience "educators")
+// runs a TOT curriculum, a learners' bootcamp a learners' one. A standalone bootcamp (no
+// curriculum) can be either.
+async function assertAudienceMatchesCurriculum(audience, curriculumId) {
+  if (!curriculumId) return;
+  const curriculum = await CurriculumModel.findById(curriculumId);
+  const curriculumAudience = curriculum?.audience || "learners";
+  if (curriculum && curriculumAudience !== (audience || "learners")) {
+    const err = new Error(
+      curriculumAudience === "educators"
+        ? `"${String(curriculum.name).trim()}" is a training of trainers (TOT) curriculum — mark this bootcamp as for educators, or pick a learners' curriculum`
+        : `"${String(curriculum.name).trim()}" is a learners' curriculum — a training of trainers (TOT) bootcamp needs a TOT curriculum`,
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+}
+
 // Every priced course must actually belong to the (effective) curriculum — a Zod string alone
 // can't confirm that, and without this check a bootcamp could carry a stale/foreign courseId
 // once its curriculum is unset or swapped. Mirrors competition.service.js's version.
@@ -147,6 +165,7 @@ const BootcampHubService = require("./bootcamp-hub.service");
 const BootcampService = {
   async createBootcamp(data) {
     await assertCurriculumOwnedBy(data.curriculumId, data.ownerAdminId);
+    await assertAudienceMatchesCurriculum(data.audience, data.curriculumId);
     await assertCoursePricingValid(data.coursePricing, data.curriculumId);
     await assertPathwayIdsValid(data.pathwayIds, data.curriculumId);
     assertPricingModeExclusive(data.priceAmount, data.coursePricing);
@@ -180,6 +199,12 @@ const BootcampService = {
     }
     // curriculumId may be absent from a partial patch — only re-check when it's actually changing.
     if ("curriculumId" in data) await assertCurriculumOwnedBy(data.curriculumId, ownerAdminId);
+    if ("curriculumId" in data || "audience" in data) {
+      await assertAudienceMatchesCurriculum(
+        "audience" in data ? data.audience : existing.audience,
+        "curriculumId" in data ? data.curriculumId : existing.curriculumId,
+      );
+    }
     if ("coursePricing" in data) {
       const effectiveCurriculumId = "curriculumId" in data ? data.curriculumId : existing.curriculumId;
       await assertCoursePricingValid(data.coursePricing, effectiveCurriculumId);
@@ -233,7 +258,7 @@ const BootcampService = {
     if (!source.seriesId) await BootcampModel.update(source.id, { seriesId });
 
     const COPIED = [
-      "curriculumId", "description", "tagline", "coverImage", "images", "format", "durationLabel", "ageMin", "ageMax",
+      "audience", "curriculumId", "description", "tagline", "coverImage", "images", "format", "durationLabel", "ageMin", "ageMax",
       "priceAmount", "priceCurrency", "priceNotes", "highlights", "coursePricing", "pathwayIds", "gameIds", "gamesNote",
     ];
     const copy = Object.fromEntries(COPIED.map((key) => [key, source[key] ?? null]));

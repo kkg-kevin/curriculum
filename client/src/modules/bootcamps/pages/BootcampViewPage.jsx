@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import TotBadge from "../components/TotBadge";
 import { FiAward, FiCalendar, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiTag, FiUsers, FiX } from "react-icons/fi";
 import { useBootcampQuery, useDeleteBootcamp, useUpdateBootcamp } from "../hooks/useBootcamps";
 import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
@@ -220,6 +221,7 @@ export default function BootcampViewPage() {
             </div>
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{bootcamp.name}</h1>
+              <TotBadge bootcamp={bootcamp} onDark style={{ marginBottom: 6 }} />
               <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.72)" }}>
                 {[FORMAT_LABEL[bootcamp.format], pricedByCourse ? "Priced by course" : formatPrice(bootcamp), bootcamp.curriculumName].filter(Boolean).join(" · ")}
               </p>
