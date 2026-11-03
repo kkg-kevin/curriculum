@@ -262,7 +262,22 @@ const CurriculumService = {
     await EvidenceTypeModel.deleteByCurriculumId(id);
     await PerformanceBandModel.deleteByCurriculumId(id);
     await ProgressionLadderModel.deleteByCurriculumId(id);
-    await CurriculumAssessmentModel.deleteByCurriculumId(id);
+    // Its own assessments go too — except any still in use elsewhere: attached to a course session
+    // (courses are shared, e.g. with a curriculum this one was duplicated from) or already issued.
+    // Deleting a curriculum only ever removes that curriculum's things.
+    {
+      const db = require("../../config/db");
+      const ownIds = await db("assessments").where({ curriculumId: id }).pluck("id");
+      const keep = new Set();
+      for (const assessmentId of ownIds) {
+        const attached = await db("course_sessions").whereRaw("CAST(assessmentAttachments AS CHAR) LIKE ? OR CAST(assessmentIds AS CHAR) LIKE ?", [`%${assessmentId}%`, `%${assessmentId}%`]).first("id");
+        const issued = attached ? null : await db("assessment_issues").where({ assessmentId }).first("id");
+        if (attached || issued) keep.add(assessmentId);
+      }
+      const removable = ownIds.filter((a) => !keep.has(a));
+      if (removable.length) await db("assessments").whereIn("id", removable).del();
+      if (keep.size) await db("assessments").whereIn("id", [...keep]).update({ curriculumId: null });
+    }
     await CurriculumVersionModel.deleteByCurriculumId(id);
     await LearnerPathwayModel.deleteByCurriculumId(id);
     await IndicatorAchievementModel.deleteByCurriculumId(id);

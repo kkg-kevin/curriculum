@@ -236,15 +236,30 @@ const CHECKS = {
     ],
   },
 
+  // A developmental stage's own parts — its part of each pathway (that pathway's row for this stage,
+  // with its courses) and its performance bands — go WITH it (CompetencyService.deleteAgeCategory),
+  // so they don't count (3 Nov 2026: a duplicated curriculum's stages could never be deleted, since
+  // the copy's own pathways and bands always "used" them). What still blocks is what people depend
+  // on: learners placed at it, in its bands or on its pathways, diagnostics issued for it, and a
+  // bootcamp that picked its pathways.
   ageCategory: {
     name: "age_categories",
     alternative: null,
-    uses: (id) => [
-      usage("pathways", ["pathway", "pathways"], db("pathways").where({ ageCategoryId: id }), { table: "pathways" }),
-      usage("bands", ["performance band", "performance bands"], db("performance_bands").where({ ageCategoryId: id }), { table: "performance_bands" }),
-      usage("learners", ["learner placed at it", "learners placed at it"], db("learner_hub_links").where({ currentStageId: id }), { table: "learner_hub_links", labelFrom: "learners", distinctOn: "learnerId" }),
-      usage("issued", ["diagnostic issued for it", "diagnostics issued for it"], db("assessment_issues").where({ ageCategoryId: id }), { table: "assessment_issues", labelFrom: null }),
-    ],
+    uses: (id) => {
+      const stagePathwayIds = db("pathways").where({ ageCategoryId: id }).select("id");
+      const stageBandIds = db("performance_bands").where({ ageCategoryId: id }).select("id");
+      return [
+        usage("learners", ["learner placed at it", "learners placed at it"], db("learner_hub_links").where({ currentStageId: id }), { table: "learner_hub_links", labelFrom: "learners", distinctOn: "learnerId" }),
+        usage("bandLearners", ["learner placed in its bands", "learners placed in its bands"], db("learner_hub_links").whereIn("currentBandId", stageBandIds), { table: "learner_hub_links", labelFrom: "learners", distinctOn: "learnerId" }),
+        usage("pathwayLearners", ["learner on its pathways", "learners on its pathways"], db("learner_pathways").whereIn("pathwayId", stagePathwayIds), { table: "learner_pathways", labelFrom: "learners", distinctOn: "learnerId" }),
+        usage("issued", ["diagnostic issued for it", "diagnostics issued for it"], db("assessment_issues").where((q) => q.where({ ageCategoryId: id }).orWhereIn("pathwayId", stagePathwayIds)), { table: "assessment_issues", labelFrom: null }),
+        (async () => {
+          const ids = await db("pathways").where({ ageCategoryId: id }).pluck("id");
+          if (!ids.length) return null;
+          return usage("bootcamps", ["bootcamp running its pathways", "bootcamps running its pathways"], db("bootcamps").where((q) => ids.forEach((pid) => q.orWhereRaw(...jsonHas("pathwayIds", pid)))), { table: "bootcamps" });
+        })(),
+      ];
+    },
   },
 
   performanceBand: {

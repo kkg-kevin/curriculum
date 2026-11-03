@@ -471,7 +471,22 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
-    await AgeCategoryModel.delete(id);
+    // Its own parts go with it — this curriculum's only (a duplicate's stage is its own record, so
+    // the curriculum it was copied from keeps all of its own): each pathway's row for this stage
+    // (with that row's course and assessment tags) and the stage's performance bands. What people
+    // depend on (learners, issued diagnostics, bootcamps) blocks the delete first (usage.service.js).
+    const db = require("../../../config/db");
+    await db.transaction(async (trx) => {
+      const pathwayIds = await trx("pathways").where({ curriculumId, ageCategoryId: id }).pluck("id");
+      if (pathwayIds.length) {
+        await trx("course_pathway_links").whereIn("pathwayId", pathwayIds).del();
+        await trx("assessment_pathway_links").whereIn("pathwayId", pathwayIds).del();
+        await trx("performance_bands").where({ curriculumId }).whereIn("pathwayId", pathwayIds).del();
+        await trx("pathways").whereIn("id", pathwayIds).del();
+      }
+      await trx("performance_bands").where({ curriculumId, ageCategoryId: id }).del();
+      await trx("age_categories").where({ id }).del();
+    });
   },
 
   /* ── Progress Levels ────────────────────────────────────────────────── */

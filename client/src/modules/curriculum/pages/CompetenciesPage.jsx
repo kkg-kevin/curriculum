@@ -2920,7 +2920,15 @@ function AgeCategoriesPanel({ curriculumId }) {
                       </span>
                     )}
                   </div>
-                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} usageCheck={() => competenciesApi.checkDeleteAgeCategory(curriculumId, cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
+                  <CardKebab
+                    onEdit={() => openEdit(cat)}
+                    onDelete={() => remove(cat.id)}
+                    usageCheck={() => competenciesApi.checkDeleteAgeCategory(curriculumId, cat.id)}
+                    disabled={deleting}
+                    itemLabel={cat.name}
+                    itemType="developmental stage"
+                    message={`Are you sure you want to delete "${cat.name}"? Its part of each pathway (the pathway's courses for this stage) and its performance bands are deleted with it. Only this curriculum changes — a curriculum it was copied from, or copied to, keeps its own.`}
+                  />
                 </div>
 
                 {overlapWarnings.has(cat.id) && (
