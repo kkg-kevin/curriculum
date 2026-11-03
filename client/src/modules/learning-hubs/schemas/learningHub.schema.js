@@ -23,22 +23,44 @@ export const LEARNING_HUB_TYPES = [
 
 // How a hub is delivered — orthogonal to type. A `virtual` hub has no physical address and
 // carries a `meetingLink` instead; `hybrid` has both.
-// A Google Meet link must carry a real meeting code (meet.google.com/abc-defg-hij) — anything
-// else opens Meet's "Invalid video call name" page. Other services (Zoom, Teams…) pass as any URL.
-const isUsableMeetingLink = (value) => {
+// A class's / hub's online meeting link: any web link that opens the meeting — Google Meet
+// (scheduled or instant), Zoom, Teams… (3 Nov 2026: no meeting-code check — "as long as the link
+// works it should work"). A Meet link carrying a code is tidied to the plain
+// https://meet.google.com/abc-defg-hij (capitals, no dashes, Gmail / Calendar's
+// meet.google.com/_meet/<code>?authuser=… all open the same meeting). A link pasted without
+// https:// gets it. Keep in step with the other copy (server learning-hub.validation.js / client
+// learningHub.schema.js).
+const MEET_HOSTS = new Set(["meet.google.com", "www.meet.google.com"]);
+const meetCodeOf = (url) => {
+  const match = /^\/(?:_meet\/)?([a-z]{3})-?([a-z]{4})-?([a-z]{3})\/?$/i.exec(url.pathname);
+  return match ? `${match[1]}-${match[2]}-${match[3]}`.toLowerCase() : null;
+};
+const tidyMeetingLink = (value) => {
   try {
     const url = new URL(value);
-    if (url.hostname !== "meet.google.com") return true;
-    return /^\/([a-z]{3}-[a-z]{4}-[a-z]{3}|lookup\/[\w-]+)\/?$/.test(url.pathname);
+    const code = MEET_HOSTS.has(url.hostname) ? meetCodeOf(url) : null;
+    return code ? `https://meet.google.com/${code}` : value;
   } catch {
-    return false;
+    return value;
   }
 };
-export const meetingLinkSchema = z
-  .string()
-  .url("Enter a valid URL")
-  .refine(isUsableMeetingLink, "That Google Meet link has no meeting code — copy it from the meeting, e.g. https://meet.google.com/abc-defg-hij")
-  .or(z.literal(""));
+const withScheme = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed && !/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) && /^[\w-]+(\.[\w-]+)+(\/|$)/.test(trimmed) ? `https://${trimmed}` : trimmed;
+};
+export const meetingLinkSchema = z.preprocess(
+  withScheme,
+  z.string()
+    // Only a web link (http / https) is refused if it isn't one.
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      let url = null;
+      try { url = new URL(value); } catch { /* reported below */ }
+      if (!url || !/^https?:$/.test(url.protocol)) ctx.addIssue({ code: "custom", message: "Enter a valid link, e.g. https://meet.google.com/abc-defg-hij" });
+    })
+    .transform((value) => (value ? tidyMeetingLink(value) : value)),
+);
 export const DELIVERY_MODES = [
   { value: "in_person", label: "In person" },
   { value: "virtual",   label: "Online" },
