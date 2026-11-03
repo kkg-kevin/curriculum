@@ -102,6 +102,58 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026) — Sign-in no longer locks everyone out; new pathway pages; TOT bootcamps
+
+**Portal and backend** from `curriculum` (branch `modules`) at `7b245d8`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778`. Includes every 2 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first).
+
+**Urgent on Dev:** if people are being told "Too many login attempts" right now, Setup
+Node.js App → **Restart** clears it at once (the counts are kept in memory). Uploading this backend
+stops it happening again.
+
+### Upload in this order
+
+1. **Database backup** — two new migrations.
+2. **Backend** — `backend-deploy.zip` (629 files, 158 migrations), then Restart. The migrations run on
+   Restart; check `SHOW COLUMNS FROM bootcamps LIKE 'audience';` and
+   `SHOW COLUMNS FROM pathway_templates LIKE 'websiteImage';` and run Run JS script → `db:migrate` if
+   either is missing.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-CiUF9kqz.js`).
+4. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`, after the backend (its pathway cards use the new picture and towns).
+
+No environment variable, no cron, no npm package. (`TRUST_PROXY` can still stay unset — the sign-in
+limits no longer depend on it.)
+
+### What changed
+
+- **Sign-in no longer locks everyone out.** Behind the hosting's web server every person looked like
+  one address, so 20 failed sign-ins by anyone in 15 minutes locked every account ("Too many login
+  attempts"). Failed sign-ins are now counted per account: only the account that keeps getting its
+  password wrong waits 15 minutes. Same for forgot / reset password and the website's parent sign-in.
+- **Website pathway pages, redesigned.** The list has a "My child is [age]" picker and cards with a
+  picture, ages, stages, towns and price. A pathway's page shows its stages as a row — choosing one
+  shows its courses on the page — plus "How enrolling works", the hubs, and one Enrol button that stays
+  in view (a bar along the bottom on a phone). Stage pages match.
+- **A picture per pathway:** Settings → Pathways → On the website → Picture (optional — without one the
+  website uses the pathway's first course cover).
+- **TOT bootcamps.** A bootcamp now says who it's for — Learners or Educators (TOT). The form lists only
+  the matching curricula and refuses a mismatch; Events shows a "TOT · Educators" badge and a filter.
+  Bootcamps already linked to a TOT curriculum become TOT bootcamps on Restart. On the website a TOT
+  bootcamp shows "Contact us to join" (its online sign-up isn't built yet) and the children's sign-up
+  refuses it.
+- **Bootcamp and competition forms** run the full width of the screen and stack on a phone.
+
+### Verify
+
+1. Sign in with a wrong password for one account a few times, then sign in to another account — it
+   works.
+2. Events → Bootcamps: the "All bootcamps / For learners / TOT (educators)" filter; open a bootcamp's
+   Edit — "Who it's for" under the name.
+3. Website → Pathways: pick an age; open a pathway, choose a stage — its courses show below.
+
+---
+
 ## This release (2 Nov 2026, final) — The diagnostic inside enrolling; priced pathways without hubs ticked still enrol
 
 **Portal and backend** from `curriculum` (branch `modules`) at `0727eb1`. **Website** from
