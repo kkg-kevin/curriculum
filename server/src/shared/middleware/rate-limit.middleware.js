@@ -22,4 +22,17 @@ function apiRateLimitKey(req) {
   return ipKeyGenerator(req.ip || "");
 }
 
-module.exports = { apiRateLimitKey };
+// Who a sign-in (or password reset) attempt is counted against: the address AND the account it
+// names — `pick(req)` gives the username / email typed, or the reset token. Counted by address
+// alone, everyone behind one address — every user, while the host's own web server sits in front
+// and TRUST_PROXY is unset, or a whole school on one connection — shared one allowance, so a few
+// people's typos locked out every account (3 Nov 2026, live). Now each account has its own:
+// guessing one account's password is still capped, and nobody else is affected.
+function perAccountKey(pick) {
+  return (req) => {
+    const account = String(pick(req) || "").trim().toLowerCase().slice(0, 200);
+    return `${ipKeyGenerator(req.ip || "")}|${account}`;
+  };
+}
+
+module.exports = { apiRateLimitKey, perAccountKey };

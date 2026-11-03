@@ -1,5 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
+const { perAccountKey } = require("../../shared/middleware/rate-limit.middleware");
 const asyncHandler = require("express-async-handler");
 const { z } = require("zod");
 const { signInParent } = require("./parent-signup");
@@ -10,9 +11,12 @@ const { signInParent } = require("./parent-signup");
 // password.
 const router = express.Router();
 
+// Per account (address + email — perAccountKey), so one family's wrong passwords never block
+// another's.
 const parentSignInLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
+  keyGenerator: perAccountKey((req) => req.body?.email),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many sign-in attempts. Please try again later." },
