@@ -102,6 +102,48 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026, last) — Educators enrol on TOT bootcamps online: diagnostic, details, payment
+
+**Portal and backend** from `curriculum` (branch `modules`) at `3aaad60`. **Website** from
+`curriculum-web` (branch `new`) at `1e4ed48`. Includes every 3 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first; the late release adds a migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (632 files, 159 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-2W9OMsVn.js` — unchanged since the late release).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`, after the backend (its TOT Enrol calls the new endpoint).
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **A TOT bootcamp's Enrol is a real sign-up.** The educator gives their date of birth, takes the
+  short diagnostic for their stage (they can skip it), sees their result, then gives their details
+  (name, email, phone, where they teach, a password) and pays — the same Payment step families get.
+- It creates their **educator account and login** (an existing Digifunzi account uses its own
+  password), their **place in the bootcamp's TOT class** at the hub they chose, an **enquiry** (they
+  show in the bootcamp's Learners & parents) and **one invoice billed to them**. The diagnostic goes
+  on their record and places them at the course their score earns. **Paying switches their training
+  on** — until then My learning is view-only.
+
+### Set up before taking sign-ups
+
+Each TOT bootcamp needs **dates, a price and a hub run** (Run at a hub). For the diagnostic step, its
+TOT curriculum's pathways need **stages whose age ranges cover your educators** (for example one stage
+of 15–100) with a **website diagnostic switched on** — without one the educator goes straight to the
+details.
+
+### Verify
+
+1. A TOT bootcamp on the website → Enrol → date of birth → diagnostic (or Skip) → details → payment.
+2. In the portal: the new educator appears under Educators, with a Training (TOT) card; the enquiry
+   is in Enquiries; the invoice is in Billing.
+3. Record a payment on that invoice — their training is switched on.
+
+---
+
 ## This release (3 Nov 2026, late) — TOT bootcamps take any age; "Who it's for" now saves
 
 **Portal and backend** from `curriculum` (branch `modules`) at `97fa17a`. **Website** from
