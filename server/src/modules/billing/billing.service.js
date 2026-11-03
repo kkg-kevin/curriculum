@@ -68,6 +68,14 @@ async function resolvePayerIdentity(invoice) {
     if (!hub) return null;
     return { name: hub.name, email: hub.email || null, phone: hub.phone || null, address: hub.address || null };
   }
+  // An educator in training (TOT — learners.teacherId) pays for their own training: billed to them.
+  if (invoice.learnerId) {
+    const trainee = await LearnerModel.findById(invoice.learnerId);
+    if (trainee?.teacherId) {
+      const educator = await db("teachers").where({ id: trainee.teacherId }).first("firstName", "lastName", "email", "phone");
+      if (educator) return { name: [educator.firstName, educator.lastName].filter(Boolean).join(" ") || null, email: educator.email || null, phone: educator.phone || null, address: null };
+    }
+  }
   if (invoice.payerUserId) {
     if (invoice.learnerId) {
       const learner = await LearnerModel.findById(invoice.learnerId);

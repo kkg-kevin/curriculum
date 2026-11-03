@@ -71,13 +71,15 @@ async function nextInvoiceNumber(trx) {
 // offering that actually resolved to real classes, same as the original single-hub behaviour —
 // a bootcamp with zero offerings yet (an admin hasn't run "createOffering" for it) can't enroll
 // anyone until that's done.
-async function resolveBootcampOffering(bootcampIdOrSlug, hubId) {
+async function resolveBootcampOffering(bootcampIdOrSlug, hubId, { audience = "learners" } = {}) {
   const bootcamp = await resolveForSaleBootcamp(bootcampIdOrSlug);
   if (!bootcamp) throw notFound("Bootcamp not found");
-  // This sign-up enrols CHILDREN under a parent. A TOT bootcamp is for educators, whose website
-  // sign-up isn't built yet — they're enrolled by an admin (educator page → Training (TOT)).
-  if (bootcamp.audience === "educators") {
-    throw badRequest("This is a training of trainers bootcamp for educators — contact us to join it.");
+  // Children are signed up here; educators on a TOT bootcamp (audience "educators") through
+  // educator-enrollment.service.js — each sign-up only for its own kind of bootcamp.
+  if ((bootcamp.audience || "learners") !== audience) {
+    throw badRequest(audience === "educators"
+      ? "This bootcamp is for learners — enrol a child instead."
+      : "This is a training of trainers bootcamp for educators — use the educator sign-up.");
   }
   const offerings = (await BootcampHubModel.findByBootcampId(bootcamp.id))
     .filter((o) => Array.isArray(o.classIds) && o.classIds.length > 0);
@@ -493,4 +495,4 @@ module.exports = BootcampEnrollmentService;
 module.exports.placeOnBootcampPathway = placeOnBootcampPathway;
 // Shared with the website's pathway enrolment (pathway-enrollment/), which signs families up the
 // same way: usernames checked first, one invoice, paying it switches the learners on.
-module.exports.enrolmentHelpers = { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money, PAYABLE };
+module.exports.enrolmentHelpers = { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money, PAYABLE, raiseEnrollmentInvoice };

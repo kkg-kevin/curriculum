@@ -75,21 +75,29 @@ const TotService = {
 
   // Puts an educator into a TOT class — making their learner record the first time. An educator
   // already in that class is left as they are.
-  async enrol(teacher, { hubId, classId }, { ownerAdminId }) {
+  // `pendingPayment`: a new learner record waits on payment (the website TOT sign-up —
+  // bootcamp-enrollment/educator-enrollment.service.js); paying switches it on.
+  // `dateOfBirth`: theirs, when known (the website sign-up asks) — kept on the learner record, so
+  // their stage, and with it the diagnostic, can follow their age like any learner's.
+  async enrol(teacher, { hubId, classId }, { ownerAdminId, pendingPayment = false, dateOfBirth = null }) {
     const cls = (await totClasses(ownerAdminId)).find((c) => c.id === classId && c.hubId === hubId);
     if (!cls) fail("Choose a class of a TOT curriculum (one marked for educators) at one of your hubs");
     let learner = await traineeOf(teacher.id);
+    if (learner && dateOfBirth && !learner.dateOfBirth) {
+      await db("learners").where({ id: learner.id }).update({ dateOfBirth, updatedAt: new Date() });
+    }
     if (!learner) {
       learner = await LearnerService.createLearner({
         firstName: teacher.firstName || "Educator",
         lastName: teacher.lastName || "",
         gender: null,
+        dateOfBirth: dateOfBirth || "",
         // An adult learning for themself: the guardian columns (which can't be empty) hold their
         // own name and phone, and no email — so no parent login is ever made or matched.
         guardianName: fullName(teacher) || "Educator",
         guardianPhone: teacher.phone || "—",
         guardianEmail: "",
-        accountStatus: "active",
+        accountStatus: pendingPayment ? "pending_payment" : "active",
         createdByAdminId: ownerAdminId,
         teacherId: teacher.id,
       });

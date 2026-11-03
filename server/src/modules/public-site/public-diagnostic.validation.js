@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { learnerDateOfBirth } = require("../../shared/utils/age");
+const { diagnosticDateOfBirth } = require("../../shared/utils/age");
 
 // { itemId, response } — response shape depends on item kind (string for mcq/trueFalse,
 // string[] for fillBlank/ordering, [{left,right}] for matching) — same permissive `z.any()`
@@ -27,10 +27,12 @@ const submitDiagnosticSchema = z.object({
   parentName: z.string().trim().min(2, "Please enter your name").max(120),
   parentPhone: phone,
   childName: z.string().trim().max(120).optional().or(z.literal("")),
-  childAge: z.coerce.number().int().min(3).max(19),
+  // 3–100: a child's, or an educator's on a TOT bootcamp — the pathway stage's own age range is
+  // what decides who may take a diagnostic (public-diagnostic.service.js).
+  childAge: z.coerce.number().int().min(3).max(100),
   // The website asks for the date of birth; when sent, the age is worked out from it (the
   // service) and both are kept. childAge alone still works for an older page.
-  childDateOfBirth: learnerDateOfBirth,
+  childDateOfBirth: diagnosticDateOfBirth,
 });
 
 module.exports = { submitDiagnosticSchema };

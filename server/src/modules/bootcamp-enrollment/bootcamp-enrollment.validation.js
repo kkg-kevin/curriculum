@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { learnerDateOfBirth } = require("../../shared/utils/age");
+const { learnerDateOfBirth, educatorDateOfBirth } = require("../../shared/utils/age");
 
 // Mirrors lead.validation.js's phone pattern — same reasoning: the website already validates
 // client-side, this is the server-side copy so a request bypassing the browser can't skip it.
@@ -83,4 +83,23 @@ const markLeadPaidSchema = z.object({
   description: z.string().trim().max(255).optional().nullable(),
 });
 
-module.exports = { submitBootcampEnrollmentSchema, markLeadPaidSchema, enrollmentChildSchema, withChildren, phone };
+// A TOT bootcamp's sign-up (educator-enrollment.service.js): the educator themself — their name,
+// email (their login), phone, the password for that login (an existing login's own password), and
+// optionally where they teach.
+const submitEducatorEnrollmentSchema = z.object({
+  bootcampIdOrSlug: z.string().trim().min(1).max(200),
+  hubId: z.string().trim().max(64).optional().nullable(),
+  firstName: z.string().trim().min(1, "Enter your first name").max(80),
+  lastName: z.string().trim().min(1, "Enter your last name").max(80),
+  email: z.string().trim().email("Enter a valid email").max(254),
+  phone,
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  organisation: z.string().trim().max(150).optional().nullable(),
+  // From the steps before the form: their date of birth (picks the diagnostic) and the website
+  // diagnostic they took, which places them on the pathway at the course their score earns.
+  dateOfBirth: educatorDateOfBirth,
+  attemptId: z.string().trim().max(100).optional().nullable(),
+});
+
+module.exports = {
+  submitEducatorEnrollmentSchema, submitBootcampEnrollmentSchema, markLeadPaidSchema, enrollmentChildSchema, withChildren, phone };

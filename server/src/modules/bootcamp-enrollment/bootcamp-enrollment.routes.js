@@ -1,6 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { submitBootcampEnrollment } = require("./bootcamp-enrollment.controller");
+const { submitBootcampEnrollment, submitEducatorEnrollment } = require("./bootcamp-enrollment.controller");
 
 // Unauthenticated by design, same posture as public-lead.routes.js — this is the digifunzi-
 // landing site's only way to reach this API, and it carries no JWT. The admin-only "mark paid"
@@ -18,5 +18,7 @@ const publicBootcampEnrollmentLimiter = rateLimit({
 });
 
 router.post("/bootcamp-enrollments", publicBootcampEnrollmentLimiter, submitBootcampEnrollment);
+// A TOT bootcamp: the educator enrols themself (educator-enrollment.service.js).
+router.post("/bootcamp-enrollments/educator", publicBootcampEnrollmentLimiter, submitEducatorEnrollment);
 
 module.exports = router;

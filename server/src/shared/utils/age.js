@@ -43,4 +43,21 @@ const learnerDateOfBirth = z
   .optional()
   .nullable();
 
-module.exports = { ageFrom, kenyaToday, learnerAge, learnerDateOfBirth };
+// A date of birth for anyone between `min` and `max` — a website diagnostic (children, and educators
+// on a TOT bootcamp: the stage's own age range is the real gate) or an educator's TOT sign-up.
+function dateOfBirthAged(min, max, who = "the person") {
+  return z
+    .string()
+    .trim()
+    .regex(DATE, `Enter ${who}'s date of birth`)
+    .refine((dob) => {
+      const age = ageFrom(dob);
+      return age !== null && age >= min && age <= max;
+    }, `The age must be between ${min} and ${max}`)
+    .optional()
+    .nullable();
+}
+const diagnosticDateOfBirth = dateOfBirthAged(3, 100);
+const educatorDateOfBirth = dateOfBirthAged(15, 100, "your");
+
+module.exports = { ageFrom, kenyaToday, learnerAge, learnerDateOfBirth, diagnosticDateOfBirth, educatorDateOfBirth };
