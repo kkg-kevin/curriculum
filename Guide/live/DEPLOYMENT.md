@@ -102,6 +102,69 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026, evening) — Sign in from any browser; Home Learning educators; any meeting link; TOT loop closed
+
+**Portal and backend** from `curriculum` (branch `modules`) at `37abdaa`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778` (unchanged since the morning release — rebuilt with
+today's content). Includes "This release (3 Nov 2026)" below — if that isn't uploaded yet, upload
+this one instead (database backup first; that release adds two migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (630 files, 158 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-OBAzbK9P.js`).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Signing in works in any browser.** A parent whose browser blocks site data got "Failed to read
+  'localStorage'… Access is denied" and couldn't sign in. Now the portal never trips over blocked
+  storage, and a browser that won't keep the sign-in cookie still signs the person in, quietly,
+  and keeps them signed in after a refresh. Nothing to do for anyone.
+- **Home Learning educators see their courses.** Course Content, Assessments, the Dashboard and
+  Reports took courses from the hub's curriculum — the Home Learning hub has none of its own, so they
+  showed "This hub hasn't been assigned a curriculum yet". Each class now uses its own curriculum.
+  A Home Learning educator no longer appears twice under "My Teachers & Mentors".
+- **Any meeting link is accepted** on the hub form and Edit class — scheduled or instant Meet,
+  Zoom, Teams. Meet links with a code are saved in the standard form. (Note: `meet.google.com/new`
+  starts a separate meeting for each person who clicks it.)
+- **TOT:**
+  - No qualifications. A TOT certificate no longer limits which courses an educator may be given.
+  - The supervisor is told when work is handed in (in the portal and by email); with no
+    supervisor, the admins are.
+  - The educator's Training card has **Publish report** once a course's work is all marked, which
+    issues the certificate. Admins can **Withdraw** an educator from a TOT class (nothing deleted)
+    and **Enrol again**.
+  - Educators in training no longer appear in hub learner lists.
+
+### After uploading — once, in phpMyAdmin
+
+Educators may already be restricted by earlier TOT certificates. List them:
+
+```sql
+SELECT firstName, lastName, email, qualifiedCourseIds FROM teachers
+WHERE qualifiedCourseIds IS NOT NULL AND JSON_LENGTH(qualifiedCourseIds) > 0;
+```
+
+If none of those were set on purpose, clear them:
+
+```sql
+UPDATE teachers SET qualifiedCourseIds = JSON_ARRAY()
+WHERE qualifiedCourseIds IS NOT NULL AND JSON_LENGTH(qualifiedCourseIds) > 0;
+```
+
+### Verify
+
+1. Sign in as a parent, then refresh — still signed in.
+2. As a Home Learning educator: Course Content and Assessments list the child's courses.
+3. Edit a class → paste a Meet link with capitals (`https://meet.google.com/ABC-DEFG-HIJ`) — it saves.
+4. An educator in training hands in work → their supervisor gets "Training work to mark".
+
+---
+
 ## This release (3 Nov 2026) — Sign-in no longer locks everyone out; new pathway pages; TOT bootcamps
 
 **Portal and backend** from `curriculum` (branch `modules`) at `7b245d8`. **Website** from
