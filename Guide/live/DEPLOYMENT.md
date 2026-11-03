@@ -102,6 +102,41 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (4 Nov 2026) — Deleting inside a copied curriculum only changes the copy
+
+**Portal and backend** from `curriculum` (branch `modules`) at `b744c88`. **Website** unchanged —
+the "3 Nov 2026, last" release's `digifunzi-co-ke-dist.zip` (web `1e4ed48`) stands; no need to upload it again.
+Includes every 3 Nov release below — if those aren't uploaded yet, upload this one instead (database
+backup first; the 3 Nov late release adds a migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (632 files, 159 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Bu8lb6wM.js`).
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Developmental stages can be deleted from a duplicated curriculum.** A stage's own parts — its part
+  of each pathway (that pathway's courses for the stage) and its performance bands — are deleted with
+  it, in that curriculum only; the confirmation says so. It's still refused when learners are placed at
+  it, in its bands or on its pathways, when diagnostics were issued for it, or a bootcamp runs its
+  pathways.
+- **Deleting a whole curriculum keeps assessments still in use.** Its assessments attached to a course
+  session (courses are shared with the curriculum it was copied from) or already issued stay; only its
+  unused ones are deleted.
+- A copy shares its courses and assessments with the original — editing those changes both;
+  everything else (stages, pathways, bands, levels, types, competencies, versions) is its own.
+
+### Verify
+
+1. Duplicate a curriculum → in the copy, Competencies → Developmental stages → delete one → the
+   confirmation explains what goes → it's deleted; the original still has it.
+
+---
+
 ## This release (3 Nov 2026, last) — Educators enrol on TOT bootcamps online: diagnostic, details, payment
 
 **Portal and backend** from `curriculum` (branch `modules`) at `3aaad60`. **Website** from
