@@ -39,9 +39,14 @@ async function assertCoursesExist(courseIds) {
   }
 }
 
-// A catalogue entry's website settings — shown unless switched off (no entry: shown, no hubs).
+// A catalogue entry's website settings — shown unless switched off (no entry: shown, no hubs, no
+// picture of its own).
 function websiteOf(entry) {
-  return { visible: entry ? entry.websiteVisible !== false && entry.websiteVisible !== 0 : true, hubIds: asList(entry?.websiteHubIds) };
+  return {
+    visible: entry ? entry.websiteVisible !== false && entry.websiteVisible !== 0 : true,
+    hubIds: asList(entry?.websiteHubIds),
+    image: entry?.websiteImage || null,
+  };
 }
 
 const PathwayTemplateService = {
@@ -145,10 +150,10 @@ const PathwayTemplateService = {
     return pathwayPricing(await PathwayTemplateModel.findById(id));
   },
 
-  // Settings → Pathways → Website: whether the website shows this pathway, and the hubs it runs at
-  // (the website lists them; the family picks one when they enrol). Every hub must be one of this
-  // workspace's active hubs.
-  async setWebsite(id, { visible, hubIds }, ownerAdminId) {
+  // Settings → Pathways → Website: whether the website shows this pathway, the hubs it runs at
+  // (the website lists them; the family picks one when they enrol) and its picture (left as it is
+  // when not sent). Every hub must be one of this workspace's active hubs.
+  async setWebsite(id, { visible, hubIds, image }, ownerAdminId) {
     const entry = await PathwayTemplateModel.findById(id);
     if (!entry || entry.ownerAdminId !== ownerAdminId) {
       const err = new Error("Pathway not found");
@@ -162,7 +167,9 @@ const PathwayTemplateService = {
       err.statusCode = 400;
       throw err;
     }
-    await PathwayTemplateModel.update(id, { websiteVisible: Boolean(visible), websiteHubIds: [...new Set(hubIds || [])] });
+    const changes = { websiteVisible: Boolean(visible), websiteHubIds: [...new Set(hubIds || [])] };
+    if (image !== undefined) changes.websiteImage = image || null;
+    await PathwayTemplateModel.update(id, changes);
     return websiteOf(await PathwayTemplateModel.findById(id));
   },
 

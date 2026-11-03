@@ -31,6 +31,7 @@ const updatePathwaySchema = z.object({
 const setWebsiteSchema = z.object({
   visible: z.boolean(),
   hubIds: z.array(z.string().trim().min(1).max(64)).max(100).default([]),
+  image: z.string().trim().max(500).nullable().optional(),
 });
 
 // Settings → Pathways → Website → Price.

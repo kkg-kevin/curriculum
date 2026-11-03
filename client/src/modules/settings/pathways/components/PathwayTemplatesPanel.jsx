@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FiBookOpen, FiChevronDown, FiExternalLink, FiFolder, FiGlobe, FiSearch, FiUsers } from "react-icons/fi";
 import { usePathwayDirectory, useSetPathwayWebsite, useSetPathwayPricing } from "../hooks/usePathwayTemplates";
 import RichContent, { isEmptyHtml } from "../../../courses/components/RichContent";
+import ImageUploadField from "../../../../components/ImageUploadField";
 
 const ages = (s) => (s.minAge != null && s.maxAge != null ? ` (${s.minAge}–${s.maxAge} yrs)` : "");
 
@@ -94,16 +95,18 @@ function PricingSettings({ pathway }) {
   );
 }
 
-// The pathway on the website: shown or not, and the hubs it runs at — the website lists them and the
-// family picks one when they enrol. Hubs already teaching one of the pathway's curricula come first.
+// The pathway on the website: shown or not, its picture, and the hubs it runs at — the website lists
+// them and the family picks one when they enrol. Hubs already teaching one of the pathway's
+// curricula come first.
 function WebsiteSettings({ pathway, hubs }) {
   const { mutate: save, isPending } = useSetPathwayWebsite();
   const [visible, setVisible] = useState(pathway.website.visible);
   const [hubIds, setHubIds] = useState(pathway.website.hubIds);
+  const [image, setImage] = useState(pathway.website.image || "");
   const curriculumIds = new Set(pathway.curricula.map((c) => c.curriculumId));
   const teaches = (h) => h.curriculumIds.some((id) => curriculumIds.has(id));
   const ordered = [...hubs].sort((a, b) => Number(teaches(b)) - Number(teaches(a)) || a.name.localeCompare(b.name));
-  const dirty = visible !== pathway.website.visible || hubIds.length !== pathway.website.hubIds.length || hubIds.some((id) => !pathway.website.hubIds.includes(id));
+  const dirty = visible !== pathway.website.visible || image !== (pathway.website.image || "") || hubIds.length !== pathway.website.hubIds.length || hubIds.some((id) => !pathway.website.hubIds.includes(id));
   const toggleHub = (id) => setHubIds((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
 
   return (
@@ -118,6 +121,19 @@ function WebsiteSettings({ pathway, hubs }) {
         <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
         Show this pathway on the website
       </label>
+      {visible && (
+        <div style={{ marginTop: 10 }}>
+          <ImageUploadField
+            label="Picture (optional)"
+            value={image}
+            onChange={(url) => setImage(url || "")}
+            width="240px"
+            height="150px"
+            cropAspect={16 / 10}
+            guide="Shown on the pathway's card and page. Without one, the website uses its first course's cover."
+          />
+        </div>
+      )}
       {visible && (
         <div style={{ marginTop: 10 }}>
           <p style={{ margin: "0 0 6px", fontSize: 12, color: "#6B7280" }}>
@@ -145,7 +161,7 @@ function WebsiteSettings({ pathway, hubs }) {
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
         <button type="button" className="stg-btn-primary" disabled={!dirty || isPending}
-          onClick={() => save({ id: pathway.templateId, data: { visible, hubIds } })}>
+          onClick={() => save({ id: pathway.templateId, data: { visible, hubIds, image: image || null } })}>
           {isPending ? "Saving…" : "Save"}
         </button>
       </div>
