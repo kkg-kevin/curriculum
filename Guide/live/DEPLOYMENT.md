@@ -102,6 +102,47 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026, night) — Session reports as each assessment is marked; revoking issued work; modules when issuing
+
+**Portal and backend** from `curriculum` (branch `modules`) at `7e0b4a8`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778` (unchanged — rebuilt with today's content). Includes
+"This release (3 Nov 2026, evening)" and "This release (3 Nov 2026)" below — if those aren't
+uploaded yet, upload this one instead (database backup first; the morning release adds two
+migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (630 files, 158 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CT4WRxbI.js`).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Session reports follow each mark.** A learner's session report appears the moment one of the
+  session's assessments is marked (or auto-marked when they hand it in), and updates as each further
+  one is marked; while some are still to come it says "N more still to be marked". No page has to be
+  opened first any more.
+- **A session only counts as finished when all its assessments are marked** (or marked "Not
+  submitted") — the course's final report, certificates, course progress and educator claims all
+  still wait for that.
+- **Revoke an issued assessment.** Educators: **Revoke** beside the class's roster on the
+  Assessments page, or **Revoke this assessment** on the roster page. It disappears from every
+  learner's assessments; work already handed in is kept but no longer counts in their reports.
+- **Modules when issuing.** The educator's Assessments page orders sessions by module, with a
+  **Module** picker and the module name on each session and in the Issue confirmation.
+
+### Verify
+
+1. Issue a session's assessment, have a learner hand it in, mark it — the learner's Reports show the
+   session report straight away (with "still to be marked" if the session has more).
+2. Revoke an issued assessment — it's gone from the learner's Assessments.
+3. A course with modules: the Assessments page shows the Module picker.
+
+---
+
 ## This release (3 Nov 2026, evening) — Sign in from any browser; Home Learning educators; any meeting link; TOT loop closed
 
 **Portal and backend** from `curriculum` (branch `modules`) at `37abdaa`. **Website** from
