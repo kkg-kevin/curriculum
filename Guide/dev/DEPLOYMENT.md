@@ -102,6 +102,42 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (3 Nov 2026, late) — TOT bootcamps take any age; "Who it's for" now saves
+
+**Portal and backend** from `curriculum` (branch `modules`) at `97fa17a`. **Website** from
+`curriculum-web` (branch `new`) at `f3f59cb`. Includes every 3 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first).
+
+### Upload in this order
+
+1. **Database backup** — one new migration.
+2. **Backend** — `backend-deploy.zip` (631 files, 159 migrations), then Restart. The migration
+   (`20261103110000`) sets bootcamps marked TOT to ages 15–100 on Restart; check with
+   `SELECT name, ageMin, ageMax FROM bootcamps WHERE audience = 'educators';` and run Run JS script →
+   `db:migrate` if they still show their old ages.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-P5yON3kt.js`).
+4. **Website** (africa.digifunzi.com) — `africa-digifunzi-com-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **TOT bootcamps take any age.** With "Who it's for" set to **Educators (TOT)**, the bootcamp form
+  shows "Any age (15–100)" instead of the age boxes, and the bootcamp is always saved as 15–100. The
+  website shows **"For educators"** instead of an age range. Learners' bootcamps keep their own range
+  (now allowed up to 100).
+- **Fix: "Who it's for" now saves.** In the earlier 3 Nov bundles the bootcamp form dropped it, so a
+  bootcamp marked Educators (TOT) was saved for learners (and a TOT curriculum then refused). After
+  uploading, open any bootcamp you meant as TOT and check its "Who it's for".
+
+### Verify
+
+1. Events → New bootcamp → Educators (TOT): the age boxes are replaced by "Any age (15–100)"; save
+   and reopen — still Educators (TOT).
+2. The website's page for a TOT bootcamp says "For educators".
+
+---
+
 ## This release (3 Nov 2026, night) — Session reports as each assessment is marked; revoking issued work; modules when issuing
 
 **Portal and backend** from `curriculum` (branch `modules`) at `7e0b4a8`. **Website** from
