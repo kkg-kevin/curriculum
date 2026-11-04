@@ -18,6 +18,7 @@ import {
   Storefront as StorefrontIcon,
 } from "@mui/icons-material";
 import { usePlatformAnalytics } from "../hooks/useReports";
+import AnalyticsPage from "../components/analytics/AnalyticsPage";
 
 // Same visual language as school-portal/pages/ReportsPage.jsx (KpiTile/ChartCard/ChartTooltip are
 // kept as local duplicates there too, not shared — this page is that one's platform-wide sibling:
@@ -64,7 +65,7 @@ function ChartTooltip({ active, payload, label, valueSuffix = "%" }) {
   );
 }
 
-export default function AdminReportsPage() {
+function AdminOverview() {
   const navigate = useNavigate();
   const { data: analytics, isLoading, isError } = usePlatformAnalytics(30);
 
@@ -85,22 +86,6 @@ export default function AdminReportsPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "28px 32px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ position: "relative" }}>
-          <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Reports & Analytics</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
-            Academic performance across every learning hub on the platform — scores, competency attainment, attendance and report completion, drawn from published course reports and attendance records.
-          </p>          <button
-            type="button"
-            onClick={() => navigate("/reports/certificates")}
-            style={{ marginTop: 14, padding: "8px 16px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-          >
-            Certificates issued
-          </button>
-        </div>
-      </div>
-
       {noHubs ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: T.ink }}>No learning hubs set up yet</h3>
@@ -185,5 +170,18 @@ export default function AdminReportsPage() {
         </>
       )}
     </div>
+  );
+}
+
+// Reports & Analytics for the workspace: the dashboard above is its Overview tab.
+export default function AdminReportsPage() {
+  const navigate = useNavigate();
+  return (
+    <AnalyticsPage
+      level="admin"
+      overview={<AdminOverview />}
+      onCertificates={() => navigate("/reports/certificates")}
+      description="How every learning hub is doing — logins, time to task, assessments, competencies and the learners who need help. Pick a tab, then narrow it with the filters."
+    />
   );
 }

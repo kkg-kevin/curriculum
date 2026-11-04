@@ -102,6 +102,55 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (4 Nov 2026, late) — Reports & Analytics; learner reports anyone can read
+
+**Portal and backend** from `curriculum` (branch `modules`) at `dc30a97`. **Website** from
+`curriculum-web` (branch `new`) at `d4bb480` — no website code changes, rebuilt against today's API
+(`africa-digifunzi-com-dist.zip`, 54 pages). Includes the "4 Nov 2026, evening" release below — if that isn't up yet,
+follow its notes too (plans before the website).
+
+### Upload in this order
+
+1. **Take a database backup** — one new migration.
+2. **Backend** — `backend-deploy.zip` (652 files, 162 migrations), then Restart. The migration
+   `20261104160000_reports_home_note` adds an optional `reports.homeNote` column. Additive only.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-CAlQrfgq.js`).
+4. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (optional this time: nothing changed in its code).
+
+No new cron and no new environment variables.
+
+### What changed
+
+**Learner and parent reports** (session and course reports, on screen, printed and as PDF)
+- One score ring with a plain level word — *Early days · Getting started · On track · Strong start* —
+  and one sentence saying how it went ("You're getting the hang of…" for the child, the child's name
+  for a parent). Families no longer see raw marks like "28.8 / 49.6".
+- *Doing well* and *To practise next*, the teacher's comment in its own card, an optional **How to
+  help at home** note, skills per competency (tap for each indicator), the work with "See marked
+  work", and *What's next* (session N of M, the next session, Continue the course).
+- Educators: the report page shows exactly what the family sees, a **Show marks** switch for staff,
+  and a "How to help at home" box beside the comment (draft course reports).
+
+**Reports & Analytics** (admin Reports and the hub's Reports page)
+- New tabs beside the Overview: **Logins & engagement**, **Time to task**, **Assessments**,
+  **Competencies** and **Learners at risk**, with one filter bar (period, hub, curriculum, class,
+  course, stage, pathway, gender) and CSV on every table.
+- Hubs see their own hub only, and educator figures only as totals. Staff need the Reports permission.
+- Worked out from what the system already records — nothing to set up. Sign-in figures start from
+  when the Activity log began; on-time / missed rates only count work issued with a due date.
+
+**Colours** — reports and analytics use the system colours (gold, light sky, mid blue, navy).
+
+### Verify
+
+1. Learner portal → My Reports → open a session report: a ring with a level word, no "x / y" marks.
+2. Teacher portal → Course Reports → open one → tick **Show marks**: marks appear; untick: gone.
+3. Admin → Reports → **Learners at risk** (Last 12 months): a list with reasons; a name opens the
+   learner. **Logins & engagement** shows sign-ins per day.
+4. Hub portal → Reports → **Assessments**: only that hub's classes appear in the Class filter.
+
+---
+
 ## This release (4 Nov 2026, evening) — Pathways sold by subscription; TOT sign-ups refined; QA on phones
 
 **Portal and backend** from `curriculum` (branch `modules`) at `e2c55a2`. **Website** from

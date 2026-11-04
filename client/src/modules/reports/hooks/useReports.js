@@ -89,10 +89,10 @@ export function useGenerateReport() {
 export function useUpdateRemarks() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, remarks }) => reportApi.updateRemarks(id, remarks),
+    mutationFn: ({ id, ...body }) => reportApi.updateRemarks(id, body),
     onSuccess: (report) => {
       qc.setQueryData(KEYS.detail(report.id), report);
-      toast.success("Remarks saved");
+      toast.success("Saved");
     },
     onError: (err) => toast.error(err.message || "Failed to save remarks"),
   });

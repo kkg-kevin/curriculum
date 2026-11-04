@@ -75,6 +75,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/assessments": "assessments",
   "/api/assessment-submissions": "assessments",
   "/api/reports": "reports",
+  "/api/analytics": "reports",
   "/api/certificates": "reports",
   "/api/competitions": "competitions",
   "/api/bootcamps": "bootcamps",
