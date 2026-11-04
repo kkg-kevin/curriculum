@@ -5,6 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useReceiptsQuery } from "../hooks/useBilling";
 import { inputStyle, formatMoney, formatDate, rowHoverHandlers } from "../components/shared";
 import { LoadingState, EmptyState } from "../components/PageStates";
+import { familyBillingBase } from "../utils/familyBillingBase";
 
 export default function ReceiptsListPage() {
   const navigate = useNavigate();
@@ -13,8 +14,8 @@ export default function ReceiptsListPage() {
   const receipts = receiptsData?.data || [];
   const [search, setSearch] = useState("");
 
-  const basePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
-  const receiptsPath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const basePath = user?.role === "learner" ? `${familyBillingBase(user)}/invoices` : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsPath = user?.role === "learner" ? `${familyBillingBase(user)}/receipts` : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();

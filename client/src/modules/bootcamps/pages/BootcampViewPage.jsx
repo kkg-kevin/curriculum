@@ -83,6 +83,13 @@ function RunsAtHubsSection({ bootcamp }) {
   const canRun = !!bootcamp.curriculumId && !!bootcamp.startDate && !!bootcamp.endDate;
   const runningHubIds = new Set(offerings.map((o) => o.hubId));
   const availableHubs = (hubsData?.data || []).filter((h) => !runningHubIds.has(h.id));
+  // Hubs on the bootcamp's curriculum first; any other hub can still run it (its classes run the
+  // bootcamp's curriculum there), but the admin is told — a TOT bootcamp especially belongs at a
+  // hub set up for educators.
+  const onCurriculum = availableHubs.filter((h) => h.curriculumId === bootcamp.curriculumId);
+  const otherHubs = availableHubs.filter((h) => h.curriculumId !== bootcamp.curriculumId);
+  const selectedHub = availableHubs.find((h) => h.id === selectedHubId);
+  const offCurriculum = !!selectedHub && selectedHub.curriculumId !== bootcamp.curriculumId;
 
   const handleAdd = () => {
     if (!selectedHubId) return;
@@ -110,14 +117,30 @@ function RunsAtHubsSection({ bootcamp }) {
       </div>
 
       {pickerOpen && (
-        <div style={{ display: "flex", gap: 8, marginTop: 14, padding: "12px 14px", borderRadius: 10, border: "1.5px solid #a8d5ee", backgroundColor: "#F0F7FF" }}>
-          <select value={selectedHubId} onChange={(e) => setSelectedHubId(e.target.value)} style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
-            <option value="">Select a hub…</option>
-            {availableHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-          <button type="button" onClick={handleAdd} disabled={!selectedHubId || adding} style={{ padding: "8px 18px", borderRadius: 8, border: "none", backgroundColor: "#25476a", color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: !selectedHubId || adding ? "not-allowed" : "pointer" }}>
-            {adding ? "Adding…" : "Add"}
-          </button>
+        <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, border: "1.5px solid #a8d5ee", backgroundColor: "#F0F7FF" }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select value={selectedHubId} onChange={(e) => setSelectedHubId(e.target.value)} style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+              <option value="">Select a hub…</option>
+              {onCurriculum.length > 0 && (
+                <optgroup label={`On ${bootcamp.curriculumName || "this curriculum"}`}>
+                  {onCurriculum.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </optgroup>
+              )}
+              {otherHubs.length > 0 && (
+                <optgroup label="Other hubs (another curriculum)">
+                  {otherHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </optgroup>
+              )}
+            </select>
+            <button type="button" onClick={handleAdd} disabled={!selectedHubId || adding} style={{ padding: "8px 18px", borderRadius: 8, border: "none", backgroundColor: "#25476a", color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: !selectedHubId || adding ? "not-allowed" : "pointer" }}>
+              {adding ? "Adding…" : "Add"}
+            </button>
+          </div>
+          {offCurriculum && (
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "#92400E", lineHeight: 1.5 }}>
+              {selectedHub.name} runs a different curriculum. Its new {bootcamp.audience === "educators" ? "TOT " : ""}classes will still run {bootcamp.curriculumName || "this bootcamp's curriculum"} — check this is the right hub{bootcamp.audience === "educators" ? " for educators" : ""}.
+            </p>
+          )}
         </div>
       )}
 

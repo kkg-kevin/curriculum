@@ -142,6 +142,9 @@ const assignCourseTeacher = asyncHandler(async (req, res) => {
   // teacher has been given a specific, non-empty list (see teacher.validation.js).
   const teacher = await TeacherModel.findById(teacherId);
   if (!teacher) return res.status(404).json({ success: false, message: "Teacher not found" });
+  if (!require("../teachers/teacher.validation").canTeach(teacher)) {
+    return res.status(400).json({ success: false, message: "This educator is still in training — make them Active on their page before giving them a class." });
+  }
   if (teacher.qualifiedCourseIds?.length > 0 && !teacher.qualifiedCourseIds.includes(courseId)) {
     return res.status(400).json({ success: false, message: "This educator isn't qualified to teach this course." });
   }

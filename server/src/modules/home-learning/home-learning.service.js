@@ -122,6 +122,7 @@ async function assertOwnEducator(ownerAdminId, educatorId) {
   if (!educatorId) return null;
   const educator = await TeacherModel.findById(educatorId);
   if (!educator) fail("Educator not found", 404);
+  if (!require("../teachers/teacher.validation").canTeach(educator)) fail("This educator is still in training — make them Active on their page first.", 400);
   const ownHubIds = new Set((await LearningHubModel.findAll({ ownerAdminId, includeDrafts: true })).map((hub) => hub.id));
   const links = await TeacherHubLinkModel.findByTeacherId(educatorId);
   if (!links.some((link) => ownHubIds.has(link.hubId))) fail("This educator is not available in your workspace", 404);

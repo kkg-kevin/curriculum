@@ -54,7 +54,11 @@ async function assertCourseAccess(req, courseId) {
     const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
     const homeLinks = await HomeLearningModel.findForLearner(req.ownLearner?.id);
     const homeCurriculumIds = homeLinks.map((link) => link.curriculumId);
-    assertOwn(classCurriculumIds.concat(homeCurriculumIds).some((cid) => curriculumIds.includes(cid)));
+    if (classCurriculumIds.concat(homeCurriculumIds).some((cid) => curriculumIds.includes(cid))) return;
+    // …or a pathway they subscribe to or bought — no class needed (pathway-subscriptions/
+    // pathway-access.js). A lapsed subscription no longer opens its courses.
+    const open = await require("../pathway-subscriptions/pathway-access").openCourseIds(req.ownLearner?.id);
+    assertOwn(open.has(courseId));
     return;
   }
   assertOwn(false);

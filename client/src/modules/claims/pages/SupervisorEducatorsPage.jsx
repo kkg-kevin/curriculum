@@ -17,6 +17,7 @@ import { Avatar } from "../components/supervisorParts";
 const STATUS = {
   active: { label: "Active", bg: "#ECFDF5", color: "#047857" },
   on_leave: { label: "On leave", bg: "#FFFBEB", color: "#B45309" },
+  in_training: { label: "In training", bg: "#dff2fb", color: "#1f6f99" },
   inactive: { label: "Inactive", bg: "#F3F4F6", color: "#6B7280" },
 };
 

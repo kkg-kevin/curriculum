@@ -9,6 +9,9 @@ const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
   tot_work_submitted: { Icon: FiUpload, color: "#6D28D9" },
+  tot_training_on: { Icon: FiCheckCircle, color: "#059669" },
+  tot_place_released: { Icon: FiFileText, color: "#B45309" },
+  tot_training_finished: { Icon: FiAward, color: "#6D28D9" },
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
   certificate_issued: { Icon: FiAward, color: "#B45309" },
@@ -64,6 +67,13 @@ function resolveNotificationPath(n) {
     case "tech_club_child_added":
       // A family joined a club on the website, or a parent added a child — the Tech Clubs page.
       return p.route || "/tech-clubs";
+    case "tot_training_on":
+    case "tot_place_released":
+      // A website TOT sign-up, to the educator: their own learning.
+      return p.route || "/teacher-portal/learning";
+    case "tot_training_finished":
+      // To the admins: the educator's page, to make them Active.
+      return p.route || "/teachers";
     case "home_learning_signup_paid":
     case "tech_club_signup_paid":
     case "bootcamp_enrollment_paid":

@@ -155,7 +155,7 @@ function onActivation(record, { today, startDate = null }) {
 // Whether part-payment plans may be offered on this invoice: always for anything that isn't a
 // package's, and for a package invoice only when it covers about a quarter or more.
 function allowsPlans(invoice) {
-  if (!["home_learning", "tech_club"].includes(invoice?.invoiceType)) return true;
+  if (!["home_learning", "tech_club", "pathway_subscription"].includes(invoice?.invoiceType)) return true;
   if (!invoice.periodStart || !invoice.periodEnd) return true;
   return daysBetween(String(invoice.periodStart).slice(0, 10), String(invoice.periodEnd).slice(0, 10)) >= MIN_DAYS_FOR_PLANS;
 }

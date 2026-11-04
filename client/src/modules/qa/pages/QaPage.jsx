@@ -6,7 +6,7 @@ import EducatorsTab from "../components/EducatorsTab";
 import SchedulesTab from "../components/SchedulesTab";
 import TemplatesTab from "../components/TemplatesTab";
 import VisitDialog from "../components/VisitDialog";
-import { QaStyles, Tabs, btn, font } from "../shared";
+import { QaPageStyles, QaStyles, Tabs, btn, font } from "../shared";
 
 const TABS = [
   { key: "visits", label: "Visits", icon: FiClipboard },
@@ -29,8 +29,9 @@ export default function QaPage() {
   };
 
   return (
-    <div style={{ fontFamily: font }}>
+    <div className="qa-page" style={{ fontFamily: font }}>
       <QaStyles />
+      <QaPageStyles />
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "26px 30px", marginBottom: 18, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Quality Assurance</h1>

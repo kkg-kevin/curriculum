@@ -4,7 +4,7 @@ import { useQaEducators } from "../hooks/useQa";
 import EducatorQaSection from "../components/EducatorQaSection";
 import TotTrainingCard from "../../tot/components/TotTrainingCard";
 import SchedulesTab from "../components/SchedulesTab";
-import { QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
+import { QaPageStyles, QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
 
 // One of a supervisor's educators (/supervisor-portal/educators/:id): who they are and where they
 // teach, their QA visits and reports, and their regular visits.
@@ -24,8 +24,9 @@ export default function SupervisorEducatorPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, maxWidth: 1080 }}>
+    <div className="qa-page" style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, maxWidth: 1080 }}>
       <QaStyles />
+      <QaPageStyles />
       <Link to="/supervisor-portal/educators" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: T.accentMid, textDecoration: "none", alignSelf: "flex-start" }}><FiArrowLeft size={14} /> My Educators</Link>
       <section style={{ ...card, padding: "18px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         {educator.photo

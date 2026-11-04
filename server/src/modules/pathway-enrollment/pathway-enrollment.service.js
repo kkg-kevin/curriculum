@@ -7,28 +7,28 @@ const LearnerPathwayModel = require("../curriculum/competency-framework/learner-
 const AuthService = require("../auth/auth.service");
 const UserModel = require("../auth/user.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
-const BillingModel = require("../billing/billing.model");
 const NotificationService = require("../notifications/notification.service");
 const PaymentLinks = require("../payments/payment-links");
 const PublicDiagnosticAttemptModel = require("../public-site/public-diagnostic-attempt.model");
 const { parentLoginFor } = require("../auth/parent-login");
 const { issueParentToken } = require("../auth/parent-signup");
 const { resolveForEnrolment } = require("../public-site/public-site.service");
-const { coursePrice, isPriced } = require("../../shared/utils/pathway-pricing");
 const { ageFrom, kenyaToday } = require("../../shared/utils/age");
 const { enrolmentHelpers } = require("../bootcamp-enrollment/bootcamp-enrollment.service");
+const PathwaySubscriptionService = require("../pathway-subscriptions/pathway-subscription.service");
 
-const { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money } = enrolmentHelpers;
+const { activateLead, assertUsernameFree, splitName, money } = enrolmentHelpers;
 
-// A pathway enrolment on the website: a priced pathway (Settings → Pathways → On the website →
-// Price) that runs at chosen hubs. The family picks a hub, then signs up one or more children the
-// same way a bootcamp enrolment does (bootcamp-enrollment/): a parent login (or the existing one,
-// by password or parent token), each child's own username login, an enquiry per child — and
-// here, each child linked to the chosen hub WITHOUT a class (staff choose it), at the pathway's
-// stage for their age (or their website diagnostic), on the pathway at their starting course.
-// One invoice covers the family: per child, the whole pathway's price, or their starting course's
-// price; paying it switches every child on (activateForPaidInvoice). Accounts wait as
-// pending_payment until then, like a bootcamp's.
+// A pathway subscription on the website: one of a pathway's plans (Billing → Packages → Pathway
+// plans) at one of the hubs it runs at. The family picks the plan and a hub, then signs up one or
+// more children the same way a bootcamp enrolment does (bootcamp-enrollment/): a parent login (or
+// the existing one, by password or parent token), each child's own username login, an enquiry per
+// child — each child linked to the hub WITHOUT a class (a class is optional), at the pathway's stage
+// for their age (or their website diagnostic), on the pathway at their starting course. Then the
+// subscription and its first period's invoice (startSubscription); paying it opens the pathway's
+// courses (pathway-subscriptions/). The accounts are open from the start.
+// The one-off price (Settings → Pathways → Price) was removed on 4 Nov 2026; invoices it raised
+// before then still switch their children on when paid (activateForPaidInvoice).
 
 function badRequest(message) {
   return Object.assign(new Error(message), { statusCode: 400 });
@@ -70,8 +70,15 @@ const PathwayEnrollmentService = {
   async submit(data, visitSource = null) {
     const pathway = await resolveForEnrolment(data.pathwayIdOrSlug);
     if (!pathway) throw Object.assign(new Error("Pathway not found"), { statusCode: 404 });
-    const { pricing, hubIds } = pathway.website;
-    if (!isPriced(pricing)) throw badRequest("This pathway isn't open for online enrolment — enquire instead.");
+    const { hubIds } = pathway.website;
+    // A pathway is sold by its subscription plans (Billing → Packages → Pathway plans) — the
+    // one-off Settings price was removed on 4 Nov 2026. No plan chosen: it isn't sold online.
+    if (!data.packageId) throw badRequest("Choose a plan to enrol — or enquire and our team will help.");
+    const plan = await resolvePlan(pathway, data.packageId);
+    const planPrice = PathwaySubscriptionService.priceFor(plan, data.children.length);
+    if (!planPrice) {
+      throw badRequest(plan.allowExtraChildren ? `${plan.name} takes up to ${plan.maxChildren} children` : `${plan.name} covers ${plan.childrenIncluded === 1 ? "1 child" : `${plan.childrenIncluded} children`} — choose a larger plan for more`);
+    }
     if (!hubIds.includes(data.hubId)) throw badRequest("Choose one of the hubs this pathway runs at.");
     const hub = await LearningHubModel.findById(data.hubId);
     if (!hub || hub.status !== "active") throw badRequest("That hub isn't taking enrolments — choose another.");
@@ -82,9 +89,8 @@ const PathwayEnrollmentService = {
     const plans = [];
     for (const child of children) {
       const start = await startingPoint(pathway, child);
-      const amount = pricing.mode === "whole" ? pricing.amount : coursePrice(pricing, start.course.id);
-      if (amount == null) throw badRequest(`${start.course.name}, where ${child.learnerName} would start, has no price yet — enquire instead and our team will help.`);
-      plans.push({ child, ...start, amount: money(amount) });
+      // The subscription is priced as a whole (planPrice), not per child.
+      plans.push({ child, ...start });
     }
     const existingParent = await parentLoginFor(data.parentEmail, data.parentPassword, data.parentToken);
     if (!existingParent && !data.parentPassword) throw badRequest("Choose a password for your account.");
@@ -113,7 +119,8 @@ const PathwayEnrollmentService = {
           dateOfBirth: child.learnerDateOfBirth || "",
           ...(child.learnerDateOfBirth ? {} : { statedAge: child.learnerAge, statedAgeOn: kenyaToday() }),
           guardianName: data.parentName, guardianPhone: data.parentPhone, guardianEmail: data.parentEmail,
-          username: child.username, accountStatus: "pending_payment",
+          // The account is open; the pathway's courses wait on the payment (pathway-access.js).
+          username: child.username, accountStatus: "active",
         });
         await AuthService.setOrCreatePasswordByUsername({ name: child.learnerName, username: child.username, password: child.password, role: "learner" });
         // At the hub without a class — staff put them in one.
@@ -151,39 +158,43 @@ const PathwayEnrollmentService = {
       }
     }
 
-    const currency = pricing.currency || "KES";
-    const total = money(enrolled.reduce((sum, e) => sum + e.amount, 0));
+    const currency = plan.currency || "KES";
+    const total = money(planPrice.amount);
     let invoice = null;
-    if (total > 0) {
-      invoice = await raiseInvoice({ enrolled, hub, pathway, currency, total })
-        .catch((err) => { console.error("[pathway-enrollment] could not raise the invoice:", err.message); return null; });
+    let subscription = null;
+    try {
+      ({ subscription, invoice } = await startSubscription({ plan, planPrice, pathway, hub, data, enrolled }));
+    } catch (err) {
+      console.error("[pathway-enrollment] could not start the subscription:", err.message);
     }
     for (const { lead, learner } of enrolled) await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
-    if (invoice) require("../billing/billing.service").emailIssuedInvoice(invoice.id);
 
     return {
-      learners: enrolled.map(({ child, course, stage, amount }) => ({
-        name: child.learnerName, username: child.username, startsAt: course.name, stage: stage.stage?.name || null, amount,
+      learners: enrolled.map(({ child, course, stage }) => ({
+        name: child.learnerName, username: child.username, startsAt: course.name, stage: stage.stage?.name || null,
       })),
       parentAccount: { email: data.parentEmail, existing: Boolean(existingParent), name: data.parentName, phone: data.parentPhone },
       parentToken: parentUser ? issueParentToken(parentUser) : null,
       hub: { id: hub.id, name: hub.name },
+      subscription: { id: subscription?.id || null, plan: plan.name, billingPeriod: planPrice.billingPeriod, amount: Number(planPrice.amount) },
       payment: {
-        amount: total, currency, mode: pricing.mode, children: enrolled.length,
+        amount: total, currency, mode: "subscription", children: enrolled.length,
         invoiceNumber: invoice?.invoiceNumber || null,
-        pay: invoice ? await PaymentLinks.forWebsite(invoice, "pathway_enrollment") : null,
+        pay: invoice ? await PaymentLinks.forWebsite(invoice, "pathway_subscription") : null,
       },
     };
   },
 
-  // A pathway enrolment's invoice was paid (enough of it — billing.paid-hooks.js): every child it
-  // signed up is switched on, as a bootcamp enrolment's are. Does nothing for any other invoice.
+  // A one-off pathway enrolment's invoice (invoiceType "pathway" — only raised before 4 Nov 2026,
+  // when one-off prices were removed) was paid (enough of it — billing.paid-hooks.js): every child
+  // it signed up is switched on and gets the pathway for good. Does nothing for any other invoice.
   async activateForPaidInvoice(invoice, { amount, paidByUserId }) {
     if (invoice.invoiceType !== "pathway") return;
     const leads = (await LeadModel.findAllByInvoiceId(invoice.id)).filter((l) => !l.paidAt && l.learnerId);
     if (leads.length === 0) return;
     const share = money((amount ?? Number(invoice.total)) / leads.length);
     for (const lead of leads) await activateLead(lead.id, { amount: share, currency: invoice.currency, paidByUserId, invoice });
+    await grantPurchasedAccess(invoice).catch((err) => console.error("[pathway-enrollment] could not open the pathway:", err.message));
     const hub = leads[0].hubId ? await LearningHubModel.findById(leads[0].hubId) : null;
     if (hub?.ownerAdminId && !paidByUserId) {
       await NotificationService._notify(hub.ownerAdminId, {
@@ -198,30 +209,59 @@ const PathwayEnrollmentService = {
   },
 };
 
-// The family's invoice: a line per child (their whole-pathway price or starting course's), issued
-// by the chosen hub; its learnerId is the first child's (billing.access.js pauses every line's).
-async function raiseInvoice({ enrolled, hub, pathway, currency, total }) {
-  const now = new Date();
-  let invoice;
-  await BillingModel.transaction(async (trx) => {
-    invoice = await BillingModel.createInvoice({
-      invoiceNumber: await nextInvoiceNumber(trx),
-      issuerType: "learning_hub", issuerHubId: hub.id, payerUserId: null, payerHubId: null,
-      learnerId: enrolled[0].learner.id, hubId: hub.id, invoiceType: "pathway", status: "issued", currency,
-      subtotal: total, discount: 0, total, amountPaid: 0, issuedAt: now, notes: null,
-    }, trx);
-    for (const { child, lead, learner, course, stage, amount } of enrolled) {
-      if (!(amount > 0)) continue;
-      await BillingModel.createItem({
-        invoiceId: invoice.id, learnerId: learner.id, courseId: course.id,
-        description: `${pathway.name} — ${pathway.website.pricing.mode === "whole" ? "the pathway" : course.name}${enrolled.length > 1 ? ` (${child.learnerName})` : ""}`,
-        quantity: 1, unitAmount: amount, totalAmount: amount,
-        metadata: { leadId: lead.id, pathwayId: stage.row.id, courseId: course.id },
-      }, trx);
-    }
-    await BillingModel.createAuditEvent({ invoiceId: invoice.id, actorUserId: null, eventType: "invoice_issued", newStatus: "issued", amount: total, metadata: { source: "pathway_enrollment" } }, trx);
+// A website plan for this pathway: published, active, one of the website workspace's and sold for
+// this pathway's catalogue entry.
+async function resolvePlan(pathway, packageId) {
+  const { PathwayPackageModel } = require("../pathway-subscriptions/pathway-subscription.model");
+  const plan = await PathwayPackageModel.findById(packageId);
+  const ok = plan && plan.status === "active" && plan.isPublished && plan.pathwayTemplateId && plan.pathwayTemplateId === pathway.website.templateId;
+  if (!ok) throw badRequest("That plan is no longer available — please choose another.");
+  return plan;
+}
+
+// The family's subscription (pending until its first invoice is paid): every child on it, at the
+// stage and course they were placed at, and the first period's invoice — from today, renewing
+// automatically after (billing/package-billing.js).
+async function startSubscription({ plan, planPrice, pathway, hub, data, enrolled }) {
+  const { PathwaySubscriptionModel } = require("../pathway-subscriptions/pathway-subscription.model");
+  const { firstPeriod } = require("../billing/package-billing");
+  const { dueDateFor } = require("../../shared/utils/billing-periods");
+  const period = firstPeriod(planPrice.billingPeriod);
+  const subscription = await PathwaySubscriptionModel.create({
+    ownerAdminId: plan.ownerAdminId, packageId: plan.id, pathwayTemplateId: plan.pathwayTemplateId,
+    curriculumId: enrolled[0].stage.row.curriculumId, pathwayName: pathway.name, hubId: hub.id,
+    guardianName: data.parentName, guardianEmail: data.parentEmail, guardianPhone: data.parentPhone,
+    childCount: planPrice.childCount, amount: planPrice.amount, billingPeriod: planPrice.billingPeriod,
+    billingAnchor: period.start, billedThrough: period.end, status: "pending", source: "website",
+    notes: `Signed up on the website on ${kenyaToday()}.`,
   });
-  return invoice;
+  for (const { learner, stage, course } of enrolled) {
+    await PathwaySubscriptionModel.addChild({ ownerAdminId: plan.ownerAdminId, subscriptionId: subscription.id, learnerId: learner.id, pathwayId: stage.row.id, startCourseId: course.id, status: "active" });
+  }
+  const invoice = await PathwaySubscriptionService.raiseSubscriptionInvoice(subscription, {
+    periodStart: period.start, periodEnd: period.end, label: period.label, dueDate: dueDateFor(planPrice.billingPeriod, kenyaToday(), period.end),
+  });
+  await PathwaySubscriptionModel.update(subscription.id, { signupInvoiceId: invoice.id });
+  return { subscription, invoice };
+}
+
+// A one-off pathway purchase is paid: each child on it may open the pathway's courses for good
+// (pathway-subscriptions/pathway-access.js — source "purchase", no end date).
+async function grantPurchasedAccess(invoice) {
+  const PathwayAccess = require("../pathway-subscriptions/pathway-access");
+  const db = require("../../config/db");
+  const items = await db("billing_invoice_items").where({ invoiceId: invoice.id }).whereNotNull("learnerId");
+  for (const item of items) {
+    const meta = typeof item.metadata === "string" ? JSON.parse(item.metadata || "{}") : item.metadata || {};
+    const row = meta.pathwayId ? await db("pathways").where({ id: meta.pathwayId }).first() : null;
+    if (!row) continue;
+    const curriculum = await db("curricula").where({ id: row.curriculumId }).first("ownerAdminId");
+    const template = await db("pathway_templates").where({ ownerAdminId: curriculum?.ownerAdminId }).whereRaw("LOWER(TRIM(name)) = ?", [String(row.name).trim().toLowerCase()]).first("id");
+    await PathwayAccess.grant({
+      ownerAdminId: curriculum?.ownerAdminId, learnerId: item.learnerId, curriculumId: row.curriculumId, pathwayTemplateId: template?.id || null,
+      pathwayName: row.name, source: "purchase", invoiceId: invoice.id,
+    });
+  }
 }
 
 module.exports = PathwayEnrollmentService;

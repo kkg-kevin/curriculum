@@ -27,6 +27,7 @@ export function sourcePath(ref, role) {
       bootcamp: `/events/bootcamps/${ref.id}/view`,
       household: `/home-learning?household=${ref.id}`,
       club_membership: `/tech-clubs?membership=${ref.id}`,
+      pathway_subscription: `/pathway-subscriptions?subscription=${ref.id}`,
       hub: `/learning-hubs/${ref.id}/view`,
       customer: `/billing/customers/${ref.id}`,
       learner: `/learners/${ref.id}`,

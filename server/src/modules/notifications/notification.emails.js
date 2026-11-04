@@ -140,6 +140,29 @@ const EMAIL_TYPES = {
   qa_review_submitted: { label: "A QA report on you is ready", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA report" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
   qa_visit_due: { label: "A QA visit of yours is due — fill in the review", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/qa") },
   qa_review_reply: { label: "An educator replies to a QA report", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "pencil", eyebrow: "QA report" }, path: (p) => routeOr(p, "/qa") },
+  // Website TOT sign-ups (bootcamp-enrollment/educator-enrollment.service.js), to the educator.
+  tot_training_on: {
+    label: "Your training is paid for and open",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Training of trainers" },
+    path: (p) => routeOr(p, "/teacher-portal/learning"),
+  },
+  tot_place_released: {
+    label: "An unpaid training place is released",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Training of trainers" },
+    path: (p) => routeOr(p, "/teacher-portal/learning"),
+  },
+  // To the workspace admins: an educator still "in training" finished a TOT curriculum.
+  tot_training_finished: {
+    label: "An educator in training finishes their training",
+    roles: ADMIN_ROLES,
+    default: true,
+    look: { tone: "celebrate", icon: "star", eyebrow: "Training of trainers" },
+    path: (p) => routeOr(p, "/teachers"),
+  },
   tot_work_submitted: {
     label: "An educator in training hands in work for you to mark",
     roles: CLAIM_REVIEWER_ROLES,

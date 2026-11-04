@@ -42,6 +42,15 @@ const KINDS = {
     update: (rec, patch) => ClubMembershipModel.update(rec.id, rec.ownerAdminId, patch),
     raise: (rec, args, actorUserId) => require("../tech-clubs/club.service").raiseMembershipInvoice(rec, args, actorUserId),
   },
+  // Website pathway subscriptions (modules/pathway-subscriptions/) — never daily.
+  pathway_subscription: {
+    table: "pathway_subscriptions",
+    invoiceKey: "pathwaySubscriptionId",
+    invoiceType: "pathway_subscription",
+    childLearnerIds: (rec) => db("pathway_subscription_children").where({ subscriptionId: rec.id, status: "active" }).pluck("learnerId"),
+    update: (rec, patch) => require("../pathway-subscriptions/pathway-subscription.model").PathwaySubscriptionModel.update(rec.id, patch),
+    raise: (rec, args, actorUserId) => require("../pathway-subscriptions/pathway-subscription.service").raiseSubscriptionInvoice(rec, args, actorUserId),
+  },
 };
 
 function existingInvoice(kind, rec, periodStart) {

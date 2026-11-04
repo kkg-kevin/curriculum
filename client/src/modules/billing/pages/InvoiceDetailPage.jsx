@@ -15,6 +15,7 @@ import { LoadingState, ErrorState } from "../components/PageStates";
 import MpesaPayDialog, { PaybillInstructions } from "../components/MpesaPayDialog";
 import PaymentScheduleCard from "../components/PaymentScheduleCard";
 import { billingApi } from "../services/billingApi";
+import { familyBillingBase } from "../utils/familyBillingBase";
 
 function Detail({ label, value }) { return <div><div style={{ color: "#9CA3AF", fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>{label}</div><div style={{ marginTop: 4, color: "#374151", fontSize: 13 }}>{value || "Not provided"}</div></div>; }
 
@@ -36,8 +37,8 @@ export default function InvoiceDetailPage() {
   // What the M-Pesa prompt starts at: the next part of a payment plan, or (null) all that's due.
   const [mpesaAmount, setMpesaAmount] = useState(null);
   const queryClient = useQueryClient();
-  const basePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
-  const receiptsBasePath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const basePath = user?.role === "learner" ? `${familyBillingBase(user)}/invoices` : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsBasePath = user?.role === "learner" ? `${familyBillingBase(user)}/receipts` : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
 
   if (isLoading) return <LoadingState label="Loading invoice…" />;
   if (isError || !invoice) return <ErrorState label="Invoice could not be loaded." detail="It may have been removed, or you may not have access to it." />;

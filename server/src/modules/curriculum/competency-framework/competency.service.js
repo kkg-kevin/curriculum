@@ -378,11 +378,14 @@ const CompetencyService = {
       err.statusCode = 404;
       throw err;
     }
+    // Only the template's courses that are on this curriculum's version come along — a pathway
+    // is only given courses on its curriculum's version (competency.controller.js).
+    const onVersion = await require("../versions/curriculum-versions.service").versionCourseIds(curriculumId);
     return this.createPathway(curriculumId, {
       name:        source.name,
       description: source.description,
       color:       source.color,
-      courses:     source.courses,
+      courses:     (source.courses || []).filter((id) => onVersion?.has(id)),
     });
   },
 
@@ -1376,8 +1379,20 @@ const CompetencyService = {
   async getPathway(curriculumId, learnerId) {
     const pathways = await PathwayModel.findByCurriculumId(curriculumId);
     const records = (await LearnerPathwayModel.findByLearner(learnerId)).filter((r) => r.curriculumId === curriculumId);
-    const stageIds = await CompetencyService.learnerStageIds(curriculumId, learnerId);
-    const autoIds = new Set([...stageIds].map((sid) => pathways.find((p) => p.ageCategoryId === sid)?.id).filter(Boolean));
+    // The automatic pathway, per class of this curriculum the learner is in: the one the class
+    // runs for their stage there (a bootcamp's class runs only the bootcamp's pathways —
+    // class-pathways.js), and the one they're already placed on when it runs several for that
+    // stage, so a placement never gains a second, arbitrary pathway beside it.
+    const { pathwaysForClass, stagePathwayFor } = require("../../../shared/utils/class-pathways");
+    const placedIds = new Set(records.filter((r) => r.source !== "manual").map((r) => r.pathwayId));
+    const autoIds = new Set();
+    for (const link of await LearnerHubLinkModel.findByLearnerId(learnerId)) {
+      if (!link.classId || !link.currentStageId) continue;
+      const cls = await ClassModel.findById(link.classId);
+      if (cls?.curriculumId !== curriculumId) continue;
+      const pick = stagePathwayFor(await pathwaysForClass(cls), link.currentStageId, placedIds);
+      if (pick) autoIds.add(pick.id);
+    }
 
     const rows = [];
     for (const pathway of pathways) {

@@ -34,19 +34,7 @@ const setWebsiteSchema = z.object({
   image: z.string().trim().max(500).nullable().optional(),
 });
 
-// Settings → Pathways → Website → Price.
-const setPricingSchema = z.object({
-  mode: z.enum(["none", "whole", "by_course"]),
-  priceAmount: z.coerce.number().min(0).max(10000000).optional().nullable(),
-  currency: z.string().trim().max(8).optional().default("KES"),
-  coursePrices: z.array(z.object({
-    courseId: z.string().trim().min(1).max(64),
-    amount: z.coerce.number().min(0).max(10000000).nullable(),
-  })).max(300).optional().default([]),
-});
-
 module.exports = {
-  setPricingSchema,
   setWebsiteSchema,
   createPathwaySchema,
   updatePathwaySchema,

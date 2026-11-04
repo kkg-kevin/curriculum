@@ -13,8 +13,10 @@ const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
+
+  in_training: { bg: "#dff2fb", color: "#1f6f99", border: "#a8d5ee" },
 };
-const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
+const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave", in_training: "In training" };
 
 function Section({ title, children, action }) {
   return (

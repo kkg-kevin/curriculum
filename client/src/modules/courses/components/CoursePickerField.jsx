@@ -4,7 +4,7 @@ import { useCoursesQuery } from "../hooks/useCourse";
 
 // Picks from real, existing courses only — no free text, so a Pathway can
 // never end up "linked" to a course that doesn't exist.
-function AddCourseDropdown({ available, disabled, onAdd }) {
+function AddCourseDropdown({ available, disabled, onAdd, noOptionsNote }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -71,7 +71,7 @@ function AddCourseDropdown({ available, disabled, onAdd }) {
               <div style={{ padding: "22px 12px", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", color: "#9CA3AF", marginBottom: "4px" }}>{available.length === 0 ? <FiCheck size={20} /> : <FiSearch size={20} />}</div>
                 <p style={{ margin: 0, fontSize: "12px", color: "#9CA3AF" }}>
-                  {available.length === 0 ? "All courses are already added." : "No matches found."}
+                  {available.length === 0 ? (noOptionsNote || "All courses are already added.") : "No matches found."}
                 </p>
               </div>
             )}
@@ -100,8 +100,15 @@ function AddCourseDropdown({ available, disabled, onAdd }) {
 
 // Resolves the id list against the real courses catalog for display — never
 // trusts free text. `value`/`onChange` carry course ids only.
-export default function CoursePickerField({ value = [], onChange, color = "#25476a" }) {
-  const { data: coursesResponse, isLoading } = useCoursesQuery();
+// `allowedIds` (optional) limits what can be picked to those courses — a curriculum pathway's
+// courses come from the curriculum's version (useVersionCourseIds): a Set, or null when there's
+// nothing to offer (no version yet). Already-picked courses outside it stay, marked
+// `outsideLabel`, so nothing vanishes; `noOptionsNote` is shown when nothing is left to add.
+export default function CoursePickerField({ value = [], onChange, color = "#25476a", allowedIds, outsideLabel = "not offered", noOptionsNote, loading = false }) {
+  const { data: coursesResponse, isLoading: coursesLoading } = useCoursesQuery();
+  const isLoading = coursesLoading || loading;
+  const restricted = allowedIds !== undefined;
+  const allowed = (id) => !restricted || Boolean(allowedIds?.has(id));
   const allCourses = coursesResponse?.data || [];
   const selected = value
     .map((id) => allCourses.find((c) => c.id === id))
@@ -111,14 +118,18 @@ export default function CoursePickerField({ value = [], onChange, color = "#2547
   // counts as Active (they were already in real use). Already-selected courses stay shown via
   // `selected` above regardless of status, so a course that's since moved to Draft/Archived
   // doesn't silently vanish from a tag it already has.
-  const available = allCourses.filter((c) => !value.includes(c.id) && (c.status || "active") === "active");
+  // Limited to `allowedIds`, the list itself decides what's ready (a course on the curriculum's
+  // version is offered whatever its status, except Archived).
+  const available = restricted
+    ? allCourses.filter((c) => !value.includes(c.id) && allowed(c.id) && c.status !== "archived")
+    : allCourses.filter((c) => !value.includes(c.id) && (c.status || "active") === "active");
 
   const addCourse = (id) => onChange([...value, id]);
   const removeCourse = (id) => onChange(value.filter((x) => x !== id));
 
   return (
     <div>
-      <AddCourseDropdown available={available} disabled={isLoading} onAdd={addCourse} />
+      <AddCourseDropdown available={available} disabled={isLoading} onAdd={addCourse} noOptionsNote={restricted ? noOptionsNote : undefined} />
       {selected.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "7px", marginTop: "8px" }}>
           {selected.map((course) => (
@@ -131,6 +142,11 @@ export default function CoursePickerField({ value = [], onChange, color = "#2547
               }}
             >
               {course.name}
+              {!allowed(course.id) && (
+                <span title="Picked before, but not one of the courses offered now — remove it, or add it to the curriculum's version" style={{ fontSize: "10.5px", fontWeight: "700", color: "#B45309" }}>
+                  · {outsideLabel}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => removeCourse(course.id)}

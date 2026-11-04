@@ -111,14 +111,34 @@ exports.getPathways = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+// A pathway is only given courses on its curriculum's version — published or draft
+// (CurriculumVersionService.versionCourseIds). Checked on what the pathway editor ADDS, so a row
+// already holding a course from before this rule (or since taken off the version) still saves.
+async function assertCoursesOnVersion(curriculumId, courses, before = []) {
+  const added = (courses || []).filter((id) => !(before || []).includes(id));
+  if (!added.length) return;
+  const onVersion = await require("../versions/curriculum-versions.service").versionCourseIds(curriculumId);
+  if (onVersion && added.every((id) => onVersion.has(id))) return;
+  const err = new Error(onVersion
+    ? "Only courses on this curriculum's version can be added to its pathways — add the course to the version first (Version control)."
+    : "This curriculum has no version yet — add its courses to a version (Version control) before putting them on pathways.");
+  err.statusCode = 400;
+  throw err;
+}
+
 exports.createPathway = asyncHandler(async (req, res) => {
   const body = createPathwaySchema.parse(req.body);
+  await assertCoursesOnVersion(req.params.id, body.courses);
   const data = await CompetencyService.createPathway(req.params.id, body);
   res.status(201).json({ success: true, data });
 });
 
 exports.updatePathway = asyncHandler(async (req, res) => {
   const body = onlySentKeys(updatePathwaySchema.parse(req.body), req.body);
+  if (body.courses !== undefined) {
+    const current = await require("./pathway.model").findById(req.params.aId);
+    await assertCoursesOnVersion(req.params.id, body.courses, current?.courses || []);
+  }
   const data = await CompetencyService.updatePathway(req.params.id, req.params.aId, body);
   res.json({ success: true, data });
 });

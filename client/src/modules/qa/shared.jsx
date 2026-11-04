@@ -10,6 +10,33 @@ export {
   Tabs, Segmented, Pill, Modal, Empty, Pager, formatDate, formatDateTime,
 } from "../checkins/shared";
 
+// A one-column grid that never grows past its card: a plain `display: grid` sizes its column to
+// the widest unbreakable thing in it (a long link, a one-line title), which pushed whole reports
+// off the side of a phone. Use it for every stacked QA layout. The column is "100%", not
+// "minmax(0, 1fr)": on a phone, styles/global.css turns any "grid-template-columns: minmax(…"
+// into a wrapping flex row (meant for list rows), which shrank each row to its content.
+export const stack = (gap, extra = {}) => ({ display: "grid", gap, gridTemplateColumns: "100%", ...extra });
+
+// Long words and links wrap inside a QA page's text and rich text, and cards are a little tighter
+// on a phone. Put `className="qa-page"` on the page and `qa-card` on its cards.
+export function QaPageStyles() {
+  return (
+    <style>{`
+      .qa-page { overflow-wrap: anywhere; }
+      .qa-page button { overflow-wrap: normal; }
+      .qa-page .asm-rich-content, .qa-page .asm-rte-content { overflow-wrap: anywhere; word-break: normal; }
+      @media (max-width: 520px) {
+        .qa-page .qa-card { padding: 14px !important; border-radius: 14px !important; }
+        .qa-page .qa-title { font-size: 18px !important; }
+        .qa-page .qa-actions > button { flex: 1 1 auto; justify-content: center; }
+        /* The shared tab bars scroll sideways with a hidden scrollbar, so the last tab ("Templates",
+           "All") sat out of sight on a phone. On QA pages they wrap onto a second line instead. */
+        .qa-page .ui-tab-scroll { flex-wrap: wrap; overflow-x: visible !important; }
+      }
+    `}</style>
+  );
+}
+
 // Where the QA pages live in each app.
 //   /qa                        the admin app (admins, and staff with "Quality assurance")
 //   /supervisor-portal/qa      a supervisor

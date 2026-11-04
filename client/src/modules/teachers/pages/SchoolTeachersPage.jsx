@@ -94,6 +94,8 @@ export default function SchoolTeachersPage() {
           <option value="">All Statuses</option>
           <option value="active">Active</option>
           <option value="on_leave">On Leave</option>
+
+          <option value="in_training">In training</option>
           <option value="inactive">Inactive</option>
         </select>
         {statusFilter && (

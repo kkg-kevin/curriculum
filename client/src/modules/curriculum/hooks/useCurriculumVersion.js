@@ -17,6 +17,22 @@ export function useCurriculumVersions(curriculumId) {
   });
 }
 
+// The courses a curriculum's pathways may be given: every course on its published version or a
+// draft one (never only a retired one) — the server's CurriculumVersionService.versionCourseIds.
+// `ids` is null while loading or when the curriculum has no published/draft version yet.
+export function useVersionCourseIds(curriculumId) {
+  const query = useCurriculumVersions(curriculumId);
+  const ids = useMemo(() => {
+    const { current, history = [] } = query.data || {};
+    const usable = [current, ...history].filter((v) => v && (v.isCurrent || ["published", "draft"].includes(v.status)));
+    if (!usable.length) return null;
+    const set = new Set();
+    usable.forEach((v) => (v.content || []).forEach((p) => (p.classes || []).forEach((c) => (c.courses || []).forEach((course) => set.add(course.id)))));
+    return set;
+  }, [query.data]);
+  return { ids, isLoading: query.isLoading };
+}
+
 // What learner/teacher portals should read — the live version's courses, not the separate
 // flat course-curriculum link. Pass a gradeId (the curriculum class's stable id, e.g. a real
 // Class record's cls.gradeId) to scope to one grade; omit for every grade.

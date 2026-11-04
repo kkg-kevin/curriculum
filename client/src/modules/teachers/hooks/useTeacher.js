@@ -59,6 +59,7 @@ export function useUpdateTeacherStatus() {
       toast.success(
         data?.status === "inactive" ? "Educator account deactivated"
           : data?.status === "on_leave" ? "Educator marked on leave"
+          : data?.status === "in_training" ? "Educator marked in training"
           : "Educator account activated"
       );
     },

@@ -3,7 +3,6 @@ const {
   getPathways,
   getDirectory,
   setWebsite,
-  setPricing,
   createPathway,
   updatePathway,
   deletePathway,
@@ -16,6 +15,7 @@ router.route("/").get(getPathways).post(createPathway);
 router.get("/directory", getDirectory);
 router.route("/:aId").put(updatePathway).delete(deletePathway);
 router.put("/:aId/website", setWebsite);
-router.put("/:aId/pricing", setPricing);
+// (The one-off pathway price — PUT /:aId/pricing — was removed 4 Nov 2026: pathways are sold by
+// subscription plans, Billing → Packages → Pathway plans, modules/pathway-subscriptions/.)
 
 module.exports = router;

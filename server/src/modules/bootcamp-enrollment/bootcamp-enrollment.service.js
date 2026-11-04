@@ -18,6 +18,7 @@ const { slugify } = require("../../shared/utils/slugify");
 const { ageFrom, kenyaToday } = require("../../shared/utils/age");
 const { pathwayRowsFor } = require("../../shared/utils/public-content");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const TeacherModel = require("../teachers/teacher.model");
 const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const PublicDiagnosticAttemptModel = require("../public-site/public-diagnostic-attempt.model");
 
@@ -95,6 +96,32 @@ async function resolveBootcampOffering(bootcampIdOrSlug, hubId, { audience = "le
     throw badRequest("This bootcamp isn't set up to enroll learners yet — contact the school.");
   }
   return { bootcamp, offering };
+}
+
+// Which of an offering's cohort classes a person joins. When the curriculum's cohorts are tied to
+// developmental stages (curriculum.classes[].developmentalStageId — the Structure step), the
+// class whose cohort is for their stage: the stage of the website diagnostic they took
+// (`attemptId`'s pathway), else the one their age falls in. Otherwise — no stage links, or none
+// matching — the first class, as before.
+async function cohortClassFor(offering, curriculumId, { attemptId = null, age = null } = {}) {
+  const classIds = Array.isArray(offering.classIds) ? offering.classIds : [];
+  if (classIds.length <= 1 || !curriculumId) return classIds[0];
+  const db = require("../../config/db");
+  let stageId = null;
+  if (attemptId) {
+    const attempt = await PublicDiagnosticAttemptModel.findById(attemptId).catch(() => null);
+    stageId = attempt?.pathwayId ? (await db("pathways").where({ id: attempt.pathwayId }).first("ageCategoryId"))?.ageCategoryId || null : null;
+  }
+  if (!stageId && age != null) {
+    const stages = await require("../curriculum/competency-framework/age-category.model").findByCurriculumId(curriculumId);
+    stageId = stages.find((s) => (s.minAge == null || age >= s.minAge) && (s.maxAge == null || age <= s.maxAge))?.id || null;
+  }
+  if (!stageId) return classIds[0];
+  const curriculum = await require("../curriculum/curriculum.model").findById(curriculumId);
+  const cohortIds = new Set((curriculum?.classes || []).filter((c) => c.developmentalStageId === stageId).map((c) => c.id));
+  if (!cohortIds.size) return classIds[0];
+  const classes = await db("classes").whereIn("id", classIds).select("id", "gradeId");
+  return classIds.find((id) => cohortIds.has(classes.find((c) => c.id === id)?.gradeId)) || classIds[0];
 }
 
 // A child's chosen username must be free as a learner AND as a login — checked for every child
@@ -183,7 +210,9 @@ const BootcampEnrollmentService = {
           password: child.password,
           role: "learner",
         });
-        await LearnerService.enrollInHub(entry.learner.id, { hubId: offering.hubId, classId, status: "active" });
+        // Each child's cohort — the one for their stage when the cohorts are tied to stages.
+        const childClassId = await cohortClassFor(offering, bootcamp.curriculumId, { attemptId: child.attemptId, age: entry.age });
+        await LearnerService.enrollInHub(entry.learner.id, { hubId: offering.hubId, classId: childClassId || classId, status: "active" });
       }
       // The parent's login: a new one, or the family's existing one — which takes the parent role
       // if it signs in as something else (an educator who is also a parent; account-roles.js).
@@ -376,6 +405,26 @@ const BootcampEnrollmentService = {
       LearningHubModel.findById(lead.hubId),
     ]);
     // Staff who recorded the payment themselves don't need telling.
+    // A website TOT sign-up: what's left for the admins to do — a supervisor to mark their work
+    // (until then it comes to the admins), and making them Active once they're ready to teach.
+    // Told even when staff recorded the payment, since it's a to-do, not news.
+    const trainee = await LearnerModel.findById(lead.learnerId);
+    const educator = trainee?.teacherId ? await TeacherModel.findById(trainee.teacherId) : null;
+    if (hub?.ownerAdminId && educator) {
+      const todo = [
+        educator.supervisorId ? null : "give them a supervisor to mark their work (until then it comes to the admins)",
+        educator.status === "in_training" ? "make them Active once they're ready to teach" : null,
+      ].filter(Boolean);
+      await NotificationService._notify(hub.ownerAdminId, {
+        type: "bootcamp_enrollment_paid",
+        title: "TOT sign-up paid",
+        message: `${lead.name} paid invoice ${invoice.invoiceNumber} for ${bootcamp?.name || "a TOT bootcamp"}, so their training is open.${todo.length ? ` Next: ${todo.join("; ")}.` : ""}`,
+        payload: { route: `/teachers/${educator.id}/view` },
+        dedupeKey: `bootcamp_enrollment_paid:${lead.id}`,
+        ownerAdminId: hub.ownerAdminId,
+      }).catch(() => {});
+      return;
+    }
     if (hub?.ownerAdminId && !paidByUserId) {
       const names = leads.map((l) => l.learnerName || "A learner").join(", ");
       await NotificationService._notify(hub.ownerAdminId, {
@@ -481,6 +530,21 @@ async function activateLead(leadId, { amount, currency, paidByUserId = null, inv
   if (lead.paidAt) return LearnerModel.findById(lead.learnerId);
   await LeadModel.update(lead.id, { paidAmount: amount, paidCurrency: currency || "KES", paidAt: new Date(), paidByUserId });
   const learner = await LearnerModel.update(lead.learnerId, { accountStatus: "active" });
+  // An educator in training (a website TOT sign-up): the place held for the payment opens — an
+  // educator already training elsewhere had only this class place waiting, not their account
+  // (educator-enrollment.service.js) — and they hear it as the educator, pointed at My learning.
+  if (learner?.teacherId) {
+    const held = lead.hubId ? await LearnerHubLinkModel.findOne(lead.learnerId, lead.hubId) : null;
+    if (held && held.status === "inactive") await LearnerHubLinkModel.update(held.id, { status: "active" });
+    await NotificationService.notifyLearner(lead.learnerId, {
+      type: "tot_training_on",
+      title: "Your training is on",
+      message: `Your payment of ${currency || "KES"} ${amount} has been recorded. Your training is open — find it under "My learning" in your teacher portal.`,
+      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/teacher-portal/learning" },
+      dedupeKey: `tot_training_on:${lead.id}`,
+    }).catch(() => {});
+    return learner;
+  }
   await NotificationService.notifyLearner(lead.learnerId, {
     type: "account_activated",
     title: "Your account is active",
@@ -495,4 +559,4 @@ module.exports = BootcampEnrollmentService;
 module.exports.placeOnBootcampPathway = placeOnBootcampPathway;
 // Shared with the website's pathway enrolment (pathway-enrollment/), which signs families up the
 // same way: usernames checked first, one invoice, paying it switches the learners on.
-module.exports.enrolmentHelpers = { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money, PAYABLE, raiseEnrollmentInvoice };
+module.exports.enrolmentHelpers = { activateLead, assertUsernameFree, splitName, nextInvoiceNumber, money, PAYABLE, raiseEnrollmentInvoice, cohortClassFor };

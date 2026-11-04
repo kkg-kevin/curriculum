@@ -4,7 +4,6 @@ const {
   createPathwaySchema,
   updatePathwaySchema,
   setWebsiteSchema,
-  setPricingSchema,
 } = require("./pathway-template.validation");
 
 exports.getPathways = asyncHandler(async (req, res) => {
@@ -15,13 +14,6 @@ exports.getPathways = asyncHandler(async (req, res) => {
 // Settings → Pathways (read-only): the pathways the workspace's curricula use, and the unused ones.
 exports.getDirectory = asyncHandler(async (req, res) => {
   const data = await PathwayTemplateService.getDirectory(req.ownerAdminId);
-  res.json({ success: true, data });
-});
-
-// Settings → Pathways → Website → Price: { mode, priceAmount, currency, coursePrices }.
-exports.setPricing = asyncHandler(async (req, res) => {
-  const body = setPricingSchema.parse(req.body);
-  const data = await PathwayTemplateService.setPricing(req.params.aId, body, req.ownerAdminId);
   res.json({ success: true, data });
 });
 

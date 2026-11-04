@@ -18,9 +18,6 @@ export const pathwayTemplatesApi = {
   setWebsite: (id, data) =>
     api.put(`${BASE}/${id}/website`, data).then((r) => r.data.data),
 
-  // Its price on the website: { mode: none | whole | by_course, priceAmount, currency, coursePrices }.
-  setPricing: (id, data) =>
-    api.put(`${BASE}/${id}/pricing`, data).then((r) => r.data.data),
 
   create: (data) =>
     api.post(BASE, data).then((r) => r.data.data),

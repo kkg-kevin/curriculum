@@ -15,7 +15,7 @@ const { slugify } = require("../../shared/utils/slugify");
 const { ageFrom } = require("../../shared/utils/age");
 const BootcampEnrollmentService = require("./bootcamp-enrollment.service");
 
-const { money, raiseEnrollmentInvoice } = BootcampEnrollmentService.enrolmentHelpers;
+const { money, raiseEnrollmentInvoice, cohortClassFor } = BootcampEnrollmentService.enrolmentHelpers;
 const { placeOnBootcampPathway } = BootcampEnrollmentService;
 
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
@@ -38,7 +38,8 @@ const fail = (message, statusCode = 400) => { throw Object.assign(new Error(mess
 const EducatorEnrollmentService = {
   async submitEducatorEnrollment(data, visitSource = null) {
     const { bootcamp, offering } = await BootcampEnrollmentService.resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId, { audience: "educators" });
-    const classId = offering.classIds[0];
+    // Their cohort: the one for their stage when the curriculum's cohorts are tied to stages.
+    const classId = await cohortClassFor(offering, bootcamp.curriculumId, { attemptId: data.attemptId || null, age: data.dateOfBirth ? ageFrom(data.dateOfBirth) : null }) || offering.classIds[0];
     const hub = await LearningHubModel.findById(offering.hubId);
     const ownerAdminId = hub?.ownerAdminId || bootcamp.ownerAdminId;
     const email = data.email.trim().toLowerCase();
@@ -56,6 +57,16 @@ const EducatorEnrollmentService = {
 
     const created = { teacherId: null, loginId: null, learnerId: null, hubLinked: false };
     let teacher = (await TeacherModel.findAll({ email }))[0] || null;
+    // Already training (their own learner record): one class place per hub, so a place they hold
+    // at this hub is never moved from a public form — signing up again for the same class says so,
+    // another class at the same hub goes through the hub.
+    const existingTrainee = teacher ? await db("learners").where({ teacherId: teacher.id }).first("id") : null;
+    const placeHere = existingTrainee ? await db("learner_hub_links").where({ learnerId: existingTrainee.id, hubId: offering.hubId }).first() : null;
+    if (placeHere && placeHere.status === "active") {
+      fail(placeHere.classId === classId
+        ? "You're already enrolled in this training — sign in and open My learning."
+        : "You're already training at this hub — contact the hub to change your class.", 409);
+    }
     let learner;
     try {
       if (!teacher) {
@@ -64,7 +75,9 @@ const EducatorEnrollmentService = {
           lastName: data.lastName,
           email,
           phone: data.phone,
-          status: "active",
+          // Not teaching yet: signs in and learns, but isn't given classes until an admin makes
+          // them Active (teacher.validation.js's canTeach). An existing educator keeps theirs.
+          status: "in_training",
           employmentType: "part_time",
           payRateTypes: ["session"],
           qualifiedCourseIds: [],
@@ -83,6 +96,11 @@ const EducatorEnrollmentService = {
       const training = await TotService.enrol(teacher, { hubId: offering.hubId, classId }, { ownerAdminId, pendingPayment: amount != null && !hadTraining, dateOfBirth: data.dateOfBirth || null });
       if (!hadTraining) created.learnerId = training.learnerId;
       learner = await db("learners").where({ id: training.learnerId }).first();
+      // Already training elsewhere (their account stays active for that): only this new class
+      // place waits on the payment — paying opens it (activateLead), the release job frees it.
+      if (hadTraining && amount != null) {
+        await db("learner_hub_links").where({ learnerId: learner.id, hubId: offering.hubId }).update({ status: "inactive", updatedAt: new Date() });
+      }
     } catch (err) {
       if (created.learnerId) await LearnerService.deleteLearner(created.learnerId).catch(() => {});
       if (created.hubLinked) await TeacherHubLinkModel.unlink(teacher.id, offering.hubId).catch(() => {});
