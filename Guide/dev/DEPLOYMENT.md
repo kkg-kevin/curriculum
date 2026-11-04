@@ -102,6 +102,82 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (4 Nov 2026, evening) — Pathways sold by subscription; TOT sign-ups refined; QA on phones
+
+**Portal and backend** from `curriculum` (branch `modules`) at `e2c55a2`. **Website** from
+`curriculum-web` (branch `new`) at `d4bb480` — `africa-digifunzi-com-dist.zip`. Includes the "4 Nov 2026" release below.
+
+### Upload in this order
+
+1. **Take a database backup** — two new migrations.
+2. **Backend** — `backend-deploy.zip` (640 files, 161 migrations), then Restart. The migrations run on
+   start: `20261104090000_teacher_status_in_training` (educators get an "In training" status) and
+   `20261104130000_create_pathway_subscriptions` (pathway plans, subscriptions, per-pathway access,
+   `billing_invoices.pathwaySubscriptionId`, a `pathway_subscription` invoice type). Additive only.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-BmaxErA8.js`).
+4. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com. Upload it **after** the backend: from now on the website lists
+   only pathways that have a published plan (see below), and it reads that from the new backend.
+
+No new cron: the hourly `npm run billing:process` now also raises pathway subscription invoices, pauses
+subscriptions unpaid past the grace days and releases unpaid sign-ups. Optional environment variables
+(both default 14): `PATHWAY_UNPAID_RELEASE_DAYS` (a pathway sign-up never paid is cancelled after this
+many days) and `TOT_UNPAID_RELEASE_DAYS` (the same for website TOT sign-ups).
+
+> **Before the website goes up, make each pathway's plan.** Only pathways with a published plan are on
+> the website now; the rest disappear from it until they have one. Billing → Packages → **Pathway
+> plans** → New package → choose the pathway, its picture and hubs, the price and period → tick
+> "Show on the website". The old one-off pathway price (Settings → Pathways → Price) is gone.
+>
+> The website zip was pre-rendered against the API as it is deployed now. Its pages correct themselves
+> as they load once the new backend is up; for search engines to see the plans straight away, ask for
+> the website to be rebuilt after the backend is deployed.
+
+### What changed
+
+**Pathways sold by subscription**
+- **Plans** in Billing → Packages → Pathway plans, like the Home Learning and Tech Club packages: a
+  price per week, month, quarter or year, children included and an extra-child price. The plan's form
+  chooses the pathway (a dropdown) and its website picture and hubs. A pathway is on the website only
+  while it has a published plan — there is no "enquiries only" pathway any more.
+- **The website** shows "From KSh … / month" and the plans on a pathway's page. Enrol: plan and hub →
+  details → payment. After the diagnostic, the enrolment sits beside the result (under it on a phone).
+- **Access is per pathway.** Paying opens every stage's courses for the children on it — no class
+  needed (a hub class is optional). Invoices are raised every period automatically; an unpaid period
+  pauses the subscription after the grace days (Settings → Payments): its courses lock, progress is
+  kept, the account and any class stay open, and that unpaid invoice is cancelled. Renew starts a new
+  period from today.
+- **Pathway Subscriptions** page (sidebar) for staff: pause, cancel, switch on, change plan from the
+  next period, invoice now. Children see their pathways on My Courses (open or locked); parents see
+  theirs on their home page with Pay / Renew.
+- **Removed:** the one-off pathway price in Settings → Pathways (whole / per course). One-off invoices
+  issued before this release still switch their children on when paid, and give the pathway for good.
+- Settings → Pathways is a read-only directory again (the website settings moved to the plans).
+
+**Training of trainers (TOT)**
+- Educators see their training invoice and receipts in My learning → My invoices (the email links work).
+- A website TOT sign-up creates an educator **In training**: they sign in and learn, but can't be given
+  classes until an admin presses **Make Active**. Admins are told when they finish their training.
+- Unpaid TOT sign-ups are released after 14 days (invoice cancelled, place freed, enquiry closed, the
+  educator told). An educator already training who signs up again only gets their new place once paid.
+- Sign-ups join the cohort class for their stage when the curriculum's cohorts are tied to stages.
+- "Run at a Hub" lists hubs on the bootcamp's curriculum first and warns about any other.
+
+**Also**
+- A learner in a bootcamp class gets only the bootcamp's pathways (no extra pathway beside theirs).
+- A curriculum pathway's courses can only be chosen from the curriculum's version.
+- The QA report, review form and QA lists fit phones (nothing runs off the side; tabs wrap).
+
+### Verify
+
+1. Billing → Packages → Pathway plans → New package → choose a pathway → its picture and hubs show →
+   save with "Show on the website" → the website's Pathways page lists that pathway with its price.
+2. On the website, enrol on it (skip the diagnostic) → plan & hub → details → the Payment step.
+   Record the payment in Billing → the child signs in → My Courses shows the pathway's courses, open.
+3. Pathway Subscriptions shows the family as Active with "Courses open until …".
+4. Settings → Pathways has no price or website controls.
+
+---
+
 ## This release (4 Nov 2026) — Deleting inside a copied curriculum only changes the copy
 
 **Portal and backend** from `curriculum` (branch `modules`) at `b744c88`. **Website** unchanged —
