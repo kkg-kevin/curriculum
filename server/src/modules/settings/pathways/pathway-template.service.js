@@ -24,7 +24,6 @@ async function workspaceHubs(ownerAdminId) {
 }
 
 const nameKey = (name) => String(name || "").trim().toLowerCase();
-const { pathwayPricing } = require("../../../shared/utils/pathway-pricing");
 
 // A Pathway's `courses` field stores course ids only — reject anything
 // that doesn't resolve to a real course so a dummy id can never sneak in.
@@ -103,7 +102,6 @@ const PathwayTemplateService = {
         inUse: true,
         templateId: templateByName.get(e.key)?.id || null,
         website: websiteOf(templateByName.get(e.key)),
-        pricing: pathwayPricing(templateByName.get(e.key)),
         curricula: curriculaList,
         courseCount: new Set(curriculaList.flatMap((c) => c.stages.flatMap((s) => s.courses.map((x) => x.id)))).size,
         learnerCount: new Set(learnerRows.filter((r) => ids.has(r.pathwayId)).map((r) => r.learnerId)).size,
@@ -113,41 +111,11 @@ const PathwayTemplateService = {
       .filter((tpl) => !byName.has(nameKey(tpl.name)))
       .map((tpl) => ({
         key: nameKey(tpl.name), name: tpl.name, color: tpl.color || "#25476a", description: tpl.description || "",
-        inUse: false, templateId: tpl.id, curricula: [], website: websiteOf(tpl), pricing: pathwayPricing(tpl),
+        inUse: false, templateId: tpl.id, curricula: [], website: websiteOf(tpl),
         courses: coursesOf(tpl.courses), courseCount: coursesOf(tpl.courses).length, learnerCount: 0,
       }));
     const pathways = [...inUse, ...notInUse].sort((a, b) => (a.inUse === b.inUse ? a.name.localeCompare(b.name) : a.inUse ? -1 : 1));
     return { pathways, hubs: (await workspaceHubs(ownerAdminId)).sort((a, b) => a.name.localeCompare(b.name)) };
-  },
-
-  // Settings → Pathways → Website → Price: none (an enquiry), the whole pathway, or each course.
-  // Course prices may only name real courses; an empty amount drops that course's price.
-  async setPricing(id, { mode, priceAmount, currency, coursePrices }, ownerAdminId) {
-    const entry = await PathwayTemplateModel.findById(id);
-    if (!entry || entry.ownerAdminId !== ownerAdminId) {
-      const err = new Error("Pathway not found");
-      err.statusCode = 404;
-      throw err;
-    }
-    if (mode === "whole" && (priceAmount == null || priceAmount < 0)) {
-      const err = new Error("Enter the pathway's price");
-      err.statusCode = 400;
-      throw err;
-    }
-    const prices = (coursePrices || []).filter((p) => p.amount != null);
-    if (mode === "by_course" && prices.length === 0) {
-      const err = new Error("Give at least one course a price");
-      err.statusCode = 400;
-      throw err;
-    }
-    await assertCoursesExist(prices.map((p) => p.courseId));
-    await PathwayTemplateModel.update(id, {
-      pricingMode: mode,
-      priceAmount: mode === "whole" ? priceAmount : null,
-      priceCurrency: currency || "KES",
-      coursePrices: mode === "by_course" ? prices : [],
-    });
-    return pathwayPricing(await PathwayTemplateModel.findById(id));
   },
 
   // Settings → Pathways → Website: whether the website shows this pathway, the hubs it runs at

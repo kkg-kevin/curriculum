@@ -24,6 +24,7 @@ import OrdersPanel from "../components/OrdersPanel";
 import ClaimsReviewPage from "../../claims/pages/ClaimsReviewPage";
 import { can, canViewAny, isStaff } from "../../../hooks/usePermissions";
 import { Tabs } from "../../../components/ui/TabBar";
+import { familyBillingBase } from "../utils/familyBillingBase";
 
 const INVOICES_PER_PAGE = 8;
 const RECENT_RECEIPTS_COUNT = 5;
@@ -94,8 +95,8 @@ function BillingPage() {
   const isLearner = user?.role === "learner";
   const isAdmin = user?.role === "admin";
   const isSchoolLogin = user?.role === "school";
-  const receiptsBasePath = isLearner ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
-  const statementBasePath = isLearner ? "/parent/statement" : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
+  const receiptsBasePath = isLearner ? `${familyBillingBase(user)}/receipts` : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const statementBasePath = isLearner ? `${familyBillingBase(user)}/statement` : user?.role === "school" ? "/school-portal/billing/statements" : "/billing/statements";
   const [searchParams, setSearchParams] = useSearchParams();
   // Admin billing is split into Customers | Invoices | Payments tabs (driven by ?tab= so a link
   // from the customer page can deep-link to a tab). Other roles keep the single-view layout.
@@ -294,7 +295,7 @@ function BillingPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", color: "#111827" }}>
       <div style={{ background: "linear-gradient(135deg, #142F4A 0%, #25476a 48%, #2e7db5 100%)", borderRadius: 18, padding: "26px 28px", marginBottom: 16, color: "#fff", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
-        <div><div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}><ReceiptLongIcon sx={{ fontSize: 16 }} /> Finance workspace</div><h1 style={{ margin: 0, fontSize: 25, fontWeight: 900 }}>{isLearner ? "My invoices" : "Billing"}</h1><p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{isLearner ? "Review invoices assigned to your parent account." : isNonSchoolHub ? "Log space visits and bill learners for usage." : "Create, issue, and track hub and learner invoices."}</p></div>
+        <div><div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, color: "#9BD7F2", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}><ReceiptLongIcon sx={{ fontSize: 16 }} /> Finance workspace</div><h1 style={{ margin: 0, fontSize: 25, fontWeight: 900 }}>{isLearner ? "My invoices" : "Billing"}</h1><p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{user?.learningAsEducator ? "Your training invoices and receipts." : isLearner ? "Review invoices assigned to your parent account." : isNonSchoolHub ? "Log space visits and bill learners for usage." : "Create, issue, and track hub and learner invoices."}</p></div>
         {!isLearner && !isNonSchoolHub && (!isAdmin || activeTab === "invoices") && <button type="button" onClick={() => setShowForm((value) => !value)} style={{ ...buttonStyle, background: "#feb139", color: "#17304B", display: "inline-flex", alignItems: "center", gap: 7 }}><AddIcon sx={{ fontSize: 18 }} />{showForm ? "Hide invoice form" : "Create invoice"}</button>}
       </div>
 
@@ -309,7 +310,7 @@ function BillingPage() {
       {!isAdmin && (
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           <Link to={`${receiptsBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><PaidIcon sx={{ fontSize: 16 }} /> Receipts</Link>
-          <Link to={`${statementBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><AccountBalanceIcon sx={{ fontSize: 16 }} /> Statement of account</Link>
+          {!user?.learningAsEducator && <Link to={`${statementBasePath}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#fff", color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none" }}><AccountBalanceIcon sx={{ fontSize: 16 }} /> Statement of account</Link>}
         </div>
       )}
 
@@ -365,6 +366,7 @@ function BillingPage() {
       {isAdmin && activeTab === "mpesa" && <MpesaPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel />}
       {isAdmin && activeTab === "packages" && <PackagesPanel programme="tech_club" />}
+      {isAdmin && activeTab === "packages" && <PackagesPanel programme="pathway" />}
       {isAdmin && activeTab === "claims" && <ClaimsReviewPage embedded />}
 
       {isNonSchoolHub ? (
@@ -446,7 +448,7 @@ function BillingPage() {
             subtitle={invoices.length === 0 && !isLearner ? "Create a draft above to start your billing record." : "Try a different search or status filter."}
           />
         ) : pagedInvoices.map((invoice) => (
-          <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
+          <div key={invoice.id} role="button" tabIndex={0} {...rowHoverHandlers} onClick={() => navigate(`${isLearner ? `${familyBillingBase(user)}/invoices` : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(`${isLearner ? `${familyBillingBase(user)}/invoices` : user?.role === "school" ? "/school-portal/billing" : "/billing"}/${invoice.id}`); } }} style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", alignItems: "center", gap: 16, cursor: "pointer", transition: "background .12s" }}>
             <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}><strong style={{ fontSize: 13, color: "#111827" }}>{invoice.invoiceNumber}</strong><StatusPill status={invoice.status} />{!isLearner && <KindPill kind={invoice.customerKind} />}</div>{invoice.billTo?.name && <div style={{ fontSize: 12.5, color: "#374151", fontWeight: 600, marginTop: 3 }}>{invoice.billTo.name}</div>}{!isLearner && <InvoiceSourceLine invoice={invoice} role={user?.role} />}<div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{TYPE_LABELS[invoice.invoiceType]} <span style={{ color: "#CBD5E1" }}>·</span> Created {formatDate(invoice.createdAt)} <span style={{ color: "#CBD5E1" }}>·</span> Due {formatDate(invoice.dueAt, "No due date")}</div></div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 14, flexWrap: "wrap" }}><div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 850, color: "#25476a" }}>{formatMoney(invoice.total, invoice.currency)}</div><div style={{ fontSize: 11, color: invoice.amountDue > 0 ? "#C2410C" : "#047857", marginTop: 3 }}>{invoice.amountDue > 0 ? `${formatMoney(invoice.amountDue, invoice.currency)} due` : "Fully paid"}</div></div>{!isLearner && <div style={{ display: "flex", gap: 7 }} onClick={(event) => event.stopPropagation()}>{invoice.status === "draft" && <button type="button" title="Issue invoice" aria-label={`Issue ${invoice.invoiceNumber}`} onClick={() => issueInvoice(invoice.id)} style={{ ...buttonStyle, display: "inline-flex", alignItems: "center", gap: 5 }}><SendIcon sx={{ fontSize: 15 }} />Issue</button>}{["draft", "issued", "overdue"].includes(invoice.status) && <button type="button" title="Cancel invoice" aria-label={`Cancel ${invoice.invoiceNumber}`} onClick={() => cancelInvoice(invoice.id)} style={{ ...buttonStyle, padding: "8px 10px", background: "#fff", color: "#B91C1C", border: "1px solid #FECACA" }}><CancelOutlinedIcon sx={{ fontSize: 17 }} /></button>}</div>}</div>
           </div>

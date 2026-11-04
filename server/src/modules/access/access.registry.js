@@ -25,6 +25,7 @@ const MODULES = [
   { key: "timetable", label: "Timetable", group: "Teaching", legacy: true },
   { key: "home-learning", label: "Home Learning", group: "Programmes", legacy: true },
   { key: "tech-clubs", label: "Tech Clubs", group: "Programmes" },
+  { key: "pathway-subscriptions", label: "Pathway subscriptions", group: "Programmes" },
   { key: "competitions", label: "Competitions", group: "Programmes", legacy: true },
   { key: "bootcamps", label: "Bootcamps", group: "Programmes", legacy: true },
   { key: "reports", label: "Reports", group: "Teaching", legacy: true },
@@ -80,6 +81,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/notifications": "notifications",
   "/api/home-learning": "home-learning",
   "/api/tech-clubs": "tech-clubs",
+  "/api/pathway-subscriptions": "pathway-subscriptions",
   "/api/billing": "billing",
   "/api/hub-visits": "hub-visits",
   "/api/audit": "activity",
@@ -95,7 +97,8 @@ const PATH_PREFIX_TO_MODULE = {
 const AUTHORING_MODULES = ["assessments", "courses", "curriculum"];
 const CATALOG_READERS = {
   "/api/competencies": AUTHORING_MODULES,
-  "/api/pathway-templates": AUTHORING_MODULES,
+  // Billing → Packages → Pathway plans reads the pathway directory too.
+  "/api/pathway-templates": [...AUTHORING_MODULES, "billing"],
   "/api/system-levels": ["curriculum"],
   "/api/inventory": ["assessments", "courses", "billing"],
   "/api/items": ["assessments", "courses", "billing"],
@@ -126,6 +129,14 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/tech-clubs(\/[^/]+)?\/invoices$/, module: "billing", action: "create" },
   { method: "POST", pattern: /^\/api\/tech-clubs\/[^/]+\/approve-payment$/, module: "billing", action: "edit" },
   { method: "POST", pattern: /^\/api\/tech-clubs\/[^/]+\/decline-signup$/, module: "tech-clubs", action: "delete" },
+  // Pathway subscriptions: raising invoices is billing; the plans live in Billing → Packages.
+  { method: "POST", pattern: /^\/api\/pathway-subscriptions(\/[^/]+)?\/invoices$/, module: "billing", action: "create" },
+  { method: "GET", pattern: /^\/api\/pathway-subscriptions\/packages$/, module: "billing", action: "view" },
+  { method: "POST", pattern: /^\/api\/pathway-subscriptions\/packages$/, module: "billing", action: "create" },
+  { method: "PUT", pattern: /^\/api\/pathway-subscriptions\/packages\/[^/]+$/, module: "billing", action: "edit" },
+  { method: "DELETE", pattern: /^\/api\/pathway-subscriptions\/packages\/[^/]+$/, module: "billing", action: "delete" },
+  // A pathway's website listing (show, picture, hubs) is set beside its plans in Billing → Packages.
+  { method: "PUT", pattern: /^\/api\/pathway-templates\/[^/]+\/website$/, module: "billing", action: "edit" },
   // Issuing, cancelling and recording a payment change an existing invoice.
   { method: "POST", pattern: /^\/api\/billing\/[^/]+\/(issue|cancel|payments)$/, module: "billing", action: "edit" },
   // Confirming or rejecting a family's "I've paid" notice records (or refuses) a payment.

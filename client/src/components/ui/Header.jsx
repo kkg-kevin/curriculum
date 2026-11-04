@@ -140,6 +140,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/billing": "Billing",
     "/enquiries": "Enquiries",
     "/home-learning": "Home Learning",
+    "/tech-clubs": "Tech Clubs",
+    "/pathway-subscriptions": "Pathway Subscriptions",
     "/teacher-portal/reports": "Reports",
     "/teacher-portal/timetable": "Timetable",
     "/teacher-portal/home-learning": "Home Learning",

@@ -49,6 +49,10 @@ const ReportModel = {
     return updateRecord(db, TABLE, id, stringifyJsonFields(data, JSON_FIELDS));
   },
 
+  delete(id) {
+    return db(TABLE).where({ id }).del();
+  },
+
   // Deleting a learner has to take their reports with it — nothing else can ever reach a report
   // whose learner is gone (every read path resolves the learner first), so leaving them behind
   // just accumulates unreachable rows. Called from learner.service.js's deleteLearner.

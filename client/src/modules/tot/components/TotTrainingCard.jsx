@@ -13,7 +13,9 @@ const select = { flex: "1 1 220px", minWidth: 0, padding: "8px 10px", borderRadi
 // their course certificates, and work waiting to be marked.
 // An admin can enrol them in a TOT class here, or withdraw them from one; their supervisor or an
 // admin publishes a finished course's report here, which issues its certificate.
-export default function TotTrainingCard({ teacherId }) {
+// `teacher` (optional): the educator record, for the admin's to-dos — no supervisor yet (their
+// work then comes to the admins), and still "in training" (a website TOT sign-up).
+export default function TotTrainingCard({ teacherId, teacher = null }) {
   const { user } = useAuth();
   const { can } = usePermissions();
   const isAdmin = user?.role === "admin" || user?.role === "collaborator";
@@ -68,6 +70,19 @@ export default function TotTrainingCard({ teacherId }) {
           </>
         ) : (
           <>
+            {isAdmin && teacher && (!teacher.supervisorId || teacher.status === "in_training") && (
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", color: "#92400E", fontSize: 12.5, lineHeight: 1.6 }}>
+                {!teacher.supervisorId && (
+                  <div>
+                    No supervisor yet — their work comes to the admins to mark.{" "}
+                    {canEnrol && <Link to={`/teachers/${teacherId}/edit`} style={{ color: "#92400E", fontWeight: 700 }}>Choose a supervisor →</Link>}
+                  </div>
+                )}
+                {teacher.status === "in_training" && (
+                  <div>In training — they can&apos;t be given classes yet. Use <strong>Make Active</strong> at the top of this page once they&apos;re ready to teach.</div>
+                )}
+              </div>
+            )}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {training.classes.map((c) => {
                 const active = c.status === "active";

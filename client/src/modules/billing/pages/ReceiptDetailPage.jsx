@@ -7,6 +7,7 @@ import BillToCard from "../components/BillToCard";
 import BrandMark from "../components/BrandMark";
 import DocumentActions from "../components/DocumentActions";
 import { LoadingState, ErrorState } from "../components/PageStates";
+import { familyBillingBase } from "../utils/familyBillingBase";
 
 export default function ReceiptDetailPage() {
   const { invoiceId, paymentId } = useParams();
@@ -14,8 +15,8 @@ export default function ReceiptDetailPage() {
   const { user } = useAuth();
   const { data: receipt, isLoading, isError } = useReceiptQuery(invoiceId, paymentId);
 
-  const receiptsPath = user?.role === "learner" ? "/parent/receipts" : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
-  const invoicePath = user?.role === "learner" ? "/parent/invoices" : user?.role === "school" ? "/school-portal/billing" : "/billing";
+  const receiptsPath = user?.role === "learner" ? `${familyBillingBase(user)}/receipts` : user?.role === "school" ? "/school-portal/billing/receipts" : "/billing/receipts";
+  const invoicePath = user?.role === "learner" ? `${familyBillingBase(user)}/invoices` : user?.role === "school" ? "/school-portal/billing" : "/billing";
 
   if (isLoading) return <LoadingState label="Loading receipt…" />;
   if (isError || !receipt) return <ErrorState label="Receipt could not be loaded." detail="It may have been removed, or you may not have access to it." />;

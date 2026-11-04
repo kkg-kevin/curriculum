@@ -27,6 +27,8 @@ const learningItems = [
   { name: "My assessments",  path: "/teacher-portal/learning/assessments", icon: FiEdit3 },
   { name: "My reports",      path: "/teacher-portal/learning/reports", icon: FiBarChart2 },
   { name: "My progress",     path: "/teacher-portal/learning/progress", icon: FiTrendingUp },
+  // What they pay for their training (a website TOT sign-up) — invoices and receipts.
+  { name: "My invoices",     path: "/teacher-portal/learning/invoices", icon: FiCreditCard, also: ["/teacher-portal/learning/receipts"] },
 ];
 
 function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} }) {

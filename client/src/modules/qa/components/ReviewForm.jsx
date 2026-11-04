@@ -4,7 +4,7 @@ import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
 import { reportHtml } from "../../checkins/shared";
 import { liveScore, ScoreHeader } from "./Report";
-import { SUMMARY_PARTS, T, btn, card, font, hint, input, label, todayKe } from "../shared";
+import { SUMMARY_PARTS, T, btn, card, font, hint, input, label, stack, todayKe } from "../shared";
 
 const choice = (on, tone) => ({
   minHeight: 34, padding: "0 13px", borderRadius: 10, fontFamily: font, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
@@ -26,9 +26,9 @@ function Item({ criterion, scale, answer, onChange }) {
   const chosenLevel = criterion.kind === "rubric" ? scale.find((l) => String(l.score) === String(value)) : null;
 
   return (
-    <div style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid #EEF1F4", background: value === undefined && criterion.kind !== "comment" ? "#fff" : "#FBFCFD", display: "grid", gap: 8 }}>
+    <div style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid #EEF1F4", background: value === undefined && criterion.kind !== "comment" ? "#fff" : "#FBFCFD", ...stack(8) }}>
       <div>
-        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{criterion.text}</p>
+        <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink, overflowWrap: "anywhere" }}>{criterion.text}</p>
         {!isEmptyHtml(criterion.help) && (
           <div style={{ marginTop: 4, fontSize: 12.5, color: T.inkMuted }}><RichContent html={reportHtml(criterion.help)} /></div>
         )}
@@ -61,7 +61,7 @@ function Item({ criterion, scale, answer, onChange }) {
       {criterion.kind === "comment" ? (
         <textarea value={answer?.comment || ""} onChange={(e) => set({ comment: e.target.value })} rows={3} maxLength={2000} placeholder="Write what you saw" aria-label={criterion.text} style={{ ...input, resize: "vertical" }} />
       ) : noteOpen ? (
-        <textarea value={answer?.comment || ""} onChange={(e) => set({ comment: e.target.value })} rows={2} maxLength={2000} placeholder="A note on this item (optional)" aria-label={`Note on: ${criterion.text}`} style={{ ...input, resize: "vertical", fontSize: 12.5 }} />
+        <textarea value={answer?.comment || ""} onChange={(e) => set({ comment: e.target.value })} rows={3} maxLength={2000} placeholder="A note on this item (optional)" aria-label={`Note on: ${criterion.text}`} style={{ ...input, resize: "vertical", fontSize: 12.5 }} />
       ) : (
         <button type="button" onClick={() => setNoteOpen(true)} style={{ justifySelf: "start", border: 0, background: "none", padding: 0, color: T.accentMid, fontWeight: 700, fontSize: 12.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: font }}>
           <FiMessageSquare size={12} /> Add a note
@@ -100,14 +100,14 @@ export default function ReviewForm({ visit, onSave, saving, sent = false, onCanc
   };
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <section style={{ ...card, padding: "16px 20px", display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap", justifyContent: "space-between" }}>
-        <div>
+    <div style={stack(16)}>
+      <section className="qa-card" style={{ ...card, padding: "16px 20px", display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap", justifyContent: "space-between", minWidth: 0 }}>
+        <div style={{ minWidth: 0, maxWidth: "100%" }}>
           <label htmlFor="qa-visit-date" style={label}>Day of the visit</label>
-          <input id="qa-visit-date" type="date" value={visitDate} max={todayKe()} onChange={(e) => setVisitDate(e.target.value)} style={{ ...input, width: "auto" }} />
+          <input id="qa-visit-date" type="date" value={visitDate} max={todayKe()} onChange={(e) => setVisitDate(e.target.value)} style={{ ...input, width: "auto", maxWidth: "100%" }} />
           <p style={hint}>{visit.visitType === "surprise" ? "A surprise visit is recorded on the day you actually went." : "Change it if the visit happened on another day."}</p>
         </div>
-        <div style={{ flex: "1 1 360px", minWidth: 0 }}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
           <ScoreHeader score={live.score} sectionScores={live.sectionScores} />
           {unanswered.length > 0 && <p style={{ ...hint, marginTop: 6 }}>{unanswered.length} {unanswered.length === 1 ? "item" : "items"} still to answer.</p>}
         </div>
@@ -115,32 +115,32 @@ export default function ReviewForm({ visit, onSave, saving, sent = false, onCanc
 
       {/* The template's own description — what it's for and how to use it. */}
       {!isEmptyHtml(template.description) && (
-        <section style={{ ...card, padding: "14px 20px", background: "#F8FBFE" }}>
+        <section className="qa-card" style={{ ...card, padding: "14px 20px", background: "#F8FBFE" }}>
           <p style={{ ...label, marginBottom: 4 }}>{template.name}</p>
           <RichContent html={reportHtml(template.description)} />
         </section>
       )}
 
       {template.sections.map((s) => (
-        <section key={s.id} style={{ ...card, padding: "16px 20px", display: "grid", gap: 10 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>{s.title}</h2>
+        <section key={s.id} className="qa-card" style={{ ...card, padding: "16px 20px", ...stack(10) }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink, overflowWrap: "anywhere" }}>{s.title}</h2>
           {s.criteria.map((c) => (
             <Item key={c.id} criterion={c} scale={template.scale || []} answer={answers[c.id]} onChange={(a) => setAnswers((prev) => ({ ...prev, [c.id]: a }))} />
           ))}
         </section>
       ))}
 
-      <section style={{ ...card, padding: "16px 20px", display: "grid", gap: 14 }}>
+      <section className="qa-card" style={{ ...card, padding: "16px 20px", ...stack(14) }}>
         <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>Summary</h2>
         {SUMMARY_PARTS.map((part) => (
-          <div key={part.key}>
+          <div key={part.key} style={{ minWidth: 0 }}>
             <p style={label}>{part.label}{!part.required && <span style={{ fontWeight: 500, color: T.inkFaint }}> (optional)</span>}</p>
             <p style={{ ...hint, margin: "0 0 6px" }}>{part.help}</p>
             <RichTextEditor value={summary[part.key]} onChange={(html) => setSummary((f) => ({ ...f, [part.key]: html }))} minHeight={100} maxHeight={320} />
           </div>
         ))}
         {problems.length > 0 && <div style={{ color: "#B91C1C", fontSize: 12.5 }}>{problems.map((p) => <p key={p} style={{ margin: 0 }}>{p}</p>)}</div>}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap", paddingTop: 14, borderTop: "1px solid #F3F4F6" }}>
+        <div className="qa-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap", paddingTop: 14, borderTop: "1px solid #F3F4F6" }}>
           {sent ? (
             <>
               <button type="button" className="ci-btn" onClick={onCancel} style={btn("secondary")}>Cancel</button>

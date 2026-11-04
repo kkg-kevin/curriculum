@@ -147,8 +147,14 @@ async function maybeAutoIssuePathwayDiagnostics(learnerId, cls, stageId) {
   const allPathways = await PathwayModel.findByCurriculumId(cls.curriculumId);
   const pathwayById = new Map(allPathways.map((p) => [p.id, p]));
   const alreadyPlaced = await placedByDiagnostic(learnerId, cls.curriculumId);
-  // Already placed: no diagnostic is needed here, so every un-started one is withdrawn.
-  const match = alreadyPlaced ? null : allPathways.find((p) => p.ageCategoryId === stageId);
+  // Already placed: no diagnostic is needed here, so every un-started one is withdrawn. Otherwise
+  // the pathway this class runs for their stage (a bootcamp's class: only the bootcamp's
+  // pathways), preferring the one they're already on — class-pathways.js, the same pick as
+  // CompetencyService.getPathway's automatic pathway.
+  const { pathwaysForClass, stagePathwayFor } = require("../../shared/utils/class-pathways");
+  const placedIds = new Set((await LearnerPathwayModel.findByLearner(learnerId))
+    .filter((r) => r.curriculumId === cls.curriculumId && r.source !== "manual").map((r) => r.pathwayId));
+  const match = alreadyPlaced ? null : stagePathwayFor(await pathwaysForClass(cls), stageId, placedIds);
 
   // Revoke stale un-started Pathway diagnostics for THIS curriculum's pathways — anything
   // that isn't the age-matched one.

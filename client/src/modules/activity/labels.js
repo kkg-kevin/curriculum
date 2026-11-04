@@ -17,6 +17,7 @@ export const AREA_LABELS = {
   timetable: "Timetable",
   "home-learning": "Home Learning",
   "tech-clubs": "Tech Clubs",
+  "pathway-subscriptions": "Pathway subscriptions",
   competitions: "Competitions",
   bootcamps: "Bootcamps",
   reports: "Reports",

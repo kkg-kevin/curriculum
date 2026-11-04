@@ -126,6 +126,7 @@ import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
 import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
 import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
 import TechClubsPage from "../modules/tech-clubs/pages/TechClubsPage";
+import PathwaySubscriptionsPage from "../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage";
 
 // Educator claims sit inside Billing. Links to the old /claims address — notifications and
 // emails carry /claims?claim=<id> — land on that tab, with the claim still opened.
@@ -282,6 +283,7 @@ export default function AppRoutes() {
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
+        <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -334,6 +336,12 @@ export default function AppRoutes() {
             <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
             <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
             <Route path="progress" element={<LearnerProgressPage />} />
+            {/* They pay for their own training (a website TOT sign-up): its invoice and receipts.
+                The billing emails' /learner-portal/invoices/… links land here (RoleRoute). */}
+            <Route path="invoices" element={<BillingPage />} />
+            <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+            <Route path="receipts" element={<ReceiptsListPage />} />
+            <Route path="receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
             <Route path="*" element={<Navigate to="/teacher-portal/learning" replace />} />
           </Route>
           {/* QA visits to this educator: announced ones coming up, and the reports, to reply to. */}

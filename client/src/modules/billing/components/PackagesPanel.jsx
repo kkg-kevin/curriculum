@@ -4,6 +4,10 @@ import toast from "react-hot-toast";
 import { FiEdit2, FiGlobe, FiPackage, FiPlus } from "react-icons/fi";
 import { billingApi } from "../services/billingApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
+import { pathwaySubscriptionApi } from "../../pathway-subscriptions/services/pathwaySubscriptionApi";
+import { pathwayTemplatesApi } from "../../settings/pathways/services/pathwayTemplatesApi";
+import { usePathwayDirectory } from "../../settings/pathways/hooks/usePathwayTemplates";
+import PathwayWebsiteFields from "../../pathway-subscriptions/components/PathwayWebsiteFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { BILLING_PERIODS, periodHow, periodUnit, pricePer } from "../../../utils/billingPeriods";
 
@@ -14,7 +18,7 @@ const smallButton = { border: "1px solid #D1D5DB", borderRadius: 7, color: "#4B5
 const formatMoney = (amount) => `KSh ${Number(amount || 0).toLocaleString("en-KE")}`;
 const errorMessage = (error, fallback) => error.response?.data?.message || error.message || fallback;
 
-const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", billingPeriod: "monthly", amount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [] };
+const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", billingPeriod: "monthly", amount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [], pathwayTemplateId: "" };
 
 // The two kinds of package managed here. Home Learning is the original panel, unchanged; Tech Club
 // packages add which clubs a package is offered at (none ticked = every club).
@@ -44,6 +48,22 @@ const PROGRAMMES = {
     editNote: "Price and billing changes apply to new sign-ups. Existing families keep theirs until you change their package — and then from their next billing period.",
     withClubs: true,
   },
+  // Website pathways sold by subscription (modules/pathway-subscriptions): each plan sells one
+  // pathway's access — every stage's courses, self-paced, no class needed — renewing every period.
+  pathway: {
+    title: "Pathway plans",
+    intro: <>Subscriptions for the pathways on the website: a family pays every week, month, quarter or year and their children can open the pathway's courses — every stage, self-paced, no class needed. Invoices go out automatically; an unpaid period locks the courses after the grace days (Settings → Payments), keeping the children's progress, until the family renews. A pathway is on the website while it has a plan marked <strong>On website</strong>; choose its picture and hubs in the plan.</>,
+    queryKey: ["billing", "pathway-packages"],
+    refreshKeys: [["pathway-subscriptions"]],
+    list: () => pathwaySubscriptionApi.listPackages(), create: pathwaySubscriptionApi.createPackage, update: pathwaySubscriptionApi.updatePackage, remove: pathwaySubscriptionApi.deletePackage, checkRemove: null,
+    count: (pkg) => pkg.subscriptions || 0, noun: ["subscription", "subscriptions"],
+    featuresPlaceholder: "Every stage of the pathway\nSelf-paced — learn any time\nCertificates as each course is finished",
+    namePlaceholder: "e.g. Monthly — one child",
+    empty: "No pathway plans yet — create one to sell a pathway on the website by subscription.",
+    editNote: "Price and billing changes apply to new subscriptions. Existing ones keep theirs until you change their plan — and then from their next billing period.",
+    withPathway: true,
+    noDaily: true,
+  },
 };
 
 const toForm = (pkg) => ({
@@ -53,11 +73,13 @@ const toForm = (pkg) => ({
   maxChildren: pkg.allowExtraChildren ? String(pkg.maxChildren) : "", features: (pkg.features || []).join("\n"),
   badge: pkg.badge || "", isPublished: !!pkg.isPublished, status: pkg.status, sortOrder: String(pkg.sortOrder ?? 0),
   hubIds: Array.isArray(pkg.hubIds) ? pkg.hubIds : [],
+  pathwayTemplateId: pkg.pathwayTemplateId || "",
 });
 
 // `withClubs` adds the club list — only Tech Club packages have one.
-const toPayload = (form, withClubs = false) => ({
+const toPayload = (form, withClubs = false, withPathway = false) => ({
   ...(withClubs ? { hubIds: form.hubIds } : {}),
+  ...(withPathway ? { pathwayTemplateId: form.pathwayTemplateId } : {}),
   name: form.name,
   slug: form.slug,
   summary: form.summary,
@@ -91,14 +113,32 @@ function ClubPicker({ clubs, value, onChange }) {
   </fieldset>;
 }
 
-function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, clubs }) {
+// The website details of a pathway, as the form edits them: { hubIds, image }.
+const websiteOf = (pathway) => ({ hubIds: pathway?.website?.hubIds || [], image: pathway?.website?.image || "" });
+
+function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, clubs, pathways = [], hubs = [] }) {
   const [form, setForm] = useState(initial);
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.type === "checkbox" ? event.target.checked : event.target.value }));
-  return <form onSubmit={(event) => { event.preventDefault(); onSubmit(toPayload(form, config.withClubs)); }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginTop: 14, padding: 16, background: "#F8FAFC", borderRadius: 12 }}>
+  const periods = config.noDaily ? BILLING_PERIODS.filter((p) => p.value !== "daily") : BILLING_PERIODS;
+  // Pathway plans: the chosen pathway, and its picture and hubs (shared by its plans).
+  const pathway = config.withPathway ? pathways.find((p) => p.templateId === form.pathwayTemplateId) : null;
+  const [website, setWebsite] = useState(() => websiteOf(pathway));
+  const choosePathway = (event) => {
+    const id = event.target.value;
+    setForm((current) => ({ ...current, pathwayTemplateId: id }));
+    setWebsite(websiteOf(pathways.find((p) => p.templateId === id)));
+  };
+  const submit = () => onSubmit(toPayload(form, config.withClubs, config.withPathway), pathway ? { pathway, website } : null);
+  return <form onSubmit={(event) => { event.preventDefault(); submit(); }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12, marginTop: 14, padding: 16, background: "#F8FAFC", borderRadius: 12 }}>
+    {config.withPathway && <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Pathway<select style={inputStyle} required value={form.pathwayTemplateId} onChange={choosePathway}>
+      <option value="">Choose the pathway this plan sells…</option>
+      {pathways.map((p) => <option key={p.templateId} value={p.templateId}>{p.name}</option>)}
+    </select></label>}
+    {pathway && <PathwayWebsiteFields pathway={pathway} hubs={hubs} value={website} onChange={setWebsite} />}
     <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder={config.namePlaceholder} /></label>
     <label style={labelStyle}>Children included<input style={inputStyle} required type="number" min={1} max={50} value={form.childrenIncluded} onChange={set("childrenIncluded")} /></label>
     <label style={labelStyle}>Billed<select style={inputStyle} value={form.billingPeriod} onChange={set("billingPeriod")}>
-      {BILLING_PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+      {periods.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
     </select></label>
     <label style={labelStyle}>Price per {periodUnit(form.billingPeriod)} (KSh)<input style={inputStyle} required type="number" min={0} step={1} value={form.amount} onChange={set("amount")} /></label>
     <p style={{ gridColumn: "1/-1", margin: "-4px 0 0", fontSize: 12, color: "#6B7280" }}>{periodHow(form.billingPeriod)}</p>
@@ -129,6 +169,9 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
 // Estate Tech Club packages. Ticking "Show on the website" publishes a package to the website's
 // Home Schooling page (GET /api/public/home-learning/packages) or its club pages
 // (GET /api/public/clubs/packages).
+// With programme="pathway": the website pathways' subscription plans — each plan's form picks the
+// pathway (one the curricula use) and sets its picture and hubs; a pathway is on the website while
+// it has a published plan (public-site.service.js's onWebsite).
 export default function PackagesPanel({ programme = "home_learning" }) {
   const config = PROGRAMMES[programme];
   const queryClient = useQueryClient();
@@ -140,24 +183,46 @@ export default function PackagesPanel({ programme = "home_learning" }) {
   const { data: clubRows } = useQuery({ queryKey: ["tech-clubs", "clubs"], queryFn: techClubApi.getClubs, enabled: !!config.withClubs });
   const clubs = Array.isArray(clubRows) ? clubRows : [];
   const clubNames = new Map(clubs.map((club) => [club.id, club.name]));
+  // The pathways a plan can sell — the ones the curricula use — with their website details, and
+  // the hubs they can run at (the pathway directory, Settings → Pathways).
+  const { data: directory } = usePathwayDirectory({ enabled: !!config.withPathway });
+  const pathways = (directory?.pathways || []).filter((p) => p.inUse && p.templateId).sort((a, b) => a.name.localeCompare(b.name));
+  const directoryHubs = directory?.hubs || [];
+  const pathwayById = new Map(pathways.map((p) => [p.templateId, p]));
+  // A pathway's picture and hubs, saved with its plan; publishing a plan puts the pathway on the
+  // website (the pathway's own "shown" flag is kept on).
+  const saveWebsite = async (pathway, website) => {
+    await pathwayTemplatesApi.setWebsite(pathway.templateId, { visible: true, hubIds: website.hubIds, image: website.image || null });
+    queryClient.invalidateQueries({ queryKey: ["settings", "pathway-templates"] });
+  };
   // Households / memberships show their package's name and price, so their list refreshes too.
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: config.queryKey });
     config.refreshKeys.forEach((queryKey) => queryClient.invalidateQueries({ queryKey }));
   };
   const saveMutation = useMutation({
-    mutationFn: ({ id, data }) => (id ? config.update(id, data) : config.create(data)),
+    mutationFn: async ({ id, data, extra }) => {
+      const saved = await (id ? config.update(id, data) : config.create(data));
+      if (extra?.pathway) await saveWebsite(extra.pathway, extra.website);
+      return saved;
+    },
     onSuccess: (_, { id }) => { refresh(); setEditingId(null); toast.success(id ? "Package saved" : "Package created"); },
     onError: (error) => toast.error(errorMessage(error, "Could not save package")),
   });
   const quickMutation = useMutation({
-    mutationFn: ({ pkg, changes }) => config.update(pkg.id, { ...toPayload(toForm(pkg), config.withClubs), ...changes }),
+    mutationFn: async ({ pkg, changes }) => {
+      const saved = await config.update(pkg.id, { ...toPayload(toForm(pkg), config.withClubs, config.withPathway), ...changes });
+      // Showing a pathway plan on the website lists its pathway there.
+      const pathway = config.withPathway && changes.isPublished ? pathwayById.get(pkg.pathwayTemplateId) : null;
+      if (pathway && !pathway.website?.visible) await saveWebsite(pathway, websiteOf(pathway));
+      return saved;
+    },
     onSuccess: refresh,
     onError: (error) => toast.error(errorMessage(error, "Could not update package")),
   });
   const deleteMutation = useMutation({
     mutationFn: config.remove,
-    onSuccess: () => { refresh(); toast.success("Package deleted"); },
+    onSuccess: (result) => { refresh(); toast.success(result?.archived ? "Package archived — families are still on it" : "Package deleted"); },
     onError: (error) => toast.error(errorMessage(error, "Could not delete package")),
   });
 
@@ -170,13 +235,13 @@ export default function PackagesPanel({ programme = "home_learning" }) {
       {editingId !== "new" && <button type="button" onClick={() => setEditingId("new")} style={{ ...smallButton, borderColor: "#25476a", color: "#25476a", padding: "8px 12px" }}><FiPlus /> New package</button>}
     </div>
 
-    {editingId === "new" && <PackageForm initial={EMPTY} config={config} clubs={clubs} onSubmit={(data) => saveMutation.mutate({ id: null, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />}
+    {editingId === "new" && <PackageForm initial={EMPTY} config={config} clubs={clubs} pathways={pathways} hubs={directoryHubs} onSubmit={(data, extra) => saveMutation.mutate({ id: null, data, extra })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />}
 
     {isLoading ? <p style={{ color: "#6B7280", fontSize: 13 }}>Loading packages…</p> : packages.length === 0 && editingId !== "new"
       ? <p style={{ color: "#6B7280", fontSize: 13, marginTop: 14 }}>{config.empty}</p>
       : <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
         {packages.map((pkg) => editingId === pkg.id
-          ? <PackageForm key={pkg.id} initial={toForm(pkg)} isEdit config={config} clubs={clubs} onSubmit={(data) => saveMutation.mutate({ id: pkg.id, data })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />
+          ? <PackageForm key={pkg.id} initial={toForm(pkg)} isEdit config={config} clubs={clubs} pathways={pathways} hubs={directoryHubs} onSubmit={(data, extra) => saveMutation.mutate({ id: pkg.id, data, extra })} onCancel={() => setEditingId(null)} saving={saveMutation.isPending} />
           : <div key={pkg.id} style={{ border: "1px solid #EEF1F5", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", opacity: pkg.status === "archived" ? 0.65 : 1 }}>
             <div style={{ minWidth: 220 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -193,6 +258,14 @@ export default function PackagesPanel({ programme = "home_learning" }) {
                 {pkg.allowExtraChildren && <> · +{formatMoney(pkg.extraChildAmount)} per extra child (up to {pkg.maxChildren})</>}
                 {" · "}{config.count(pkg)} {config.noun[config.count(pkg) === 1 ? 0 : 1]}
               </div>
+              {config.withPathway && (() => {
+                const pw = pathwayById.get(pkg.pathwayTemplateId);
+                const hubCount = pw?.website?.hubIds?.length || 0;
+                return <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+                  Sells <strong style={{ color: "#374151" }}>{pkg.pathwayName || "a removed pathway"}</strong>
+                  {pw ? ` · ${hubCount ? `runs at ${hubCount} hub${hubCount === 1 ? "" : "s"}` : "at the hubs that teach it"}` : ""}
+                </div>;
+              })()}
               {config.withClubs && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
                 {pkg.hubIds?.length ? `At ${pkg.hubIds.map((id) => clubNames.get(id) || "a removed club").join(", ")}` : "At every club"}
               </div>}
@@ -213,7 +286,7 @@ export default function PackagesPanel({ programme = "home_learning" }) {
       confirmLabel="Delete" cancelLabel="Cancel" variant="danger"
       onConfirm={() => { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); }}
       onCancel={() => setDeleteTarget(null)}
-      usageCheck={() => config.checkRemove(deleteTarget.id)}
+      usageCheck={config.checkRemove ? () => config.checkRemove(deleteTarget.id) : undefined}
       onAlternative={deleteTarget?.status === "active" ? () => { quickMutation.mutate({ pkg: deleteTarget, changes: { status: "archived", isPublished: false } }); setDeleteTarget(null); } : undefined}
     />
   </section>;

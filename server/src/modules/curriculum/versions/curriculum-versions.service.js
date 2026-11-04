@@ -101,6 +101,18 @@ const CurriculumVersionService = {
     return CurriculumVersionModel.update(versionId, { status, isCurrent: false });
   },
 
+  // The courses a curriculum's pathways may be given: every course on its published version or
+  // on a draft one (a version being prepared) — never a retired ("inactive") version's only.
+  // Returns null when the curriculum has no published or draft version at all.
+  async versionCourseIds(curriculumId) {
+    const all = await CurriculumVersionModel.findAllByCurriculumId(curriculumId);
+    const usable = all.filter((v) => v.isCurrent || ["published", "draft"].includes(v.status));
+    if (!usable.length) return null;
+    const ids = new Set();
+    for (const v of usable) collectCourseIds(v.content).forEach((id) => ids.add(id));
+    return ids;
+  },
+
   // The courses actually visible to learners/teachers — read from the live (isCurrent)
   // version's content, not the separate flat course-curriculum link. Optionally scoped to
   // one grade (classId), since the version matrix assigns courses per period+grade and a

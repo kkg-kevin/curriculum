@@ -4,6 +4,7 @@ export const TEACHER_STATUSES = [
   { value: "active",   label: "Active" },
   { value: "inactive", label: "Inactive" },
   { value: "on_leave", label: "On Leave" },
+  { value: "in_training", label: "In training" },
 ];
 
 // How an educator is employed, and so paid (see modules/claims/ and Settings → Educator pay):

@@ -102,6 +102,160 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (4 Nov 2026) — Deleting inside a copied curriculum only changes the copy
+
+**Portal and backend** from `curriculum` (branch `modules`) at `b744c88`. **Website** unchanged —
+the "3 Nov 2026, last" release's `digifunzi-co-ke-dist.zip` (web `1e4ed48`) stands; no need to upload it again.
+Includes every 3 Nov release below — if those aren't uploaded yet, upload this one instead (database
+backup first; the 3 Nov late release adds a migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (632 files, 159 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Bu8lb6wM.js`).
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Developmental stages can be deleted from a duplicated curriculum.** A stage's own parts — its part
+  of each pathway (that pathway's courses for the stage) and its performance bands — are deleted with
+  it, in that curriculum only; the confirmation says so. It's still refused when learners are placed at
+  it, in its bands or on its pathways, when diagnostics were issued for it, or a bootcamp runs its
+  pathways.
+- **Deleting a whole curriculum keeps assessments still in use.** Its assessments attached to a course
+  session (courses are shared with the curriculum it was copied from) or already issued stay; only its
+  unused ones are deleted.
+- A copy shares its courses and assessments with the original — editing those changes both;
+  everything else (stages, pathways, bands, levels, types, competencies, versions) is its own.
+
+### Verify
+
+1. Duplicate a curriculum → in the copy, Competencies → Developmental stages → delete one → the
+   confirmation explains what goes → it's deleted; the original still has it.
+
+---
+
+## This release (3 Nov 2026, last) — Educators enrol on TOT bootcamps online: diagnostic, details, payment
+
+**Portal and backend** from `curriculum` (branch `modules`) at `3aaad60`. **Website** from
+`curriculum-web` (branch `new`) at `1e4ed48`. Includes every 3 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first; the late release adds a migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (632 files, 159 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-2W9OMsVn.js` — unchanged since the late release).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`, after the backend (its TOT Enrol calls the new endpoint).
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **A TOT bootcamp's Enrol is a real sign-up.** The educator gives their date of birth, takes the
+  short diagnostic for their stage (they can skip it), sees their result, then gives their details
+  (name, email, phone, where they teach, a password) and pays — the same Payment step families get.
+- It creates their **educator account and login** (an existing Digifunzi account uses its own
+  password), their **place in the bootcamp's TOT class** at the hub they chose, an **enquiry** (they
+  show in the bootcamp's Learners & parents) and **one invoice billed to them**. The diagnostic goes
+  on their record and places them at the course their score earns. **Paying switches their training
+  on** — until then My learning is view-only.
+
+### Set up before taking sign-ups
+
+Each TOT bootcamp needs **dates, a price and a hub run** (Run at a hub). For the diagnostic step, its
+TOT curriculum's pathways need **stages whose age ranges cover your educators** (for example one stage
+of 15–100) with a **website diagnostic switched on** — without one the educator goes straight to the
+details.
+
+### Verify
+
+1. A TOT bootcamp on the website → Enrol → date of birth → diagnostic (or Skip) → details → payment.
+2. In the portal: the new educator appears under Educators, with a Training (TOT) card; the enquiry
+   is in Enquiries; the invoice is in Billing.
+3. Record a payment on that invoice — their training is switched on.
+
+---
+
+## This release (3 Nov 2026, late) — TOT bootcamps take any age; "Who it's for" now saves
+
+**Portal and backend** from `curriculum` (branch `modules`) at `97fa17a`. **Website** from
+`curriculum-web` (branch `new`) at `f3f59cb`. Includes every 3 Nov release below — if those aren't
+uploaded yet, upload this one instead (database backup first).
+
+### Upload in this order
+
+1. **Database backup** — one new migration.
+2. **Backend** — `backend-deploy.zip` (631 files, 159 migrations), then Restart. The migration
+   (`20261103110000`) sets bootcamps marked TOT to ages 15–100 on Restart; check with
+   `SELECT name, ageMin, ageMax FROM bootcamps WHERE audience = 'educators';` and run Run JS script →
+   `db:migrate` if they still show their old ages.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-2W9OMsVn.js`).
+4. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **TOT bootcamps take any age.** With "Who it's for" set to **Educators (TOT)**, the bootcamp form
+  shows "Any age (15–100)" instead of the age boxes, and the bootcamp is always saved as 15–100. The
+  website shows **"For educators"** instead of an age range. Learners' bootcamps keep their own range
+  (now allowed up to 100).
+- **Fix: "Who it's for" now saves.** In the earlier 3 Nov bundles the bootcamp form dropped it, so a
+  bootcamp marked Educators (TOT) was saved for learners (and a TOT curriculum then refused). After
+  uploading, open any bootcamp you meant as TOT and check its "Who it's for".
+
+### Verify
+
+1. Events → New bootcamp → Educators (TOT): the age boxes are replaced by "Any age (15–100)"; save
+   and reopen — still Educators (TOT).
+2. The website's page for a TOT bootcamp says "For educators".
+
+---
+
+## This release (3 Nov 2026, night) — Session reports as each assessment is marked; revoking issued work; modules when issuing
+
+**Portal and backend** from `curriculum` (branch `modules`) at `7e0b4a8`. **Website** from
+`curriculum-web` (branch `new`) at `60d8778` (unchanged — rebuilt with today's content). Includes
+"This release (3 Nov 2026, evening)" and "This release (3 Nov 2026)" below — if those aren't
+uploaded yet, upload this one instead (database backup first; the morning release adds two
+migrations).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (630 files, 158 migrations — no new migration in this one),
+   then Restart.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CT4WRxbI.js`).
+3. **Website** (digifunzi.co.ke) — `digifunzi-co-ke-dist.zip`.
+
+No environment variable, no cron, no npm package.
+
+### What changed
+
+- **Session reports follow each mark.** A learner's session report appears the moment one of the
+  session's assessments is marked (or auto-marked when they hand it in), and updates as each further
+  one is marked; while some are still to come it says "N more still to be marked". No page has to be
+  opened first any more.
+- **A session only counts as finished when all its assessments are marked** (or marked "Not
+  submitted") — the course's final report, certificates, course progress and educator claims all
+  still wait for that.
+- **Revoke an issued assessment.** Educators: **Revoke** beside the class's roster on the
+  Assessments page, or **Revoke this assessment** on the roster page. It disappears from every
+  learner's assessments; work already handed in is kept but no longer counts in their reports.
+- **Modules when issuing.** The educator's Assessments page orders sessions by module, with a
+  **Module** picker and the module name on each session and in the Issue confirmation.
+
+### Verify
+
+1. Issue a session's assessment, have a learner hand it in, mark it — the learner's Reports show the
+   session report straight away (with "still to be marked" if the session has more).
+2. Revoke an issued assessment — it's gone from the learner's Assessments.
+3. A course with modules: the Assessments page shows the Module picker.
+
+---
+
 ## This release (3 Nov 2026, evening) — Sign in from any browser; Home Learning educators; any meeting link; TOT loop closed
 
 **Portal and backend** from `curriculum` (branch `modules`) at `37abdaa`. **Website** from

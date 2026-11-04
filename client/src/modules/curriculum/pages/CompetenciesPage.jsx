@@ -8,6 +8,7 @@ import {
 } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurriculumQuery } from "../hooks/useCurriculum";
+import { useVersionCourseIds } from "../hooks/useCurriculumVersion";
 import {
   useCompetencies,
   useLinkCompetency,
@@ -878,6 +879,9 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
   const { mutate: createRow, isPending: creating } = useCreatePathway(curriculumId, "Stage saved");
   const { mutate: updateRow, isPending: updating } = useUpdatePathway(curriculumId, "Stage saved");
   const { mutate: reorderCourses } = useReorderPathwayCourses(curriculumId);
+  // A pathway's courses come from the curriculum's version (published or draft) — the server
+  // refuses any other (competency.controller.js's assertCoursesOnVersion).
+  const { ids: versionCourseIds, isLoading: versionLoading } = useVersionCourseIds(curriculumId);
   const saving = creating || updating;
   const color = group.color;
   const courses = row?.courses || [];
@@ -987,7 +991,21 @@ function PathwayStageSection({ curriculumId, group, stage, row, freeStages = [],
 
         {editingCourses ? (
           <>
-            <CoursePickerField value={courseDraft} onChange={setCourseDraft} color={color} />
+            <CoursePickerField
+              value={courseDraft}
+              onChange={setCourseDraft}
+              color={color}
+              allowedIds={versionCourseIds}
+              loading={versionLoading}
+              outsideLabel="not in version"
+              noOptionsNote={versionCourseIds ? "Every course on this curriculum's version is already added." : "This curriculum has no version yet."}
+            />
+            <p style={{ margin: "8px 0 0", fontSize: "11.5px", color: "#6B7280" }}>
+              {versionCourseIds
+                ? "Courses come from this curriculum's version (published or draft)."
+                : "Pathway courses come from the curriculum's version — add courses to one first."}{" "}
+              <Link to={`/curriculum/${curriculumId}/versions`} style={{ color: "#2e7db5", fontWeight: 600 }}>Version control →</Link>
+            </p>
             <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
               <button type="button" className="cp-btn-primary" onClick={saveCourses} disabled={saving}>
                 {saving ? "Saving…" : "Save courses"}
@@ -2920,7 +2938,15 @@ function AgeCategoriesPanel({ curriculumId }) {
                       </span>
                     )}
                   </div>
-                  <CardKebab onEdit={() => openEdit(cat)} onDelete={() => remove(cat.id)} usageCheck={() => competenciesApi.checkDeleteAgeCategory(curriculumId, cat.id)} disabled={deleting} itemLabel={cat.name} itemType="developmental stage" />
+                  <CardKebab
+                    onEdit={() => openEdit(cat)}
+                    onDelete={() => remove(cat.id)}
+                    usageCheck={() => competenciesApi.checkDeleteAgeCategory(curriculumId, cat.id)}
+                    disabled={deleting}
+                    itemLabel={cat.name}
+                    itemType="developmental stage"
+                    message={`Are you sure you want to delete "${cat.name}"? Its part of each pathway (the pathway's courses for this stage) and its performance bands are deleted with it. Only this curriculum changes — a curriculum it was copied from, or copied to, keeps its own.`}
+                  />
                 </div>
 
                 {overlapWarnings.has(cat.id) && (

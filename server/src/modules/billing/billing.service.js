@@ -55,6 +55,11 @@ async function resolvePayerIdentity(invoice) {
     const membership = await db("club_memberships").where({ id: invoice.clubMembershipId }).first();
     if (membership) return { name: membership.guardianName, email: membership.guardianEmail || null, phone: membership.guardianPhone || null, address: null };
   }
+  // A pathway subscription invoice is billed to the subscribing parent.
+  if (invoice.pathwaySubscriptionId) {
+    const sub = await db("pathway_subscriptions").where({ id: invoice.pathwaySubscriptionId }).first();
+    if (sub) return { name: sub.guardianName, email: sub.guardianEmail || null, phone: sub.guardianPhone || null, address: null };
+  }
   // A website Store order is billed to whoever placed it (a guest has no login to look up).
   if (invoice.invoiceType === "store_order") {
     const order = await db("orders").where({ invoiceId: invoice.id }).first();
@@ -67,6 +72,14 @@ async function resolvePayerIdentity(invoice) {
     const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
     if (!hub) return null;
     return { name: hub.name, email: hub.email || null, phone: hub.phone || null, address: hub.address || null };
+  }
+  // An educator in training (TOT — learners.teacherId) pays for their own training: billed to them.
+  if (invoice.learnerId) {
+    const trainee = await LearnerModel.findById(invoice.learnerId);
+    if (trainee?.teacherId) {
+      const educator = await db("teachers").where({ id: trainee.teacherId }).first("firstName", "lastName", "email", "phone");
+      if (educator) return { name: [educator.firstName, educator.lastName].filter(Boolean).join(" ") || null, email: educator.email || null, phone: educator.phone || null, address: null };
+    }
   }
   if (invoice.payerUserId) {
     if (invoice.learnerId) {
@@ -180,6 +193,12 @@ async function resolveSource(invoice, items, cache = { hubs: new Map(), learners
       const month = String(invoice.periodLabel || "").replace(/^Tech Club\s*·\s*/i, "") || null;
       return { kind: "tech_club", automatic: true, hubName: school, from: join([school, membership ? `${membership.guardianName} family` : "Club membership", month]), ref: membership ? { type: "club_membership", id: membership.id } : null };
     }
+    case "pathway_subscription": {
+      const sub = invoice.pathwaySubscriptionId ? await db("pathway_subscriptions").where({ id: invoice.pathwaySubscriptionId }).first() : null;
+      // The period reads "Robotics · 4 Nov – 3 Dec 2026"; keep only the dates.
+      const period = String(invoice.periodLabel || "").split(" · ").slice(1).join(" · ") || null;
+      return { kind: "pathway_subscription", automatic: true, hubName: school, from: join([sub ? `${sub.pathwayName} subscription` : "Pathway subscription", sub ? `${sub.guardianName} family` : null, period]), ref: sub ? { type: "pathway_subscription", id: sub.id } : null };
+    }
     case "hub_usage": {
       const visits = metas.filter((m) => m.hubVisitId).length;
       return { kind: "hub_usage", automatic: true, hubName: school, from: join([school, await learnerName(invoice.learnerId), visits ? `${visits} ${visits === 1 ? "visit" : "visits"}` : null, invoice.periodLabel]), ref: invoice.hubId ? { type: "hub", id: invoice.hubId } : null };
@@ -237,6 +256,11 @@ async function assertLearnerAtHub(learnerId, hubId) {
   return learner;
 }
 
+// A child's own username login never sees billing — the parent pays. An educator in training
+// (TOT, "My learning") also runs as a username learner (scope.middleware.js), but pays for their
+// own training, so they see the invoices on their own learner record (req.ownLearners) only.
+const isChildLogin = (req) => req.user.role === "learner" && Boolean(req.user.username) && !req.user.learningAsEducator;
+
 async function guardianHouseholdIds(req) {
   if (req.user.role !== "learner" || req.user.username || !req.user.email) return [];
   return (await db("home_learning_households").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((h) => h.id);
@@ -246,6 +270,12 @@ async function guardianHouseholdIds(req) {
 async function guardianClubMembershipIds(req) {
   if (req.user.role !== "learner" || req.user.username || !req.user.email) return [];
   return (await db("club_memberships").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((m) => m.id);
+}
+
+// …and their pathway subscriptions.
+async function guardianPathwaySubscriptionIds(req) {
+  if (req.user.role !== "learner" || req.user.username || !req.user.email) return [];
+  return (await db("pathway_subscriptions").whereRaw("LOWER(guardianEmail) = ?", [req.user.email.toLowerCase()]).select("id")).map((m) => m.id);
 }
 
 // A parent login's household and club-membership invoices, added to the ones found by learner.
@@ -258,7 +288,7 @@ async function familyInvoices(req) {
 }
 
 async function withGuardianInvoices(req, invoices) {
-  const [householdIds, membershipIds] = await Promise.all([guardianHouseholdIds(req), guardianClubMembershipIds(req)]);
+  const [householdIds, membershipIds, subscriptionIds] = await Promise.all([guardianHouseholdIds(req), guardianClubMembershipIds(req), guardianPathwaySubscriptionIds(req)]);
   const seen = new Set(invoices.map((inv) => inv.id));
   let all = invoices;
   if (householdIds.length) {
@@ -269,6 +299,11 @@ async function withGuardianInvoices(req, invoices) {
   if (membershipIds.length) {
     const clubInvoices = await db("billing_invoices").whereIn("clubMembershipId", membershipIds).orderBy("createdAt", "desc");
     all = all.concat(clubInvoices.filter((inv) => !seen.has(inv.id)));
+    clubInvoices.forEach((inv) => seen.add(inv.id));
+  }
+  if (subscriptionIds.length) {
+    const subscriptionInvoices = await db("billing_invoices").whereIn("pathwaySubscriptionId", subscriptionIds).orderBy("createdAt", "desc");
+    all = all.concat(subscriptionInvoices.filter((inv) => !seen.has(inv.id)));
   }
   return all;
 }
@@ -288,13 +323,15 @@ async function assertAccess(req, invoice) {
     if (invoice.hubId !== req.ownSchool?.id) throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
     return;
   }
-  if (req.user.role === "learner" && req.user.username) throw forbidden("Learner accounts cannot access invoices");
+  if (isChildLogin(req)) throw forbidden("Learner accounts cannot access invoices");
   if (req.user.role === "learner" && (req.ownLearners || []).some((l) => l.id === invoice.learnerId)) return;
   // A guardian login sees its own Home Learning household's package invoices (matched on the
   // guardian email the household was registered with).
   if (req.user.role === "learner" && invoice.householdId && (await guardianHouseholdIds(req)).includes(invoice.householdId)) return;
   // …and its own Tech Club membership invoices.
   if (req.user.role === "learner" && invoice.clubMembershipId && (await guardianClubMembershipIds(req)).includes(invoice.clubMembershipId)) return;
+  // …and its own pathway subscriptions'.
+  if (req.user.role === "learner" && invoice.pathwaySubscriptionId && (await guardianPathwaySubscriptionIds(req)).includes(invoice.pathwaySubscriptionId)) return;
   throw Object.assign(new Error("You do not have access to this invoice"), { statusCode: 403 });
 }
 
@@ -548,7 +585,7 @@ const BillingService = {
   async listInvoices(req) {
     const filters = {};
     if (req.user.role === "school") filters.hubId = req.ownSchool?.id || "__none__";
-    if (req.user.role === "learner" && req.user.username) return [];
+    if (isChildLogin(req)) return [];
     let invoices = req.user.role === "learner" ? await familyInvoices(req) : await BillingModel.findInvoices(filters);
     // hubId inherits ownerAdminId transitively — findInvoices' filter object only takes a single
     // exact value per column (no whereIn), and an admin can own more than one hub, so this
@@ -749,7 +786,7 @@ const BillingService = {
   async listReceipts(req) {
     const filters = {};
     if (req.user.role === "school") filters.hubId = req.ownSchool?.id || "__none__";
-    if (req.user.role === "learner" && req.user.username) return [];
+    if (isChildLogin(req)) return [];
     let invoices = req.user.role === "learner" ? await familyInvoices(req) : await BillingModel.findInvoices(filters);
     // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
     // transitively, and an admin can own more than one hub, so filter in JS after the fact.

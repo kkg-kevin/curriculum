@@ -145,8 +145,9 @@ const STATUS_STYLES = {
   active:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee" },
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
+  in_training: { bg: "#dff2fb", color: "#1f6f99", border: "#a8d5ee" },
 };
-const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave" };
+const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave", in_training: "In training" };
 
 function Avatar({ firstName, lastName, photo, size = 64 }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
@@ -258,6 +259,9 @@ export default function TeacherViewPage() {
   }
 
   const statusStyle = STATUS_STYLES[teacher.status] || STATUS_STYLES.inactive;
+  // A website TOT sign-up waits "in training" until made active (then it can be given classes).
+  const inTraining = teacher.status === "in_training";
+  const willActivate = teacher.status === "inactive" || inTraining;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -309,9 +313,9 @@ export default function TeacherViewPage() {
                   type="button"
                   onClick={() => setConfirmStatusToggle(true)}
                   disabled={statusPending}
-                  style={{ padding: "10px 20px", backgroundColor: teacher.status === "inactive" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: teacher.status === "inactive" ? "#A7F3D0" : "#FCA5A5", border: `1.5px solid ${teacher.status === "inactive" ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)"}`, borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: statusPending ? "not-allowed" : "pointer" }}
+                  style={{ padding: "10px 20px", backgroundColor: willActivate ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: willActivate ? "#A7F3D0" : "#FCA5A5", border: `1.5px solid ${willActivate ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)"}`, borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: statusPending ? "not-allowed" : "pointer" }}
                 >
-                  {teacher.status === "inactive" ? "Activate Account" : "Deactivate Account"}
+                  {inTraining ? "Make Active" : willActivate ? "Activate Account" : "Deactivate Account"}
                 </button>
               )}
               <button
@@ -352,7 +356,7 @@ export default function TeacherViewPage() {
           {/* QA visits and reports — the hub sees its announced visits and report summaries. */}
           <EducatorQaSection teacherId={id} />
 
-          <TotTrainingCard teacherId={id} />
+          <TotTrainingCard teacherId={id} teacher={teacher} />
 
           <Section title="Availability">
             <WeeklyAvailabilityGrid slots={availabilitySlots} />
@@ -493,18 +497,20 @@ export default function TeacherViewPage() {
 
       <ConfirmDialog
         isOpen={confirmStatusToggle}
-        title={teacher.status === "inactive" ? "Activate Educator Account" : "Deactivate Educator Account"}
+        title={inTraining ? "Make Educator Active" : willActivate ? "Activate Educator Account" : "Deactivate Educator Account"}
         message={
-          teacher.status === "inactive"
+          inTraining
+            ? `"${teacher.firstName} ${teacher.lastName}" joined through a TOT bootcamp and is still in training. Made active, they can be given classes and Home Learning families. Their training carries on as before.`
+            : willActivate
             ? `"${teacher.firstName} ${teacher.lastName}" will be marked active again and regain portal access.`
             : `"${teacher.firstName} ${teacher.lastName}" will be marked inactive and lose teacher-portal access immediately. Their record, hub assignments, and class history are kept.`
         }
-        confirmLabel={teacher.status === "inactive" ? "Activate" : "Deactivate"}
+        confirmLabel={inTraining ? "Make active" : willActivate ? "Activate" : "Deactivate"}
         cancelLabel="Cancel"
-        variant={teacher.status === "inactive" ? "default" : "danger"}
+        variant={willActivate ? "default" : "danger"}
         onConfirm={() => {
           setConfirmStatusToggle(false);
-          updateTeacherStatus({ id, status: teacher.status === "inactive" ? "active" : "inactive" });
+          updateTeacherStatus({ id, status: willActivate ? "active" : "inactive" });
         }}
         onCancel={() => setConfirmStatusToggle(false)}
       />

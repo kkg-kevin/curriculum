@@ -35,8 +35,10 @@ function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUn
   // exclude a teacher here once they've been given a specific, non-empty list that doesn't
   // include this course. Mirrors the server-side gate in class.controller.js's
   // assignCourseTeacher exactly, so the picker never offers a choice the server would reject.
+  // Educators still "in training" (website TOT sign-ups) aren't given classes until made active —
+  // the server refuses them too (class.controller.js, canTeach).
   const available = (hubTeachers || []).filter((t) =>
-    !assignedIds.has(t.id) && (!t.qualifiedCourseIds?.length || t.qualifiedCourseIds.includes(course.id))
+    !assignedIds.has(t.id) && t.status !== "in_training" && (!t.qualifiedCourseIds?.length || t.qualifiedCourseIds.includes(course.id))
   );
   const sortedLinks = [...links].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
 

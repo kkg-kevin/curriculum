@@ -80,6 +80,15 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     if (req.headers["x-teacher-learning"] === "1" && req.ownTeacher) {
       const row = await require("../../config/db")("learners").where({ teacherId: req.ownTeacher.id }).first("id");
       const trainee = row ? await LearnerModel.findById(row.id) : null;
+      // A website TOT sign-up not yet paid for: they can look, but their training's work waits on
+      // the payment — as a child's unpaid bootcamp place does.
+      if (trainee?.accountStatus === "pending_payment" && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+        const err = new Error("Your training starts once your payment is confirmed.");
+        err.statusCode = 403;
+        err.code = "ACCOUNT_SUSPENDED";
+        err.reason = "payment";
+        throw err;
+      }
       if (trainee) {
         req.user.actualRole = "teacher";
         req.user.learningAsEducator = true;

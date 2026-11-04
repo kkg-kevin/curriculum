@@ -6,6 +6,7 @@ import { childColor } from "../components/childColors";
 import { childPath } from "../parentPaths";
 import { JoinOnlineButton, isLive } from "../../timetable/components/OnlineClass";
 import { formatDay, formatMoney, plural, relativeDay } from "../format";
+import ParentSubscriptions from "../components/ParentSubscriptions";
 
 function SummaryPill({ icon, value, label }) {
   return (
@@ -172,6 +173,8 @@ export default function ParentHomePage() {
           </div>
         )}
       </div>
+
+      <ParentSubscriptions />
 
       {children.length === 0 ? (
         <div style={{ ...cardStyle({ padding: "40px 24px", textAlign: "center" }) }}>

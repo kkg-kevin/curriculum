@@ -29,6 +29,8 @@ function runInvoiceActivationHooks(invoice, { amount = null, paidByUserId = null
     () => require("../tech-clubs/club-signup.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../bootcamp-enrollment/bootcamp-enrollment.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
     () => require("../pathway-enrollment/pathway-enrollment.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
+    // A pathway subscription's period: its access runs to that period's end (pathway-subscriptions/).
+    () => require("../pathway-subscriptions/pathway-subscription.service").activateForPaidInvoice(invoice, { amount, paidByUserId }),
   ]);
 }
 

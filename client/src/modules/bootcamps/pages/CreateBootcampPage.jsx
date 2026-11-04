@@ -63,8 +63,12 @@ const toFormValues = (b) => ({
 });
 
 // The API rejects unknown/empty enum strings — send null, not "".
+// A TOT bootcamp takes educators of any age — saved as this range (the server sets it too).
+const TOT_AGE_RANGE = { ageMin: 15, ageMax: 100 };
+
 const clean = (v) => {
   const out = { ...v };
+  if (out.audience === "educators") Object.assign(out, TOT_AGE_RANGE);
   out.format = out.format || null;
   out.curriculumId = out.curriculumId || null;
   out.highlights = (out.highlights || []).map((h) => h.trim()).filter(Boolean);
@@ -570,15 +574,23 @@ export default function CreateBootcampPage() {
                 <label style={S.label}>Duration</label>
                 <input {...register("durationLabel")} style={S.input} placeholder="e.g. 1 week" />
               </div>
-              <div style={S.field}>
-                <label style={S.label}>Age range <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="number" min="0" max="25" {...register("ageMin")} style={{ ...S.input, width: "100%", minWidth: 0, padding: "9px 8px" }} placeholder="Min" />
-                  <span style={{ color: "#9CA3AF", fontSize: 12, flexShrink: 0 }}>–</span>
-                  <input type="number" min="0" max="25" {...register("ageMax")} style={{ ...S.input, width: "100%", minWidth: 0, padding: "9px 8px" }} placeholder="Max" />
+              {audience === "educators" ? (
+                <div style={S.field}>
+                  <label style={S.label}>Age range</label>
+                  <p style={{ margin: 0, padding: "9px 0", fontSize: 13, color: "#374151" }}>Any age (15–100)</p>
+                  <span style={S.hint}>A TOT bootcamp is for educators of any age.</span>
                 </div>
-                {errors.ageMax && <span style={S.error}>{errors.ageMax.message}</span>}
-              </div>
+              ) : (
+                <div style={S.field}>
+                  <label style={S.label}>Age range <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span></label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="number" min="0" max="100" {...register("ageMin")} style={{ ...S.input, width: "100%", minWidth: 0, padding: "9px 8px" }} placeholder="Min" />
+                    <span style={{ color: "#9CA3AF", fontSize: 12, flexShrink: 0 }}>–</span>
+                    <input type="number" min="0" max="100" {...register("ageMax")} style={{ ...S.input, width: "100%", minWidth: 0, padding: "9px 8px" }} placeholder="Max" />
+                  </div>
+                  {errors.ageMax && <span style={S.error}>{errors.ageMax.message}</span>}
+                </div>
+              )}
             </div>
           </div>
 

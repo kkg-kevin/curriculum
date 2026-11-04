@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useQaVisits } from "../hooks/useQa";
 import { VisitRow } from "../components/VisitList";
-import { Empty, QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
+import { Empty, QaPageStyles, QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
 
 // QA for the people visited: the educator (/teacher-portal/qa) — their announced visits coming
 // up and every report on them, to read and reply to; the hub (/school-portal/qa) — the same for its
@@ -23,8 +23,9 @@ export default function MyQaPage() {
   const average = scored.length ? Math.round((scored.reduce((n, v) => n + Number(v.score), 0) / scored.length) * 10) / 10 : null;
 
   return (
-    <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="qa-page" style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16 }}>
       <QaStyles />
+      <QaPageStyles />
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>QA Reviews</h1>

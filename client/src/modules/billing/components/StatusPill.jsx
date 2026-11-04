@@ -9,6 +9,8 @@ export const TYPE_LABELS = {
   home_learning: "Home Learning package",
   tech_club: "Tech Club membership",
   store_order: "Website order",
+  pathway: "Pathway enrolment",
+  pathway_subscription: "Pathway subscription",
 };
 
 export const TYPE_HELP = {
@@ -24,6 +26,8 @@ export const TYPE_HELP = {
   home_learning: "Monthly Home Learning package billed to a household's guardian.",
   // Raised per membership per month from the Tech Clubs page.
   tech_club: "Monthly Estate Tech Club membership billed to the family's parent.",
+  // A website pathway subscription's period, billed to the parent (Pathway Subscriptions page).
+  pathway_subscription: "A website pathway subscription's period, billed to the family's parent.",
 };
 
 export const STATUS_LABELS = { draft: "Draft", issued: "Issued", partially_paid: "Partially paid", paid: "Paid", overdue: "Overdue", cancelled: "Cancelled", void: "Void" };

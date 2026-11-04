@@ -4,6 +4,8 @@ const SALE_STATUSES = ["internal", "for_sale"];
 const FORMATS = ["holiday", "weekend", "after_school", "online"];
 // Who it's for, like curricula.audience — "educators" is a TOT (training of trainers) bootcamp.
 const AUDIENCES = ["learners", "educators"];
+// A TOT bootcamp takes educators of any age — always saved as this range (bootcamp.service.js).
+const TOT_AGE_RANGE = { ageMin: 15, ageMax: 100 };
 const DESCRIPTION_MAX_WORDS = 150;
 
 // `text` is rich text (TipTap HTML) — strip tags first so markup itself (e.g. <strong>, <p>)
@@ -72,8 +74,8 @@ const bootcampFields = z.object({
   saleStatus:    z.enum(SALE_STATUSES).optional().default("internal"),
   format:        z.enum(FORMATS).optional().nullable(),
   durationLabel: z.string().trim().max(60).optional().default(""),
-  ageMin:        z.coerce.number().int().min(0).max(25).optional().nullable(),
-  ageMax:        z.coerce.number().int().min(0).max(25).optional().nullable(),
+  ageMin:        z.coerce.number().int().min(0).max(100).optional().nullable(),
+  ageMax:        z.coerce.number().int().min(0).max(100).optional().nullable(),
   // Whole currency units, no fractional pricing. Coerced so the portal's number input
   // (which yields a string) is accepted.
   priceAmount:   z.coerce.number().int().min(0).max(10000000).optional().nullable(),
@@ -163,6 +165,7 @@ const scheduleRunSchema = z.object({
 });
 
 module.exports = {
+  TOT_AGE_RANGE,
   createBootcampSchema,
   updateBootcampSchema,
   scheduleRunSchema,

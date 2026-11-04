@@ -75,21 +75,29 @@ const TotService = {
 
   // Puts an educator into a TOT class — making their learner record the first time. An educator
   // already in that class is left as they are.
-  async enrol(teacher, { hubId, classId }, { ownerAdminId }) {
+  // `pendingPayment`: a new learner record waits on payment (the website TOT sign-up —
+  // bootcamp-enrollment/educator-enrollment.service.js); paying switches it on.
+  // `dateOfBirth`: theirs, when known (the website sign-up asks) — kept on the learner record, so
+  // their stage, and with it the diagnostic, can follow their age like any learner's.
+  async enrol(teacher, { hubId, classId }, { ownerAdminId, pendingPayment = false, dateOfBirth = null }) {
     const cls = (await totClasses(ownerAdminId)).find((c) => c.id === classId && c.hubId === hubId);
     if (!cls) fail("Choose a class of a TOT curriculum (one marked for educators) at one of your hubs");
     let learner = await traineeOf(teacher.id);
+    if (learner && dateOfBirth && !learner.dateOfBirth) {
+      await db("learners").where({ id: learner.id }).update({ dateOfBirth, updatedAt: new Date() });
+    }
     if (!learner) {
       learner = await LearnerService.createLearner({
         firstName: teacher.firstName || "Educator",
         lastName: teacher.lastName || "",
         gender: null,
+        dateOfBirth: dateOfBirth || "",
         // An adult learning for themself: the guardian columns (which can't be empty) hold their
         // own name and phone, and no email — so no parent login is ever made or matched.
         guardianName: fullName(teacher) || "Educator",
         guardianPhone: teacher.phone || "—",
         guardianEmail: "",
-        accountStatus: "active",
+        accountStatus: pendingPayment ? "pending_payment" : "active",
         createdByAdminId: ownerAdminId,
         teacherId: teacher.id,
       });
@@ -218,17 +226,36 @@ const TotService = {
       if (!certificate || certificate.kind !== "course" || !certificate.courseId) return;
       const learner = await db("learners").where({ id: certificate.learnerId }).first("id", "teacherId");
       if (!learner?.teacherId) return;
-      const teacher = await db("teachers").where({ id: learner.teacherId }).first("id", "teacherLevel");
+      const teacher = await db("teachers").where({ id: learner.teacherId }).first("id", "teacherLevel", "status", "firstName", "lastName");
       if (!teacher) return;
       const patch = {};
 
-      const cls = certificate.classId ? await db("classes").where({ id: certificate.classId }).first("curriculumId") : null;
-      const curriculum = cls?.curriculumId ? await db("curricula").where({ id: cls.curriculumId }).first("id", "audience", "completionTeacherLevel") : null;
-      if (curriculum?.audience === "educators" && curriculum.completionTeacherLevel) {
-        const courseIds = await db("course_curriculum_links").where({ curriculumId: curriculum.id }).pluck("courseId");
+      const cls = certificate.classId ? await db("classes").where({ id: certificate.classId }).first("curriculumId", "schoolId") : null;
+      const curriculum = cls?.curriculumId ? await db("curricula").where({ id: cls.curriculumId }).first("id", "name", "audience", "completionTeacherLevel", "ownerAdminId") : null;
+      if (curriculum?.audience === "educators") {
+        // The curriculum's courses are its published version's (what its classes run); a curriculum
+        // without one falls back to its attached courses.
+        const versionCourses = await require("../curriculum/versions/curriculum-versions.service").getCurrentCourses(curriculum.id).catch(() => []);
+        const courseIds = versionCourses.length
+          ? versionCourses.map((c) => c.id)
+          : await db("course_curriculum_links").where({ curriculumId: curriculum.id }).pluck("courseId");
         const held = new Set(await db("certificates").where({ learnerId: learner.id, kind: "course", status: "issued" }).pluck("courseId"));
-        if (courseIds.length && courseIds.every((id) => held.has(id)) && Number(teacher.teacherLevel || 0) < curriculum.completionTeacherLevel) {
+        const finished = courseIds.length > 0 && courseIds.every((id) => held.has(id));
+        if (finished && curriculum.completionTeacherLevel && Number(teacher.teacherLevel || 0) < curriculum.completionTeacherLevel) {
           patch.teacherLevel = curriculum.completionTeacherLevel;
+        }
+        // Still "in training" (a website TOT sign-up): the admins decide when they start teaching.
+        const hub = cls.schoolId ? await db("learning_hubs").where({ id: cls.schoolId }).first("ownerAdminId") : null;
+        const ownerAdminId = hub?.ownerAdminId || curriculum.ownerAdminId;
+        if (finished && teacher.status === "in_training" && ownerAdminId) {
+          await require("../notifications/notification.service")._notify(ownerAdminId, {
+            type: "tot_training_finished",
+            title: "Training finished — ready to make active?",
+            message: `${fullName(teacher)} has a certificate for every course of ${curriculum.name}. They're still In training: make them Active on their page when they're ready to teach.`,
+            payload: { route: `/teachers/${teacher.id}/view` },
+            dedupeKey: `tot_training_finished:${teacher.id}:${curriculum.id}`,
+            ownerAdminId,
+          }).catch(() => {});
         }
       }
       if (Object.keys(patch).length) await db("teachers").where({ id: teacher.id }).update({ ...patch, updatedAt: new Date() });

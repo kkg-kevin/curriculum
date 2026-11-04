@@ -6,6 +6,10 @@ import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { summarizeCoursesProgress } from "../utils/progressStorage";
 import SideRail from "../components/SideRail";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
+import { useQuery } from "@tanstack/react-query";
+import PathwayAccessSection from "../components/PathwayAccessSection";
+import { pathwaySubscriptionApi } from "../../pathway-subscriptions/services/pathwaySubscriptionApi";
+import { isParentUser } from "../../parent/parentPaths";
 
 const T = {
   accent: "#25476a",
@@ -36,6 +40,9 @@ export default function MyCoursesPage() {
   const { user, learner, isLoading, hubs, hubsLoading, selectedHub, cls, mentors, mentorsLoading, activeHomeEnrollment } = useOutletContext();
   const curriculumId = cls?.curriculumId || activeHomeEnrollment?.curriculumId;
   const { data: courses, isLoading: coursesLoading } = useLearnerCourses(curriculumId, cls?.gradeId, learner?.id);
+  // Pathways they subscribe to or bought on the website — no class needed (pathway-subscriptions/).
+  const { data: pathwayRows } = useQuery({ queryKey: ["pathway-subscriptions", "access", learner?.id], queryFn: pathwaySubscriptionApi.myAccess, enabled: !!learner?.id });
+  const pathways = Array.isArray(pathwayRows) ? pathwayRows : [];
 
   // A learner's own dedicated login has no email — fall back to username so progress storage
   // (keyed locally per-learner, see progressStorage.js) doesn't collapse into a shared bucket.
@@ -51,12 +58,16 @@ export default function MyCoursesPage() {
             My Courses
           </h1>
           <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.72)", maxWidth: "560px" }}>
-            {activeHomeEnrollment && !cls ? "Browse the courses assigned to your home learning plan." : "Browse the courses your class is following this year."}
+            {activeHomeEnrollment && !cls ? "Browse the courses assigned to your home learning plan." : !curriculumId && pathways.length ? "Your pathway's courses — learn at your own pace." : "Browse the courses your class is following this year."}
           </p>
         </div>
       </div>
 
       {learner && <OnlineClassStrip who="learner" hub={selectedHub} cls={cls} classId={cls?.id} style={{ marginBottom: 16 }} />}
+
+      {learner && pathways.length > 0 && (
+        <div style={{ marginBottom: 20 }}><PathwayAccessSection pathways={pathways} isParent={isParentUser(user)} /></div>
+      )}
 
       {isLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
@@ -65,7 +76,7 @@ export default function MyCoursesPage() {
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No learner profile linked yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your school to record this same email address as your guardian email.</p>
         </div>
-      ) : !curriculumId ? (
+      ) : !curriculumId && pathways.length ? null : !curriculumId ? (
         <div style={{ textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>No curriculum assigned yet</h3>
           <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Ask your learning team to assign a curriculum to this learner.</p>
