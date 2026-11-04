@@ -113,6 +113,8 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
     const totalScore = s.totalScore || 0;
     return {
       assessmentId: s.assessmentId,
+      // The issue the learner answered — the report links to their marked work with it.
+      issueId: s.issueId || null,
       name: assessment?.name || "Untitled assessment",
       type: assessment?.type || null,
       totalScore,
@@ -169,6 +171,21 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
   return { assessments, overall, indicatorBreakdown, competencyScores, courseName, sessionName };
 }
 
+// A session's place in its course — modules in order, then sessions in order within each — and
+// the one after it: { sessionNumber, sessionCount, nextSessionTitle }.
+async function sessionPlace(session) {
+  const [modules, sessions] = await Promise.all([
+    db("course_modules").where({ courseId: session.courseId }).select("id", "order"),
+    SessionModel.findByCourseId(session.courseId),
+  ]);
+  const moduleOrder = new Map(modules.map((m) => [m.id, Number(m.order) || 0]));
+  const ordered = [...sessions].sort((a, b) =>
+    (moduleOrder.get(a.moduleId) ?? 1e9) - (moduleOrder.get(b.moduleId) ?? 1e9) || (Number(a.order) || 0) - (Number(b.order) || 0));
+  const index = ordered.findIndex((s) => s.id === session.id);
+  if (index < 0) return {};
+  return { sessionNumber: index + 1, sessionCount: ordered.length, nextSessionTitle: ordered[index + 1]?.title || null };
+}
+
 // A session is DONE for a learner once its report stands and either every assessment it attaches
 // is marked and released, or the educator filed it "not submitted". A session report itself goes
 // out as soon as one assessment is marked (generateSessionReport) — so "has a report" no longer
@@ -218,6 +235,8 @@ async function generateSessionReport({ learnerId, session, classId, curriculumId
     ...(await buildReportContent(learnerId, requiredIds, curriculumId, session.courseId, session.id)),
     complete,
     pendingCount: requiredIds.length - markedCount,
+    // Where the session sits in its course, for the report's "What's next".
+    ...(await sessionPlace(session)),
   };
   if (existing) {
     const before = existing.content?.assessments?.length || 0;
@@ -641,7 +660,7 @@ const ReportService = {
   // permanent record of what they were told; changing it after the fact without a trace would
   // undermine that. A teacher who genuinely needs to correct it withdraws to draft first (see
   // unpublishReport), which re-opens editing and re-snapshots content on the next publish.
-  async updateRemarks(id, remarks) {
+  async updateRemarks(id, { remarks, homeNote } = {}) {
     const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status === "published") {
@@ -649,7 +668,10 @@ const ReportService = {
       err.statusCode = 409;
       throw err;
     }
-    return ReportModel.update(id, { remarks });
+    const patch = {};
+    if (remarks !== undefined) patch.remarks = remarks;
+    if (homeNote !== undefined) patch.homeNote = homeNote.trim() || null;
+    return Object.keys(patch).length ? ReportModel.update(id, patch) : report;
   },
 
   // One-time draft→published transition — re-snapshots content fresh in case more grading

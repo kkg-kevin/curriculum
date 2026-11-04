@@ -29,6 +29,7 @@ const assessmentRoutes = require("./modules/assessments/assessment.routes");
 const { draftRouter } = require("./modules/drafts/draft.routes");
 const assessmentSubmissionRoutes = require("./modules/assessments/submissions/assessment-submission.routes");
 const reportRoutes = require("./modules/reports/report.routes");
+const analyticsRoutes = require("./modules/analytics/analytics.routes");
 const certificateRoutes = require("./modules/certificates/certificate.routes");
 const { settingsRouter: certificateSettingsRoutes } = certificateRoutes;
 const publicCertificateRoutes = require("./modules/certificates/public-certificate.routes");
@@ -264,6 +265,8 @@ app.use("/api/assessment-submissions", protect, attachOwnRecords, assessmentSubm
 // Course reports read off graded submissions above — same not-authoring, multi-role,
 // attachOwnRecords-scoped shape.
 app.use("/api/reports", protect, attachOwnRecords, reportRoutes);
+// Reports & Analytics tabs (logins, time to task, assessments, competencies, at risk).
+app.use("/api/analytics", protect, attachOwnRecords, analyticsRoutes);
 // Course certificates follow final reports (issued on publish) — read-only here, same roles.
 app.use("/api/certificates", protect, attachOwnRecords, certificateRoutes);
 // Learner access is scoped to assessment-submission file uploads (documentUpload/imageUpload/

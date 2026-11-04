@@ -12,7 +12,8 @@ export const reportApi = {
   generate:      (payload)           => api.post(BASE, payload).then((r) => r.data.data),
   listForClass:  (classId, courseId) => api.get(BASE, { params: { classId, courseId } }).then((r) => r.data),
   getById:       (id)                => api.get(`${BASE}/${id}`).then((r) => r.data.data),
-  updateRemarks: (id, remarks)       => api.patch(`${BASE}/${id}`, { remarks }).then((r) => r.data.data),
+  // body: { remarks?, homeNote? }
+  updateRemarks: (id, body)          => api.patch(`${BASE}/${id}`, body).then((r) => r.data.data),
   publish:       (id)                => api.post(`${BASE}/${id}/publish`).then((r) => r.data.data),
   unpublish:     (id)                => api.post(`${BASE}/${id}/unpublish`).then((r) => r.data.data),
   // hubId scopes to the hub the portal switcher is on; omitted returns every hub's reports.

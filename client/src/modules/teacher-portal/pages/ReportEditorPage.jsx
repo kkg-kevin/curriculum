@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useReport, useUpdateRemarks, usePublishReport, useUnpublishReport } from "../../reports/hooks/useReports";
 import { useLearnerQuery } from "../../learners/hooks/useLearners";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
-import ReportDetailSections from "../../reports/components/ReportDetailSections";
+import ReportView from "../../reports/components/ReportView";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -21,9 +21,15 @@ export default function ReportEditorPage() {
   const { mutate: publish, isPending: publishing } = usePublishReport();
   const { mutate: unpublish, isPending: unpublishing } = useUnpublishReport();
   const [remarks, setRemarks] = useState("");
+  const [homeNote, setHomeNote] = useState("");
+  // Families see words and bars; the educator can switch the raw marks on.
+  const [showMarks, setShowMarks] = useState(false);
 
   useEffect(() => {
-    if (report) setRemarks(report.remarks || "");
+    if (report) {
+      setRemarks(report.remarks || "");
+      setHomeNote(report.homeNote || "");
+    }
   }, [report]);
 
   if (isLoading) {
@@ -71,14 +77,18 @@ export default function ReportEditorPage() {
 
       <div style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
-          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Remarks</p>
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Your comment</p>
           {isPublished ? (
             // Published reports are locked (see updateRemarks in report.service.js) — the
             // learner/guardian's permanent record shouldn't change silently after the fact. A
             // teacher who needs to correct it withdraws to draft first, which re-opens editing.
             <div style={{ padding: "10px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
               <p style={{ margin: 0, fontSize: 13.5, color: report.remarks ? T.ink : T.inkFaint, fontStyle: report.remarks ? "normal" : "italic" }}>
-                {report.remarks || "No remarks added."}
+                {report.remarks || "No comment added."}
+              </p>
+              <p style={{ margin: "10px 0 2px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>How to help at home</p>
+              <p style={{ margin: 0, fontSize: 13.5, color: report.homeNote ? T.ink : T.inkFaint, fontStyle: report.homeNote ? "normal" : "italic", whiteSpace: "pre-line" }}>
+                {report.homeNote || "No note added."}
               </p>
               <p style={{ margin: "8px 0 0", fontSize: 11, color: T.inkFaint }}>Locked — withdraw to draft to change this.</p>
             </div>
@@ -90,11 +100,19 @@ export default function ReportEditorPage() {
                 placeholder="A note for the learner and guardian about this course overall…"
                 style={{ ...fieldStyle, width: "100%", minHeight: 90, resize: "vertical" }}
               />
+              <p style={{ margin: "12px 0 4px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>How to help at home <span style={{ textTransform: "none", fontWeight: 500 }}>(optional)</span></p>
+              <textarea
+                value={homeNote}
+                onChange={(e) => setHomeNote(e.target.value)}
+                maxLength={2000}
+                placeholder="One or two things the family can do at home — e.g. “Ask Ama to explain her game to you and spot one bug together.”"
+                style={{ ...fieldStyle, width: "100%", minHeight: 70, resize: "vertical" }}
+              />
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
                 <button
                   type="button"
-                  onClick={() => saveRemarks({ id: report.id, remarks })}
-                  disabled={savingRemarks || remarks === (report.remarks || "")}
+                  onClick={() => saveRemarks({ id: report.id, remarks, homeNote })}
+                  disabled={savingRemarks || (remarks === (report.remarks || "") && homeNote === (report.homeNote || ""))}
                   style={{ padding: "9px 16px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: savingRemarks ? "not-allowed" : "pointer" }}
                 >
                   {savingRemarks ? "Saving…" : "Save Draft"}
@@ -121,7 +139,11 @@ export default function ReportEditorPage() {
           ) : (
             <button
               type="button"
-              onClick={() => publish(report.id, { onSuccess: () => navigate("/teacher-portal/reports") })}
+              onClick={() => {
+                const go = () => publish(report.id, { onSuccess: () => navigate("/teacher-portal/reports") });
+                if (remarks !== (report.remarks || "") || homeNote !== (report.homeNote || "")) saveRemarks({ id: report.id, remarks, homeNote }, { onSuccess: go });
+                else go();
+              }}
               disabled={publishing}
               style={{ padding: "10px 22px", backgroundColor: publishing ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publishing ? "not-allowed" : "pointer" }}
             >
@@ -131,7 +153,21 @@ export default function ReportEditorPage() {
         </div>
       </div>
 
-      <ReportDetailSections content={content} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
+          {isPublished ? "What the learner and their family see:" : "What the learner and their family will see:"}
+        </p>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: T.accent, cursor: "pointer" }}>
+          <input type="checkbox" checked={showMarks} onChange={(e) => setShowMarks(e.target.checked)} />
+          Show marks (staff only)
+        </label>
+      </div>
+      <ReportView
+        report={{ ...report, remarks: isPublished ? report.remarks : remarks, homeNote: isPublished ? report.homeNote : homeNote }}
+        audience="staff"
+        firstName={learner?.firstName || ""}
+        showMarks={showMarks}
+      />
     </div>
   );
 }

@@ -181,7 +181,7 @@ const TotService = {
       throw err;
     }
     if (report.status !== "published") {
-      if (remarks) await ReportService.updateRemarks(report.id, remarks);
+      if (remarks) await ReportService.updateRemarks(report.id, { remarks });
       await ReportService.publishReport(report.id, publishedBy);
     }
     return TotService.progressFor(teacherId);

@@ -169,8 +169,8 @@ async function loadOwnedReportOrThrow(req) {
 
 const updateRemarks = asyncHandler(async (req, res) => {
   await loadOwnedReportOrThrow(req);
-  const { remarks } = updateRemarksSchema.parse(req.body);
-  const updated = await ReportService.updateRemarks(req.params.id, remarks);
+  const { remarks, homeNote } = updateRemarksSchema.parse(req.body);
+  const updated = await ReportService.updateRemarks(req.params.id, { remarks, homeNote });
   res.json({ success: true, data: updated });
 });
 

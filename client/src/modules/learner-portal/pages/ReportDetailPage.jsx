@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { usePortalNavigate } from "../utils/usePortalNavigate";
 import toast from "react-hot-toast";
-import { FiAward } from "react-icons/fi";
 import { Print as PrintIcon, Download as DownloadIcon } from "@mui/icons-material";
 import { useReport } from "../../reports/hooks/useReports";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
-import ReportDetailSections from "../../reports/components/ReportDetailSections";
+import ReportView from "../../reports/components/ReportView";
 import ReportPrintDocument from "../../reports/components/ReportPrintDocument";
 import { downloadElementAsPdf } from "../../../utils/pdf";
 
@@ -34,7 +33,8 @@ export default function ReportDetailPage() {
   // The portal's already-resolved scope — the learner (name, photo, admission no.) and the hub
   // currently being viewed (name, logo, class). Threaded into the printable document so it can
   // carry the three marks (Digifunzi, hub, learner) without any fetch of its own.
-  const { learner, selectedHub, cls } = useOutletContext();
+  // viewOnly: a parent looking at their child's report (ParentChildLayout) — worded about the child.
+  const { learner, selectedHub, cls, viewOnly } = useOutletContext();
 
   const { data: report, isLoading, isError } = useReport(reportId);
   // Only used as a fallback for reports generated before courseName was snapshotted into content.
@@ -55,8 +55,6 @@ export default function ReportDetailPage() {
   }
 
   const content = report.content || {};
-  const overall = content.overall || { totalScore: 0, maxScore: 0, percent: 0 };
-  const assessments = content.assessments || [];
 
   const reportLabel = report.sessionId
     ? content.sessionName || "Session"
@@ -93,7 +91,7 @@ export default function ReportDetailPage() {
             onClick={() => navigate("/learner-portal/reports")}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 20, color: T.inkMuted, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
           >
-            ← My Reports
+            ← {viewOnly ? "Reports" : "My Reports"}
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -106,42 +104,29 @@ export default function ReportDetailPage() {
           </div>
         </div>
 
-        <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "24px 28px", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "22px 26px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
           <div style={{ position: "relative" }}>
+            <p style={{ margin: "0 0 4px", fontSize: 11.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9BD7F2" }}>
+              {report.sessionId ? "Session report" : "Course report"}{viewOnly && learner?.firstName ? ` · ${learner.firstName}` : ""}
+            </p>
             <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: "#fff" }}>
-              {report.sessionId ? `Session Report — ${content.sessionName || "Session"}` : (content.courseName || course?.name || "Course Report")}
+              {report.sessionId ? content.sessionName || "Session" : content.courseName || course?.name || "Course"}
             </h1>
-            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
-              Published {report.publishedAt ? new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : ""}
+            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
+              {[report.sessionId ? content.courseName || course?.name : null, report.publishedAt ? `Published ${new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" })}` : null].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
 
-        <div style={{ ...cardStyle, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669", fontSize: 22, flexShrink: 0 }}><FiAward /></div>
-          <div>
-            <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{overall.totalScore} / {overall.maxScore}</p>
-            <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>{overall.percent}% overall across {assessments.length} assessment{assessments.length === 1 ? "" : "s"}</p>
-          </div>
-        </div>
-
-        {/* A session report goes out as soon as one of its assessments is marked, and grows as
-            the rest are — say so while some are still to come. */}
-        {report.sessionId && content.complete === false && content.pendingCount > 0 && (
-          <div style={{ ...cardStyle, padding: "12px 18px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", fontSize: 13, color: "#92400E", fontWeight: 600 }}>
-            {content.pendingCount} more {content.pendingCount === 1 ? "assessment" : "assessments"} from this session still to be marked — this report updates as {content.pendingCount === 1 ? "it is" : "they are"}.
-          </div>
-        )}
-
-        {report.remarks && (
-          <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
-            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Educator Remarks</p>
-            <p style={{ margin: 0, fontSize: 13.5, color: T.ink }}>{report.remarks}</p>
-          </div>
-        )}
-
-        <ReportDetailSections content={content} defaultOpen />
+        <ReportView
+          report={report}
+          audience={viewOnly ? "parent" : "learner"}
+          firstName={learner?.firstName || ""}
+          onOpenAssessment={(issueId) => navigate(`/learner-portal/assessments/${issueId}`)}
+          onOpenSessionReport={(id) => navigate(`/learner-portal/reports/${id}`)}
+          onOpenCourse={report.courseId ? () => navigate(`/learner-portal/courses/${report.courseId}`) : undefined}
+        />
       </div>
 
       {/* Off-screen branded document — the exact element Print and Download capture. */}

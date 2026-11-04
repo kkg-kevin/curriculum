@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
+import { LEVELS, buildReportView } from "../utils/reportView";
 
 /* ──────────────────────────────────────────────────────────────────────────
  * A print-optimised, branded rendering of a single published report — the
@@ -11,7 +12,8 @@ import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../..
  *
  * Everything it needs is passed in as plain props (report + the learner/hub
  * already resolved by the portal's own scope) so it has no data fetching of its
- * own and can be captured by html2canvas as-is.
+ * own and can be captured by html2canvas as-is. Its body reads like the on-screen report
+ * (ReportView, both from buildReportView): level words and bars, never raw marks.
  * ────────────────────────────────────────────────────────────────────────── */
 
 const NAVY = "#25476a";
@@ -22,17 +24,8 @@ const INK_FAINT = "#9CA3AF";
 const BORDER = "#E5E7EB";
 const TINT = "#e8f5fb";
 const TINT_BORDER = "#a8d5ee";
-const GOOD = "#059669";
-const BAD = "#DC2626";
-
 function fmtDate(iso) {
   return iso ? new Date(iso).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" }) : "—";
-}
-function fmtDateTime(iso) {
-  return iso ? new Date(iso).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : "";
-}
-function scoreColor(percent) {
-  return percent >= 60 ? GOOD : BAD;
 }
 function initials(a, b) {
   return `${(a || "")[0] || ""}${(b || "")[0] || ""}`.toUpperCase() || "?";
@@ -79,6 +72,24 @@ function IdentityField({ label, value }) {
   );
 }
 
+function Bar({ percent, color, height = 8 }) {
+  return (
+    <div style={{ height, borderRadius: 999, background: "#EEF0F4", overflow: "hidden", flex: 1 }}>
+      <div style={{ width: `${Math.max(2, Math.min(100, percent))}%`, height: "100%", background: color, borderRadius: 999 }} />
+    </div>
+  );
+}
+
+function Pill({ level }) {
+  return <span style={{ fontSize: 9.5, fontWeight: 800, color: level.color, background: level.soft, border: `1px solid ${level.border}`, borderRadius: 20, padding: "1px 8px", whiteSpace: "nowrap" }}>{level.label}</span>;
+}
+
+function Box({ children, tone }) {
+  const tones = { plain: ["#fff", BORDER], tint: [TINT, TINT_BORDER], warm: ["#FFF5E1", "#FDD89A"] };
+  const [bg, border] = tones[tone || "plain"];
+  return <div style={{ padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 10, background: bg, breakInside: "avoid" }}>{children}</div>;
+}
+
 function SectionTitle({ children }) {
   return (
     <h2 style={{ margin: "0 0 12px", fontSize: 12.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: NAVY, display: "flex", alignItems: "center", gap: 8 }}>
@@ -88,27 +99,11 @@ function SectionTitle({ children }) {
   );
 }
 
-function Row({ left, sub, right, rightColor }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "9px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#FAFBFF", breakInside: "avoid" }}>
-      <div style={{ minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: INK }}>{left}</p>
-        {sub && <p style={{ margin: "1px 0 0", fontSize: 10, color: INK_FAINT }}>{sub}</p>}
-      </div>
-      <span style={{ fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap", color: rightColor || INK }}>{right}</span>
-    </div>
-  );
-}
-
 /* ── The document ─────────────────────────────────────────────────────── */
 
-export default function ReportPrintDocument({ report, learner, hub, gradeName }) {
+export default function ReportPrintDocument({ report, learner, hub, gradeName, audience = "parent" }) {
   const content = report.content || {};
-  const overall = content.overall || { totalScore: 0, maxScore: 0, percent: 0 };
-  const assessments = content.assessments || [];
-  const competencyScores = content.competencyScores || [];
-  const indicatorBreakdown = content.indicatorBreakdown || [];
-  const sessionReports = content.sessionReports || [];
+  const view = buildReportView(report, { audience, firstName: learner?.firstName || "" });
 
   const isSession = !!report.sessionId;
   const courseName = content.courseName || "Course";
@@ -178,115 +173,149 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName })
       {/* ── Body ──────────────────────────────────────────────────── */}
       <div style={{ padding: "24px 32px 30px", display: "flex", flexDirection: "column", gap: 24 }}>
 
-        {/* Overall result */}
-        <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 22px", border: `1.5px solid ${TINT_BORDER}`, background: TINT, borderRadius: 12, breakInside: "avoid" }}>
-          <div style={{ textAlign: "center", flexShrink: 0 }}>
-            <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: NAVY, lineHeight: 1 }}>{overall.percent}%</p>
-            <p style={{ margin: "4px 0 0", fontSize: 10.5, fontWeight: 700, color: INK_MUTED }}>OVERALL</p>
-          </div>
-          <div style={{ width: 1, alignSelf: "stretch", background: TINT_BORDER }} />
-          <div>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: INK }}>{overall.totalScore} / {overall.maxScore} marks</p>
-            <p style={{ margin: "3px 0 0", fontSize: 11.5, color: INK_MUTED }}>
-              Across {assessments.length} assessment{assessments.length === 1 ? "" : "s"}
-              {isSession ? " in this session" : " in this course"}
-            </p>
-          </div>
-        </div>
-
-        {/* Educator remarks */}
-        {report.remarks && (
-          <div style={{ breakInside: "avoid" }}>
-            <SectionTitle>Educator Remarks</SectionTitle>
-            <div style={{ padding: "14px 16px", border: `1px solid ${BORDER}`, borderRadius: 10, background: "#fff", fontSize: 12.5, lineHeight: 1.6, color: INK, fontStyle: "italic" }}>
-              “{report.remarks}”
-            </div>
-          </div>
-        )}
-
-        {/* Session breakdown (course-level report only) */}
-        {sessionReports.length > 0 && (
-          <div style={{ breakInside: "avoid" }}>
-            <SectionTitle>Session Breakdown</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {sessionReports.map((s) => (
-                <Row
-                  key={s.sessionId}
-                  left={s.sessionTitle || "Untitled session"}
-                  right={`${s.totalScore}/${s.maxScore} · ${s.percent}%`}
-                  rightColor={scoreColor(s.percent)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Assessments */}
-        {assessments.length > 0 && (
-          <div style={{ breakInside: "avoid" }}>
-            <SectionTitle>Assessments</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {assessments.map((a) => (
-                <div key={a.assessmentId} style={{ padding: "11px 14px", border: `1px solid ${BORDER}`, borderRadius: 10, background: "#FAFBFF", breakInside: "avoid" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: INK }}>{a.name}</p>
-                    <span style={{ fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap", color: scoreColor(a.percent) }}>
-                      {a.totalScore}/{a.maxScore} · {a.percent}%
-                    </span>
+        {view.notSubmitted ? (
+          <Box tone="warm">
+            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: INK }}>Not handed in</p>
+            <p style={{ margin: "4px 0 0", fontSize: 11.5, color: INK_MUTED }}>The work for this session wasn’t handed in, so there was nothing to mark: {view.notSubmittedAssessments.map((x) => x.name).join(", ") || "—"}.</p>
+          </Box>
+        ) : (
+          <>
+            {/* How it went */}
+            <div style={{ padding: "18px 22px", border: `1.5px solid ${TINT_BORDER}`, background: TINT, borderRadius: 12, breakInside: "avoid" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                <div style={{ width: 84, height: 84, borderRadius: "50%", border: `8px solid ${view.level.fill}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: INK }}>{view.percent}%</span>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: INK_MUTED }}>{isSession ? "How this session went" : "How the course went"}</p>
+                  <p style={{ margin: "3px 0 4px", fontSize: 20, fontWeight: 900, color: view.level.color }}>
+                    {view.level.label}
+                    {view.band && <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 700, color: NAVY, background: "#fff", border: `1px solid ${TINT_BORDER}`, borderRadius: 20, padding: "2px 9px", verticalAlign: "middle" }}>Level: {view.band}</span>}
+                  </p>
+                  {view.sentence && <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: INK }}>{view.sentence}</p>}
+                  <p style={{ margin: "4px 0 0", fontSize: 10.5, color: INK_MUTED }}>{view.marked} {view.marked === 1 ? "assessment" : "assessments"} marked{view.pending > 0 ? ` · ${view.pending} more still to be marked` : ""}</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 4, marginTop: 12 }}>
+                {LEVELS.map((l) => (
+                  <div key={l.key} style={{ flex: 1 }}>
+                    <div style={{ height: 5, borderRadius: 999, background: l.key === view.level.key ? l.fill : "#fff" }} />
+                    <p style={{ margin: "3px 0 0", fontSize: 9, fontWeight: l.key === view.level.key ? 800 : 600, color: l.key === view.level.key ? l.color : INK_FAINT }}>{l.label} · {l.min}–{l.max}%</p>
                   </div>
-                  {a.feedback && (
-                    <>
-                      <p style={{ margin: "8px 0 0", paddingTop: 8, borderTop: `1px solid ${BORDER}`, fontSize: 11.5, fontStyle: "italic", color: INK }}>“{a.feedback}”</p>
-                      {(a.gradedByName || a.gradedAt) && (
-                        <p style={{ margin: "4px 0 0", fontSize: 9.5, color: INK_FAINT }}>
-                          {a.gradedByName ? `— ${a.gradedByName}` : ""}{a.gradedByName && a.gradedAt ? " · " : ""}{fmtDateTime(a.gradedAt)}
-                        </p>
+                ))}
+              </div>
+            </div>
+
+            {/* From the teacher + at home */}
+            {(view.comments.length > 0 || view.homeNote) && (
+              <div style={{ display: "grid", gridTemplateColumns: view.comments.length && view.homeNote ? "1fr 1fr" : "1fr", gap: 12, breakInside: "avoid" }}>
+                {view.comments.length > 0 && (
+                  <div>
+                    <SectionTitle>From the teacher</SectionTitle>
+                    <Box tone="tint">
+                      {view.comments.map((c, i) => (
+                        <div key={c.key} style={{ marginTop: i ? 10 : 0 }}>
+                          <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.55, color: INK, fontStyle: "italic", whiteSpace: "pre-line" }}>“{c.text}”</p>
+                          <p style={{ margin: "3px 0 0", fontSize: 9.5, color: INK_FAINT }}>{[c.by, c.about, c.at ? fmtDate(c.at) : null].filter(Boolean).join(" · ")}</p>
+                        </div>
+                      ))}
+                    </Box>
+                  </div>
+                )}
+                {view.homeNote && (
+                  <div>
+                    <SectionTitle>How to help at home</SectionTitle>
+                    <Box tone="warm"><p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.55, color: INK, whiteSpace: "pre-line" }}>{view.homeNote}</p></Box>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Doing well / to practise next */}
+            {view.competencies.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, breakInside: "avoid" }}>
+                {[["Doing well", view.strengths, "#2e7db5", "Nothing stands out yet."], ["To practise next", view.practise, "#feb139", "Nothing below halfway."]].map(([label, items, color, empty]) => (
+                  <div key={label}>
+                    <SectionTitle>{label}</SectionTitle>
+                    <Box>
+                      {items.length === 0 && <p style={{ margin: 0, fontSize: 11, color: INK_MUTED }}>{empty}</p>}
+                      {items.map((x, i) => (
+                        <div key={x.id} style={{ marginTop: i ? 8 : 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span style={{ fontSize: 11.5, fontWeight: 700, color: INK }}>{x.name}</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: INK }}>{x.percent}%</span>
+                          </div>
+                          <div style={{ marginTop: 4, display: "flex" }}><Bar percent={x.percent} color={color} height={6} /></div>
+                        </div>
+                      ))}
+                    </Box>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Skills */}
+            {view.competencies.length > 0 && (
+              <div>
+                <SectionTitle>Skills</SectionTitle>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {view.competencies.map((c) => (
+                    <Box key={c.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: INK, flex: "0 0 34%" }}>{c.name}</span>
+                        <Bar percent={c.percent} color={c.level.fill} />
+                        <span style={{ fontSize: 11.5, fontWeight: 800, color: INK, width: 36, textAlign: "right" }}>{c.percent}%</span>
+                        <Pill level={c.level} />
+                      </div>
+                      {c.indicators.length > 0 && (
+                        <div style={{ marginTop: 8, paddingTop: 6, borderTop: `1px dashed ${BORDER}`, display: "flex", flexDirection: "column", gap: 5 }}>
+                          {c.indicators.map((i) => (
+                            <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 10.5, color: INK_MUTED, flex: "0 0 34%" }}>{i.name}</span>
+                              <Bar percent={i.percent} color={i.level.fill} height={5} />
+                              <span style={{ fontSize: 10.5, fontWeight: 700, color: INK_MUTED, width: 36, textAlign: "right" }}>{i.percent}%</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </>
-                  )}
+                    </Box>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Competency standing */}
-        {competencyScores.length > 0 && (
-          <div style={{ breakInside: "avoid" }}>
-            <SectionTitle>Competency Standing</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {competencyScores.map((cs) => (
-                <div key={cs.competencyId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "9px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, background: "#FAFBFF", breakInside: "avoid" }}>
-                  <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: INK }}>{cs.name}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: NAVY }}>{cs.score}%</span>
-                    {cs.level?.name && <span style={{ fontSize: 10, color: INK_FAINT }}>{cs.level.name}</span>}
-                    {cs.band?.name && (
-                      <span style={{ fontSize: 9.5, fontWeight: 800, color: NAVY, background: TINT, border: `1px solid ${TINT_BORDER}`, borderRadius: 20, padding: "1px 8px" }}>{cs.band.name}</span>
-                    )}
+            {/* Sessions (course report) and assessments */}
+            {[["Sessions in this course", view.sessionReports.map((x) => ({ key: x.sessionId, name: x.sessionTitle || "Session", percent: x.percent, level: x.level }))],
+              [isSession ? "This session’s work" : "Assessments", view.assessments.map((x) => ({ key: x.assessmentId, name: x.name, sub: x.gradedAt ? `Marked ${fmtDate(x.gradedAt)}` : null, percent: x.percent, level: x.level }))]]
+              .filter(([, rows]) => rows.length > 0)
+              .map(([label, rows]) => (
+                <div key={label} style={{ breakInside: "avoid" }}>
+                  <SectionTitle>{label}</SectionTitle>
+                  <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden" }}>
+                    {rows.map((r, i) => (
+                      <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", borderTop: i ? `1px solid ${BORDER}` : "none" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: INK }}>{r.name}</p>
+                          {r.sub && <p style={{ margin: "1px 0 0", fontSize: 9.5, color: INK_FAINT }}>{r.sub}</p>}
+                        </div>
+                        <span style={{ fontSize: 11.5, fontWeight: 800, color: INK }}>{r.percent}%</span>
+                        <Pill level={r.level} />
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
 
-        {/* Indicator breakdown */}
-        {indicatorBreakdown.length > 0 && (
-          <div style={{ breakInside: "avoid" }}>
-            <SectionTitle>Competency Breakdown</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {indicatorBreakdown.map((ind) => (
-                <Row
-                  key={ind.indicatorId}
-                  left={ind.indicatorName}
-                  sub={ind.competencyName}
-                  right={`${ind.marksEarned}/${ind.marksPossible} · ${ind.percent}%`}
-                  rightColor={scoreColor(ind.percent)}
-                />
-              ))}
-            </div>
-          </div>
+            {/* What's next */}
+            {isSession && (view.nextSessionTitle || view.sessionNumber) && (
+              <Box>
+                <p style={{ margin: 0, fontSize: 11.5, color: INK }}>
+                  <strong>What’s next: </strong>
+                  {[view.sessionNumber && view.sessionCount ? `session ${view.sessionNumber} of ${view.sessionCount}` : null, view.nextSessionTitle ? `up next, ${view.nextSessionTitle}` : null, view.practise[0] ? `practising ${view.practise[0].name} will help most` : null].filter(Boolean).join(" · ")}.
+                </p>
+              </Box>
+            )}
+          </>
         )}
       </div>
 
