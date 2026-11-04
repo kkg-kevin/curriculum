@@ -88,8 +88,9 @@ function SubscriptionCard({ sub, plans, focused, onAction, busy }) {
         {["paused", "cancelled"].includes(sub.status) && <button type="button" style={{ ...btn, borderColor: "#25476a", color: "#25476a" }} disabled={busy} onClick={() => onAction("active", sub)}><FiPlay size={13} /> Switch back on</button>}
         {sub.status !== "cancelled" && <button type="button" style={{ ...btn, color: "#B91C1C" }} disabled={busy} onClick={() => onAction("cancelled", sub)}><FiXCircle size={13} /> Cancel</button>}
         {sub.status === "active" && otherPlans.length > 0 && (
-          <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <select value={planId} onChange={(e) => setPlanId(e.target.value)} style={{ ...btn, fontWeight: 600, paddingRight: 8 }} aria-label="Change plan">
+          <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap", flex: "0 1 auto", minWidth: 0, maxWidth: "100%" }}>
+            {/* A long plan name mustn't widen the row past a phone's edge: the dropdown shrinks to fit. */}
+            <select value={planId} onChange={(e) => setPlanId(e.target.value)} style={{ ...btn, fontWeight: 600, paddingRight: 8, flex: "0 1 260px", width: 260, minWidth: 0, maxWidth: "100%", textOverflow: "ellipsis" }} aria-label="Change plan">
               <option value="">Change plan…</option>
               {otherPlans.map((p) => <option key={p.id} value={p.id}>{p.name} — {pricePer(p.amount, p.billingPeriod)}</option>)}
             </select>
@@ -145,7 +146,7 @@ export default function PathwaySubscriptionsPage() {
   };
 
   return (
-    <div style={{ fontFamily: font, display: "grid", gap: 16, gridTemplateColumns: "100%", maxWidth: 1080 }}>
+    <div style={{ width: "100%", fontFamily: font, display: "grid", gap: 16, gridTemplateColumns: "100%" }}>
       <section style={{ ...card, padding: "20px 22px", background: "linear-gradient(135deg,#17304B,#25476a)", color: "#fff", border: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
           <div style={{ minWidth: 0, maxWidth: 680 }}>
