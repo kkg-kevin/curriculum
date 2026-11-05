@@ -102,6 +102,44 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (5 Nov 2026, afternoon) — Two people on one browser: a tab never shows one account while acting as another
+
+**Portal and backend** from `curriculum` (branch `modules`) at `480b3dc`. No website change. Includes the
+"5 Nov 2026" release below (reissue and revoke for chosen learners) — if that isn't up yet, take a database
+backup first and follow its notes too (one migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (654 files, 163 migrations), then Restart. No new migration since
+   "5 Nov 2026".
+2. **Portal** — `index.html` + `assets.zip` (entry `index-0Y-LN6gI.js`).
+
+No new cron, no new environment variables, no npm package.
+
+### What changed
+
+**A learner saw "No learner profile linked yet" although their record was fine.** Every tab of a browser
+shares one sign-in. A child signed in on one tab, someone else (an educator, the hub, a parent) then
+signed in on another, and the child's tab kept showing the child while everything it asked for ran as
+the other person — so it found no learner record.
+- When anyone signs in, the browser's other portal tabs showing a different account reopen as the new
+  sign-in. A tab coming back into view also checks who it's really signed in as.
+- Right after signing in, the portal checks which account the browser actually holds; if the browser kept
+  an older sign-in, the tab keeps its own, and the server now prefers it.
+- Signing out (or switching role) in such a tab no longer signs the other person out.
+
+Nothing changes for anyone signing in on their own device. On a shared device, the second person should
+use a private window or another browser so each keeps their own sign-in.
+
+### Verify
+
+1. In one browser, tab 1: sign in as a child (username). Tab 2 (open on the sign-in page before that):
+   sign in as an educator. Tab 1 reloads into the educator's account — it never shows the child with
+   "No learner profile linked yet".
+2. Sign out in tab 2: tab 1 is signed out too, as before.
+
+---
+
 ## This release (5 Nov 2026) — Reissue and revoke for chosen learners; reissued work shows for marking
 
 **Portal and backend** from `curriculum` (branch `modules`) at `ce4373c`. No website change — the website
