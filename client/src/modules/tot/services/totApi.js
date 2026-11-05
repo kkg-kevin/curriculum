@@ -10,6 +10,8 @@ export const totApi = {
   me: () => api.get(`${BASE}/me`).then(data),
   // An educator's training — admin, their supervisor, or a hub they work at.
   educator: (teacherId) => api.get(`${BASE}/educators/${teacherId}`).then(data),
+  // The workspace's TOT learners (Learners → TOT learners): each with their educator, classes, work.
+  learners: () => api.get(`${BASE}/learners`).then(data),
   // The TOT classes (classes of a curriculum for educators) an admin can enrol an educator in.
   classes: () => api.get(`${BASE}/classes`).then(data),
   enrol: (teacherId, body) => api.post(`${BASE}/educators/${teacherId}/enrol`, body).then(data),

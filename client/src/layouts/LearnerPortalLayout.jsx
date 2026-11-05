@@ -16,7 +16,7 @@ const MOBILE_BREAKPOINT = 900;
 
 function LearnerPortal() {
   const scope = useLearnerPortalScope();
-  const { hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
+  const { user, hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // A guardian-mediated login sees every sibling under their email and could otherwise switch
@@ -55,7 +55,8 @@ function LearnerPortal() {
   // at several hubs must be able to switch back to one they've already onboarded rather than
   // being trapped on the gate of a hub they haven't started, with only "do the diagnostic" or
   // "log out" as options. Header stays too, so they can still sign out.
-  const gateActive = !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
+  // Not for a TOT learner (an adult educator in training): their diagnostic waits in Assessments.
+  const gateActive = !user?.totLearner && !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
 
   const sidebarReserved = !gateActive && !isMobile;
   // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).

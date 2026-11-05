@@ -14,6 +14,7 @@ import EnquirySettingsPanel from "../../leads/components/EnquirySettingsPanel";
 import PartPaymentsSection from "../payments/PartPaymentsSection";
 import { SettingsPage as SettingsLayoutPage } from "../components/SettingsLayout";
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
+import FeedbackSettingsPanel from "../../mentor-reviews/components/FeedbackSettingsPanel";
 import { can } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
 import { useSettingsStyles } from "../components/settingsStyles";
@@ -42,6 +43,8 @@ const ALL_TABS = [
   { key: "payments", label: "Payments" },
   // The rates educators are paid at, for the whole workspace — see EducatorPayPanel.
   { key: "educator-pay", label: "Educator pay" },
+  // Parents reviewing the mentors teaching their children — see FeedbackSettingsPanel.
+  { key: "parent-feedback", label: "Parent feedback" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
@@ -59,7 +62,9 @@ export default function SettingsPage() {
   // regardless of the role alias, so they're hidden here rather than shown and broken.
   // Educator pay: staff only with Claim approvals → Edit, the permission the server asks for.
   const TABS = (user?.role === "collaborator" ? ALL_TABS.filter((t) => !OWNER_ONLY_TABS.includes(t.key)) : ALL_TABS)
-    .filter((t) => t.key !== "educator-pay" || can(user, "claims-approval", "edit"));
+    .filter((t) => t.key !== "educator-pay" || can(user, "claims-approval", "edit"))
+    // Parent feedback: staff only with Educators → Edit (/api/mentor-reviews, access.registry.js).
+    .filter((t) => t.key !== "parent-feedback" || can(user, "teachers", "edit"));
   const [searchParams] = useSearchParams();
   // The old Inventory tab is now Items → Goods, so ?tab=inventory links still land in the right place.
   const rawTab = searchParams.get("tab");
@@ -121,6 +126,7 @@ export default function SettingsPage() {
           </SettingsLayoutPage>
         )}
         {activeTab === "educator-pay" && <EducatorPayPanel />}
+        {activeTab === "parent-feedback" && <FeedbackSettingsPanel />}
       </div>
     </div>
   );

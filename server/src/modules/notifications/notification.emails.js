@@ -140,20 +140,67 @@ const EMAIL_TYPES = {
   qa_review_submitted: { label: "A QA report on you is ready", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA report" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
   qa_visit_due: { label: "A QA visit of yours is due — fill in the review", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/qa") },
   qa_review_reply: { label: "An educator replies to a QA report", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "pencil", eyebrow: "QA report" }, path: (p) => routeOr(p, "/qa") },
+  // Parent feedback on mentors (modules/mentor-reviews/): the "how is the mentor doing?" prompt to a
+  // parent (or a TOT learner's own login), and a conduct concern to the admins and the supervisor.
+  mentor_review_request: {
+    label: "Asked how your child's mentor is doing",
+    roles: [...LEARNER_ROLES, ...EDUCATOR_ROLES],
+    default: true,
+    look: { tone: "info", icon: "star", eyebrow: "Mentor feedback" },
+    path: (p) => routeOr(p, "/parent/feedback"),
+  },
+  mentor_review_concern: {
+    label: "A parent raises a concern about an educator",
+    roles: ["admin", "collaborator", "supervisor"],
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Concern about an educator" },
+    path: (p) => routeOr(p, "/teachers"),
+  },
+  // The educator performance profile (modules/educator-profiles/): an educator asks to share their
+  // profile (to the admins), the admins publish or send it back (to the educator), and a family asks
+  // for an educator in the parent portal (to the admins).
+  educator_profile_review: {
+    label: "An educator's profile is waiting for approval",
+    roles: ["admin", "collaborator"],
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Educator profile" },
+    path: (p) => routeOr(p, "/teachers"),
+  },
+  educator_profile_published: {
+    label: "Your educator profile is published",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Your profile" },
+    path: (p) => routeOr(p, "/teacher-portal/profile?tab=public"),
+  },
+  educator_profile_sent_back: {
+    label: "Your educator profile needs a change",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "pencil", eyebrow: "Your profile" },
+    path: (p) => routeOr(p, "/teacher-portal/profile?tab=public"),
+  },
+  mentor_requested: {
+    label: "A family asks for a particular educator",
+    roles: ["admin", "collaborator", "supervisor"],
+    default: true,
+    look: { tone: "info", icon: "star", eyebrow: "Mentor request" },
+    path: (p) => routeOr(p, "/teachers"),
+  },
   // Website TOT sign-ups (bootcamp-enrollment/educator-enrollment.service.js), to the educator.
   tot_training_on: {
     label: "Your training is paid for and open",
     roles: EDUCATOR_ROLES,
     default: true,
     look: { tone: "success", icon: "check", eyebrow: "Training of trainers" },
-    path: (p) => routeOr(p, "/teacher-portal/learning"),
+    path: (p) => routeOr(p, "/learner-portal"),
   },
   tot_place_released: {
     label: "An unpaid training place is released",
     roles: EDUCATOR_ROLES,
     default: true,
     look: { tone: "warning", icon: "alert", eyebrow: "Training of trainers" },
-    path: (p) => routeOr(p, "/teacher-portal/learning"),
+    path: (p) => routeOr(p, "/learner-portal"),
   },
   // To the workspace admins: an educator still "in training" finished a TOT curriculum.
   tot_training_finished: {

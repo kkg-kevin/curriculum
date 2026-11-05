@@ -11,6 +11,8 @@ export const ROLE_META = {
   collaborator: { label: "Staff", hint: "Your workspace, with your role's access", icon: FiUserCheck },
   // Named on a hub as its Account Manager or Training Lead — the hub portal, view only, and check-ins.
   hubLead: { label: "Account Manager / Training Lead", hint: "Hub check-ins, and every hub's details (view only)", icon: FiClipboard },
+  // An educator in training (TOT): their own learning, as a portal of its own.
+  totLearner: { label: "TOT learner", hint: "Your own training: courses, assessments and reports", icon: FiBookOpen },
   supervisor: { label: "Supervisor", hint: "Your educators' claims", icon: FiShield },
   curriculumAdmin: { label: "Curriculum admin", hint: "Curriculum content", icon: FiLayers },
 };

@@ -724,6 +724,10 @@ const ReportService = {
     // Publishing the final report is the moment the learner has completed the course — it earns
     // their certificate (and tells the family). Never fails the publish itself.
     await CertificateService.issueForReportSafely(published, { issuedBy: publishedBy });
+    // And the end-of-course "how did the mentor do?" prompt to the family (modules/mentor-reviews/),
+    // in the background — never failing the publish.
+    setImmediate(() => require("../mentor-reviews/mentor-review.service").afterCourseReport(published)
+      .catch((err) => console.error("[mentor-reviews] end-of-course prompt failed:", err.message)));
     return published;
   },
 

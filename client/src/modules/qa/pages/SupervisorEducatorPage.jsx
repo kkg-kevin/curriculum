@@ -3,6 +3,8 @@ import { FiArrowLeft, FiMail, FiMapPin } from "react-icons/fi";
 import { useQaEducators } from "../hooks/useQa";
 import EducatorQaSection from "../components/EducatorQaSection";
 import TotTrainingCard from "../../tot/components/TotTrainingCard";
+import ParentFeedbackSection from "../../mentor-reviews/components/ParentFeedbackSection";
+import EducatorProfileSection from "../../educator-profiles/components/EducatorProfileSection";
 import SchedulesTab from "../components/SchedulesTab";
 import { QaPageStyles, QaStyles, ScoreBadge, T, card, font, hint } from "../shared";
 
@@ -47,7 +49,10 @@ export default function SupervisorEducatorPage() {
         )}
       </section>
 
+      <EducatorProfileSection teacherId={id} part="performance" />
+      <EducatorProfileSection teacherId={id} part="publishing" />
       <EducatorQaSection teacherId={id} />
+      <ParentFeedbackSection teacherId={id} />
 
       <TotTrainingCard teacherId={id} />
 

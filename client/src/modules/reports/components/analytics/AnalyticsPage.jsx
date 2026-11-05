@@ -8,6 +8,8 @@ import TimeToTaskTab from "./TimeToTaskTab";
 import AssessmentsTab from "./AssessmentsTab";
 import CompetenciesTab from "./CompetenciesTab";
 import AtRiskTab from "./AtRiskTab";
+import ParentFeedbackTab from "./ParentFeedbackTab";
+import EducatorsTab from "./EducatorsTab";
 import { Card, Empty, STYLES, T } from "./ui";
 
 /*
@@ -24,6 +26,9 @@ const TABS = [
   { key: "assessments", label: "Assessments", Component: AssessmentsTab },
   { key: "competencies", label: "Competencies", Component: CompetenciesTab },
   { key: "at-risk", label: "Learners at risk", Component: AtRiskTab },
+  { key: "parent-feedback", label: "Parent feedback", Component: ParentFeedbackTab },
+  // Per-educator performance — admins only (hubs never see per-educator tables).
+  { key: "educators", label: "Educators", Component: EducatorsTab, adminOnly: true },
 ];
 const FILTER_KEYS = ["hubId", "curriculumId", "classId", "courseId", "stageId", "pathway", "gender"];
 
@@ -31,7 +36,8 @@ export default function AnalyticsPage({ level = "admin", overview, description, 
   const navigate = useNavigate();
   const isHub = level === "hub";
   const [params, setParams] = useSearchParams();
-  const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
+  const tabs = TABS.filter((t) => !(isHub && t.adminOnly));
+  const tab = tabs.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
   const preset = params.get("period") || "30";
   const range = preset === "custom" ? { from: params.get("from") || presetRange("30").from, to: params.get("to") || presetRange("30").to } : presetRange(preset);
   const value = { preset, ...range, ...Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])) };
@@ -55,7 +61,7 @@ export default function AnalyticsPage({ level = "admin", overview, description, 
     setParams(next);
   };
 
-  const current = TABS.find((t) => t.key === tab);
+  const current = tabs.find((t) => t.key === tab);
   const filtersQuery = useAnalyticsFilters(isHub ? "" : value.hubId);
   const viewQuery = useAnalytics(tab, query, { enabled: tab !== "overview" });
   const links = {
@@ -82,7 +88,7 @@ export default function AnalyticsPage({ level = "admin", overview, description, 
       </div>
 
       <div className="ui-tab-scroll" role="tablist" aria-label="Analytics" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
             style={{ padding: "9px 16px", borderRadius: 12, border: `1.5px solid ${tab === t.key ? T.navy : T.border}`, background: tab === t.key ? T.navy : "#fff", color: tab === t.key ? "#fff" : T.ink, fontSize: 13.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
             {t.label}

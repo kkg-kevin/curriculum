@@ -56,6 +56,10 @@ export default function TotTrainingCard({ teacherId, teacher = null }) {
     <div style={{ backgroundColor: "#ffffff", borderRadius: 16, border: "1.5px solid #E5E7EB", overflow: "hidden", fontFamily: "Inter, sans-serif" }}>
       <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em", display: "inline-flex", alignItems: "center", gap: 6 }}><FiBookOpen size={12} /> Training (TOT)</h2>
+        {/* Their training as a learner — the learner page, like any learner's (Learners → TOT learners). */}
+        {isAdmin && training?.learnerId && (
+          <Link to={`/learners/${training.learnerId}`} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#2e7db5", textDecoration: "none" }}>Learner profile →</Link>
+        )}
         {training?.toMark > 0 && markingPath && (
           <Link to={markingPath} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, background: "#FFFBEB", color: "#B45309", fontSize: 11.5, fontWeight: 800, textDecoration: "none" }}>
             <FiEdit3 size={11} /> {training.toMark} to mark
@@ -65,7 +69,7 @@ export default function TotTrainingCard({ teacherId, teacher = null }) {
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
         {!training ? (
           <>
-            <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>Not in training. Enrol them in a TOT class — they learn in their teacher portal&apos;s &ldquo;My learning&rdquo; while they teach, and their supervisor marks their work.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>Not in training. Enrol them in a TOT class — they learn as a TOT learner (their own sign-in: they choose Educator or TOT learner when signing in), and their supervisor marks their work.</p>
             {enrolForm}
           </>
         ) : (

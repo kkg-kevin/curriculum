@@ -1,8 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers,
-} from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -20,6 +18,8 @@ const menuItems = [
   { name: "Invoices",     path: "/learner-portal/invoices", icon: FiFileText },
   { name: "My Family",    path: "/learner-portal/family", icon: FiUsers },
   { name: "Profile",      path: "/learner-portal/profile", icon: FiUser },
+  // A TOT learner rates their trainers (modules/mentor-reviews) — not a child's own login.
+  { name: "Rate trainers", path: "/learner-portal/feedback", icon: FiStar },
 ];
 
 // Parent-only items: a child's own login (username) never sees Invoices or My Family.
@@ -42,6 +42,9 @@ function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
     staleTime: 5 * 60 * 1000,
   });
   const visibleMenuItems = menuItems.filter((item) => {
+    // A TOT learner (an educator in training) pays for their own training: their invoices.
+    if (user?.totLearner && item.name === "Invoices") return true;
+    if (item.name === "Rate trainers") return !!user?.totLearner;
     if (!isParentLogin && PARENT_ONLY.includes(item.name)) return false;
     if (item.name === "My Family" && family.length === 0 && clubFamily.length === 0) return false;
     return true;

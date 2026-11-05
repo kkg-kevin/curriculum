@@ -102,6 +102,89 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (5 Nov 2026, evening) — TOT learner sign-in, parent feedback on mentors, educator performance profiles, a foldable admin menu
+
+**Portal and backend** from `curriculum` (branch `modules`) at `107d72a`; **website** from `curriculum-web`
+(branch `new`) at `29790ac`. Includes the "5 Nov 2026, afternoon" and "5 Nov 2026" releases below — if those
+aren't up yet, this replaces them (follow their Verify steps too).
+
+### Upload in this order
+
+0. **Take a database backup** — two new migrations.
+1. **Backend** — `backend-deploy.zip` (669 files, 165 migrations), then Restart. Two new migrations, applied on
+   Restart:
+   - `20261105120000` — `mentor_reviews` and `mentor_review_settings` (parent feedback on mentors).
+   - `20261105150000` — the educator's About / publishing columns on `teachers` (`profileAbout`,
+     `profileAboutDraft`, `profileOptIn`, `profilePublic`, `profileSlug`, …), and the tables
+     `educator_stats` and `mentor_requests`.
+
+   Check: `SHOW TABLES LIKE 'mentor_review%';` (2 rows), `SHOW TABLES LIKE 'educator_stats';`,
+   `SHOW TABLES LIKE 'mentor_requests';`, `SHOW COLUMNS FROM teachers LIKE 'profile%';` (8 rows). If any is
+   missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-BcKB62nT.js`).
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-CU_yLhkj.js`).
+
+**New cron (nightly, e.g. 02:30):** `npm run educators:stats` — recounts every educator's profile figures.
+Without it they still refresh when a profile is opened (if older than 6 hours) and straight away when a QA
+report is sent. No new environment variables, no new npm package.
+
+### What changed
+
+**TOT learners have their own sign-in.**
+- An educator still *In training* signs in only as a **TOT learner** (the learner portal, their invoices
+  inside it); they can't switch to an empty educator side.
+- An *Active* educator who also holds a place in a TOT class chooses Educator or TOT learner at sign-in and
+  can switch in the header. An educator with no TOT place sees only the educator side.
+- Admins: **Learners → TOT learners** lists them; each opens on the usual learner page. In-training-only
+  educators no longer appear in educator lists; educators who are both appear in both.
+- Old "My learning" links in the teacher portal now open the same page as the TOT learner.
+
+**Parent feedback on mentors.**
+- Parents rate each educator teaching their child (and TOT learners rate their trainers): overall stars,
+  each aspect, a comment, consent to quote it on the website, and an optional conduct concern. Asked after 3
+  sessions; they are asked mid-course (after 6) and when the final report is published; editable 14 days.
+- Concerns go only to the admins and the supervisor. Educators see averages and comments without names, only
+  from 3 reviews; hubs see averages only (switchable).
+- Settings → **Parent feedback** sets the aspects and the thresholds. Reports & Analytics → **Parent feedback**
+  tab (admins).
+- The website's "What parents and schools say" shows featured, consented comments (admin: "Put on website").
+
+**Educator performance profile.**
+- Each educator's page (admins, staff, supervisor, hub) and the educator's own **My Profile** show their
+  performance worked out from the records — nothing typed in: verified hours, sessions, learners, courses
+  taught, reliability, parent rating, quality reviews, feedback speed, outcomes, badges and growth tips. Pay
+  is never shown.
+- The page starts with **At a glance** (a summary in words and four core scores), then quality reviews,
+  parents, teaching, badges.
+- **Quality reviews add up**: an all-time average over every visit, the running average after each visit, a
+  chart of every visit, and each area averaged across all visits, with the change since the first visit.
+- **Public profile (opt-in):** the educator writes an About and ticks Share; an admin publishes it from the
+  educator page's **Public profile** card (or sends it back with a note). It then has a link and QR code
+  (`/public/educators/<name>` on the portal — no sign-in), and parents find it under **Find a mentor**
+  (with "Ask for …", which goes to the admins). Contact details, pay and QA detail are never public.
+- Teacher portal: "My educator profile" and "My Profile" are one page — **Overview · Public profile ·
+  Teaching · Account**.
+- Reports & Analytics → **Educators** tab (admins).
+
+**Admin menu is a foldable tree.** Sections (Teaching & learning, People, Programmes, Finance, Quality &
+insights), each item opening to its own tabs; Settings at the bottom; folding is remembered. Staff only see
+what their role allows.
+
+### Verify
+
+1. Sign in as an In-training TOT educator: only the TOT learner portal, no role switch. An Active educator
+   with a TOT place: asked which role at sign-in.
+2. Admin → Learners → **TOT learners** lists them.
+3. As a parent whose child has attended 3 sessions: **Mentor feedback** in the sidebar; leave a review.
+4. Admin → an educator's page: **Performance profile** with At a glance first; **Public profile** card.
+5. Educator → **My Profile**: four tabs; Public profile → write an About, tick Share, Save → admin sees
+   "Waiting for approval" and can Publish; the link opens without signing in.
+6. Send a QA report for an educator: their profile's quality figures change at once.
+7. Website home page: "What parents and schools say" still shows (featured parent comments appear once an
+   admin puts one on the website).
+
+---
+
 ## This release (5 Nov 2026, afternoon) — Two people on one browser: a tab never shows one account while acting as another
 
 **Portal and backend** from `curriculum` (branch `modules`) at `480b3dc`. No website change. Includes the

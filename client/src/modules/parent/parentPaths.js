@@ -1,7 +1,8 @@
 import { getActiveLearnerId } from "../learner-portal/utils/activeLearner";
 
 // A parent login: a learner-role session on an email account (a child signs in with a username).
-export const isParentUser = (user) => user?.role === "learner" && !!user?.email && !user?.username;
+// An educator's TOT learner session (an email, a "learner" session) is never a parent.
+export const isParentUser = (user) => user?.role === "learner" && !!user?.email && !user?.username && !user?.totLearner;
 
 export const childPath = (childId, rest = "") => `/parent/children/${childId}${rest}`;
 

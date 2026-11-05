@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff } from "react-icons/fi";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
 import { useBootcampsQuery } from "../../bootcamps/hooks/useBootcamps";
@@ -157,6 +157,9 @@ function filterAndSort(items, { publishedOnly, sort, isLive }) {
 
 export default function ProgramsListPage() {
   const navigate = useNavigate();
+  // The sidebar's Events → Competitions / Bootcamps / Games open this page at that section (#…),
+  // once its lists have loaded (their height moves everything below).
+  const { hash } = useLocation();
   const {
     data: competitions = [],
     isLoading: loadingComps,
@@ -169,6 +172,12 @@ export default function ProgramsListPage() {
     isError: bootcampsError,
     error: bootcampsErr,
   } = useBootcampsQuery();
+
+  useEffect(() => {
+    const id = hash.replace("#", "");
+    if (!id || loadingComps || loadingBootcamps) return;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hash, loadingComps, loadingBootcamps]);
 
   const [compPublishedOnly, setCompPublishedOnly] = useState(false);
   const [compSort, setCompSort] = useState("newest");
@@ -223,7 +232,7 @@ export default function ProgramsListPage() {
       </div>
 
       {/* ── Competitions ─────────────────────────────────────────── */}
-      <div style={{ marginBottom: 32 }}>
+      <div id="competitions" style={{ marginBottom: 32, scrollMarginTop: 16 }}>
         <SectionHeader
           title="Competitions"
           hint="Editions with tracks and a registration window. Link one to a curriculum or let it stand alone. Publish it to feature it on the website."
@@ -281,7 +290,7 @@ export default function ProgramsListPage() {
       </div>
 
       {/* ── Bootcamps ─────────────────────────────────────────────── */}
-      <div>
+      <div id="bootcamps" style={{ scrollMarginTop: 16 }}>
         <SectionHeader
           title="Bootcamps"
           hint="Sellable listings for the public website. Link one to a curriculum or let it stand alone."
@@ -349,7 +358,7 @@ export default function ProgramsListPage() {
       </div>
 
       {/* ── Games ─────────────────────────────────────────────────── */}
-      <GamesLibrarySection />
+      <div id="games" style={{ scrollMarginTop: 16 }}><GamesLibrarySection /></div>
     </div>
   );
 }

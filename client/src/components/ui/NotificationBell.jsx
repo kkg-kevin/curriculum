@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2 } from "react-icons/fi";
+import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2, FiStar, FiAlertTriangle } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 import EmailNotificationSettings from "./EmailNotificationSettings";
 
@@ -9,6 +9,12 @@ const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
   assessment_reissued: { Icon: FiFileText, color: "#D97706" },
+  mentor_review_request: { Icon: FiStar, color: "#D97706" },
+  mentor_review_concern: { Icon: FiAlertTriangle, color: "#DC2626" },
+  educator_profile_review: { Icon: FiFileText, color: "#2e7db5" },
+  educator_profile_published: { Icon: FiCheckCircle, color: "#059669" },
+  educator_profile_sent_back: { Icon: FiFileText, color: "#D97706" },
+  mentor_requested: { Icon: FiStar, color: "#2e7db5" },
   tot_work_submitted: { Icon: FiUpload, color: "#6D28D9" },
   tot_training_on: { Icon: FiCheckCircle, color: "#059669" },
   tot_place_released: { Icon: FiFileText, color: "#B45309" },
@@ -45,6 +51,19 @@ function resolveNotificationPath(n) {
     case "assessment_submitted":
       // learnerId: the roster opens on whoever handed in.
       return p.issueId ? `/teacher-portal/assessments/${p.issueId}${p.learnerId ? `?learner=${p.learnerId}` : ""}` : "/teacher-portal/assessments";
+    case "mentor_review_request":
+      // "How is the mentor doing?" — the family's (or a TOT learner's) Mentor feedback page.
+      return p.route || "/parent/feedback";
+    case "educator_profile_review":
+    case "mentor_requested":
+      // An educator's profile to approve, or a family asking for an educator — the educator's page.
+      return p.route || "/teachers";
+    case "educator_profile_published":
+    case "educator_profile_sent_back":
+      return p.route || "/teacher-portal/profile?tab=public";
+    case "mentor_review_concern":
+      // A parent's concern about an educator — the educator's page, to read and resolve it.
+      return p.route || "/teachers";
     case "tot_work_submitted":
       // An educator in training's work — the supervisor's "Work to mark", or the admin's.
       return p.route || "/supervisor-portal/marking";
@@ -73,7 +92,7 @@ function resolveNotificationPath(n) {
     case "tot_training_on":
     case "tot_place_released":
       // A website TOT sign-up, to the educator: their own learning.
-      return p.route || "/teacher-portal/learning";
+      return p.route || "/learner-portal";
     case "tot_training_finished":
       // To the admins: the educator's page, to make them Active.
       return p.route || "/teachers";

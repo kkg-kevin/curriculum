@@ -17,6 +17,8 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { teacherApi } from "../services/teacherApi";
 import EducatorQaSection from "../../qa/components/EducatorQaSection";
 import TotTrainingCard from "../../tot/components/TotTrainingCard";
+import ParentFeedbackSection from "../../mentor-reviews/components/ParentFeedbackSection";
+import EducatorProfileSection from "../../educator-profiles/components/EducatorProfileSection";
 
 const ACCENT = "#25476a";
 
@@ -335,6 +337,8 @@ export default function TeacherViewPage() {
 
         {/* Left */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Their performance — hours, sessions, learners, courses, parent ratings, QA, badges. */}
+          <EducatorProfileSection teacherId={id} part="performance" />
           <Section title="Classes">
             {myClassGroups.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
@@ -356,6 +360,9 @@ export default function TeacherViewPage() {
           {/* QA visits and reports — the hub sees its announced visits and report summaries. */}
           <EducatorQaSection teacherId={id} />
 
+          {/* What families say — named for admins and staff, averages for the hub. */}
+          <ParentFeedbackSection teacherId={id} />
+
           <TotTrainingCard teacherId={id} teacher={teacher} />
 
           <Section title="Availability">
@@ -365,6 +372,8 @@ export default function TeacherViewPage() {
 
         {/* Right */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Their public profile: publishing, the share link, families asking for them. */}
+          <EducatorProfileSection teacherId={id} part="publishing" />
 
           {/* Learning Hubs */}
           <Section title="Learning Hubs">

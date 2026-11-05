@@ -10,8 +10,9 @@ const AssessmentSubmissionService = require("../assessments/submissions/assessme
 //   learning as any learner: a class of a TOT curriculum (curricula.audience "educators"), its
 //   courses, assessments, reports and certificates. They are adults: no guardian (their own name
 //   and phone fill the guardian columns) and no parent login. They sign in as the educator and do
-//   their learning in the teacher portal's "My learning" (scope.middleware.js — a teacher request
-//   marked X-Teacher-Learning runs as their own learner record).
+//   their learning as a TOT learner — a sign-in of its own (auth/account-roles.js's TOT_LEARNER_ROLE),
+//   the learner portal on their own learner record (scope.middleware.js), never inside the teacher
+//   portal. Still "in training", it's their only sign-in; once Active they choose at sign-in.
 //
 //   Their work is marked by their supervisor (teachers.supervisorId) — or, with none, the
 //   workspace's admins. A certificate for every course of the curriculum raises their educator
@@ -72,6 +73,65 @@ const TotService = {
 
   // The TOT classes an admin can put an educator in.
   totClasses,
+
+  // The workspace's TOT learners (Learners → TOT learners): every educator's own learner record at
+  // one of its hubs, or made by it — with the educator, their supervisor, their training classes,
+  // certificates and work waiting to be marked. Each opens on the learner page like any learner.
+  async learnersFor(ownerAdminId) {
+    const hubIds = await db("learning_hubs").where({ ownerAdminId }).pluck("id");
+    const trainees = await db("learners")
+      .whereNotNull("teacherId")
+      .andWhere((q) => {
+        q.where("createdByAdminId", ownerAdminId);
+        if (hubIds.length) q.orWhereIn("id", db("learner_hub_links").whereIn("hubId", hubIds).select("learnerId"));
+      })
+      .select("id", "firstName", "lastName", "photo", "username", "accountStatus", "teacherId", "createdAt")
+      .orderBy([{ column: "firstName" }, { column: "lastName" }]);
+    if (!trainees.length) return [];
+    const ids = trainees.map((t) => t.id);
+    const teachers = await db("teachers").whereIn("id", trainees.map((t) => t.teacherId))
+      .select("id", "firstName", "lastName", "email", "phone", "status", "supervisorId");
+    const teacherById = new Map(teachers.map((t) => [t.id, t]));
+    const supervisorIds = [...new Set(teachers.map((t) => t.supervisorId).filter(Boolean))];
+    const supervisors = supervisorIds.length ? await db("users").whereIn("id", supervisorIds).select("id", "name") : [];
+    const supervisorName = new Map(supervisors.map((u) => [u.id, u.name]));
+    const links = await db("learner_hub_links as l")
+      .join("classes as c", "c.id", "l.classId")
+      .join("curricula as cu", "cu.id", "c.curriculumId")
+      .join("learning_hubs as h", "h.id", "l.hubId")
+      .whereIn("l.learnerId", ids).where("cu.audience", "educators")
+      .select("l.learnerId", "l.status", "l.classId", "c.gradeName", "cu.name as curriculumName", "h.name as hubName");
+    const certs = await db("certificates").whereIn("learnerId", ids).where({ status: "issued", kind: "course" })
+      .groupBy("learnerId").select("learnerId").count({ n: "*" });
+    const certCount = new Map(certs.map((c) => [c.learnerId, Number(c.n)]));
+    const marking = await db("assessment_submissions").whereIn("learnerId", ids).where({ status: "submitted" })
+      .groupBy("learnerId").select("learnerId").count({ n: "*" });
+    const toMark = new Map(marking.map((m) => [m.learnerId, Number(m.n)]));
+    // Who is a TOT learner (tot/tot.people.js — the same rule as their sign-in): still in training,
+    // or an Active educator with an active place in a TOT class. An Active educator withdrawn from
+    // every TOT class is an educator only — their training history stays on their educator page.
+    const isTotLearner = (t) => teacherById.get(t.teacherId)?.status === "in_training"
+      || links.some((l) => l.learnerId === t.id && l.status === "active");
+    return trainees.filter(isTotLearner).map((t) => {
+      const teacher = teacherById.get(t.teacherId) || null;
+      return {
+        id: t.id,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        photo: t.photo || null,
+        username: t.username || null,
+        accountStatus: t.accountStatus || "active",
+        createdAt: t.createdAt,
+        educator: teacher ? {
+          id: teacher.id, name: fullName(teacher), email: teacher.email || null, phone: teacher.phone || null,
+          status: teacher.status || "active", supervisorName: teacher.supervisorId ? supervisorName.get(teacher.supervisorId) || null : null,
+        } : null,
+        classes: links.filter((l) => l.learnerId === t.id).map((l) => ({ classId: l.classId, curriculumName: l.curriculumName, className: l.gradeName, hubName: l.hubName, status: l.status })),
+        certificates: certCount.get(t.id) || 0,
+        toMark: toMark.get(t.id) || 0,
+      };
+    });
+  },
 
   // Puts an educator into a TOT class — making their learner record the first time. An educator
   // already in that class is left as they are.

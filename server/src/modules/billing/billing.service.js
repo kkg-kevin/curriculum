@@ -257,7 +257,7 @@ async function assertLearnerAtHub(learnerId, hubId) {
 }
 
 // A child's own username login never sees billing — the parent pays. An educator in training
-// (TOT, "My learning") also runs as a username learner (scope.middleware.js), but pays for their
+// (TOT learner sign-in) also runs as a username learner (scope.middleware.js), but pays for their
 // own training, so they see the invoices on their own learner record (req.ownLearners) only.
 const isChildLogin = (req) => req.user.role === "learner" && Boolean(req.user.username) && !req.user.learningAsEducator;
 

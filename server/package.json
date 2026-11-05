@@ -23,7 +23,8 @@
     "db:migrate": "knex migrate:latest",
     "db:migrate:rollback": "knex migrate:rollback",
     "db:migrate:status": "knex migrate:status",
-    "db:seed": "knex seed:run"
+    "db:seed": "knex seed:run",
+    "educators:stats": "node src/scripts/educatorStats.js"
   },
   "keywords": [],
   "author": "",

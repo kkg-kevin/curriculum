@@ -115,6 +115,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   // A "learner" account is either a parent (signs in with email, sees all their children) or a
   // child's own login (username only) — labelled so each can see whose account they're in.
   const roleLabel = user?.hubLead ? "Account Manager / Training Lead"
+    : user?.totLearner ? "TOT learner"
     : user?.role === "teacher" ? "Educator"
     : user?.role === "supervisor" ? "Supervisor"
     : user?.role === "collaborator" ? (user.accessRole ? `Staff · ${user.accessRole.name}` : "Staff")
@@ -175,6 +176,10 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/learner-portal": "My Dashboard",
     "/parent": "My Family",
     "/parent/timetable": "Timetable",
+    "/parent/feedback": "Mentor Feedback",
+    "/learner-portal/feedback": "Rate Your Trainers",
+    "/teacher-portal/feedback": "Parent Feedback",
+    "/parent/mentors": "Find a Mentor",
     "/parent/invoices": "Payments",
     "/parent/receipts": "Receipts",
     "/parent/statement": "Statement",
@@ -203,9 +208,6 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Educator Claim";
     if (pathname.startsWith("/supervisor-portal/claims/"))
       return "Claim";
-    // An educator's own learning (training of trainers).
-    if (pathname.startsWith("/teacher-portal/learning"))
-      return "My Learning";
     if (pathname.startsWith("/teachers/training") || pathname === "/supervisor-portal/marking")
       return "Work to Mark";
     // Quality assurance, in every app it's in.

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../modules/auth/services/authApi";
 import { AUTH_ENABLED } from "../config/authConfig";
@@ -11,9 +11,18 @@ import { clearFallbackToken, getFallbackToken, setFallbackToken } from "../servi
 
 const AuthContext = createContext(null);
 
+// The role a session really runs as — a hub lead's or TOT learner's session is shown under another
+// role (`sessionRole` says which).
+const sessionRoleOf = (u) => u?.sessionRole || u?.role;
+
 // Whether two signed-in user objects are the same account in the same role (an account may sign in
 // as several roles — a session runs as one).
-const sameAccount = (a, b) => !!a && !!b && a.id === b.id && a.role === b.role;
+const sameAccount = (a, b) => !!a && !!b && a.id === b.id && sessionRoleOf(a) === sessionRoleOf(b);
+
+// When this tab last switched role — a page of the old role still on screen for a moment must not
+// take the switch for a link into another role (RoleRoute's TOT learner hand-off).
+let lastRoleSwitchAt = 0;
+export const justSwitchedRole = () => Date.now() - lastRoleSwitchAt < 3000;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -72,7 +81,16 @@ export function AuthProvider({ children }) {
         markTabSignedIn();
       }
       try {
-        const me = await authApi.me();
+        let me = await authApi.me();
+        // A session left in Educator / TOT learner that this person no longer is (made Active,
+        // withdrawn from training, or signed in before the TOT learner sign-in existed) moves to the
+        // role they do hold — never a switch offered to an empty side.
+        const holds = me?.roles || [];
+        if (["teacher", "totLearner"].includes(sessionRoleOf(me)) && holds.length && !holds.includes(sessionRoleOf(me))) {
+          const { sessionToken, ...switched } = await authApi.switchRole(holds[0]);
+          if (getFallbackToken() && sessionToken) setFallbackToken(sessionToken);
+          me = switched;
+        }
         if (!stale()) setUser(me);
       } catch {
         if (!stale()) setUser(null);
@@ -91,7 +109,7 @@ export function AuthProvider({ children }) {
     if (msg.type === "signed-out" && userRef.current) endLocally(msg.reason);
     // Another tab switched role: the shared cookie is that role now, so this tab reopens as it
     // ("/" sends each role on to its own home).
-    if (msg.type === "role-switched" && userRef.current && userRef.current.role !== msg.role) window.location.assign("/");
+    if (msg.type === "role-switched" && userRef.current && sessionRoleOf(userRef.current) !== msg.role) window.location.assign("/");
     // Someone signed in in another tab: the shared cookie is their sign-in now, so a tab showing a
     // different account reopens as theirs rather than showing one person while acting as another.
     // A tab on its own sign-in (fallback token) isn't affected by the cookie and stays as it is.
@@ -164,7 +182,7 @@ export function AuthProvider({ children }) {
     resetActivityClock();
     setUser(loggedInUser);
     // Other tabs of this browser share the cookie, which is now this sign-in's — they reopen as it.
-    broadcast({ type: "signed-in", userId: loggedInUser.id, role: loggedInUser.role });
+    broadcast({ type: "signed-in", userId: loggedInUser.id, role: sessionRoleOf(loggedInUser) });
     return loggedInUser;
   }, [queryClient]);
 
@@ -177,8 +195,9 @@ export function AuthProvider({ children }) {
     // The new role's sign-in replaces the old one wherever it's kept.
     if (getFallbackToken() && sessionToken) setFallbackToken(sessionToken);
     resetActivityClock();
+    lastRoleSwitchAt = Date.now();
     setUser(switched);
-    broadcast({ type: "role-switched", role: switched.role });
+    broadcast({ type: "role-switched", role: sessionRoleOf(switched) });
     return switched;
   }, [queryClient]);
 
@@ -225,16 +244,3 @@ export function useAuth() {
   return ctx;
 }
 
-// An educator's own learning (training of trainers — the teacher portal's "My learning"): inside
-// it the signed-in educator is a learner, so the learner-portal and course pages show and record
-// their learning exactly as for any learner. The server does the same for these requests
-// (X-Teacher-Learning, see services/api.js and scope.middleware.js).
-export function EducatorLearningAuth({ children }) {
-  const auth = useContext(AuthContext);
-  const user = auth?.user;
-  const value = useMemo(
-    () => ({ ...auth, user: user ? { ...user, role: "learner", username: user.username || "educator", learningAsEducator: true } : user }),
-    [auth, user],
-  );
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}

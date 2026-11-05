@@ -70,16 +70,15 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
     // A deactivated teacher isn't blocked here (client redirects to the suspended page) — prefer
     // a non-inactive record if one exists, else fall back to the first so the page can still load.
     req.ownTeacher = teachers.find((t) => (t.status || "active") !== "inactive") || teachers[0] || null;
+  }
 
-    // Training of trainers (modules/tot/): an educator's own learning — the teacher portal's "My
-    // learning", whose requests carry X-Teacher-Learning — runs as their own learner record
-    // (learners.teacherId), exactly as a learner's own login would: role "learner", that one
-    // record, and a username so nothing takes them for a parent. The same single choke point as
-    // the staff aliasing below, so every learner route works unchanged and only ever on their own
-    // record. Without a learner record of their own the header changes nothing.
-    if (req.headers["x-teacher-learning"] === "1" && req.ownTeacher) {
-      const row = await require("../../config/db")("learners").where({ teacherId: req.ownTeacher.id }).first("id");
-      const trainee = row ? await LearnerModel.findById(row.id) : null;
+  if (role === "learner") {
+    if (req.user.totLearner) {
+      // A TOT learner session (account-roles.js's TOT_LEARNER_ROLE): an educator learning on their
+      // own learner record (learners.teacherId), found from their educator email — exactly that one
+      // record, as a learner's own login would be, and a username so nothing takes them for a
+      // parent. Every learner route works unchanged and only ever on their own record.
+      const { trainee } = await require("../../modules/auth/account-roles").totTraineeOf({ email });
       // A website TOT sign-up not yet paid for: they can look, but their training's work waits on
       // the payment — as a child's unpaid bootcamp place does.
       if (trainee?.accountStatus === "pending_payment" && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
@@ -89,19 +88,10 @@ const attachOwnRecords = asyncHandler(async (req, res, next) => {
         err.reason = "payment";
         throw err;
       }
-      if (trainee) {
-        req.user.actualRole = "teacher";
-        req.user.learningAsEducator = true;
-        req.user.role = "learner";
-        req.user.username = trainee.username || `educator:${trainee.id}`;
-        req.ownLearner = trainee;
-        req.ownLearners = [trainee];
-      }
-    }
-  }
-
-  if (role === "learner") {
-    if (req.user.username) {
+      req.user.username = trainee ? trainee.username || `educator:${trainee.id}` : req.user.username;
+      req.ownLearner = trainee || null;
+      req.ownLearners = trainee ? [trainee] : [];
+    } else if (req.user.username) {
       // The learner's own dedicated login (see auth.service.js's setOrCreatePasswordByUsername)
       // — resolves to exactly this one learner, never siblings, and has no concept of
       // X-Active-Learner-Id since there's only ever one to resolve to here.

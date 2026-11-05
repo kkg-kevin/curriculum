@@ -62,6 +62,8 @@ const claimRoutes = require("./modules/claims/claim.routes");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
+const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
+const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -186,6 +188,13 @@ app.use("/api/public", publicLeadRoutes);
 // Unauthenticated by design — the digifunzi-landing site's Pathways listing and detail pages
 // (see public-site.routes.js).
 app.use("/api/public", publicSiteRoutes);
+// Unauthenticated by design — the website's "What parents say": parent comments the parent agreed to
+// share and an admin featured (modules/mentor-reviews/).
+app.use("/api/public", publicMentorReviewRoutes);
+// Unauthenticated by design — a PUBLISHED educator profile, read by the portal's own share page
+// (/public/educators/:slug). Only what educator-profile.service.js's publicView allows; nothing is
+// collected from anyone.
+app.use("/api/public", publicEducatorProfileRoutes);
 // Unauthenticated by design — the anonymous public diagnostic feature (pick a pathway, take a
 // diagnostic, see a graded report on the spot). Reads/grades against the ONE admin tenant
 // PUBLIC_CONTENT_ADMIN_ID designates (see env.js) — never the caller's own tenant, since there
@@ -352,6 +361,12 @@ app.use("/api/tot", protect, attachOwnRecords, totRoutes);
 // reviewing them against a template; the educator reads and replies, the hub sees a summary. See
 // modules/qa/ (qa.access.js for who sees what).
 app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
+// Parent feedback on mentors — parents (and TOT learners) review the educators teaching them; admins,
+// supervisors, the educator (anonymously) and the hub (averages) read it. See modules/mentor-reviews/.
+app.use("/api/mentor-reviews", protect, attachOwnRecords, mentorReviewRoutes);
+// The educator performance profile — internal views, the educator's own, publishing, Find a mentor
+// (parents) and mentor requests. See modules/educator-profiles/.
+app.use("/api/educator-profiles", protect, attachOwnRecords, educatorProfileRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
