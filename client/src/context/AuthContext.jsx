@@ -11,6 +11,10 @@ import { clearFallbackToken, getFallbackToken, setFallbackToken } from "../servi
 
 const AuthContext = createContext(null);
 
+// Whether two signed-in user objects are the same account in the same role (an account may sign in
+// as several roles — a session runs as one).
+const sameAccount = (a, b) => !!a && !!b && a.id === b.id && a.role === b.role;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +92,32 @@ export function AuthProvider({ children }) {
     // Another tab switched role: the shared cookie is that role now, so this tab reopens as it
     // ("/" sends each role on to its own home).
     if (msg.type === "role-switched" && userRef.current && userRef.current.role !== msg.role) window.location.assign("/");
+    // Someone signed in in another tab: the shared cookie is their sign-in now, so a tab showing a
+    // different account reopens as theirs rather than showing one person while acting as another.
+    // A tab on its own sign-in (fallback token) isn't affected by the cookie and stays as it is.
+    if (msg.type === "signed-in" && userRef.current && !getFallbackToken() && !sameAccount(userRef.current, { id: msg.userId, role: msg.role })) {
+      window.location.assign("/");
+    }
   }), [endLocally]);
+
+  // Backstop for browsers without tab messages: when a tab comes back into view, it checks the
+  // cookie still signs in as the account it shows; if another sign-in replaced it, it reopens.
+  // At most once every 10 seconds.
+  useEffect(() => {
+    if (!AUTH_ENABLED) return undefined;
+    let lastCheck = 0;
+    const check = () => {
+      if (document.visibilityState !== "visible" || !userRef.current || getFallbackToken()) return;
+      if (Date.now() - lastCheck < 10_000) return;
+      lastCheck = Date.now();
+      const shown = userRef.current;
+      authApi.me().then((me) => {
+        if (me && userRef.current === shown && !sameAccount(me, shown)) window.location.assign("/");
+      }, () => {});
+    };
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, []);
 
   // The server refused this session (see api.js) — idle too long there, or already ended.
   useEffect(() => {
@@ -121,13 +150,21 @@ export function AuthProvider({ children }) {
     // sign-in with each request instead (services/fallbackSession.js). Nothing is shown: the person
     // is simply signed in. Any other failure of the check (a network blip) is left to the next
     // request, as before.
+    // The check asks WHO the cookie signs in as, not just whether it works (5 Nov 2026): a browser
+    // that refused the new cookie but still holds another account's would otherwise show this
+    // person while every request ran as the other one (a learner seeing "not linked").
     if (AUTH_ENABLED && sessionToken) {
-      const cookieKept = await authApi.me().then(() => true, (err) => err?.statusCode !== 401);
-      if (!cookieKept) setFallbackToken(sessionToken);
+      const cookieIsThisLogin = await authApi.me().then(
+        (me) => sameAccount(me, loggedInUser),
+        (err) => err?.statusCode !== 401,
+      );
+      if (!cookieIsThisLogin) setFallbackToken(sessionToken);
     }
     markTabSignedIn();
     resetActivityClock();
     setUser(loggedInUser);
+    // Other tabs of this browser share the cookie, which is now this sign-in's — they reopen as it.
+    broadcast({ type: "signed-in", userId: loggedInUser.id, role: loggedInUser.role });
     return loggedInUser;
   }, [queryClient]);
 
