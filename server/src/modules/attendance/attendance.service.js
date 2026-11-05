@@ -39,7 +39,12 @@ const AttendanceService = {
     }
 
     try {
-      return await AttendanceModel.bulkMark(classId, date, records, markedBy);
+      const saved = await AttendanceModel.bulkMark(classId, date, records, markedBy);
+      // Parents whose child has now attended enough of the class get the mid-course "how is the
+      // mentor doing?" prompt (modules/mentor-reviews/) — in the background, never failing this save.
+      setImmediate(() => require("../mentor-reviews/mentor-review.service").afterAttendance(classId)
+        .catch((err) => console.error("[mentor-reviews] mid-course prompt failed:", err.message)));
+      return saved;
     } catch (e) {
       // Two saves landing at nearly the same instant: the check above passed for both, but the
       // unique (classId, date, learnerId) index lets only the first insert through. Surface the

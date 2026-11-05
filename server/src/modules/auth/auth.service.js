@@ -15,7 +15,7 @@ const { sendPasswordResetEmail, sendPasswordChangedEmail } = require("./auth.ema
 const AccessService = require("../access/access.service");
 const { releaseIfLeftover, isLeftoverLogin } = require("./leftover-login");
 const LearnerPasswordVault = require("./learner-password-vault");
-const { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, extraRolesOf, rolesOf, availableRoles, withoutRole } = require("./account-roles");
+const { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, TOT_LEARNER_ROLE, extraRolesOf, rolesOf, sessionRolesOf, availableRoles, totTraineeOf, withoutRole } = require("./account-roles");
 const { resolveEffectiveBootcampPrice } = require("../../shared/utils/bootcamp-pricing");
 const { JWT_SECRET, JWT_EXPIRES_IN, SESSION_IDLE_MINUTES, PASSWORD_RESET_MINUTES } = require("../../config/env");
 
@@ -380,6 +380,7 @@ const AuthService = {
   // portal, so it is shown as a "school" session with `hubLead: true` — every check of "is this the
   // hub portal" keeps working — and `sessionRole` says which role it really is.
   async sessionUser(user, role, { withRoles = true } = {}) {
+    if (role === TOT_LEARNER_ROLE) return this.totLearnerSessionUser(user, { withRoles });
     const hubLead = role === HUB_LEAD_ROLE;
     const asRole = { ...user, role };
     const suspended = await resolveSuspension(asRole);
@@ -391,6 +392,30 @@ const AuthService = {
       suspended,
       pendingPayment,
       ...(await staffAccess(asRole)),
+    };
+  },
+
+  // A TOT learner session (account-roles.js's TOT_LEARNER_ROLE): the educator learning, shown as a
+  // "learner" session — the learner portal, on their own learner record — with `totLearner` and
+  // `learningAsEducator` (never taken for a parent: `username` is their record's, else a marker),
+  // and `sessionRole` saying which role it really is. Suspended when the educator is deactivated,
+  // or the learner record is (an unpaid sign-up stays view-only instead — scope.middleware.js —
+  // so they can still reach their invoice). No learner record (removed since): "learner".
+  async totLearnerSessionUser(user, { withRoles = true } = {}) {
+    const { trainee } = await totTraineeOf(user);
+    let suspended = await resolveSuspension({ ...user, role: "teacher" });
+    if (!trainee) suspended = suspended || "learner";
+    else if (!suspended && trainee.accountStatus !== "pending_payment") suspended = learnerSuspensionReason([trainee]);
+    return {
+      ...sanitize({ ...user, role: "learner" }),
+      username: trainee?.username || `educator:${trainee?.id || user.id}`,
+      totLearner: true,
+      learningAsEducator: true,
+      sessionRole: TOT_LEARNER_ROLE,
+      learnerId: trainee?.id || null,
+      ...(withRoles ? { roles: await availableRoles(user) } : {}),
+      suspended: suspended || null,
+      pendingPayment: null,
     };
   },
 
@@ -567,7 +592,7 @@ const AuthService = {
   async getById(id, role = null, { withRoles = false } = {}) {
     const user = await UserModel.findById(id);
     await assertUserExists(user);
-    const active = role && rolesOf(user).includes(role) ? role : user.role;
+    const active = role && sessionRolesOf(user).includes(role) ? role : user.role;
     return this.sessionUser(user, active, { withRoles });
   },
 

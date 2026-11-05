@@ -12,6 +12,7 @@ const ClassModel = require("../classes/class.model");
 const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 const UsageService = require("../usage/usage.service");
+const { withoutTotOnly } = require("../tot/tot.people");
 
 // A teacher has no ownerAdminId of its own (see the migration's comment on why only
 // learning_hubs/curricula/courses/assessments got one) — tenancy is entirely derived from which
@@ -113,7 +114,10 @@ const getAllTeachers = asyncHandler(async (req, res) => {
     const createdIds = await TeacherModel.findIdsCreatedByAdmin(req.ownerAdminId);
     filters.ids = [...new Set([...links.map((l) => l.teacherId), ...createdIds])];
   }
-  const teachers = await TeacherService.getAllTeachers(filters);
+  let teachers = await TeacherService.getAllTeachers(filters);
+  // An educator who is a TOT learner only (still in training) appears under Learners → TOT learners,
+  // not in the educator lists (tot/tot.people.js) — ?tot=1 keeps them.
+  if (["admin", "school"].includes(req.user.role) && req.query.tot !== "1") teachers = await withoutTotOnly(teachers);
   res.json({ success: true, data: teachers, count: teachers.length });
 });
 

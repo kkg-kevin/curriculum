@@ -623,6 +623,7 @@ const QaService = {
     requireReviewer(ctx);
     const today = todayInKenya();
     let firstSubmit = false;
+    let recount = false;
     let teacherRow = null;
     await QaModel.transaction(async (trx) => {
       const { visit, teacher } = await loadVisit(ctx, id, { forUpdate: true, connection: trx });
@@ -646,6 +647,7 @@ const QaService = {
         if (problems.length) throw problemsError(problems);
       }
       firstSubmit = sending && visit.status !== "submitted";
+      recount = sending;
       await QaModel.updateVisit(id, {
         template, answers, summary, score, sectionScores,
         startedAt: visit.startedAt || new Date(),
@@ -654,6 +656,11 @@ const QaService = {
         ...(firstSubmit ? { submittedAt: new Date(), submittedBy: ctx.userId } : {}),
       }, trx);
     });
+    // A sent (or corrected) report moves the educator's profile figures straight away — QA compounds.
+    if (recount) {
+      const visitTeacherId = (await QaModel.findVisit(id))?.teacherId;
+      if (visitTeacherId) await require("../educator-profiles/educator-profile.stats").computeStats(visitTeacherId).catch((err) => console.error(`[qa] educator figures: ${err.message}`));
+    }
     if (firstSubmit) {
       const visit = await QaModel.findVisit(id);
       const reviewerName = (await namesFrom("users", [visit.reviewerId])).get(visit.reviewerId) || "Your supervisor";

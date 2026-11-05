@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiCalendar, FiCreditCard, FiHome, FiPackage, FiUser } from "react-icons/fi";
+import { FiCalendar, FiCreditCard, FiHome, FiPackage, FiSearch, FiStar, FiUser } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -94,6 +94,14 @@ export default function ParentSidebar({ children = [], isMobile = false, isMobil
           <NavLink to="/parent/timetable" onClick={close} title={isCollapsed ? "Timetable" : undefined} style={linkStyle(isCollapsed)}>
             <FiCalendar size={18} style={{ flexShrink: 0 }} />
             {!isCollapsed && <span>Timetable</span>}
+          </NavLink>
+          <NavLink to="/parent/feedback" onClick={close} title={isCollapsed ? "Mentor feedback" : undefined} style={linkStyle(isCollapsed)}>
+            <FiStar size={18} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Mentor feedback</span>}
+          </NavLink>
+          <NavLink to="/parent/mentors" onClick={close} title={isCollapsed ? "Find a mentor" : undefined} style={linkStyle(isCollapsed)}>
+            <FiSearch size={18} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Find a mentor</span>}
           </NavLink>
           <NavLink to="/parent/invoices" onClick={close} title={isCollapsed ? "Payments" : undefined} style={linkStyle(isCollapsed)}>
             <FiCreditCard size={18} style={{ flexShrink: 0 }} />

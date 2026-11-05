@@ -17,7 +17,11 @@ import MyClassPage from "../modules/teacher-portal/pages/MyClassPage";
 import TeacherCourseContentPage from "../modules/teacher-portal/pages/CourseContentPage";
 import TeacherAssessmentsPage from "../modules/teacher-portal/pages/AssessmentsPage";
 import TeacherAssessmentRosterPage from "../modules/teacher-portal/pages/AssessmentRosterPage";
-import TeacherLearningLayout from "../modules/tot/pages/TeacherLearningLayout";
+import TotLearnerHandoff from "../modules/tot/components/TotLearnerHandoff";
+import MentorFeedbackPage from "../modules/mentor-reviews/pages/MentorFeedbackPage";
+import MyFeedbackPage from "../modules/mentor-reviews/pages/MyFeedbackPage";
+import PublicEducatorPage from "../modules/educator-profiles/pages/PublicEducatorPage";
+import FindMentorPage, { MentorProfilePage } from "../modules/educator-profiles/pages/FindMentorPage";
 import TotMarkingPage from "../modules/tot/pages/TotMarkingPage";
 import TeacherReportsPage from "../modules/teacher-portal/pages/ReportsPage";
 import TeacherReportEditorPage from "../modules/teacher-portal/pages/ReportEditorPage";
@@ -151,6 +155,8 @@ export default function AppRoutes() {
           MainLayout wrapper on purpose: someone scanning a printed badge on their own phone is
           never expected to be logged in. */}
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
+      {/* A published educator profile — no sign-in, read only (modules/educator-profiles). */}
+      <Route path="/public/educators/:slug" element={<PublicEducatorPage />} />
       {/* Unauthenticated too — where the QR on a course certificate leads, for anyone checking
           that it is genuine. */}
       <Route path="/certificates/verify/:token" element={<VerifyCertificatePage />} />
@@ -322,30 +328,15 @@ export default function AppRoutes() {
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
           <Route path="profile" element={<TeacherProfilePage />} />
-          {/* Training of trainers — the educator's own learning (modules/tot): the learner-portal
-              pages, as their own learner record. Links to /learner-portal/… land here (RoleRoute). */}
-          <Route path="learning" element={<TeacherLearningLayout />}>
-            <Route index element={<LearnerPortalDashboardPage />} />
-            <Route path="courses" element={<LearnerMyCoursesPage />} />
-            <Route path="courses/:courseId" element={<CourseContentLandingPage />} />
-            <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
-            <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey/:itemId" element={<SectionViewPage />} />
-            <Route path="assessments" element={<LearnerAssessmentsPage />} />
-            <Route path="assessments/:issueId" element={<LearnerAssessmentDetailPage />} />
-            <Route path="reports" element={<LearnerReportsPage />} />
-            <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
-            <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
-            <Route path="progress" element={<LearnerProgressPage />} />
-            {/* They pay for their own training (a website TOT sign-up): its invoice and receipts.
-                The billing emails' /learner-portal/invoices/… links land here (RoleRoute). */}
-            <Route path="invoices" element={<BillingPage />} />
-            <Route path="invoices/:id" element={<InvoiceDetailPage />} />
-            <Route path="receipts" element={<ReceiptsListPage />} />
-            <Route path="receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
-            <Route path="*" element={<Navigate to="/teacher-portal/learning" replace />} />
-          </Route>
+          {/* Training of trainers is a sign-in of its own now (TOT learner — the learner portal):
+              old "My learning" links switch to it and open the same page there. */}
+          <Route path="learning/*" element={<TotLearnerHandoff />} />
           {/* QA visits to this educator: announced ones coming up, and the reports, to reply to. */}
           <Route path="qa" element={<MyQaPage />} />
+          {/* What families say about this educator — anonymous, from 3 reviews (modules/mentor-reviews). */}
+          <Route path="feedback" element={<MyFeedbackPage />} />
+          {/* Their performance profile, and their public one (modules/educator-profiles). */}
+          <Route path="my-profile" element={<Navigate to="/teacher-portal/profile?tab=public" replace />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
         </Route>
       </Route>
@@ -425,6 +416,8 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
           <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
           <Route path="progress" element={<LearnerProgressPage />} />
+          {/* A TOT learner rates their trainers (modules/mentor-reviews). */}
+          <Route path="feedback" element={<MentorFeedbackPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
           <Route path="profile" element={<LearnerProfilePage />} />
           <Route path="family" element={<LearnerFamilyPage />} />
@@ -451,6 +444,11 @@ export default function AppRoutes() {
             <Route path="login" element={<ChildLoginPage />} />
           </Route>
           <Route path="timetable" element={<ParentTimetablePage />} />
+          {/* Parents review the mentors teaching their children (modules/mentor-reviews). */}
+          <Route path="feedback" element={<MentorFeedbackPage />} />
+          {/* Find a mentor — published educator profiles, and asking for one (modules/educator-profiles). */}
+          <Route path="mentors" element={<FindMentorPage />} />
+          <Route path="mentors/:slug" element={<MentorProfilePage />} />
           <Route path="account" element={<ParentAccountPage />} />
           <Route path="family" element={<LearnerFamilyPage />} />
           <Route path="invoices" element={<BillingPage />} />

@@ -89,7 +89,13 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/claims": "claims",
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
+  // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").
+  "/api/tot/learners": "learners",
   "/api/tot": "teachers",
+  // Parent feedback on mentors — part of an educator's record.
+  "/api/mentor-reviews": "teachers",
+  // The educator performance profile — part of an educator's record.
+  "/api/educator-profiles": "teachers",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by

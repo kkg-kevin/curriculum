@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const { isLeftoverLogin } = require("./leftover-login");
 
 // One login, more than one role. users.role is the account's own role; users.extraRoles the
@@ -28,6 +29,15 @@ const HUB_LEAD_ROLE = "hubLead";
 const NO_HUB_LEAD = OWN_ONLY_ROLES;
 const canBeHubLead = (user) => Boolean(user) && !NO_HUB_LEAD.includes(user.role);
 
+// A TOT learner (5 Nov 2026): an educator in training (TOT — their own learner record,
+// learners.teacherId) signs in to their training as a portal of its own — the learner portal, as
+// that one learner record — never mixed into the teacher portal. Worked out from the records, never
+// stored: a login that is an educator with a learner record of their own can sign in as it. One
+// still "in training" (teachers.status — a website TOT sign-up not yet made Active) signs in ONLY as
+// it; an Active educator in training chooses at sign-in (Educator or TOT learner) and switches in
+// the header. The session runs as "learner" with `totLearner` (auth.service.js's sessionUser).
+const TOT_LEARNER_ROLE = "totLearner";
+
 function parseRoles(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -52,21 +62,45 @@ const extraRolesOf = (user) =>
     ))
     : [];
 
-// Every role on file — cheap, no lookups. What `protect` checks a token's role against.
+// Every role on file — cheap, no lookups.
 const rolesOf = (user) => (user ? [user.role, ...extraRolesOf(user)] : []);
+
+// The roles a session may run as — what `protect` checks a token's role against: the roles on file,
+// and for an educator also TOT learner (a session only ever started once availableRoles below
+// found their learner record; not stored).
+const sessionRolesOf = (user) => {
+  const roles = rolesOf(user);
+  return roles.includes("teacher") ? [...roles, TOT_LEARNER_ROLE] : roles;
+};
+
+// The educator a login is (by its email) and their own learner record (TOT), if any.
+async function totTraineeOf(user) {
+  if (!user?.email) return { teacher: null, trainee: null };
+  const teacher = await db("teachers").whereRaw("LOWER(email) = ?", [user.email.toLowerCase()]).first("id", "status");
+  const trainee = teacher ? await db("learners").where({ teacherId: teacher.id }).first() : null;
+  return { teacher: teacher || null, trainee: trainee || null };
+}
 
 // The roles this login can sign in as right now, its own role first: each extra role whose record
 // still exists (an educator, hub or child deleted since leaves its role behind; it is skipped).
 // The account's own role is skipped the same way, but only when another role is still live —
-// a login is never left with no role at all.
+// a login is never left with no role at all. An educator in training also gets the TOT learner
+// role, right after Educator; still "in training", it's their only way in (see TOT_LEARNER_ROLE).
 async function availableRoles(user) {
   if (!user) return [];
   const extras = [];
   for (const role of extraRolesOf(user)) {
     if (!(await isLeftoverLogin({ ...user, role }))) extras.push(role);
   }
-  if (extras.length && (await isLeftoverLogin(user))) return extras;
-  return [user.role, ...extras];
+  const roles = extras.length && (await isLeftoverLogin(user)) ? extras : [user.role, ...extras];
+  if (!roles.includes("teacher")) return roles;
+  const { teacher, trainee } = await totTraineeOf(user);
+  if (!trainee) return roles;
+  // Never a switch to an empty side: still "in training" → TOT learner only (their Educator side has
+  // nothing yet); Active → both only while they hold an active place in a TOT class, else Educator only.
+  if (teacher?.status === "in_training") return roles.map((r) => (r === "teacher" ? TOT_LEARNER_ROLE : r));
+  if (!(await require("../tot/tot.people").hasActiveTotPlace(trainee.id))) return roles;
+  return roles.flatMap((r) => (r === "teacher" ? ["teacher", TOT_LEARNER_ROLE] : [r]));
 }
 
 // The login without `role`: { role, extraRoles } to save, its own role passing to the next role it
@@ -82,4 +116,4 @@ function withoutRole(user, role) {
   return patch;
 }
 
-module.exports = { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, canBeHubLead, extraRolesOf, rolesOf, availableRoles, withoutRole };
+module.exports = { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, TOT_LEARNER_ROLE, canBeHubLead, extraRolesOf, rolesOf, sessionRolesOf, availableRoles, totTraineeOf, withoutRole };

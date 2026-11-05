@@ -59,7 +59,7 @@ async function releaseUnpaidTotSignups({ now = new Date(), days = RELEASE_DAYS }
           type: "tot_place_released",
           title: "Your training place was released",
           message: `Nothing was paid on invoice ${invoice.invoiceNumber} within ${days} days, so your place on ${bootcamp?.name || "the training"} has been released and the invoice cancelled. To train, enrol again on the website.`,
-          payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/teacher-portal/learning" },
+          payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/learner-portal" },
           dedupeKey: `tot_place_released:${lead.id}`,
         }).catch(() => {});
       }

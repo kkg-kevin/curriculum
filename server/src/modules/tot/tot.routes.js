@@ -31,9 +31,14 @@ async function teacherFor(req, teacherId) {
   return teacher;
 }
 
-// The educator's own training (the teacher portal: whether "My learning" shows, and its summary).
+// The educator's own training summary (null when they aren't in training).
 router.get("/me", authorize("teacher"), asyncHandler(async (req, res) => {
   res.json({ success: true, data: req.ownTeacher ? await TotService.progressFor(req.ownTeacher.id) : null });
+}));
+
+// The workspace's TOT learners (admin Learners → TOT learners).
+router.get("/learners", authorize("admin"), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await TotService.learnersFor(req.ownerAdminId) });
 }));
 
 router.get("/classes", authorize("admin"), asyncHandler(async (req, res) => {

@@ -7,6 +7,7 @@ import { childPath } from "../parentPaths";
 import { JoinOnlineButton, isLive } from "../../timetable/components/OnlineClass";
 import { formatDay, formatMoney, plural, relativeDay } from "../format";
 import ParentSubscriptions from "../components/ParentSubscriptions";
+import MentorFeedbackPrompt from "../../mentor-reviews/components/MentorFeedbackPrompt";
 
 function SummaryPill({ icon, value, label }) {
   return (
@@ -173,6 +174,8 @@ export default function ParentHomePage() {
           </div>
         )}
       </div>
+
+      <MentorFeedbackPrompt />
 
       <ParentSubscriptions />
 

@@ -21,6 +21,7 @@ export function useQaMutation(mutationFn, success) {
     mutationFn,
     onSuccess: (result, variables) => {
       qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["educator-profile"] }); // a sent report moves the educator's profile figures
       const message = typeof success === "function" ? success(result, variables) : success;
       if (message) toast.success(message);
     },

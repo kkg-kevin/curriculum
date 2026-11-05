@@ -49,6 +49,9 @@ async function protect(req, res, next) {
     // An Account Manager / Training Lead session runs as "school" (the hub portal) — see
     // AuthService.sessionUser; scope.middleware.js and blockHubLeadWrites read this.
     if (user.hubLead) req.user.hubLead = true;
+    // A TOT learner session (an educator's own training) runs as "learner" on their own learner
+    // record — scope.middleware.js resolves it; the activity log names the real role.
+    if (user.totLearner) Object.assign(req.user, { totLearner: true, learningAsEducator: true, actualRole: "totLearner" });
     next();
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404) return next(err);
@@ -80,12 +83,15 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 async function blockIfSuspended(req, res, next) {
   if (SAFE_METHODS.has(req.method) || !AUTH_ENABLED) return next();
   try {
-    const reason = await AuthService.resolveSuspension({
-      id: req.user.id,
-      role: req.user.role,
-      email: req.user.email,
-      username: req.user.username,
-    });
+    // A TOT learner session is suspended by its own rules (the educator, then their learner record).
+    const reason = req.user.totLearner
+      ? (await AuthService.totLearnerSessionUser({ id: req.user.id, email: req.user.email, role: "teacher" }, { withRoles: false })).suspended
+      : await AuthService.resolveSuspension({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        username: req.user.username,
+      });
     if (reason) {
       const err = new Error("Your account is suspended — you can view your data but can't make changes.");
       err.statusCode = 403;

@@ -31,10 +31,10 @@ const fail = (message, statusCode = 400) => { throw Object.assign(new Error(mess
 //     (TotService.enrol), waiting on payment ("pending_payment") when the bootcamp has a price;
 //   - the website diagnostic they took before the form (attemptId), on their record, placing them on
 //     the bootcamp's pathway at the course their score earns — as a child's does
-//     (placeOnBootcampPathway). Skipped, they take the system's diagnostic in My learning;
+//     (placeOnBootcampPathway). Skipped, they take the system's diagnostic in their TOT learner portal;
 //   - an enquiry (so they show among the bootcamp's participants) and one invoice, billed to them.
 // Paying the invoice switches their training on (activateForPaidInvoice, invoiceType "bootcamp").
-// Until then My learning is view-only (scope.middleware.js). Anything that fails part-way is undone.
+// Until then their TOT learner portal is view-only (scope.middleware.js). Anything that fails part-way is undone.
 const EducatorEnrollmentService = {
   async submitEducatorEnrollment(data, visitSource = null) {
     const { bootcamp, offering } = await BootcampEnrollmentService.resolveBootcampOffering(data.bootcampIdOrSlug, data.hubId, { audience: "educators" });
@@ -64,7 +64,7 @@ const EducatorEnrollmentService = {
     const placeHere = existingTrainee ? await db("learner_hub_links").where({ learnerId: existingTrainee.id, hubId: offering.hubId }).first() : null;
     if (placeHere && placeHere.status === "active") {
       fail(placeHere.classId === classId
-        ? "You're already enrolled in this training — sign in and open My learning."
+        ? "You're already enrolled in this training — sign in and open it as TOT learner."
         : "You're already training at this hub — contact the hub to change your class.", 409);
     }
     let learner;

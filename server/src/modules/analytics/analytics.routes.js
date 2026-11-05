@@ -14,6 +14,8 @@ const { getTimeToTask } = require("./analytics.time");
 const { getAssessments } = require("./analytics.assessments");
 const { getCompetencies } = require("./analytics.competencies");
 const { getAtRisk } = require("./analytics.risk");
+const { getParentFeedback } = require("./analytics.feedback");
+const { getEducators } = require("./analytics.educators");
 
 const router = express.Router();
 router.use(authorize("admin", "school"));
@@ -24,6 +26,8 @@ const VIEWS = {
   assessments: getAssessments,
   competencies: getCompetencies,
   "at-risk": getAtRisk,
+  "parent-feedback": getParentFeedback,
+  educators: getEducators,
 };
 
 router.get("/filters", asyncHandler(async (req, res) => {

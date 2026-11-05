@@ -532,15 +532,15 @@ async function activateLead(leadId, { amount, currency, paidByUserId = null, inv
   const learner = await LearnerModel.update(lead.learnerId, { accountStatus: "active" });
   // An educator in training (a website TOT sign-up): the place held for the payment opens — an
   // educator already training elsewhere had only this class place waiting, not their account
-  // (educator-enrollment.service.js) — and they hear it as the educator, pointed at My learning.
+  // (educator-enrollment.service.js) — and they hear it as the educator, pointed at their TOT learner portal.
   if (learner?.teacherId) {
     const held = lead.hubId ? await LearnerHubLinkModel.findOne(lead.learnerId, lead.hubId) : null;
     if (held && held.status === "inactive") await LearnerHubLinkModel.update(held.id, { status: "active" });
     await NotificationService.notifyLearner(lead.learnerId, {
       type: "tot_training_on",
       title: "Your training is on",
-      message: `Your payment of ${currency || "KES"} ${amount} has been recorded. Your training is open — find it under "My learning" in your teacher portal.`,
-      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/teacher-portal/learning" },
+      message: `Your payment of ${currency || "KES"} ${amount} has been recorded. Your training is open — sign in and open it as TOT learner.`,
+      payload: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, route: "/learner-portal" },
       dedupeKey: `tot_training_on:${lead.id}`,
     }).catch(() => {});
     return learner;

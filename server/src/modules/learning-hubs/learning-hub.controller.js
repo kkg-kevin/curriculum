@@ -14,6 +14,7 @@ const {
 } = require("./learning-hub.validation");
 const { assertOwn, isOwnHub, isOwnedByAdmin } = require("../../shared/middleware/scope.middleware");
 const UsageService = require("../usage/usage.service");
+const { withoutTotOnly } = require("../tot/tot.people");
 
 // updateLearningHubSchema is baseLearningHubSchema.partial(), but zod still materializes a field's
 // default when its key is absent from the request body. Keep only keys actually present in the raw
@@ -167,7 +168,10 @@ const getHubTeachers = asyncHandler(async (req, res) => {
   if (req.user.role === "admin") {
     assertOwn(isOwnedByAdmin(req, await LearningHubService.getLearningHubById(req.params.id)));
   }
-  const teachers = await LearningHubService.getHubTeachers(req.params.id);
+  // A TOT learner only (an educator still in training) isn't one of the hub's educators — they're
+  // under Learners → TOT learners (tot/tot.people.js). ?tot=1 keeps them.
+  let teachers = await LearningHubService.getHubTeachers(req.params.id);
+  if (req.query.tot !== "1") teachers = await withoutTotOnly(teachers);
   res.json({ success: true, data: teachers, count: teachers.length });
 });
 
