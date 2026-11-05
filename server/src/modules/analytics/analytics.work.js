@@ -57,12 +57,25 @@ async function loadWork(scope, start, end) {
   const courses = await inChunks(courseIds, (ids) => db("courses").whereIn("id", ids).select("id", "name"));
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
+  // Revoked for chosen learners (assessment_revocations, keyed by the class issue): no task for
+  // them on it, nor on any reissue of it. A reissue's class issue is found by walking up.
+  const revokedPairs = new Set((await inChunks(learnerIds, (ids) => db("assessment_revocations").whereIn("learnerId", ids).select("issueId", "learnerId")))
+    .map((r) => `${r.issueId}:${r.learnerId}`));
+  const issueById = new Map(uniqueIssues.map((i) => [i.id, i]));
+  const rootIdOf = (issue) => {
+    let current = issue;
+    for (let hops = 0; current?.reissuedFromIssueId && issueById.has(current.reissuedFromIssueId) && hops < 50; hops += 1) current = issueById.get(current.reissuedFromIssueId);
+    return current.id;
+  };
+
   const now = Date.now();
   const tasks = [];
   for (const issue of uniqueIssues) {
-    const recipients = issue.learnerId
+    const rootId = revokedPairs.size ? rootIdOf(issue) : issue.id;
+    const recipients = (issue.learnerId
       ? (scope.learnerIds.has(issue.learnerId) ? [issue.learnerId] : [])
-      : [...(learnersByClass.get(issue.classId) || [])];
+      : [...(learnersByClass.get(issue.classId) || [])])
+      .filter((learnerId) => !revokedPairs.has(`${rootId}:${learnerId}`));
     const dueEnd = issue.dueDate ? endOfKenyaDay(String(issue.dueDate).slice(0, 10)) : null;
     for (const learnerId of recipients) {
       const sub = subByKey.get(`${issue.id}:${learnerId}`) || groupSubByIssueLearner.get(`${issue.id}:${learnerId}`) || null;

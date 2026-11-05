@@ -30,6 +30,7 @@ const {
   startObservationSchema,
   gradeMilestoneSchema,
   reissueSchema,
+  learnersSchema,
 } = require("./assessment-submission.validation");
 
 // Whether this teacher has at least one course-educator link in the given class — the one
@@ -170,7 +171,8 @@ const revokeIssue = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  const cls = await ClassModel.findById(issue.classId);
+  // A reissue's id stands for its class issue — revoking for everyone takes every attempt.
+  const cls = await ClassModel.findById(await AssessmentSubmissionService.classIdForIssue(issue));
   await assertClassAccess(req, cls);
   await AssessmentSubmissionService.revokeIssue(req.params.id);
   res.json({ success: true });
@@ -323,7 +325,14 @@ const startObservationSubmission = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  const cls = await ClassModel.findById(issue.classId);
+  // A reissue has no class of its own: its original's, and only for the learner it was reissued to.
+  const classId = await AssessmentSubmissionService.classIdForIssue(issue);
+  if (issue.learnerId && issue.learnerId !== learnerId) {
+    const err = new Error("This assessment was reissued to another learner");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = await ClassModel.findById(classId);
   await assertClassAccess(req, cls);
   if (req.user.role === "supervisor") await assertSupervisesLearner(req, learnerId);
   const assessment = await AssessmentModel.findById(issue.assessmentId);
@@ -332,7 +341,7 @@ const startObservationSubmission = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const links = await LearnerHubLinkModel.findByClassId(issue.classId);
+  const links = await LearnerHubLinkModel.findByClassId(classId);
   const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
   if (!enrolled) {
     const err = new Error("This learner isn't enrolled in this class");
@@ -355,7 +364,14 @@ const gradeMilestone = asyncHandler(async (req, res) => {
     err.statusCode = 404;
     throw err;
   }
-  const cls = await ClassModel.findById(issue.classId);
+  // A reissue has no class of its own: its original's, and only for the learner it was reissued to.
+  const classId = await AssessmentSubmissionService.classIdForIssue(issue);
+  if (issue.learnerId && issue.learnerId !== learnerId) {
+    const err = new Error("This assessment was reissued to another learner");
+    err.statusCode = 400;
+    throw err;
+  }
+  const cls = await ClassModel.findById(classId);
   await assertClassAccess(req, cls);
   if (req.user.role === "supervisor") await assertSupervisesLearner(req, learnerId);
   const assessment = await AssessmentModel.findById(issue.assessmentId);
@@ -364,7 +380,7 @@ const gradeMilestone = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const links = await LearnerHubLinkModel.findByClassId(issue.classId);
+  const links = await LearnerHubLinkModel.findByClassId(classId);
   const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
   if (!enrolled) {
     const err = new Error("This learner isn't enrolled in this class");
@@ -384,8 +400,10 @@ const gradeMilestone = asyncHandler(async (req, res) => {
 // gradeMilestone/startObservationSubmission: whoever could grade the original issue can reissue
 // it, checked off the ORIGINAL issue's class (a reissue's own new issue has no classId of its
 // own to check).
+// Reissues to chosen learners (`learnerIds`; one `learnerId` still works): `{ reissued, skipped }`
+// — each skipped learner with why (see reissueBlocker in the service).
 const reissueAssessment = asyncHandler(async (req, res) => {
-  const { learnerId, dueDate, timeLimitMinutes } = reissueSchema.parse(req.body);
+  const { learnerIds, dueDate, timeLimitMinutes } = reissueSchema.parse(req.body);
   const issue = await AssessmentSubmissionService.getIssue(req.params.id);
   if (!issue) {
     const err = new Error("Issue not found");
@@ -393,17 +411,50 @@ const reissueAssessment = asyncHandler(async (req, res) => {
     throw err;
   }
   if (req.user.role === "supervisor") {
-    await assertSupervisesLearner(req, learnerId);
-  } else if (issue.classId) {
-    const cls = await ClassModel.findById(issue.classId);
-    await assertClassAccess(req, cls);
+    for (const learnerId of learnerIds) await assertSupervisesLearner(req, learnerId);
   } else {
-    await assertLearnerHubAccess(req, learnerId);
+    const classId = await AssessmentSubmissionService.classIdForIssue(issue);
+    if (classId) {
+      await assertClassAccess(req, await ClassModel.findById(classId));
+    } else {
+      for (const learnerId of learnerIds) await assertLearnerHubAccess(req, learnerId);
+    }
   }
-  const newIssue = await AssessmentSubmissionService.reissueToLearner({
-    issueId: req.params.id, learnerId, dueDate, timeLimitMinutes, reissuedBy: req.ownTeacher?.id || req.user.id,
+  const result = await AssessmentSubmissionService.reissueToLearners({
+    issueId: req.params.id, learnerIds, dueDate, timeLimitMinutes, reissuedBy: req.ownTeacher?.id || req.user.id,
   });
-  res.status(201).json({ success: true, data: newIssue });
+  // One learner asked for and refused: the reason as the error, as before.
+  if (!result.reissued.length && result.skipped.length === 1 && learnerIds.length === 1) {
+    const err = new Error(result.skipped[0].reason);
+    err.statusCode = 409;
+    throw err;
+  }
+  res.status(201).json({ success: true, data: result });
+});
+
+// Revokes an issued assessment for chosen learners only, or gives it back to them — whoever may
+// manage the class. A reissue's id stands for its class issue.
+async function classOfIssueForStaff(req) {
+  const issue = await AssessmentSubmissionService.getIssue(req.params.id);
+  const classId = issue ? await AssessmentSubmissionService.classIdForIssue(issue) : null;
+  if (!classId) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  await assertClassAccess(req, await ClassModel.findById(classId));
+}
+
+const revokeForLearners = asyncHandler(async (req, res) => {
+  await classOfIssueForStaff(req);
+  const { learnerIds } = learnersSchema.parse(req.body);
+  res.json({ success: true, data: await AssessmentSubmissionService.revokeForLearners({ issueId: req.params.id, learnerIds, revokedBy: req.ownTeacher?.id || req.user.id }) });
+});
+
+const restoreForLearners = asyncHandler(async (req, res) => {
+  await classOfIssueForStaff(req);
+  const { learnerIds } = learnersSchema.parse(req.body);
+  res.json({ success: true, data: await AssessmentSubmissionService.restoreForLearners({ issueId: req.params.id, learnerIds }) });
 });
 
 const saveDraft = asyncHandler(async (req, res) => {
@@ -488,4 +539,6 @@ module.exports = {
   gradeSubmission,
   publishSubmissionReport,
   reissueAssessment,
+  revokeForLearners,
+  restoreForLearners,
 };

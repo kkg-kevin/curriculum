@@ -102,6 +102,96 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (5 Nov 2026, afternoon) — Two people on one browser: a tab never shows one account while acting as another
+
+**Portal and backend** from `curriculum` (branch `modules`) at `480b3dc`. No website change. Includes the
+"5 Nov 2026" release below (reissue and revoke for chosen learners) — if that isn't up yet, take a database
+backup first and follow its notes too (one migration).
+
+### Upload in this order
+
+1. **Backend** — `backend-deploy.zip` (654 files, 163 migrations), then Restart. No new migration since
+   "5 Nov 2026".
+2. **Portal** — `index.html` + `assets.zip` (entry `index-0Y-LN6gI.js`).
+
+No new cron, no new environment variables, no npm package.
+
+### What changed
+
+**A learner saw "No learner profile linked yet" although their record was fine.** Every tab of a browser
+shares one sign-in. A child signed in on one tab, someone else (an educator, the hub, a parent) then
+signed in on another, and the child's tab kept showing the child while everything it asked for ran as
+the other person — so it found no learner record.
+- When anyone signs in, the browser's other portal tabs showing a different account reopen as the new
+  sign-in. A tab coming back into view also checks who it's really signed in as.
+- Right after signing in, the portal checks which account the browser actually holds; if the browser kept
+  an older sign-in, the tab keeps its own, and the server now prefers it.
+- Signing out (or switching role) in such a tab no longer signs the other person out.
+
+Nothing changes for anyone signing in on their own device. On a shared device, the second person should
+use a private window or another browser so each keeps their own sign-in.
+
+### Verify
+
+1. In one browser, tab 1: sign in as a child (username). Tab 2 (open on the sign-in page before that):
+   sign in as an educator. Tab 1 reloads into the educator's account — it never shows the child with
+   "No learner profile linked yet".
+2. Sign out in tab 2: tab 1 is signed out too, as before.
+
+---
+
+## This release (5 Nov 2026) — Reissue and revoke for chosen learners; reissued work shows for marking
+
+**Portal and backend** from `curriculum` (branch `modules`) at `ce4373c`. No website change — the website
+zip is not rebuilt. Includes the "4 Nov 2026, late" release below — if that isn't up yet, follow its notes too.
+
+### Upload in this order
+
+1. **Take a database backup** — one new migration.
+2. **Backend** — `backend-deploy.zip` (654 files, 163 migrations), then Restart. The migration
+   `20261105090000_create_assessment_revocations` adds a new `assessment_revocations` table (an assessment
+   revoked for chosen learners). Additive only — check `SHOW TABLES LIKE 'assessment_revocations';` and run
+   Run JS script → `db:migrate` if it's missing.
+3. **Portal** — `index.html` + `assets.zip` (entry `index-B2FTB2vZ.js`).
+
+No new cron, no new environment variables, no npm package.
+
+### What changed
+
+**Reissued work now reaches the educator** (it used to be handed in and then never shown for marking)
+- The assessment's roster shows each learner's latest attempt ("Attempt 2"), with the earlier attempt
+  still readable; marking happens there as usual.
+- Needs Grading (My Assessments) tags it **Reissue** (it said "Diagnostic") and opens the roster on that learner.
+- Handing in a reissued attempt notifies the class's educator; the notification opens the roster on that learner.
+- Work already handed in on a reissue (before this release) shows up straight away — nothing to fix by hand.
+
+**Reissue to chosen learners** — roster → **Reissue…**: tick learners, optional due date and time limit.
+Only learners whose latest attempt is marked can be picked; the rest say why (not handed in yet, waiting
+to be marked, a reissue already waiting, revoked). Each learner picked gets a bell notice.
+
+**Revoke for chosen learners** — roster → **Revoke…** (or "Revoke for [name]…" under a learner):
+for chosen learners or for everyone in the class.
+- For chosen learners: it leaves only their list and course pages; it can't be opened, handed in or
+  marked; it stops counting in their reports and analytics and is no longer required of them, so their
+  session and course can still finish. Their work is kept — **Give it back** on their roster row restores it.
+- For everyone: as before, and now any reissues made from it go too (they used to stay on learners' lists).
+- Group assessments are revoked for the whole class only, and never reissued to one member.
+
+Also: reissued observations and project milestones can be recorded; a report counts the latest released
+attempt of each assessment, not every attempt.
+
+### Verify
+
+1. Teacher portal → My Assessments → open an assessment with marked work → **Reissue…**: unmarked
+   learners can't be ticked and say why; reissue to one learner.
+2. As that learner: the assessment appears again ("Reissued — another attempt"); hand it in.
+3. As the educator: a "Reissued work to mark" notification; Needs Grading shows it tagged **Reissue**;
+   **Grade →** opens the roster on that learner, on Attempt 2.
+4. Roster → **Revoke…** → For chosen learners → one learner: their row says Revoked and it's gone from
+   their My Assessments; **Give it back** brings it back.
+
+---
+
 ## This release (4 Nov 2026, late) — Reports & Analytics; learner reports anyone can read
 
 **Portal and backend** from `curriculum` (branch `modules`) at `dc30a97`. **Website** from

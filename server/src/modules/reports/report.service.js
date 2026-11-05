@@ -8,6 +8,7 @@ const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
 const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
+const AssessmentRevocationModel = require("../assessments/submissions/assessment-revocation.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
 const AttendanceModel = require("../attendance/attendance.model");
@@ -94,18 +95,39 @@ async function getPublishedGradedAssessmentIds(learnerId) {
 
 // A learner's graded submissions whose issue still stands — work on an assessment the educator has
 // since revoked (its issue deleted) no longer counts towards any report.
+// Work on an assessment revoked for this learner alone (assessment-revocation.model.js — every
+// attempt) doesn't count either.
 async function liveGradedSubmissions(learnerId) {
   const graded = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
   const issueIds = [...new Set(graded.map((s) => s.issueId).filter(Boolean))];
   if (!issueIds.length) return graded;
   const standing = new Set(await db("assessment_issues").whereIn("id", issueIds).pluck("id"));
-  return graded.filter((s) => !s.issueId || standing.has(s.issueId));
+  const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
+  return graded.filter((s) => !s.issueId || (standing.has(s.issueId) && !revoked.has(s.issueId)));
+}
+
+// A session's required assessments for one learner: those revoked for them alone are no longer
+// asked of them (their session and course can still finish).
+async function getLearnerRequiredAssessmentIds(session, learnerId, classId) {
+  const ids = await getSessionRequiredAssessmentIds(session);
+  if (!ids.length || !learnerId) return ids;
+  const revoked = await AssessmentRevocationModel.revokedAssessmentIds(learnerId, classId, session.id);
+  return revoked.size ? ids.filter((id) => !revoked.has(id)) : ids;
 }
 
 async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null) {
   const publishedIds = await getPublishedGradedAssessmentIds(learnerId);
   const graded = await liveGradedSubmissions(learnerId);
-  const submissions = graded.filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId));
+  // One piece of work per assessment: a reissued assessment has several marked attempts — its
+  // latest released one counts (an attempt still unreleased leaves the earlier one standing).
+  const latestByAssessment = new Map();
+  graded
+    .filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId) && s.reportPublished)
+    .forEach((s) => {
+      const held = latestByAssessment.get(s.assessmentId);
+      if (!held || new Date(s.gradedAt || 0) > new Date(held.gradedAt || 0)) latestByAssessment.set(s.assessmentId, s);
+    });
+  const submissions = [...latestByAssessment.values()];
 
   const assessments = await Promise.all(submissions.map(async (s) => {
     const assessment = await AssessmentModel.findById(s.assessmentId);
@@ -201,7 +223,7 @@ function sessionDone(report, requiredIds, gradedIds) {
 // report), matching prior behavior.
 async function isCourseReadyForLearner(courseId, classId, learnerId) {
   const allSessions = await SessionModel.findByCourseId(courseId);
-  const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+  const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
   const sessions = allSessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
   if (sessions.length === 0) return false;
   const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
@@ -218,8 +240,13 @@ async function isCourseReadyForLearner(courseId, classId, learnerId) {
 // side effect of the readiness checks, so it must never throw. A report left with nothing marked
 // (its only work was revoked) is removed. A not-submitted report stands until everything is marked.
 async function generateSessionReport({ learnerId, session, classId, curriculumId }) {
-  const requiredIds = await getSessionRequiredAssessmentIds(session);
-  if (requiredIds.length === 0) return null;
+  const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, classId);
+  if (requiredIds.length === 0) {
+    // Everything here was revoked for them: a report already out (not a not-submitted one) goes.
+    const stale = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
+    if (stale && !stale.content?.notSubmitted) await ReportModel.delete(stale.id);
+    return null;
+  }
 
   const existing = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
   const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
@@ -297,7 +324,7 @@ async function ensureSessionReportsGenerated(classId, courseId, learnerIds) {
 //   nothing_required   — the session attaches no still-existing assessment. Never blocks.
 // Deliberately read-only — it does not itself generate or file anything.
 async function classifySessionWork(learnerId, session, classId) {
-  const requiredIds = await getSessionRequiredAssessmentIds(session);
+  const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, classId);
   if (requiredIds.length === 0) return { state: "nothing_required", missingAssessmentIds: [], ungraded: [] };
 
   const existingReport = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
@@ -332,7 +359,7 @@ async function buildCourseReportContent(learnerId, courseId, classId) {
   const content = await buildReportContent(learnerId, requiredAssessmentIds, cls?.curriculumId, courseId);
 
   const allSessions = await SessionModel.findByCourseId(courseId);
-  const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+  const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
   const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
 
   content.sessionReports = await Promise.all(sessions.map(async (s) => {
@@ -360,12 +387,13 @@ const ReportService = {
     const session = await SessionModel.findById(sessionId);
     if (!session) return null;
     const cls = await ClassModel.findById(classId);
-    const requiredIds = await getSessionRequiredAssessmentIds(session);
+    const sessionRequiredIds = await getSessionRequiredAssessmentIds(session);
     const links = await LearnerHubLinkModel.findByClassId(classId);
     const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
 
     const learnerRows = await Promise.all(learners.map(async (learner) => {
+      const requiredIds = await getLearnerRequiredAssessmentIds(session, learner.id, classId);
       // Same lazy generate-on-read trigger getReadinessForClassCourse applies, scoped to just
       // this session — so opening a session's summary is enough to publish its report the moment
       // it becomes ready, without waiting for the course's full Reports page to be opened too.
@@ -384,7 +412,7 @@ const ReportService = {
 
     const scored = learnerRows.filter((r) => r.percent !== null);
     return {
-      requiredCount: requiredIds.length,
+      requiredCount: sessionRequiredIds.length,
       totalLearners: learnerRows.length,
       fullyGradedCount: learnerRows.filter((r) => r.ready).length,
       averagePercent: scored.length ? Math.round(scored.reduce((sum, r) => sum + r.percent, 0) / scored.length) : null,
@@ -410,9 +438,12 @@ const ReportService = {
 
     return Promise.all(learners.map(async (learner) => {
       const gradedIds = await getPublishedGradedAssessmentIds(learner.id);
-      const gradedCount = requiredAssessmentIds.filter((id) => gradedIds.has(id)).length;
+      // What's asked of this learner: the course's required assessments less any revoked for them.
+      const revokedForThem = new Set(await db("assessment_revocations").where({ learnerId: learner.id, classId }).pluck("assessmentId"));
+      const theirRequiredIds = requiredAssessmentIds.filter((id) => !revokedForThem.has(id));
+      const gradedCount = theirRequiredIds.filter((id) => gradedIds.has(id)).length;
       const sessionRows = await Promise.all(sessions.map(async (session) => {
-        const sessionRequiredIds = await getSessionRequiredAssessmentIds(session);
+        const sessionRequiredIds = await getLearnerRequiredAssessmentIds(session, learner.id, classId);
         const sessionGradedCount = sessionRequiredIds.filter((id) => gradedIds.has(id)).length;
         return {
           sessionId: session.id,
@@ -428,7 +459,7 @@ const ReportService = {
       const report = await ReportModel.findOne({ learnerId: learner.id, courseId, classId });
       return {
         learner,
-        requiredCount: requiredAssessmentIds.length,
+        requiredCount: theirRequiredIds.length,
         // How many assessments the course's sessions reference at all — larger than requiredCount
         // when some of those assessments have since been deleted. The UI needs both to explain
         // why a course shows fewer (or zero) required assessments than its content implies.
@@ -473,7 +504,7 @@ const ReportService = {
 
   async getCourseProgressForLearner(courseId, classId, learnerId) {
     const allSessions = await SessionModel.findByCourseId(courseId);
-    const requiredPerSession = await Promise.all(allSessions.map((s) => getSessionRequiredAssessmentIds(s)));
+    const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
     const sessions = allSessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
     const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
     const reports = await Promise.all(sessions.map(({ session }) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id })));

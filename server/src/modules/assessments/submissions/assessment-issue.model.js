@@ -15,8 +15,9 @@ const AssessmentIssueModel = {
     return record;
   },
 
-  findAll({ assessmentId, sessionId, courseId, classId, learnerId, issuedBy } = {}) {
+  findAll({ assessmentId, sessionId, courseId, classId, learnerId, issuedBy, reissuedFromIssueId } = {}) {
     let query = db(TABLE);
+    if (reissuedFromIssueId) query = query.where({ reissuedFromIssueId });
     if (assessmentId) query = query.where({ assessmentId });
     if (sessionId) query = query.where({ sessionId });
     if (courseId) query = query.where({ courseId });

@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const AuditService = require("../audit/audit.service");
 const UserModel = require("./user.model");
 const { organisationIdOf, forgetAdmins } = require("../../shared/utils/organisation");
-const { sessionTokenFrom } = require("../../shared/utils/session-token");
+const { sessionTokenFrom, usesOwnToken } = require("../../shared/utils/session-token");
 
 // "lax" cookies aren't sent on cross-site XHR/fetch (only on top-level navigation), which is
 // fine locally where client and server share the "localhost" site across ports, but breaks
@@ -52,7 +52,9 @@ const switchRole = asyncHandler(async (req, res) => {
   const { role } = switchRoleSchema.parse(req.body);
   const { user, token } = await AuthService.switchRole(sessionTokenFrom(req), role);
   AuditService.recordAuth(req, "role_switched", { user, reason: role });
-  res.cookie(COOKIE_NAME, token, cookieOptions);
+  // A tab on its own token (the cookie isn't its sign-in) keeps to its token — the cookie may be
+  // another account's, still in use in another tab.
+  if (!usesOwnToken(req)) res.cookie(COOKIE_NAME, token, cookieOptions);
   res.json({ success: true, data: { ...user, session: AuthService.sessionSettings(), sessionToken: token } });
 });
 
@@ -60,7 +62,8 @@ const logout = asyncHandler(async (req, res) => {
   const signedInAs = jwt.decode(sessionTokenFrom(req) || "")?.sub;
   await AuthService.logout(sessionTokenFrom(req));
   if (signedInAs) AuditService.recordAuth(req, "logout", { user: { id: signedInAs } });
-  res.clearCookie(COOKIE_NAME, baseCookieOptions);
+  // Same: signing out a tab on its own token leaves the cookie (someone else's sign-in) alone.
+  if (!usesOwnToken(req)) res.clearCookie(COOKIE_NAME, baseCookieOptions);
   res.json({ success: true });
 });
 
