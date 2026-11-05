@@ -171,17 +171,22 @@ const NotificationService = {
     const learner = await LearnerModel.findById(submission.learnerId);
     // An educator in training (TOT — learners.teacherId): whoever marks it hears too.
     if (learner?.teacherId) await NotificationService.totWorkSubmitted(submission, learner);
-    if (!submission.classId) return;
-    const issue = await AssessmentIssueModel.findById(submission.issueId);
-    if (!issue?.courseId) return;
+    let issue = await AssessmentIssueModel.findById(submission.issueId);
+    // A reissued attempt (no class of its own) is its class issue's — the same educator marks it,
+    // on that issue's roster.
+    const reissued = !submission.classId && !!issue?.reissuedFromIssueId;
+    if (reissued) issue = await require("../assessments/submissions/assessment-revocation.model").rootOf(issue);
+    const classId = submission.classId || (reissued ? issue?.classId : null);
+    if (!classId || !issue?.courseId) return;
     const assessment = await AssessmentModel.findById(submission.assessmentId);
-    await NotificationService.notifyClassCourseTeacher(submission.classId, issue.courseId, {
+    const who = learner ? `${learner.firstName} ${learner.lastName}` : "A learner";
+    await NotificationService.notifyClassCourseTeacher(classId, issue.courseId, {
       type: "assessment_submitted",
-      title: "New submission to grade",
-      message: `${learner ? `${learner.firstName} ${learner.lastName}` : "A learner"} submitted "${assessment?.name || "an assessment"}".`,
+      title: reissued ? "Reissued work to mark" : "New submission to grade",
+      message: `${who} ${reissued ? "handed in their new attempt at" : "submitted"} "${assessment?.name || "an assessment"}".`,
       // issueId is what the teacher-portal's roster route (/teacher-portal/assessments/:issueId)
-      // keys off — see NotificationBell.jsx's click handler.
-      payload: { assessmentId: submission.assessmentId, submissionId: submission.id, classId: submission.classId, issueId: submission.issueId },
+      // keys off, learnerId which row it opens on — see NotificationBell.jsx's click handler.
+      payload: { assessmentId: submission.assessmentId, submissionId: submission.id, classId, issueId: issue.id, learnerId: submission.learnerId },
     });
   },
 

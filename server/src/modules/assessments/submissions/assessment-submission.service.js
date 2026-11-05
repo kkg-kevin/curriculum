@@ -1,5 +1,6 @@
 const AssessmentIssueModel = require("./assessment-issue.model");
 const AssessmentSubmissionModel = require("./assessment-submission.model");
+const AssessmentRevocationModel = require("./assessment-revocation.model");
 const AssessmentModel = require("../assessment.model");
 const LearnerModel = require("../../learners/learner.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
@@ -186,13 +187,111 @@ async function createOrExisting(data) {
   }
 }
 
+// Reissues (reissueToLearner): a reissue is its own issue for one learner, with no class, pointing
+// at the issue it was reissued from (reissuedFromIssueId) — a reissue of a reissue points at that
+// one. The original class issue (the chain's root) is where the educator marks every attempt:
+// its roster shows each learner's latest attempt.
+async function rootIssueOf(issue) {
+  let current = issue;
+  for (let hops = 0; current?.reissuedFromIssueId && hops < 50; hops += 1) {
+    const parent = await AssessmentIssueModel.findById(current.reissuedFromIssueId);
+    if (!parent) break;
+    current = parent;
+  }
+  return current;
+}
+
+// The class an issue belongs to: its own, else (a reissue) its original's.
+async function classIdForIssue(issue) {
+  if (!issue) return null;
+  if (issue.classId) return issue.classId;
+  if (!issue.reissuedFromIssueId) return null;
+  return (await rootIssueOf(issue))?.classId || null;
+}
+
+// Every reissue made from this issue (and from those), in the order they were made — one learner's
+// later attempts. Each attempt needs the one before it marked, so per learner it's one line.
+async function reissuesFrom(issueId) {
+  const found = [];
+  let frontier = [issueId];
+  for (let depth = 0; frontier.length && depth < 50; depth += 1) {
+    const next = (await Promise.all(frontier.map((id) => AssessmentIssueModel.findAll({ reissuedFromIssueId: id })))).flat();
+    next.sort((a, b) => new Date(a.issuedAt || 0) - new Date(b.issuedAt || 0));
+    found.push(...next);
+    frontier = next.map((i) => i.id);
+  }
+  return found;
+}
+
+// A learner's latest attempt at a class issue: the newest reissue of theirs, else the class issue.
+async function latestAttemptOf(root, learnerId) {
+  const mine = (await reissuesFrom(root.id)).filter((i) => i.learnerId === learnerId);
+  const issue = mine.length ? mine[mine.length - 1] : root;
+  return { issue, submission: await AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId }) };
+}
+
+// The class issue behind an issue id (a reissue's id resolves to its root) — 404 when there's none.
+async function classIssueOrThrow(issueId) {
+  const found = await AssessmentIssueModel.findById(issueId);
+  const root = found ? await rootIssueOf(found) : null;
+  if (!root?.classId) {
+    const err = new Error("Issue not found");
+    err.statusCode = 404;
+    throw err;
+  }
+  return root;
+}
+
+// The chosen learners, kept only if they're in this class (active) — refuses an empty choice.
+async function learnersOfClass(classId, learnerIds) {
+  const inClass = new Set((await LearnerHubLinkModel.findByClassId(classId)).filter((l) => l.status === "active").map((l) => l.learnerId));
+  const ids = [...new Set(learnerIds)].filter((id) => inClass.has(id));
+  if (!ids.length) {
+    const err = new Error("Choose at least one learner of this class");
+    err.statusCode = 400;
+    throw err;
+  }
+  return ids;
+}
+
+// Rebuilds these learners' session reports for a class issue's session (after a revoke / give back).
+async function refreshReportsFor(root, learnerIds) {
+  if (!root?.classId || !root?.courseId || !learnerIds.length) return;
+  await require("../../reports/report.service").refreshSessionReportsForAssessment({
+    classId: root.classId, courseId: root.courseId, sessionId: root.sessionId || null,
+    assessmentId: root.assessmentId, learnerIds,
+  }).catch(() => {});
+}
+
+// Drops hydrated submission rows whose attempt is revoked for their learner (marking queues).
+async function withoutRevoked(rows) {
+  const revokedByLearner = new Map();
+  const keep = await Promise.all(rows.map(async (row) => {
+    const learnerId = row.submission.learnerId;
+    if (!revokedByLearner.has(learnerId)) revokedByLearner.set(learnerId, AssessmentRevocationModel.revokedIssueIds(learnerId));
+    return !(await revokedByLearner.get(learnerId)).has(row.submission.issueId);
+  }));
+  return rows.filter((_, i) => keep[i]);
+}
+
+// Refuses anything done to an attempt revoked for this learner.
+async function assertNotRevoked(issue, learnerId) {
+  if (await AssessmentRevocationModel.isRevoked(issue, learnerId)) {
+    const err = new Error("This assessment has been revoked");
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
 // The learner's session report follows their marked work straight away (report.service.js's
 // refreshSessionReportsForAssessment) — for a group submission, every member's. Required lazily:
 // report.service.js requires this module. Never throws — marking must not fail because of it.
 async function refreshSessionReport(submission) {
   try {
     if (!submission?.issueId) return;
-    const issue = await AssessmentIssueModel.findById(submission.issueId);
+    const found = await AssessmentIssueModel.findById(submission.issueId);
+    // A reissue has no class of its own — its report is the original issue's class's.
+    const issue = found && !found.classId && found.reissuedFromIssueId ? { ...found, classId: await classIdForIssue(found) } : found;
     if (!issue?.classId || !issue?.courseId) return;
     const learnerIds = [submission.learnerId];
     if (submission.groupId) {
@@ -345,79 +444,130 @@ const AssessmentSubmissionService = {
     });
   },
 
-  // A teacher decided this one learner's graded attempt wasn't good enough and wants to give
-  // them another shot — creates a brand new standalone issue (same "bypass class, target one
-  // learner" shape as issueDiagnostic/issueOnSessionComplete above) rather than resetting the
-  // original submission in place. This is deliberate: the original graded submission — its
-  // score, its feedback — stays exactly as it was, a permanent record the learner can still see
-  // and the new attempt can point back to as guidance, instead of being destroyed. Because it's
-  // a distinct issueId, it naturally gets its own fresh row the next time getOrCreateSubmission
-  // runs, satisfying the (issueId, learnerId) unique constraint on submissions without touching
-  // the original at all.
+  // ── Reissue and revoke: the rules ─────────────────────────────────────────────────────────────
+  // Both act on chosen learners of a CLASS issue (a reissue's own id resolves to its class issue)
+  // and only on individual assessments — a group assessment is shared work, so it's revoked for
+  // the whole class (revokeIssue) and never reissued to one member.
   //
-  // Deliberately NOT idempotent like issueDiagnostic/issueOnSessionComplete — a teacher may
-  // reasonably reissue more than once if the learner keeps struggling, so every call is a fresh,
-  // explicit action, not a system trigger to de-duplicate. Instead, this blocks a *pending*
-  // duplicate: if the last reissue from this same origin is still unresolved, reissuing again
-  // would just leave the learner with two open "do it again" cards for no reason.
+  // Reissue gives a learner another attempt: a new issue for that learner alone (no class),
+  // pointing at the attempt it follows (reissuedFromIssueId). The earlier attempt — its score and
+  // feedback — stays as it was, shown to the learner as guidance. Allowed only when the learner's
+  // LATEST attempt is marked: not before they've handed in (the original is still open to them),
+  // not while their hand-in waits to be marked, not while a reissue waits for them, never while
+  // revoked. The new attempt is marked on the class issue's roster (getRosterForIssue), counts in
+  // place of the earlier one in reports, and the learner is told.
   //
-  // Scoped to individual (non-group) submissions only — reissuing one member out of a shared
-  // group attempt raises questions (does the whole group redo it? just them?) this feature isn't
-  // trying to answer yet.
+  // Revoke for chosen learners (revokeForLearners) takes the assessment away from them alone —
+  // every attempt: it leaves their list, can't be opened, handed in or marked, stops counting in
+  // their reports and is no longer required of them. Their work is kept; Give back
+  // (restoreForLearners) undoes it. Revoke for everyone deletes the issue (revokeIssue).
+
+  // Why this learner can't be reissued this assessment right now, or null when they can.
+  async reissueBlocker(root, learnerId) {
+    if (root.groupMode) return "Group assessments can't be reissued to one learner";
+    if (await AssessmentRevocationModel.isRevoked(root, learnerId)) return "Revoked for them — give it back first";
+    const latest = await latestAttemptOf(root, learnerId);
+    const submission = latest.submission;
+    if (!submission) return latest.issue.id === root.id ? "Hasn't handed it in yet — it's still open to them" : "Already reissued — waiting for them to do it";
+    if (submission.groupId) return "Group work can't be reissued to one learner";
+    if (submission.status === "in_progress") return latest.issue.id === root.id ? "Hasn't handed it in yet — it's still open to them" : "Already reissued — they've started it";
+    if (submission.status !== "graded") return "Mark their latest attempt first";
+    return null;
+  },
+
+  // Gives one learner another attempt (see the rules above). `issueId` may be the class issue or
+  // any attempt of theirs — the new attempt always follows their latest.
   async reissueToLearner({ issueId, learnerId, dueDate = null, timeLimitMinutes = null, reissuedBy }) {
-    const originalIssue = await AssessmentIssueModel.findById(issueId);
-    if (!originalIssue) {
+    const found = await AssessmentIssueModel.findById(issueId);
+    if (!found) {
       const err = new Error("Issue not found");
       err.statusCode = 404;
       throw err;
     }
-    const originalSubmission = await AssessmentSubmissionModel.findOne({ issueId, learnerId });
-    if (!originalSubmission || originalSubmission.status !== "graded") {
-      const err = new Error("This learner's submission hasn't been graded yet — reissue after grading it.");
-      err.statusCode = 400;
-      throw err;
-    }
-    if (originalSubmission.groupId) {
-      const err = new Error("Group submissions can't be reissued to one learner — this only supports individual assessments.");
-      err.statusCode = 400;
-      throw err;
-    }
-
-    const priorReissues = await AssessmentIssueModel.findAll({ learnerId, assessmentId: originalIssue.assessmentId });
-    const pending = await Promise.all(priorReissues
-      .filter((i) => i.reissuedFromIssueId === issueId)
-      .map(async (i) => ({ issue: i, submission: await AssessmentSubmissionModel.findOne({ issueId: i.id, learnerId }) })));
-    if (pending.some((p) => !p.submission || p.submission.status !== "graded")) {
-      const err = new Error("A reissue is already pending for this learner — wait for them to complete it before reissuing again.");
+    const root = await rootIssueOf(found);
+    const blocker = await AssessmentSubmissionService.reissueBlocker(root, learnerId);
+    if (blocker) {
+      const err = new Error(blocker);
       err.statusCode = 409;
       throw err;
     }
-
-    return AssessmentIssueModel.create({
-      assessmentId: originalIssue.assessmentId,
+    const latest = await latestAttemptOf(root, learnerId);
+    const created = await AssessmentIssueModel.create({
+      assessmentId: root.assessmentId,
       learnerId,
-      courseId: originalIssue.courseId,
-      sessionId: originalIssue.sessionId,
+      courseId: root.courseId,
+      sessionId: root.sessionId,
       classId: null,
       issuedBy: reissuedBy,
       dueDate: dueDate || null,
       timeLimitMinutes: timeLimitMinutes || null,
-      reissuedFromIssueId: issueId,
+      reissuedFromIssueId: latest.issue.id,
       // Carried over so a reissued Stage/Pathway diagnostic still re-triggers
       // maybePlaceFromDiagnostic when the new attempt is graded — without these, grading a
       // reissued diagnostic would silently never update the learner's placement, since
       // maybePlaceFromDiagnostic branches entirely on the SUBMISSION'S OWN issue carrying them.
-      ageCategoryId: originalIssue.ageCategoryId,
-      pathwayId: originalIssue.pathwayId,
-      hubId: originalIssue.hubId,
+      ageCategoryId: root.ageCategoryId,
+      pathwayId: root.pathwayId,
+      hubId: root.hubId,
     });
+    const assessment = await AssessmentModel.findById(root.assessmentId);
+    await NotificationService.notifyLearner(learnerId, {
+      type: "assessment_reissued",
+      title: "Another try",
+      message: `"${assessment?.name || "An assessment"}" has been given back to you for another try.`,
+      payload: { assessmentId: root.assessmentId, issueId: created.id, learnerId },
+    }).catch(() => {});
+    return created;
+  },
+
+  // Reissues to each chosen learner who can have it; the rest come back in `skipped` with why.
+  async reissueToLearners({ issueId, learnerIds, dueDate = null, timeLimitMinutes = null, reissuedBy }) {
+    const reissued = [];
+    const skipped = [];
+    for (const learnerId of [...new Set(learnerIds)]) {
+      try {
+        const issue = await AssessmentSubmissionService.reissueToLearner({ issueId, learnerId, dueDate, timeLimitMinutes, reissuedBy });
+        reissued.push({ learnerId, issueId: issue.id });
+      } catch (err) {
+        if (!err.statusCode || err.statusCode >= 500) throw err;
+        const learner = await LearnerModel.findById(learnerId);
+        skipped.push({ learnerId, name: learner ? `${learner.firstName} ${learner.lastName}`.trim() : "A learner", reason: err.message });
+      }
+    }
+    return { reissued, skipped };
+  },
+
+  // Revokes a class issue for chosen learners of its class (see the rules above).
+  async revokeForLearners({ issueId, learnerIds, revokedBy }) {
+    const root = await classIssueOrThrow(issueId);
+    if (root.groupMode) {
+      const err = new Error("A group assessment is revoked for the whole class, not for chosen learners");
+      err.statusCode = 400;
+      throw err;
+    }
+    const ids = await learnersOfClass(root.classId, learnerIds);
+    const count = await AssessmentRevocationModel.add(root, ids, revokedBy);
+    await refreshReportsFor(root, ids);
+    return { revoked: count };
+  },
+
+  // Gives a revoked assessment back to chosen learners: it's theirs again, with their work.
+  async restoreForLearners({ issueId, learnerIds }) {
+    const root = await classIssueOrThrow(issueId);
+    const count = await AssessmentRevocationModel.remove(root.id, [...new Set(learnerIds)]);
+    await refreshReportsFor(root, learnerIds);
+    return { restored: count };
   },
 
   // Every standalone issue (diagnostic or course-progress-triggered) targeting this learner
   // directly, merged with their own submission — the learnerId-keyed counterpart to
   // getIssuedAssessmentsForLearner above, which is keyed by class instead.
+  // A reissue revoked for them is left out, as is one whose class issue was revoked for everyone.
   async getStandaloneIssuedAssessments(learnerId) {
-    const issues = await AssessmentIssueModel.findAll({ learnerId });
+    const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
+    const all = (await AssessmentIssueModel.findAll({ learnerId })).filter((i) => !revoked.has(i.id));
+    const standing = await Promise.all(all.map(async (i) => !i.reissuedFromIssueId || !(await rootIssueOf(i))?.reissuedFromIssueId));
+    const issues = all.filter((_, idx) => standing[idx]);
     const rows = await Promise.all(issues.map(async (issue) => {
       const assessment = await AssessmentModel.findById(issue.assessmentId);
       const submission = await AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId });
@@ -454,9 +604,11 @@ const AssessmentSubmissionService = {
     const classIds = links.filter((l) => l.classId && l.status === "active").map((l) => l.classId);
     const classIssues = (await Promise.all(classIds.map((classId) => AssessmentIssueModel.findAll({ classId })))).flat();
     const ownIssues = await AssessmentIssueModel.findAll({ learnerId });
+    // Revoked for them (every attempt): not theirs to see.
+    const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
     const keys = new Set();
     [...classIssues, ...ownIssues].forEach((issue) => {
-      if (issue.sessionId) keys.add(`${issue.assessmentId}:${issue.sessionId}`);
+      if (issue.sessionId && !revoked.has(issue.id)) keys.add(`${issue.assessmentId}:${issue.sessionId}`);
     });
     return keys;
   },
@@ -512,16 +664,21 @@ const AssessmentSubmissionService = {
   // Revoked: the issue goes, so it disappears from every learner's list. Their work on it is kept
   // (never deleted) but no longer counts — their session reports are rebuilt without it (a report
   // left with nothing marked is removed).
+  // Revoking for everyone takes every attempt with it: the class issue, each reissue made from it
+  // and any per-learner revokes of it. (A reissue's own id revokes its whole class issue.)
   async revokeIssue(issueId) {
-    const issue = await AssessmentIssueModel.findById(issueId);
-    const learnerIds = issue ? [...new Set((await AssessmentSubmissionModel.findAll({ issueId })).map((s) => s.learnerId))] : [];
-    const result = await AssessmentIssueModel.delete(issueId);
-    if (issue?.classId && issue?.courseId && learnerIds.length) {
-      await require("../../reports/report.service").refreshSessionReportsForAssessment({
-        classId: issue.classId, courseId: issue.courseId, sessionId: issue.sessionId || null,
-        assessmentId: issue.assessmentId, learnerIds,
-      }).catch(() => {});
+    const found = await AssessmentIssueModel.findById(issueId);
+    if (!found) return 0;
+    const issue = await rootIssueOf(found);
+    const attemptIds = [issue.id, ...(await reissuesFrom(issue.id)).map((i) => i.id)];
+    const learnerIds = new Set();
+    for (const id of attemptIds) {
+      (await AssessmentSubmissionModel.findAll({ issueId: id })).forEach((s) => learnerIds.add(s.learnerId));
     }
+    for (const id of attemptIds.slice(1)) await AssessmentIssueModel.delete(id);
+    await AssessmentRevocationModel.deleteForIssue(issue.id);
+    const result = await AssessmentIssueModel.delete(issue.id);
+    await refreshReportsFor(issue, [...learnerIds]);
     return result;
   },
 
@@ -558,7 +715,7 @@ const AssessmentSubmissionService = {
   // roster individually to find pending work.
   async getSubmissionsNeedingGrading(classId) {
     const submissions = await AssessmentSubmissionModel.findAll({ classId, status: "submitted" });
-    const rows = await AssessmentSubmissionService._hydrateSubmissionRows(submissions);
+    const rows = await withoutRevoked(await AssessmentSubmissionService._hydrateSubmissionRows(submissions));
     return AssessmentSubmissionService._dedupeGroupRows(rows);
   },
 
@@ -594,13 +751,32 @@ const AssessmentSubmissionService = {
   // diagnostic (classId: null, see issueDiagnostic) never showed up in a teacher's queue at all.
   // Scoped by which learners are actively enrolled in this class instead, since the submission
   // itself carries no classId to filter on.
+  //
+  // A reissued assessment's new attempt (reissueToLearner — no class either) lands here too; its
+  // row carries `reissueOf` (the original class issue, whose roster is where it's marked) — but
+  // only when that original is this class's, so a learner in two classes isn't listed twice.
   async getStandaloneSubmissionsNeedingGrading(classId) {
     const links = await LearnerHubLinkModel.findByClassId(classId);
     const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
     const allSubmitted = await AssessmentSubmissionModel.findAll({ status: "submitted" });
     const submissions = allSubmitted.filter((s) => !s.classId && learnerIds.includes(s.learnerId));
-    return AssessmentSubmissionService._hydrateSubmissionRows(submissions);
+    const rows = await withoutRevoked(await AssessmentSubmissionService._hydrateSubmissionRows(submissions));
+    const shaped = await Promise.all(rows.map(async (row) => {
+      if (!row.issue.reissuedFromIssueId) return row;
+      const root = await rootIssueOf(row.issue);
+      // Its class issue was revoked for everyone (before reissues went with it): nothing to mark.
+      if (root?.reissuedFromIssueId) return null;
+      if (root?.classId === classId) return { ...row, reissueOf: root.id };
+      // Its original is another class's: listed there, unless the learner has left that class.
+      const stillThere = root?.classId && (await LearnerHubLinkModel.findByClassId(root.classId))
+        .some((l) => l.learnerId === row.submission.learnerId && l.status === "active");
+      return stillThere ? null : row;
+    }));
+    return shaped.filter(Boolean);
   },
+
+  rootIssueOf,
+  classIdForIssue,
 
   // What a learner sees: every issue targeting their class, each merged with their own
   // submission (or a synthetic "not_started" placeholder if they haven't opened it yet).
@@ -611,7 +787,9 @@ const AssessmentSubmissionService = {
   // diagnostics; the score still reaches the learner once graded, via Reports (see
   // report.service.js, which only cares about reportPublished, never assessment.type).
   async getIssuedAssessmentsForLearner(classId, learnerId) {
-    const issues = await AssessmentIssueModel.findAll({ classId });
+    // An issue revoked for this learner alone (revokeForLearners) isn't theirs any more.
+    const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
+    const issues = (await AssessmentIssueModel.findAll({ classId })).filter((i) => !revoked.has(i.id));
     const rows = await Promise.all(issues.map(async (issue) => {
       const assessment = await AssessmentModel.findById(issue.assessmentId);
       const submission = await AssessmentSubmissionModel.findOne({ issueId: issue.id, learnerId });
@@ -627,26 +805,49 @@ const AssessmentSubmissionService = {
   // Roster view for the teacher grading a class: every enrolled learner, each merged with their
   // submission (or "not_started"). Drives both the class-wide progress summary and the
   // per-learner grading action.
+  //
+  // Reissues: a reissue's own address opens its original's roster (a reissue has no class), and
+  // each learner's row is their LATEST attempt (`submission`, `issueId` — which issue that attempt
+  // answers, for observation/milestone/reissue actions), with every attempt in `attempts`.
   async getRosterForIssue(issueId) {
-    const issue = await AssessmentIssueModel.findById(issueId);
-    if (!issue) {
+    const found = await AssessmentIssueModel.findById(issueId);
+    if (!found) {
       const err = new Error("Issue not found");
       err.statusCode = 404;
       throw err;
     }
+    const issue = found.reissuedFromIssueId ? await rootIssueOf(found) : found;
     const assessment = await loadAssessmentOrThrow(issue.assessmentId);
     // classId/status no longer live on the learner record — resolve the roster via enrollment
     // links for this class instead (see learner-hub-link.model.js).
     const links = await LearnerHubLinkModel.findByClassId(issue.classId);
     const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
-    const submissions = await AssessmentSubmissionModel.findAll({ issueId });
+    const submissions = await AssessmentSubmissionModel.findAll({ issueId: issue.id });
     const submissionByLearner = new Map(submissions.map((s) => [s.learnerId, s]));
 
-    const roster = learners.map((learner) => ({
-      learner,
-      submission: submissionByLearner.get(learner.id) || { status: "not_started" },
-    }));
+    // Later attempts (reissues), per learner, oldest first.
+    const reissues = await reissuesFrom(issue.id);
+    const laterAttempts = new Map();
+    for (const re of reissues) {
+      if (!re.learnerId) continue;
+      const submission = await AssessmentSubmissionModel.findOne({ issueId: re.id, learnerId: re.learnerId });
+      const list = laterAttempts.get(re.learnerId) || [];
+      list.push({ issueId: re.id, dueDate: re.dueDate || null, issuedAt: re.issuedAt, submission: submission || { status: "not_started" } });
+      laterAttempts.set(re.learnerId, list);
+    }
+
+    // Revoked for chosen learners (revokeForLearners): `revokedAt` on their row.
+    const revokedAt = new Map((await AssessmentRevocationModel.forIssue(issue.id)).map((r) => [r.learnerId, r.revokedAt]));
+
+    const roster = learners.map((learner) => {
+      const attempts = [
+        { issueId: issue.id, dueDate: issue.dueDate || null, issuedAt: issue.issuedAt, submission: submissionByLearner.get(learner.id) || { status: "not_started" } },
+        ...(laterAttempts.get(learner.id) || []),
+      ];
+      const latest = attempts[attempts.length - 1];
+      return { learner, submission: latest.submission, issueId: latest.issueId, attempts, revokedAt: revokedAt.get(learner.id) || null };
+    });
 
     // Purely additive — empty for every non-group issue, so the existing flat `roster` stays the
     // only thing any current consumer needs to look at. Populated only when issue.groupMode is
@@ -679,6 +880,8 @@ const AssessmentSubmissionService = {
       err.statusCode = 404;
       throw err;
     }
+    // Revoked for this learner: nothing to open (and, for staff, nothing to record or mark).
+    await assertNotRevoked(issue, learnerId);
     const existing = await AssessmentSubmissionModel.findOne({ issueId, learnerId });
     if (existing) return existing;
 
@@ -761,6 +964,7 @@ const AssessmentSubmissionService = {
       throw err;
     }
     const issue = await AssessmentIssueModel.findById(submission.issueId);
+    await assertNotRevoked(issue, submission.learnerId);
     if (isExpired(issue, submission)) {
       const err = new Error("Time's up — this assessment's time limit has been reached. Submit it as-is.");
       err.statusCode = 409;
@@ -792,6 +996,7 @@ const AssessmentSubmissionService = {
       throw err;
     }
 
+    await assertNotRevoked(await AssessmentIssueModel.findById(submission.issueId), submission.learnerId);
     const assessment = await loadAssessmentOrThrow(submission.assessmentId);
     const { autoScore, autoMax, itemResults } = computeAutoScore(assessment, answers);
     const needsManual = requiresManualGrading(assessment);
@@ -849,6 +1054,8 @@ const AssessmentSubmissionService = {
       err.statusCode = 404;
       throw err;
     }
+    // Revoked for them: give it back before marking.
+    await assertNotRevoked(await AssessmentIssueModel.findById(submission.issueId), submission.learnerId);
     const assessment = await loadAssessmentOrThrow(submission.assessmentId);
     const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
     const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);

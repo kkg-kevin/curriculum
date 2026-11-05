@@ -8,6 +8,7 @@ import EmailNotificationSettings from "./EmailNotificationSettings";
 const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
+  assessment_reissued: { Icon: FiFileText, color: "#D97706" },
   tot_work_submitted: { Icon: FiUpload, color: "#6D28D9" },
   tot_training_on: { Icon: FiCheckCircle, color: "#059669" },
   tot_place_released: { Icon: FiFileText, color: "#B45309" },
@@ -39,9 +40,11 @@ function resolveNotificationPath(n) {
   const p = n.payload || {};
   switch (n.type) {
     case "assessment_graded":
+    case "assessment_reissued":
       return p.issueId ? `/learner-portal/assessments/${p.issueId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/assessments";
     case "assessment_submitted":
-      return p.issueId ? `/teacher-portal/assessments/${p.issueId}` : "/teacher-portal/assessments";
+      // learnerId: the roster opens on whoever handed in.
+      return p.issueId ? `/teacher-portal/assessments/${p.issueId}${p.learnerId ? `?learner=${p.learnerId}` : ""}` : "/teacher-portal/assessments";
     case "tot_work_submitted":
       // An educator in training's work — the supervisor's "Work to mark", or the admin's.
       return p.route || "/supervisor-portal/marking";

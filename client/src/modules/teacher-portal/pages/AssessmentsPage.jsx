@@ -473,12 +473,16 @@ function NeedsGradingSection({ rows, navigate }) {
         <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>{rows.length} submission{rows.length === 1 ? "" : "s"} awaiting your review</p>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {rows.map(({ submission, issue, assessment, learner, className, isDiagnostic, group, memberCount }) => (
+        {rows.map(({ submission, issue, assessment, learner, className, isDiagnostic: standalone, reissueOf, group, memberCount }) => {
+          // A reissued assessment's new attempt is marked on its original's roster, opened on them.
+          const isDiagnostic = standalone && !reissueOf;
+          return (
           <div key={submission.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: `1px solid #F9FAFB`, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 8 }}>
                 {group ? `${group.name} · ${memberCount} member${memberCount === 1 ? "" : "s"}` : `${learner.firstName} ${learner.lastName}`}
                 {isDiagnostic && <span style={badgeStyle("#D97706")}>Diagnostic</span>}
+                {reissueOf && <span style={badgeStyle("#2e7db5")}>Reissue</span>}
               </p>
               <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
                 {assessment.name}{className ? ` · ${className}` : ""} · Submitted {new Date(submission.submittedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
@@ -486,13 +490,14 @@ function NeedsGradingSection({ rows, navigate }) {
             </div>
             <button
               type="button"
-              onClick={() => (isDiagnostic ? setGradeOpenId(submission.id) : navigate(`/teacher-portal/assessments/${issue.id}`))}
+              onClick={() => (isDiagnostic ? setGradeOpenId(submission.id) : reissueOf ? navigate(`/teacher-portal/assessments/${reissueOf}?learner=${learner.id}`) : navigate(`/teacher-portal/assessments/${issue.id}`))}
               style={{ padding: "7px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Grade →
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {openRow && (

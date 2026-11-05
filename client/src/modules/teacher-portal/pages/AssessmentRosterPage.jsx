@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FiUsers, FiCheck } from "react-icons/fi";
-import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRevokeIssue } from "../../assessments/hooks/useAssessmentSubmission";
+import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRevokeIssue, useRevokeForLearners, useRestoreForLearners } from "../../assessments/hooks/useAssessmentSubmission";
 import GradingPanel from "../../assessments/components/GradingPanel";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
@@ -23,16 +23,155 @@ function StatusBadge({ status }) {
   );
 }
 
-function LearnerRosterButton({ learner, submission, active, onClick }) {
+// Why this roster row can't be reissued right now, or null — the server's rule (reissueBlocker in
+// assessment-submission.service.js), so the dialog can say so before anything is sent.
+function reissueBlockerOf(row) {
+  if (row.revokedAt) return "Revoked — give it back first";
+  const attempts = row.attempts?.length ? row.attempts : [{ issueId: row.issueId, submission: row.submission }];
+  const latest = attempts[attempts.length - 1].submission;
+  const firstAttempt = attempts.length === 1;
+  if (latest.groupId) return "Group work";
+  if (latest.status === "not_started" || latest.status === "in_progress") return firstAttempt ? "Hasn't handed it in yet" : "Reissue waiting for them";
+  if (latest.status !== "graded") return "Mark their latest attempt first";
+  return null;
+}
+
+const fullName = (l) => `${l.firstName} ${l.lastName}`.trim();
+const inputStyle = { padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", color: T.ink, background: "#fff", minWidth: 0 };
+
+// A checklist of the roster's learners — rows with a `blocker` can't be picked and say why.
+function LearnerChecklist({ rows, picked, onToggle, blockerOf }) {
+  return (
+    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, maxHeight: 300, overflowY: "auto" }}>
+      {rows.map((row) => {
+        const blocker = blockerOf(row);
+        const checked = picked.has(row.learner.id);
+        return (
+          <label key={row.learner.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: "1px solid #F3F4F6", cursor: blocker ? "not-allowed" : "pointer", opacity: blocker ? 0.6 : 1 }}>
+            <input type="checkbox" disabled={!!blocker} checked={checked} onChange={() => onToggle(row.learner.id)} />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.ink }}>{fullName(row.learner)}</span>
+              {blocker && <span style={{ display: "block", fontSize: 11.5, color: T.inkMuted }}>{blocker}</span>}
+            </span>
+            {!blocker && <StatusBadge status={row.submission.status} />}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function Dialog({ title, children, onClose }) {
+  return (
+    <div role="dialog" aria-modal="true" aria-label={title} onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(17,24,39,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 1300 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 16, padding: "20px 22px", fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 14 }}>
+        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: T.ink }}>{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DialogButtons({ onClose, onConfirm, confirmLabel, disabled, danger }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+      <button type="button" onClick={onClose} style={{ padding: "9px 16px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: "#fff", color: T.inkMuted, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Cancel</button>
+      <button type="button" disabled={disabled} onClick={onConfirm} style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: disabled ? "#D1D5DB" : danger ? "#DC2626" : T.accent, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: disabled ? "not-allowed" : "pointer" }}>{confirmLabel}</button>
+    </div>
+  );
+}
+
+// Reissue to chosen learners: only those whose latest attempt is marked can be picked; a due date
+// and time limit for the new attempt are optional.
+function ReissueDialog({ issueId, roster, initialIds = [], onClose }) {
+  const { mutate: reissue, isPending } = useReissueAssessment();
+  const eligible = roster.filter((r) => !reissueBlockerOf(r));
+  const [picked, setPicked] = useState(() => new Set(initialIds.filter((id) => eligible.some((r) => r.learner.id === id))));
+  const [dueDate, setDueDate] = useState("");
+  const [timeLimit, setTimeLimit] = useState("");
+  const toggle = (id) => setPicked((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const allPicked = eligible.length > 0 && eligible.every((r) => picked.has(r.learner.id));
+  return (
+    <Dialog title="Reissue to learners" onClose={onClose}>
+      <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.55 }}>Each learner you pick gets a fresh attempt, with your feedback on the last one as guidance. Their new attempt shows here for marking when they hand it in.</p>
+      {eligible.length > 0 && (
+        <button type="button" onClick={() => setPicked(allPicked ? new Set() : new Set(eligible.map((r) => r.learner.id)))} style={{ alignSelf: "flex-start", padding: 0, border: "none", background: "none", color: T.accentMid, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          {allPicked ? "Clear all" : `Pick all who can (${eligible.length})`}
+        </button>
+      )}
+      <LearnerChecklist rows={roster} picked={picked} onToggle={toggle} blockerOf={reissueBlockerOf} />
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700, color: T.inkMuted, flex: "1 1 180px" }}>
+          Due date (optional)
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={inputStyle} />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700, color: T.inkMuted, flex: "1 1 140px" }}>
+          Time limit, minutes (optional)
+          <input type="number" min={1} max={1440} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} style={inputStyle} />
+        </label>
+      </div>
+      <DialogButtons
+        onClose={onClose}
+        disabled={!picked.size || isPending}
+        confirmLabel={isPending ? "Reissuing…" : `Reissue to ${picked.size || ""} learner${picked.size === 1 ? "" : "s"}`.replace("  ", " ")}
+        onConfirm={() => reissue(
+          { issueId, learnerIds: [...picked], dueDate: dueDate || null, timeLimitMinutes: Number(timeLimit) > 0 ? Math.min(1440, Math.round(Number(timeLimit))) : null },
+          { onSuccess: onClose },
+        )}
+      />
+    </Dialog>
+  );
+}
+
+// Revoke for chosen learners (it leaves only their list) or for everyone (the class issue goes).
+// A group assessment is revoked for everyone only.
+function RevokeDialog({ issueId, roster, isGroupMode, handedInCount, initialIds = [], onClose, onRevokedAll }) {
+  const { mutate: revokeLearners, isPending: revokingSome } = useRevokeForLearners();
+  const { mutate: revokeAll, isPending: revokingAll } = useRevokeIssue();
+  const [scope, setScope] = useState(isGroupMode ? "all" : "chosen");
+  const [picked, setPicked] = useState(() => new Set(initialIds));
+  const toggle = (id) => setPicked((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const blockerOf = (row) => (row.revokedAt ? "Already revoked" : null);
+  const radio = (value, label, hint) => (
+    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
+      <input type="radio" name="revoke-scope" checked={scope === value} onChange={() => setScope(value)} style={{ marginTop: 3 }} />
+      <span><span style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.ink }}>{label}</span><span style={{ display: "block", fontSize: 12, color: T.inkMuted }}>{hint}</span></span>
+    </label>
+  );
+  return (
+    <Dialog title="Revoke this assessment" onClose={onClose}>
+      {!isGroupMode && radio("chosen", "For chosen learners", "It leaves only their list. Their work is kept but stops counting; you can give it back.")}
+      {radio("all", "For everyone in the class", `It leaves every learner's list.${handedInCount ? ` ${handedInCount} handed in — that work is kept but no longer counts.` : ""}`)}
+      {isGroupMode && <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>A group assessment is shared work, so it's revoked for the whole class.</p>}
+      {scope === "chosen" && <LearnerChecklist rows={roster} picked={picked} onToggle={toggle} blockerOf={blockerOf} />}
+      <DialogButtons
+        onClose={onClose}
+        danger
+        disabled={(scope === "chosen" && !picked.size) || revokingSome || revokingAll}
+        confirmLabel={revokingSome || revokingAll ? "Revoking…" : scope === "all" ? "Revoke for everyone" : `Revoke for ${picked.size} learner${picked.size === 1 ? "" : "s"}`}
+        onConfirm={() => (scope === "all"
+          ? revokeAll(issueId, { onSuccess: onRevokedAll })
+          : revokeLearners({ issueId, learnerIds: [...picked] }, { onSuccess: onClose }))}
+      />
+    </Dialog>
+  );
+}
+
+function LearnerRosterButton({ learner, submission, attemptCount = 1, revoked = false, active, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", border: "none", borderBottom: `1px solid #F9FAFB`, backgroundColor: active ? T.tintBg : "transparent", cursor: "pointer" }}
+      style={{ display: "block", width: "100%", textAlign: "left", padding: "12px 16px", border: "none", borderBottom: `1px solid #F9FAFB`, backgroundColor: active ? T.tintBg : "transparent", cursor: "pointer", opacity: revoked ? 0.7 : 1 }}
     >
-      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: active ? T.accent : T.ink }}>{learner.firstName} {learner.lastName}</p>
-      <StatusBadge status={submission.status} />
-      {submission.status === "graded" && (
+      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: active ? T.accent : T.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        {learner.firstName} {learner.lastName}
+        {attemptCount > 1 && <span style={{ padding: "1px 7px", borderRadius: 999, background: "#FFFBEB", border: "1px solid #FDE68A", color: "#B45309", fontSize: 10.5, fontWeight: 800 }}>Attempt {attemptCount}</span>}
+      </p>
+      {revoked
+        ? <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#FEF2F2", color: "#B91C1C", border: "1.5px solid #FECACA" }}>Revoked</span>
+        : <StatusBadge status={submission.status} />}
+      {!revoked && submission.status === "graded" && (
         <span style={{ marginLeft: 8, fontSize: 11.5, fontWeight: 700, color: T.accent }}>
           {submission.totalScore}/{submission.maxScore}
         </span>
@@ -194,15 +333,45 @@ function ReissueBox({ issueId, learnerId, learnerName }) {
   );
 }
 
+// A reissued learner's attempts at this assessment (the roster row's `attempts`, oldest first) —
+// the latest is the one to mark; earlier ones stay readable.
+function AttemptSwitcher({ attempts, index, onChange }) {
+  if (!attempts || attempts.length < 2) return null;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+      {attempts.map((a, i) => {
+        const active = i === index;
+        const s = STATUS_CONFIG[a.submission.status] || STATUS_CONFIG.not_started;
+        return (
+          <button
+            key={a.issueId}
+            type="button"
+            onClick={() => onChange(i)}
+            style={{ padding: "6px 12px", borderRadius: 999, border: `1.5px solid ${active ? T.accent : T.border}`, background: active ? T.tintBg : "#fff", color: active ? T.accent : T.inkMuted, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          >
+            Attempt {i + 1}{i > 0 ? " (reissued)" : ""} · <span style={{ color: s.color }}>{a.submission.status === "graded" ? `${a.submission.totalScore}/${a.submission.maxScore}` : s.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AssessmentRosterPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data, isLoading } = useRosterForIssue(issueId);
   const { mutate: grade, isPending: saving } = useGradeSubmission();
   const { mutate: startObservation, isPending: starting } = useStartObservationSubmission();
-  const { mutate: revoke, isPending: revoking } = useRevokeIssue();
-  const [selectedLearnerId, setSelectedLearnerId] = useState(null);
+  const { mutate: restore, isPending: restoring } = useRestoreForLearners();
+  // null | { kind: "reissue" | "revoke", ids: [learnerIds to start with] }
+  const [dialog, setDialog] = useState(null);
+  // ?learner= (from Needs Grading) opens straight on that learner.
+  const [selectedLearnerId, setSelectedLearnerId] = useState(() => searchParams.get("learner"));
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  // Which attempt of a reissued learner is shown — null = their latest.
+  const [attemptIndex, setAttemptIndex] = useState(null);
   // Holds the freshly created submission for the brief window between "Begin Observation" and
   // the teacher actually grading it — the roster query (`data`) still has the stale "not_started"
   // placeholder until grading invalidates it (see useGradeSubmission), so this is what lets the
@@ -225,14 +394,21 @@ export default function AssessmentRosterPage() {
   const isObservation = assessment.type === "observation";
   const hasMilestones = assessment.type === "project" && (assessment.milestones || []).length > 0;
 
-  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); };
-  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); };
+  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); setAttemptIndex(null); };
+  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); setAttemptIndex(null); };
 
   const selectedGroupRow = selectedGroupId ? groups.find((g) => g.group.id === selectedGroupId) : null;
   const selectedLearnerRow = selectedLearnerId ? roster.find((r) => r.learner.id === selectedLearnerId) : null;
+  // A reissued learner: the attempt being looked at (their latest unless an earlier one is picked)
+  // and the issue it answers — what Begin Observation, milestones and Reissue act on.
+  const attempts = selectedLearnerRow?.attempts || [];
+  const latestAttempt = attempts.length ? attempts.length - 1 : 0;
+  const shownAttempt = attemptIndex == null || attemptIndex > latestAttempt ? latestAttempt : attemptIndex;
+  const onLatestAttempt = shownAttempt === latestAttempt;
+  const attemptIssueId = attempts[shownAttempt]?.issueId || selectedLearnerRow?.issueId || issue.id;
   // Whichever is active — a group row's `submission` is its representative member's row (grading
-  // it fans out to every member server-side), an individual row's is just their own.
-  const selectedSubmission = startedSubmission || selectedGroupRow?.submission || selectedLearnerRow?.submission || null;
+  // it fans out to every member server-side), an individual row's is the attempt being shown.
+  const selectedSubmission = startedSubmission || selectedGroupRow?.submission || attempts[shownAttempt]?.submission || selectedLearnerRow?.submission || null;
 
   const handleBeginObservation = () => {
     // A group row's own `members` array supplies the representative learner to start against —
@@ -240,13 +416,18 @@ export default function AssessmentRosterPage() {
     // already uses (see getOrCreateSubmission's group-resolution branch server-side).
     const learnerId = selectedGroupRow ? selectedGroupRow.members[0]?.id : selectedLearnerRow?.learner.id;
     if (!learnerId) return;
-    startObservation({ issueId: issue.id, learnerId }, { onSuccess: (submission) => setStartedSubmission(submission) });
+    startObservation({ issueId: selectedGroupRow ? issue.id : attemptIssueId, learnerId }, { onSuccess: (submission) => setStartedSubmission(submission) });
   };
 
+  // Learners it's revoked for are out of the counts (it isn't theirs any more).
+  const activeRoster = roster.filter((r) => !r.revokedAt);
+  const revokedCount = roster.length - activeRoster.length;
   const countableRows = isGroupMode
     ? [...groups.map((g) => g.submission), ...ungroupedLearners.map((r) => r.submission)]
-    : roster.map((r) => r.submission);
-  const totalCount = isGroupMode ? groups.length + ungroupedLearners.length : roster.length;
+    : activeRoster.map((r) => r.submission);
+  const totalCount = isGroupMode ? groups.length + ungroupedLearners.length : activeRoster.length;
+  const canReissueSomeone = !isGroupMode && roster.some((r) => !reissueBlockerOf(r));
+  const headerButton = { marginTop: 12, padding: "7px 14px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" };
   const submitted = countableRows.filter((s) => s.status !== "not_started" && s.status !== "in_progress").length;
   const gradedCount = countableRows.filter((s) => s.status === "graded").length;
   const publishedCount = countableRows.filter((s) => s.status === "graded" && s.reportPublished).length;
@@ -268,22 +449,19 @@ export default function AssessmentRosterPage() {
               </span>
             )}
           </h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{submitted} of {totalCount} submitted · {gradedCount} graded · {publishedCount} reports published</p>
-          {/* Revoke: the assessment disappears from every learner's list. Their handed-in work is
-              kept (never deleted) but stops counting in their reports. */}
-          <button
-            type="button"
-            disabled={revoking}
-            onClick={() => {
-              const handedIn = submitted > 0 ? ` ${submitted} ${submitted === 1 ? "learner has" : "learners have"} handed in — that work is kept but no longer counts in their reports.` : "";
-              if (window.confirm(`Revoke "${assessment.name}"? It disappears from every learner's assessments.${handedIn}`)) {
-                revoke(issue.id, { onSuccess: () => navigate("/teacher-portal/assessments") });
-              }
-            }}
-            style={{ marginTop: 12, padding: "7px 14px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: revoking ? "wait" : "pointer" }}
-          >
-            {revoking ? "Revoking…" : "Revoke this assessment"}
-          </button>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
+            {submitted} of {totalCount} submitted · {gradedCount} graded · {publishedCount} reports published{revokedCount ? ` · revoked for ${revokedCount}` : ""}
+          </p>
+          {/* Reissue to chosen learners (individual assessments, latest attempt marked); revoke for
+              chosen learners or everyone — handed-in work is kept but stops counting. */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {!isGroupMode && (
+              <button type="button" disabled={!canReissueSomeone} title={canReissueSomeone ? "" : "Nobody's latest attempt is marked yet"} onClick={() => setDialog({ kind: "reissue", ids: [] })} style={{ ...headerButton, opacity: canReissueSomeone ? 1 : 0.55, cursor: canReissueSomeone ? "pointer" : "not-allowed" }}>
+                Reissue…
+              </button>
+            )}
+            <button type="button" onClick={() => setDialog({ kind: "revoke", ids: [] })} style={headerButton}>Revoke…</button>
+          </div>
         </div>
       </div>
 
@@ -296,8 +474,8 @@ export default function AssessmentRosterPage() {
             roster.length === 0 ? (
               <p style={{ margin: 0, padding: "24px 16px", fontSize: 13, color: T.inkFaint, textAlign: "center" }}>No learners in this class yet.</p>
             ) : (
-              roster.map(({ learner, submission }) => (
-                <LearnerRosterButton key={learner.id} learner={learner} submission={submission} active={learner.id === selectedLearnerId} onClick={() => selectLearner(learner.id)} />
+              roster.map(({ learner, submission, attempts: tries, revokedAt }) => (
+                <LearnerRosterButton key={learner.id} learner={learner} submission={submission} attemptCount={tries?.length || 1} revoked={!!revokedAt} active={learner.id === selectedLearnerId} onClick={() => selectLearner(learner.id)} />
               ))
             )
           ) : (
@@ -324,11 +502,30 @@ export default function AssessmentRosterPage() {
         </div>
 
         <div style={{ ...cardStyle, padding: "20px 22px", minHeight: 300 }}>
+          {selectedLearnerRow?.revokedAt ? (
+            // Revoked for this learner: nothing to mark until it's given back.
+            <div style={{ textAlign: "center", padding: "50px 20px" }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: T.ink }}>Revoked for {fullName(selectedLearnerRow.learner)}</h3>
+              <p style={{ margin: "0 auto 18px", fontSize: 13, color: T.inkMuted, maxWidth: 400, lineHeight: 1.55 }}>
+                Since {new Date(selectedLearnerRow.revokedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}. It's not on their list and isn&apos;t asked of them; anything they handed in is kept but doesn&apos;t count. Give it back to make it theirs again, with their work.
+              </p>
+              <button
+                type="button"
+                disabled={restoring}
+                onClick={() => restore({ issueId: issue.id, learnerIds: [selectedLearnerRow.learner.id] })}
+                style={{ padding: "10px 22px", backgroundColor: restoring ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: restoring ? "wait" : "pointer" }}
+              >
+                {restoring ? "Giving back…" : "Give it back"}
+              </button>
+            </div>
+          ) : (<>
+          {!selectedGroupRow && <AttemptSwitcher attempts={attempts} index={shownAttempt} onChange={(i) => { setAttemptIndex(i); setStartedSubmission(null); }} />}
           {hasMilestones && selectedSubmission && (
             <MilestonesPanel
+              key={selectedGroupRow ? issue.id : attemptIssueId}
               assessment={assessment}
               submission={selectedSubmission}
-              issueId={issue.id}
+              issueId={selectedGroupRow ? issue.id : attemptIssueId}
               learnerId={selectedGroupRow ? selectedGroupRow.members[0]?.id : selectedLearnerRow?.learner.id}
               onGraded={(sub) => setStartedSubmission(sub)}
             />
@@ -417,18 +614,44 @@ export default function AssessmentRosterPage() {
                   </p>
                 </div>
               )}
-              {selectedSubmission.status === "graded" && !selectedGroupRow && selectedLearnerRow && (
+              {selectedSubmission.status === "graded" && !selectedGroupRow && selectedLearnerRow && onLatestAttempt && (
                 <ReissueBox
-                  key={selectedLearnerRow.learner.id}
-                  issueId={issue.id}
+                  key={`${selectedLearnerRow.learner.id}:${attemptIssueId}`}
+                  issueId={attemptIssueId}
                   learnerId={selectedLearnerRow.learner.id}
                   learnerName={`${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`}
                 />
               )}
             </>
           )}
+          {/* This learner alone: revoke it for them (individual assessments). */}
+          {selectedLearnerRow && !isGroupMode && (
+            <button
+              type="button"
+              onClick={() => setDialog({ kind: "revoke", ids: [selectedLearnerRow.learner.id] })}
+              style={{ marginTop: 16, padding: 0, border: "none", background: "none", color: "#B91C1C", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+            >
+              Revoke for {fullName(selectedLearnerRow.learner)}…
+            </button>
+          )}
+          </>)}
         </div>
       </div>
+
+      {dialog?.kind === "reissue" && (
+        <ReissueDialog issueId={issue.id} roster={roster} initialIds={dialog.ids} onClose={() => setDialog(null)} />
+      )}
+      {dialog?.kind === "revoke" && (
+        <RevokeDialog
+          issueId={issue.id}
+          roster={roster}
+          isGroupMode={isGroupMode}
+          handedInCount={submitted}
+          initialIds={dialog.ids}
+          onClose={() => setDialog(null)}
+          onRevokedAll={() => navigate("/teacher-portal/assessments")}
+        />
+      )}
     </div>
   );
 }

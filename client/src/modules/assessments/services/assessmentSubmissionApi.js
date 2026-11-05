@@ -9,7 +9,11 @@ export const assessmentSubmissionApi = {
   getDiagnosticsNeedingGrading: (classId) => api.get(`${BASE}/diagnostics-needing-grading`, { params: { classId } }).then((r) => r.data),
   getRoster:          (issueId)          => api.get(`${BASE}/issues/${issueId}/roster`).then((r) => r.data.data),
   revokeIssue:        (issueId)          => api.delete(`${BASE}/issues/${issueId}`).then((r) => r.data),
+  // payload: { learnerIds, dueDate?, timeLimitMinutes? } → { reissued, skipped: [{ learnerId, name, reason }] }
   reissue:            (issueId, payload) => api.post(`${BASE}/issues/${issueId}/reissue`, payload).then((r) => r.data.data),
+  // Revoke for chosen learners only (DELETE above is for everyone), and give it back to them.
+  revokeForLearners:  (issueId, learnerIds) => api.post(`${BASE}/issues/${issueId}/revoke-learners`, { learnerIds }).then((r) => r.data.data),
+  restoreForLearners: (issueId, learnerIds) => api.post(`${BASE}/issues/${issueId}/restore-learners`, { learnerIds }).then((r) => r.data.data),
 
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
   // Admin/school: the same list for one learner, as their profile shows it.

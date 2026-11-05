@@ -76,12 +76,19 @@ const gradeMilestoneSchema = z.object({
   feedback:  z.string().max(5000).optional().default(""),
 });
 
-// Teacher reissuing a graded assessment to one learner — see reissueToLearner in the service.
+// Teacher reissuing a marked assessment to chosen learners — see the reissue rules in the service.
+// `learnerId` (one) is still accepted from older pages.
+const learnerIdList = z.array(z.string().min(1).max(36)).max(500);
 const reissueSchema = z.object({
-  learnerId: z.string().min(1, "Learner is required"),
+  learnerIds: learnerIdList.optional(),
+  learnerId: z.string().min(1).max(36).optional(),
   dueDate:   z.string().optional().nullable(),
   timeLimitMinutes: z.number().int().positive().max(1440, "Time limit can't exceed 24 hours").optional().nullable(),
-});
+}).transform(({ learnerId, learnerIds, ...rest }) => ({ ...rest, learnerIds: [...new Set([...(learnerIds || []), ...(learnerId ? [learnerId] : [])])] }))
+  .refine((d) => d.learnerIds.length > 0, { message: "Choose at least one learner", path: ["learnerIds"] });
+
+// Revoking an issued assessment for chosen learners, or giving it back to them.
+const learnersSchema = z.object({ learnerIds: learnerIdList.min(1, "Choose at least one learner") });
 
 module.exports = {
   issueAssessmentSchema,
@@ -91,4 +98,5 @@ module.exports = {
   startObservationSchema,
   gradeMilestoneSchema,
   reissueSchema,
+  learnersSchema,
 };

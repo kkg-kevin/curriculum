@@ -126,16 +126,50 @@ export function useGradeMilestone() {
 // brand new issue (see reissueToLearner's comment server-side), so this invalidates the same
 // broad set useGradeMilestone does: it needs to show up both in the teacher's own issue lists
 // and in the learner's "My Assessments" the moment it's created.
+// Chosen learners (`learnerIds`; one `learnerId` also works). The server skips anyone who can't
+// have it yet and says why — reported here.
 export function useReissueAssessment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ issueId, learnerId, dueDate, timeLimitMinutes }) => assessmentSubmissionApi.reissue(issueId, { learnerId, dueDate, timeLimitMinutes }),
+    mutationFn: ({ issueId, learnerId, learnerIds, dueDate, timeLimitMinutes }) =>
+      assessmentSubmissionApi.reissue(issueId, { learnerIds: learnerIds || (learnerId ? [learnerId] : []), dueDate, timeLimitMinutes }),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
+      const done = result?.reissued?.length || 0;
+      const skipped = result?.skipped || [];
+      if (done) toast.success(`Reissued to ${done} learner${done === 1 ? "" : "s"} — they'll see it as a fresh attempt`);
+      if (skipped.length) toast.error(`Not reissued: ${skipped.map((s) => `${s.name} (${s.reason})`).join("; ")}`, { duration: 7000 });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to reissue assessment"),
+  });
+}
+
+// Revoke for chosen learners / give it back to them.
+export function useRevokeForLearners() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ issueId, learnerIds }) => assessmentSubmissionApi.revokeForLearners(issueId, learnerIds),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
+      const n = result?.revoked || 0;
+      toast.success(n ? `Revoked for ${n} learner${n === 1 ? "" : "s"} — it's gone from their list` : "Already revoked for them");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to revoke"),
+  });
+}
+
+export function useRestoreForLearners() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ issueId, learnerIds }) => assessmentSubmissionApi.restoreForLearners(issueId, learnerIds),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["assessment-issues"] });
       qc.invalidateQueries({ queryKey: ["assessment-submissions"] });
-      toast.success("Assessment reissued — the learner will see it as a fresh attempt");
+      toast.success("Given back — it's on their list again, with their work");
     },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to reissue assessment"),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to give it back"),
   });
 }
 
