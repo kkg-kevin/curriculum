@@ -217,6 +217,11 @@ const ClubSignupService = {
       learnerName: names.slice(0, 150), interestedIn: "tech_club", hubId: hub.id, clubMembershipId: membership.id, visitSource,
       message: `Signed up on the website: ${hub.name}, ${pkg.name} for ${childrenLabel(data.children.length)}. Awaiting payment (${invoice.invoiceNumber}).`,
     }).catch(() => {});
+    // Credited to an affiliate's link or code, if any (never fails the sign-up).
+    await require("../affiliates/affiliate.service").recordReferral({
+      ownerAdminId, programme: "tech_club", recordId: membership.id, invoiceId: invoice.id, code: data.referralCode, visitSource, detail: `${hub.name} · ${pkg.name}`,
+      parent: { userId: created.parentUserId, name: data.parent.name, email: data.parent.email, phone: data.parent.phone },
+    });
     await NotificationService._notify(ownerAdminId, {
       type: "tech_club_signup",
       title: "New Tech Club sign-up",

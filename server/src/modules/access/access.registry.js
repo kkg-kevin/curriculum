@@ -36,6 +36,8 @@ const MODULES = [
   { key: "activity", label: "Activity log", group: "Workspace" },
   { key: "billing", label: "Billing", group: "Finance" },
   { key: "hub-visits", label: "Hub visits & revenue", group: "Finance" },
+  // Affiliate marketing: affiliates, their referrals and commissions, payouts, the programme's rules.
+  { key: "affiliates", label: "Affiliates (referrals & payouts)", group: "Finance" },
   // Educator claims. A claim is normally reviewed by the educator's supervisor — a separate
   // supervisor login, not a staff role. Staff come in on the workspace's side of it:
   // "Educator claims" → Edit lets them decide a claim in a supervisor's place; "Claim approvals"
@@ -85,6 +87,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/pathway-subscriptions": "pathway-subscriptions",
   "/api/billing": "billing",
   "/api/hub-visits": "hub-visits",
+  "/api/affiliates": "affiliates",
   "/api/audit": "activity",
   "/api/claims": "claims",
   "/api/checkins": "checkins-manage",

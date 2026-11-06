@@ -131,6 +131,8 @@ import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
 import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
 import TechClubsPage from "../modules/tech-clubs/pages/TechClubsPage";
 import PathwaySubscriptionsPage from "../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage";
+import AffiliatesPage from "../modules/affiliates/pages/AffiliatesPage";
+import ReferEarnPage from "../modules/affiliates/pages/ReferEarnPage";
 
 // Educator claims sit inside Billing. Links to the old /claims address — notifications and
 // emails carry /claims?claim=<id> — land on that tab, with the claim still opened.
@@ -293,6 +295,8 @@ export default function AppRoutes() {
         <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
         <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
+        {/* Affiliate marketing — affiliates, referrals, commissions, payouts (modules/affiliates). */}
+        <Route path="affiliates" element={<AffiliatesPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -341,6 +345,8 @@ export default function AppRoutes() {
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
           {/* What families say about this educator — anonymous, from 3 reviews (modules/mentor-reviews). */}
           <Route path="feedback" element={<MyFeedbackPage />} />
+          {/* Refer & earn — their referral link and commissions (modules/affiliates). */}
+          <Route path="refer" element={<ReferEarnPage />} />
           {/* Their performance profile, and their public one (modules/educator-profiles). */}
           <Route path="my-profile" element={<Navigate to="/teacher-portal/profile?tab=public" replace />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
@@ -458,6 +464,8 @@ export default function AppRoutes() {
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
           <Route path="mentors/:slug" element={<MentorProfilePage />} />
+          {/* Refer & earn — their referral link and commissions (modules/affiliates). */}
+          <Route path="refer" element={<ReferEarnPage />} />
           <Route path="account" element={<ParentAccountPage />} />
           <Route path="family" element={<LearnerFamilyPage />} />
           <Route path="invoices" element={<BillingPage />} />

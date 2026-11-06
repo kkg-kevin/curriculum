@@ -266,6 +266,14 @@ const BootcampEnrollmentService = {
     for (const { lead, learner } of enrolled) await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
     // The parent gets it by email too, with how to pay it (see billing.emails.js).
     if (invoice) require("../billing/billing.service").emailIssuedInvoice(invoice.id);
+    // Credited to an affiliate's link or code, if any — the invoice is the sign-up (never fails it).
+    if (invoice) {
+      await require("../affiliates/affiliate.service").recordReferral({
+        ownerAdminId: bootcamp.ownerAdminId || hub?.ownerAdminId, programme: "bootcamp", recordId: invoice.id, invoiceId: invoice.id,
+        code: data.referralCode, visitSource, detail: bootcamp.name,
+        parent: { userId: parentUser?.id || null, name: data.parentName, email: data.parentEmail, phone: data.parentPhone },
+      });
+    }
 
     const first = enrolled[0];
     return {

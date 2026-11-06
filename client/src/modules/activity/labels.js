@@ -18,6 +18,7 @@ export const AREA_LABELS = {
   "home-learning": "Home Learning",
   "tech-clubs": "Tech Clubs",
   "pathway-subscriptions": "Pathway subscriptions",
+  affiliates: "Affiliates",
   competitions: "Competitions",
   bootcamps: "Bootcamps",
   reports: "Reports",

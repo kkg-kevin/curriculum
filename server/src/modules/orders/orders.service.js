@@ -349,6 +349,11 @@ const OrdersService = {
       throw err;
     }
 
+    // Credited to an affiliate's link or code, if any (never fails the order).
+    await require("../affiliates/affiliate.service").recordReferral({
+      ownerAdminId, programme: "shop", recordId: order.id, invoiceId: invoice.id, code: data.referralCode, visitSource, detail: order.orderNumber,
+      parent: { userId: parentUserId, name: data.customer.name, email: data.customer.email, phone: data.customer.phone },
+    });
     const pay = await PaymentLinks.forWebsite(invoice, "store_order", { ttlHours: 14 * 24 });
     sendOrderPlacedEmail({ order, items, hubName: pickupHubId ? hub?.name : null, payToken: pay?.token, hasProjects }).catch(() => {});
     await NotificationService._notify(order.ownerAdminId, {
