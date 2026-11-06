@@ -9,23 +9,41 @@ import { pathwayTemplatesApi } from "../../settings/pathways/services/pathwayTem
 import { usePathwayDirectory } from "../../settings/pathways/hooks/usePathwayTemplates";
 import PathwayWebsiteFields from "../../pathway-subscriptions/components/PathwayWebsiteFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { BILLING_PERIODS, periodHow, periodUnit, pricePer } from "../../../utils/billingPeriods";
+import { pricePer } from "../../../utils/billingPeriods";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
 const checkLabel = { display: "flex", alignItems: "center", gap: 8, color: "#374151", fontSize: 13, fontWeight: 600 };
 const smallButton = { border: "1px solid #D1D5DB", borderRadius: 7, color: "#4B5563", background: "#fff", padding: "6px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 };
-const formatMoney = (amount) => `KSh ${Number(amount || 0).toLocaleString("en-KE")}`;
 const errorMessage = (error, fallback) => error.response?.data?.message || error.message || fallback;
 
-const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", billingPeriod: "monthly", amount: "", allowExtraChildren: false, extraChildAmount: "", maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [], pathwayTemplateId: "" };
+// The periods a package can be offered for (6 Nov 2026 — never daily), in order.
+const OFFERED = [
+  { value: "weekly", label: "Weekly", unit: "week" },
+  { value: "monthly", label: "Monthly", unit: "month" },
+  { value: "quarterly", label: "Every 3 months", unit: "3 months" },
+  { value: "annually", label: "Yearly", unit: "year" },
+];
+const blankPrices = () => Object.fromEntries(OFFERED.map((p) => [p.value, { on: false, amount: "", extra: "" }]));
+
+const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", prices: { ...blankPrices(), monthly: { on: true, amount: "", extra: "" } }, defaultPeriod: "monthly", legacyDaily: false, allowExtraChildren: false, maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [], pathwayTemplateId: "" };
+
+// A package's prices, one per period (its periodPrices; a package saved before 6 Nov 2026 has just
+// its one amount + billingPeriod).
+function pricesList(pkg) {
+  const list = Array.isArray(pkg.periodPrices) && pkg.periodPrices.length
+    ? pkg.periodPrices
+    : [{ billingPeriod: pkg.billingPeriod || "monthly", amount: pkg.amount, extraChildAmount: pkg.extraChildAmount }];
+  const order = ["daily", ...OFFERED.map((o) => o.value)];
+  return [...list].sort((a, b) => order.indexOf(a.billingPeriod) - order.indexOf(b.billingPeriod));
+}
 
 // The two kinds of package managed here. Home Learning is the original panel, unchanged; Tech Club
 // packages add which clubs a package is offered at (none ticked = every club).
 const PROGRAMMES = {
   home_learning: {
     title: "Home Learning packages",
-    intro: <>What Home Learning families sign up for, billed daily, weekly, monthly, quarterly or yearly — invoices go out automatically. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
+    intro: <>What Home Learning families sign up for, billed weekly, monthly, every 3 months or yearly (one package can offer several — families choose on the website) — invoices go out automatically. Households pick one of these on the Home Learning page. Packages marked <strong>On website</strong> appear on the website's Home Schooling page, and enquiries from there arrive in Enquiries with the package attached.</>,
     queryKey: ["billing", "packages"],
     refreshKeys: [["home-learning"]],
     list: billingApi.listPackages, create: billingApi.createPackage, update: billingApi.updatePackage, remove: billingApi.deletePackage, checkRemove: billingApi.checkDeletePackage,
@@ -37,7 +55,7 @@ const PROGRAMMES = {
   },
   tech_club: {
     title: "Tech Club packages",
-    intro: <>What families pay to join an Estate Tech Club, billed daily, weekly, monthly, quarterly or yearly — invoices go out automatically. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
+    intro: <>What families pay to join an Estate Tech Club, billed weekly, monthly, every 3 months or yearly (one package can offer several — families choose on the website) — invoices go out automatically. Packages marked <strong>On website</strong> appear on the club pages of the website, where parents sign up and pay; the sign-ups arrive on the Tech Clubs page for you to approve.</>,
     queryKey: ["billing", "club-packages"],
     refreshKeys: [["tech-clubs"]],
     list: billingApi.listClubPackages, create: billingApi.createClubPackage, update: billingApi.updateClubPackage, remove: billingApi.deleteClubPackage, checkRemove: billingApi.checkDeleteClubPackage,
@@ -66,15 +84,24 @@ const PROGRAMMES = {
   },
 };
 
-const toForm = (pkg) => ({
+function toForm(pkg) {
+  const prices = blankPrices();
+  for (const p of pricesList(pkg)) {
+    if (prices[p.billingPeriod]) prices[p.billingPeriod] = { on: true, amount: String(p.amount ?? ""), extra: p.extraChildAmount != null ? String(p.extraChildAmount) : "" };
+  }
+  return {
   name: pkg.name, slug: pkg.slug, summary: pkg.summary || "", description: pkg.description || "",
-  childrenIncluded: String(pkg.childrenIncluded), billingPeriod: pkg.billingPeriod || "monthly", amount: String(pkg.amount),
-  allowExtraChildren: !!pkg.allowExtraChildren, extraChildAmount: pkg.extraChildAmount != null ? String(pkg.extraChildAmount) : "",
+  childrenIncluded: String(pkg.childrenIncluded),
+  prices, defaultPeriod: prices[pkg.billingPeriod]?.on ? pkg.billingPeriod : (OFFERED.find((o) => prices[o.value].on)?.value || "monthly"),
+  // A daily package (no longer offered) keeps billing daily until its periods are chosen and saved.
+  legacyDaily: pkg.billingPeriod === "daily" && !OFFERED.some((o) => prices[o.value].on),
+  allowExtraChildren: !!pkg.allowExtraChildren,
   maxChildren: pkg.allowExtraChildren ? String(pkg.maxChildren) : "", features: (pkg.features || []).join("\n"),
   badge: pkg.badge || "", isPublished: !!pkg.isPublished, status: pkg.status, sortOrder: String(pkg.sortOrder ?? 0),
   hubIds: Array.isArray(pkg.hubIds) ? pkg.hubIds : [],
   pathwayTemplateId: pkg.pathwayTemplateId || "",
-});
+  };
+}
 
 // `withClubs` adds the club list — only Tech Club packages have one.
 const toPayload = (form, withClubs = false, withPathway = false) => ({
@@ -85,18 +112,67 @@ const toPayload = (form, withClubs = false, withPathway = false) => ({
   summary: form.summary,
   description: form.description,
   childrenIncluded: Number(form.childrenIncluded),
-  billingPeriod: form.billingPeriod,
-  amount: Number(form.amount),
-  // A daily package is billed at month end, so it's never offered on the website.
-  isPublished: form.billingPeriod === "daily" ? false : form.isPublished,
+  // One price per period it's offered for, and the one shown first (server: resolvePricing).
+  periodPrices: OFFERED.filter((o) => form.prices[o.value].on).map((o) => ({
+    billingPeriod: o.value,
+    amount: form.prices[o.value].amount === "" ? null : Number(form.prices[o.value].amount),
+    extraChildAmount: form.allowExtraChildren && form.prices[o.value].extra !== "" ? Number(form.prices[o.value].extra) : null,
+  })),
+  defaultPeriod: form.defaultPeriod,
+  isPublished: form.isPublished,
   allowExtraChildren: form.allowExtraChildren,
-  extraChildAmount: form.allowExtraChildren && form.extraChildAmount !== "" ? Number(form.extraChildAmount) : null,
   maxChildren: form.allowExtraChildren && form.maxChildren !== "" ? Number(form.maxChildren) : undefined,
   features: form.features.split("\n").map((line) => line.trim()).filter(Boolean),
   badge: form.badge,
   status: form.status,
   sortOrder: Number(form.sortOrder || 0),
 });
+
+// The package's prices: a row per period — offered or not, its price, its price per extra child,
+// and which period the website shows first. A family is billed on the one period they choose.
+function PeriodPrices({ form, setForm }) {
+  const setPrice = (period, patch) => setForm((current) => {
+    const prices = { ...current.prices, [period]: { ...current.prices[period], ...patch } };
+    let { defaultPeriod } = current;
+    if (!prices[defaultPeriod]?.on) defaultPeriod = OFFERED.find((o) => prices[o.value].on)?.value || defaultPeriod;
+    if (patch.on && !OFFERED.some((o) => o.value !== period && current.prices[o.value].on)) defaultPeriod = period;
+    return { ...current, prices, defaultPeriod };
+  });
+  const cell = { padding: "6px 8px", fontSize: 12.5, verticalAlign: "middle" };
+  const offeredCount = OFFERED.filter((o) => form.prices[o.value].on).length;
+  return <fieldset style={{ gridColumn: "1/-1", border: "1px solid #E5E7EB", borderRadius: 10, padding: "10px 12px 12px", margin: 0, background: "#fff" }}>
+    <legend style={{ ...labelStyle, padding: "0 4px" }}>Prices</legend>
+    {form.legacyDaily && <p style={{ margin: "0 0 8px", fontSize: 12, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: "6px 10px" }}>This package is billed daily, which is no longer offered. Tick the periods it's sold for and save — families already on it keep their daily billing until they're moved.</p>}
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+        <thead>
+          <tr style={{ textAlign: "left", color: "#6B7280", fontSize: 11.5 }}>
+            <th style={cell}>Offered</th>
+            <th style={cell}>Price (KSh)</th>
+            {form.allowExtraChildren && <th style={cell}>Per extra child (KSh)</th>}
+            <th style={cell} title="The period the website's card opens on">Shown first</th>
+          </tr>
+        </thead>
+        <tbody>
+          {OFFERED.map((o) => {
+            const row = form.prices[o.value];
+            return <tr key={o.value} style={{ borderTop: "1px solid #F3F4F6", opacity: row.on ? 1 : 0.6 }}>
+              <td style={cell}><label style={{ ...checkLabel, fontWeight: 600 }}><input type="checkbox" checked={row.on} onChange={(e) => setPrice(o.value, { on: e.target.checked })} /> {o.label}</label></td>
+              <td style={cell}><input style={{ ...inputStyle, minWidth: 110 }} type="number" min={1} step={1} disabled={!row.on} required={row.on} value={row.amount} onChange={(e) => setPrice(o.value, { amount: e.target.value })} placeholder={`per ${o.unit}`} aria-label={`${o.label} price`} /></td>
+              {form.allowExtraChildren && <td style={cell}><input style={{ ...inputStyle, minWidth: 110 }} type="number" min={0} step={1} disabled={!row.on} required={row.on} value={row.extra} onChange={(e) => setPrice(o.value, { extra: e.target.value })} placeholder={`per ${o.unit}`} aria-label={`${o.label} price per extra child`} /></td>}
+              <td style={cell}><input type="radio" name="defaultPeriod" disabled={!row.on} checked={form.defaultPeriod === o.value && row.on} onChange={() => setForm((current) => ({ ...current, defaultPeriod: o.value }))} aria-label={`Show ${o.label} first`} /></td>
+            </tr>;
+          })}
+        </tbody>
+      </table>
+    </div>
+    <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6B7280" }}>
+      {offeredCount > 1
+        ? "The website's card has a switch between these; the family is invoiced on the one they choose, every period from the day they join."
+        : "Tick more periods to let families choose — the website's card then gets a switch between them. Invoiced every period from the day the family joins."}
+    </p>
+  </fieldset>;
+}
 
 // Which clubs a Tech Club package is offered at. None ticked = every club.
 function ClubPicker({ clubs, value, onChange }) {
@@ -119,7 +195,6 @@ const websiteOf = (pathway) => ({ hubIds: pathway?.website?.hubIds || [], image:
 function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, clubs, pathways = [], hubs = [] }) {
   const [form, setForm] = useState(initial);
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.type === "checkbox" ? event.target.checked : event.target.value }));
-  const periods = config.noDaily ? BILLING_PERIODS.filter((p) => p.value !== "daily") : BILLING_PERIODS;
   // Pathway plans: the chosen pathway, and its picture and hubs (shared by its plans).
   const pathway = config.withPathway ? pathways.find((p) => p.templateId === form.pathwayTemplateId) : null;
   const [website, setWebsite] = useState(() => websiteOf(pathway));
@@ -137,25 +212,18 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
     {pathway && <PathwayWebsiteFields pathway={pathway} hubs={hubs} value={website} onChange={setWebsite} />}
     <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder={config.namePlaceholder} /></label>
     <label style={labelStyle}>Children included<input style={inputStyle} required type="number" min={1} max={50} value={form.childrenIncluded} onChange={set("childrenIncluded")} /></label>
-    <label style={labelStyle}>Billed<select style={inputStyle} value={form.billingPeriod} onChange={set("billingPeriod")}>
-      {periods.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-    </select></label>
-    <label style={labelStyle}>Price per {periodUnit(form.billingPeriod)} (KSh)<input style={inputStyle} required type="number" min={0} step={1} value={form.amount} onChange={set("amount")} /></label>
-    <p style={{ gridColumn: "1/-1", margin: "-4px 0 0", fontSize: 12, color: "#6B7280" }}>{periodHow(form.billingPeriod)}</p>
     <label style={labelStyle}>Badge (optional)<input style={inputStyle} maxLength={40} value={form.badge} onChange={set("badge")} placeholder="e.g. Most popular" /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Short summary (shown on the card)<input style={inputStyle} maxLength={300} value={form.summary} onChange={set("summary")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Description (optional)<textarea style={{ ...inputStyle, minHeight: 64, resize: "vertical" }} maxLength={5000} value={form.description} onChange={set("description")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>What's included — one per line<textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={form.features} onChange={set("features")} placeholder={config.featuresPlaceholder} /></label>
     {config.withClubs && <ClubPicker clubs={clubs} value={form.hubIds} onChange={(hubIds) => setForm((current) => ({ ...current, hubIds }))} />}
     <label style={{ ...checkLabel, gridColumn: "1/-1" }}><input type="checkbox" checked={form.allowExtraChildren} onChange={set("allowExtraChildren")} /> Families can add more children to this package</label>
-    {form.allowExtraChildren && <>
-      <label style={labelStyle}>Price per extra child (KSh / {periodUnit(form.billingPeriod)})<input style={inputStyle} required type="number" min={0} step={1} value={form.extraChildAmount} onChange={set("extraChildAmount")} /></label>
-      <label style={labelStyle}>Maximum children<input style={inputStyle} type="number" min={Number(form.childrenIncluded || 1) + 1} max={50} value={form.maxChildren} onChange={set("maxChildren")} placeholder="20" /></label>
-    </>}
+    {form.allowExtraChildren && <label style={labelStyle}>Maximum children<input style={inputStyle} type="number" min={Number(form.childrenIncluded || 1) + 1} max={50} value={form.maxChildren} onChange={set("maxChildren")} placeholder="20" /></label>}
+    <PeriodPrices form={form} setForm={setForm} />
     {isEdit && <label style={labelStyle}>Web address slug<input style={inputStyle} maxLength={160} value={form.slug} onChange={set("slug")} /></label>}
     <label style={labelStyle}>Display order<input style={inputStyle} type="number" min={0} max={999} value={form.sortOrder} onChange={set("sortOrder")} /></label>
     <label style={labelStyle}>Status<select style={inputStyle} value={form.status} onChange={set("status")}><option value="active">Active — can be sold</option><option value="archived">Archived — no longer offered</option></select></label>
-    <label style={{ ...checkLabel, alignSelf: "end", paddingBottom: 10 }} title={form.billingPeriod === "daily" ? "A daily package is billed at the end of each month, so it can't be offered on the website" : undefined}><input type="checkbox" checked={form.isPublished && form.status === "active" && form.billingPeriod !== "daily"} disabled={form.status !== "active" || form.billingPeriod === "daily"} onChange={set("isPublished")} /> Show on the website</label>
+    <label style={{ ...checkLabel, alignSelf: "end", paddingBottom: 10 }}><input type="checkbox" checked={form.isPublished && form.status === "active"} disabled={form.status !== "active"} onChange={set("isPublished")} /> Show on the website</label>
     <div style={{ gridColumn: "1/-1", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
       <button disabled={saving} style={{ border: 0, borderRadius: 9, padding: "10px 16px", color: "#fff", background: "#25476a", fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : isEdit ? "Save package" : "Create package"}</button>
       <button type="button" onClick={onCancel} style={smallButton}>Cancel</button>
@@ -254,8 +322,8 @@ export default function PackagesPanel({ programme = "home_learning" }) {
                     : <span style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", background: "#F3F4F6", borderRadius: 999, padding: "2px 8px" }}>Hidden from website</span>}
               </div>
               <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-                {pkg.childrenIncluded} {pkg.childrenIncluded === 1 ? "child" : "children"} · <strong style={{ color: "#25476a" }}>{pricePer(pkg.amount, pkg.billingPeriod)}</strong>
-                {pkg.allowExtraChildren && <> · +{formatMoney(pkg.extraChildAmount)} per extra child (up to {pkg.maxChildren})</>}
+                {pkg.childrenIncluded} {pkg.childrenIncluded === 1 ? "child" : "children"} · <strong style={{ color: "#25476a" }}>{pricesList(pkg).map((p) => pricePer(p.amount, p.billingPeriod)).join(" · ")}</strong>
+                {pkg.allowExtraChildren && <> · extra child {pricesList(pkg).map((p) => pricePer(p.extraChildAmount, p.billingPeriod)).join(" · ")} (up to {pkg.maxChildren})</>}
                 {" · "}{config.count(pkg)} {config.noun[config.count(pkg) === 1 ? 0 : 1]}
               </div>
               {config.withPathway && (() => {

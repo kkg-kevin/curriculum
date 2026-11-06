@@ -1,3 +1,4 @@
+const { resolvePricing, OFFERED_PERIODS } = require("./home-learning.pricing");
 const { z } = require("zod");
 const { PERIODS } = require("../../shared/utils/billing-periods");
 
@@ -49,6 +50,9 @@ const householdSchema = z.object({
   mapUrl: mapUrl.optional().or(z.literal("")),
   locationPhotos: locationPhotos.optional(),
   packageId: z.string().min(1, "Choose a package"),
+  // Which of the package's periods the family is on (6 Nov 2026); left out, their current one if
+  // the package offers it, else the package's default. Never stored as typed — re-priced.
+  billingPeriod: z.enum(OFFERED_PERIODS).optional(),
   // How many children the family is enrolling. Optional — defaults to the package's included
   // children; more than that is only accepted by a package that allows extra children.
   childCount: z.coerce.number().int().min(1).max(50).optional(),
@@ -81,9 +85,17 @@ const packageSchema = z.object({
   summary: z.string().trim().max(300).optional().or(z.literal("")),
   description: z.string().trim().max(5000).optional().or(z.literal("")),
   childrenIncluded: z.coerce.number().int().min(1, "A package includes at least 1 child").max(50),
-  // The price per billing period (shared/utils/billing-periods.js).
-  amount: money,
-  billingPeriod: z.enum(PERIODS, { errorMap: () => ({ message: "Choose how often the package is billed" }) }).default("monthly"),
+  // Its prices, one per period it's offered for (6 Nov 2026 — weekly, monthly, every 3 months,
+  // yearly; never daily), and which is shown first. Checked and tidied by home-learning.pricing.js's
+  // resolvePricing. An older client's single amount + billingPeriod is still accepted.
+  periodPrices: z.array(z.object({
+    billingPeriod: z.string().max(12),
+    amount: z.union([money, z.literal("")]).nullable().optional(),
+    extraChildAmount: z.union([money, z.literal("")]).nullable().optional(),
+  })).max(4).optional(),
+  defaultPeriod: z.string().max(12).optional(),
+  amount: money.optional(),
+  billingPeriod: z.enum(PERIODS, { errorMap: () => ({ message: "Choose how often the package is billed" }) }).optional(),
   allowExtraChildren: z.boolean().default(false),
   extraChildAmount: money.nullable().optional(),
   maxChildren: z.coerce.number().int().min(1).max(50).optional(),
@@ -93,13 +105,11 @@ const packageSchema = z.object({
   status: z.enum(["active", "archived"]).default("active"),
   sortOrder: z.coerce.number().int().min(0).max(999).default(0),
 }).superRefine((data, ctx) => {
-  // A daily package is billed at the end of each month for the days used — nothing to pay when
-  // signing up, so it isn't offered on the website.
-  if (data.billingPeriod === "daily" && data.isPublished) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["isPublished"], message: "A daily package is billed at the end of each month, so it can't be offered on the website" });
-  }
+  // The prices themselves (every period priced, extra-child prices when extra children are on)
+  // are checked by resolvePricing, so every gap is named in one sentence.
+  const pricing = resolvePricing(data);
+  if (pricing.error) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["periodPrices"], message: pricing.error });
   if (data.allowExtraChildren) {
-    if (data.extraChildAmount == null) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["extraChildAmount"], message: "Set the price per extra child" });
     if (data.maxChildren != null && data.maxChildren <= data.childrenIncluded) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["maxChildren"], message: "Maximum children must be more than the children included" });
   }
 });
@@ -131,6 +141,8 @@ const signupChildSchema = z.object({
 
 const signupSchema = z.object({
   packageSlug: requiredText(160, "Choose a package"),
+  // The period chosen on the package card (6 Nov 2026); left out, the package's default.
+  billingPeriod: z.enum(OFFERED_PERIODS).optional(),
   parent: z.object({
     name: requiredText(150, "Enter your name"),
     email: z.string().trim().email("Enter a valid email address").max(255),

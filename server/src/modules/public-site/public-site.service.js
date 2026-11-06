@@ -35,11 +35,23 @@ const sellable = (website) => (website.plans || []).length > 0;
 // A pathway without one isn't listed, has no page and takes no sign-up (4 Nov 2026: no more
 // "enquiries only" pathways).
 const onWebsite = (website) => Boolean(website.visible) && sellable(website);
-// The cheapest plan, for the cards: "from KES 2,000 a month".
+// The plans in one line, for the cards: "From KSh 10,000 / month" — each plan at the period it's
+// shown first (its default; never "cheapest per month", which made a yearly price the headline),
+// the cheapest of those compared per month — plus every period on offer (`periods`, in order) and
+// the best yearly saving against monthly (`yearlySaving`, a whole percentage, or 0).
+const PER_MONTH = { weekly: 52 / 12, monthly: 1, quarterly: 1 / 3, annually: 1 / 12 };
+const PERIOD_ORDER = ["weekly", "monthly", "quarterly", "annually"];
+const perMonth = (price) => Number(price.amount) * (PER_MONTH[price.billingPeriod] ?? 1);
 const planSummary = (plans) => {
   if (!plans?.length) return null;
-  const cheapest = [...plans].sort((a, b) => a.amount - b.amount)[0];
-  return { from: cheapest.amount, billingPeriod: cheapest.billingPeriod, currency: cheapest.currency, count: plans.length };
+  const cheapest = [...plans].sort((a, b) => perMonth(a) - perMonth(b))[0];
+  const periods = PERIOD_ORDER.filter((period) => plans.some((p) => (p.prices || []).some((x) => x.billingPeriod === period)));
+  const yearlySaving = Math.max(0, ...plans.map((p) => {
+    const monthly = (p.prices || []).find((x) => x.billingPeriod === "monthly");
+    const yearly = (p.prices || []).find((x) => x.billingPeriod === "annually");
+    return monthly && yearly && monthly.amount > 0 ? Math.round((1 - yearly.amount / 12 / monthly.amount) * 100) : 0;
+  }));
+  return { from: cheapest.amount, billingPeriod: cheapest.billingPeriod, currency: cheapest.currency, count: plans.length, periods, yearlySaving: yearlySaving >= 1 ? yearlySaving : 0 };
 };
 
 // The pathway's picture on the website: the one chosen in Settings → Pathways → Website, else the
@@ -289,7 +301,8 @@ const PublicSiteService = {
           if (!onWebsite(own)) return null;
           const hubs = await publicHubs(await effectiveHubIds(own, c));
           if (!hubs.length) return null; // nowhere to sign up
-          return { ...item, subscription: planSummary(own.plans), image: pathwayImage(own, c), places: placesOf(hubs), hubCount: hubs.length };
+          // `plans` too: the card's "See plans" shows them without opening the pathway.
+          return { ...item, subscription: planSummary(own.plans), plans: own.plans, image: pathwayImage(own, c), places: placesOf(hubs), hubCount: hubs.length };
         }),
     );
     return items.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));

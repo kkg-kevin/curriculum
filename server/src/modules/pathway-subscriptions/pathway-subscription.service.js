@@ -6,7 +6,7 @@ const NotificationService = require("../notifications/notification.service");
 const PaymentOptions = require("../payments/payment-options");
 const PathwayAccess = require("./pathway-access");
 const { PathwayPackageModel, PathwaySubscriptionModel } = require("./pathway-subscription.model");
-const { priceForPackage, toPublicPackage, CURRENCY } = require("../home-learning/home-learning.pricing");
+const { priceForPackage, toPublicPackage, resolvePricing, periodWord, CURRENCY } = require("../home-learning/home-learning.pricing");
 const { kenyaToday } = require("../../shared/utils/age");
 const { addDays, scheduleChange, periodLabel, PERIODS } = require("../../shared/utils/billing-periods");
 const { slugify } = require("../../shared/utils/slugify");
@@ -54,9 +54,10 @@ function cleanPackageInput(input) {
   const childrenIncluded = Math.max(1, Math.round(Number(input.childrenIncluded) || 1));
   const allowExtraChildren = !!input.allowExtraChildren;
   const maxChildren = allowExtraChildren ? Math.max(childrenIncluded, Math.round(Number(input.maxChildren) || childrenIncluded)) : childrenIncluded;
-  const amount = Math.round(Number(input.amount));
-  if (!Number.isFinite(amount) || amount <= 0) fail("Enter the plan's price");
-  const billingPeriod = PLAN_PERIODS.includes(input.billingPeriod) ? input.billingPeriod : "monthly";
+  // Its prices per period (6 Nov 2026 — weekly, monthly, every 3 months, yearly) and the one shown
+  // first (home-learning.pricing.js).
+  const { error, ...pricing } = resolvePricing({ ...input, allowExtraChildren });
+  if (error) fail(error);
   const name = String(input.name || "").trim();
   if (!name) fail("Give the plan a name");
   return {
@@ -64,11 +65,9 @@ function cleanPackageInput(input) {
     summary: input.summary ? String(input.summary).slice(0, 300) : null,
     description: input.description ? String(input.description) : null,
     childrenIncluded,
-    amount,
+    ...pricing,
     allowExtraChildren,
-    extraChildAmount: allowExtraChildren ? Math.max(0, Math.round(Number(input.extraChildAmount) || 0)) : null,
     maxChildren,
-    billingPeriod,
     features: Array.isArray(input.features) ? input.features.map((f) => String(f).trim()).filter(Boolean).slice(0, 12) : [],
     badge: input.badge ? String(input.badge).slice(0, 40) : null,
     isPublished: !!input.isPublished,
@@ -218,8 +217,8 @@ const PathwaySubscriptionService = {
     return (await PathwayPackageModel.findAll(ownerAdminId, { pathwayTemplateId, publishedOnly: true })).map(toPublicPackage);
   },
 
-  priceFor(plan, childCount) {
-    return priceForPackage(plan, childCount);
+  priceFor(plan, childCount, billingPeriod = null) {
+    return priceForPackage(plan, childCount, billingPeriod);
   },
 
   /* ── Subscriptions ─────────────────────────────────────────────────────── */
@@ -258,12 +257,15 @@ const PathwaySubscriptionService = {
   },
 
   // A plan or price change for an active subscription, from its next period (billing-periods.js).
-  async changePlan(ownerAdminId, id, { packageId }) {
+  // `billingPeriod`: one of the plan's periods; left out, the subscription's own if the plan offers
+  // it, else the plan's default.
+  async changePlan(ownerAdminId, id, { packageId, billingPeriod = null }) {
     const sub = await PathwaySubscriptionModel.findById(id, ownerAdminId);
     if (!sub) fail("Subscription not found", 404);
     const plan = await PathwayPackageModel.findById(packageId, ownerAdminId);
     if (!plan || plan.pathwayTemplateId !== sub.pathwayTemplateId) fail("Choose one of this pathway's plans");
-    const price = priceForPackage(plan, sub.childCount);
+    if (billingPeriod && !priceForPackage(plan, plan.childrenIncluded, billingPeriod)) fail(`${plan.name} isn't offered ${periodWord(billingPeriod)}`);
+    const price = priceForPackage(plan, sub.childCount, billingPeriod || sub.billingPeriod, { fallback: !billingPeriod });
     if (!price) fail(`${plan.name} doesn't take ${sub.childCount} children`);
     const change = scheduleChange(sub, { amount: price.amount, billingPeriod: price.billingPeriod });
     await PathwaySubscriptionModel.update(id, { packageId: plan.id, ...change });

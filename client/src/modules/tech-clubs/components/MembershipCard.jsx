@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FiAlertTriangle, FiBookOpen, FiCalendar, FiEdit2, FiFileText, FiGlobe, FiMail, FiPackage, FiPhone, FiUsers, FiX } from "react-icons/fi";
-import { priceForPackage } from "../../home-learning/services/homeLearningApi";
+import { periodLabel, priceForPackage, pricesOf } from "../../home-learning/services/homeLearningApi";
 import {
   HOUSEHOLD_STATUS, Initials, Pill, formatDate, formatMoney, inputStyle, labelStyle, panelStyle, primaryButton, secondaryButton,
 } from "../../home-learning/components/ui";
@@ -168,19 +168,21 @@ function EditForm({ membership, packages, onSave, onCancel, saving }) {
   const [draft, setDraft] = useState({
     guardianName: membership.guardianName, guardianPhone: membership.guardianPhone || "",
     packageId: membership.packageId || "", childCount: String(membership.childCount), notes: membership.notes || "",
+    billingPeriod: membership.billingPeriod || "",
   });
   const set = (key) => (event) => setDraft((current) => ({ ...current, [key]: event.target.value }));
   // Packages this club can be sold, plus the membership's own even if since archived.
   const choices = packages.filter((p) => p.id === membership.packageId || (p.status === "active" && (!p.hubIds?.length || p.hubIds.includes(membership.hubId))));
   const pkg = packages.find((p) => p.id === draft.packageId);
-  const price = priceForPackage(pkg, draft.childCount);
-  const packageChanged = draft.packageId !== membership.packageId || Number(draft.childCount) !== Number(membership.childCount);
+  const periods = pricesOf(pkg).filter((p) => p.billingPeriod !== "daily" || p.billingPeriod === membership.billingPeriod);
+  const price = priceForPackage(pkg, draft.childCount, draft.billingPeriod || null);
+  const packageChanged = draft.packageId !== membership.packageId || Number(draft.childCount) !== Number(membership.childCount) || (price && price.billingPeriod !== membership.billingPeriod);
   return <form onSubmit={(event) => {
     event.preventDefault();
     onSave({
       guardianName: draft.guardianName, guardianPhone: draft.guardianPhone, notes: draft.notes,
       // Only send the package when it changed — re-sending re-prices the membership at today's price.
-      ...(packageChanged && draft.packageId ? { packageId: draft.packageId, childCount: Number(draft.childCount) } : {}),
+      ...(packageChanged && draft.packageId ? { packageId: draft.packageId, childCount: Number(draft.childCount), ...(price ? { billingPeriod: price.billingPeriod } : {}) } : {}),
     });
   }} style={{ ...formGrid(200), padding: "18px 22px", borderBottom: "1px solid #EEF1F5", background: "#FCFDFE" }}>
     <label style={labelStyle}>Parent's name<input style={inputStyle} required maxLength={150} value={draft.guardianName} onChange={set("guardianName")} /></label>
@@ -188,6 +190,9 @@ function EditForm({ membership, packages, onSave, onCancel, saving }) {
     <label style={labelStyle}>Package<select style={inputStyle} value={draft.packageId} onChange={set("packageId")}>
       {choices.map((p) => <option key={p.id} value={p.id}>{p.name}{p.status === "archived" ? " (archived)" : ""}</option>)}
     </select></label>
+    {periods.length > 1 && <label style={labelStyle}>Billed<select style={inputStyle} value={price?.billingPeriod || draft.billingPeriod} onChange={set("billingPeriod")}>
+      {periods.map((p) => <option key={p.billingPeriod} value={p.billingPeriod}>{periodLabel(p.billingPeriod)} · {pricePer(p.amount, p.billingPeriod)}</option>)}
+    </select></label>}
     <label style={labelStyle}>Children<input style={inputStyle} type="number" min={1} max={50} value={draft.childCount} onChange={set("childCount")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Notes<textarea style={{ ...inputStyle, minHeight: 56, resize: "vertical" }} maxLength={5000} value={draft.notes} onChange={set("notes")} /></label>
     <div style={{ gridColumn: "1/-1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

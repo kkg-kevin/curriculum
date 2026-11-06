@@ -298,19 +298,19 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
   const address = [household.addressLine, household.town, household.subCounty, household.county].filter(Boolean).join(", ");
 
   const startEdit = () => {
-    setDraft({ ...household, startDate: toDateInput(household.startDate), locationPhotos: household.locationPhotos || [], portalPassword: "" });
+    setDraft({ ...household, billingPeriod: household.billingPeriod, startDate: toDateInput(household.startDate), locationPhotos: household.locationPhotos || [], portalPassword: "" });
     setEditing(true);
   };
   const saveDetails = (event) => {
     event.preventDefault();
     // Only send the package when it actually changed — re-sending it re-prices the household at
     // the package's current price, which should only happen on purpose.
-    const packageChanged = draft.packageId !== household.packageId || Number(draft.childCount || 0) !== Number(household.childCount);
+    const packageChanged = draft.packageId !== household.packageId || Number(draft.childCount || 0) !== Number(household.childCount) || (draft.billingPeriod && draft.billingPeriod !== household.billingPeriod);
     actions.updateHousehold(household.id, {
       guardianName: draft.guardianName,
       guardianEmail: draft.guardianEmail || "",
       guardianPhone: draft.guardianPhone,
-      ...(packageChanged && draft.packageId ? { packageId: draft.packageId, childCount: draft.childCount === "" ? undefined : Number(draft.childCount) } : {}),
+      ...(packageChanged && draft.packageId ? { packageId: draft.packageId, childCount: draft.childCount === "" ? undefined : Number(draft.childCount), ...(draft.billingPeriod ? { billingPeriod: draft.billingPeriod } : {}) } : {}),
       startDate: toDateInput(draft.startDate),
       county: draft.county || "",
       subCounty: draft.subCounty || "",

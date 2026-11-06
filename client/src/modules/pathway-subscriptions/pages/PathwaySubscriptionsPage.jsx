@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { FiFileText, FiLock, FiPause, FiPlay, FiRepeat, FiUnlock, FiUsers, FiXCircle } from "react-icons/fi";
 import { pathwaySubscriptionApi } from "../services/pathwaySubscriptionApi";
 import { formatDay, formatKsh, outlookLine, pricePer } from "../../../utils/billingPeriods";
+import { periodLabel, pricesOf } from "../../home-learning/services/homeLearningApi";
 
 // Pathway subscriptions (modules/pathway-subscriptions): the families paying for a website pathway
 // by the week, month, quarter or year. Each card: the family, the pathway and plan, the children
@@ -33,7 +34,11 @@ function SubscriptionCard({ sub, plans, focused, onAction, busy }) {
   useEffect(() => { if (focused) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [focused]);
   const [planId, setPlanId] = useState("");
   const look = STATUS[sub.status] || STATUS.pending;
-  const otherPlans = plans.filter((p) => p.pathwayTemplateId === sub.pathwayTemplateId && p.id !== sub.packageId && p.status === "active");
+  // Every plan of the pathway at each of its periods — another plan, or the same plan on another period.
+  const otherPlans = plans
+    .filter((p) => p.pathwayTemplateId === sub.pathwayTemplateId && (p.status === "active" || p.id === sub.packageId))
+    .flatMap((p) => pricesOf(p).filter((x) => x.billingPeriod !== "daily").map((x) => ({ plan: p, ...x, key: `${p.id}|${x.billingPeriod}` })))
+    .filter((o) => !(o.plan.id === sub.packageId && o.billingPeriod === sub.billingPeriod));
   const outlook = outlookLine(sub.outlook);
 
   return (
@@ -92,9 +97,9 @@ function SubscriptionCard({ sub, plans, focused, onAction, busy }) {
             {/* A long plan name mustn't widen the row past a phone's edge: the dropdown shrinks to fit. */}
             <select value={planId} onChange={(e) => setPlanId(e.target.value)} style={{ ...btn, fontWeight: 600, paddingRight: 8, flex: "0 1 260px", width: 260, minWidth: 0, maxWidth: "100%", textOverflow: "ellipsis" }} aria-label="Change plan">
               <option value="">Change plan…</option>
-              {otherPlans.map((p) => <option key={p.id} value={p.id}>{p.name} — {pricePer(p.amount, p.billingPeriod)}</option>)}
+              {otherPlans.map((o) => <option key={o.key} value={o.key}>{o.plan.name} — {periodLabel(o.billingPeriod)} · {pricePer(o.amount, o.billingPeriod)}</option>)}
             </select>
-            {planId && <button type="button" style={btn} disabled={busy} onClick={() => { onAction("plan", sub, planId); setPlanId(""); }}><FiRepeat size={13} /> From next period</button>}
+            {planId && <button type="button" style={btn} disabled={busy} onClick={() => { const [packageId, billingPeriod] = planId.split("|"); onAction("plan", sub, { packageId, billingPeriod }); setPlanId(""); }}><FiRepeat size={13} /> From next period</button>}
           </span>
         )}
       </div>

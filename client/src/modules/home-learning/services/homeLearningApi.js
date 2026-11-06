@@ -24,14 +24,32 @@ export const homeLearningApi = {
   getMyAssignments: () => api.get(`${BASE}/educator`).then((r) => r.data.data),
 };
 
+// A package's prices, one per period it's offered for (server: home-learning.pricing.js's
+// pricesOf) — a package saved before 6 Nov 2026 has just its one amount + billingPeriod.
+const PERIOD_ORDER = ["daily", "weekly", "monthly", "quarterly", "annually"];
+export function pricesOf(pkg) {
+  if (!pkg) return [];
+  const list = Array.isArray(pkg.periodPrices) && pkg.periodPrices.length
+    ? pkg.periodPrices
+    : [{ billingPeriod: pkg.billingPeriod || "monthly", amount: pkg.amount, extraChildAmount: pkg.extraChildAmount }];
+  return [...list].sort((a, b) => PERIOD_ORDER.indexOf(a.billingPeriod) - PERIOD_ORDER.indexOf(b.billingPeriod));
+}
+
 // Mirrors the server's priceForPackage (home-learning.pricing.js) for the live price preview in
-// the household forms — display only; the server always recalculates.
-export function priceForPackage(pkg, requested) {
+// the household forms — display only; the server always recalculates. `billingPeriod`: one of
+// the package's periods (null = its default; one it doesn't offer falls back to the default).
+export function priceForPackage(pkg, requested, billingPeriod = null) {
   if (!pkg) return null;
   const count = requested == null || requested === "" ? pkg.childrenIncluded : Number(requested);
   if (!Number.isInteger(count) || count < 1) return null;
-  const billingPeriod = pkg.billingPeriod || "monthly";
-  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, amount: pkg.amount, billingPeriod };
+  const prices = pricesOf(pkg);
+  const entry = prices.find((p) => p.billingPeriod === billingPeriod) || prices.find((p) => p.billingPeriod === pkg.billingPeriod) || prices[0];
+  if (!entry) return null;
+  const amount = Number(entry.amount);
+  if (count <= pkg.childrenIncluded) return { childCount: pkg.childrenIncluded, amount, billingPeriod: entry.billingPeriod };
   if (!pkg.allowExtraChildren || count > pkg.maxChildren) return null;
-  return { childCount: count, amount: pkg.amount + (count - pkg.childrenIncluded) * (pkg.extraChildAmount || 0), billingPeriod };
+  return { childCount: count, amount: amount + (count - pkg.childrenIncluded) * (Number(entry.extraChildAmount) || 0), billingPeriod: entry.billingPeriod };
 }
+
+const PERIOD_LABEL = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", quarterly: "Every 3 months", annually: "Yearly" };
+export const periodLabel = (period) => PERIOD_LABEL[period] || period;

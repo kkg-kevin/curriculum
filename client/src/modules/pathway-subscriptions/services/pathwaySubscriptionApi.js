@@ -17,7 +17,8 @@ export const pathwaySubscriptionApi = {
   list: (params = {}) => api.get(BASE, { params }).then(data),
   get: (id) => api.get(`${BASE}/${id}`).then(data),
   setStatus: (id, status) => api.patch(`${BASE}/${id}/status`, { status }).then(data),
-  changePlan: (id, packageId) => api.put(`${BASE}/${id}/plan`, { packageId }).then(data),
+  // `choice`: a plan id, or { packageId, billingPeriod } — one of the plan's periods.
+  changePlan: (id, choice) => api.put(`${BASE}/${id}/plan`, typeof choice === "string" ? { packageId: choice } : choice).then(data),
   invoiceNext: (id) => api.post(`${BASE}/${id}/invoices`).then(data),
   invoiceDue: () => api.post(`${BASE}/invoices`).then(data),
 
