@@ -8,56 +8,25 @@ function todayStr() {
 }
 
 const AttendanceService = {
+  // No locking (6 Nov 2026): a day's attendance can be marked late (a past session) and corrected
+  // after it's saved — saving again updates each learner's mark for that day. Only a day that
+  // hasn't come yet is refused.
   async markAttendance(classId, date, records, markedBy) {
     const today = todayStr();
-    // Rule 1 — a session that has already passed (or hasn't happened yet) can't have its
-    // attendance marked. Attendance is a same-day record of who was actually in the room.
-    if (date < today) {
-      const err = new Error(
-        "This session has already passed — its attendance can no longer be marked."
-      );
-      err.statusCode = 409;
-      throw err;
-    }
     if (date > today) {
       const err = new Error(
-        "This session hasn't happened yet — attendance can only be marked on the session day."
+        "This session hasn't happened yet — attendance can be marked from the session day on."
       );
       err.statusCode = 409;
       throw err;
     }
 
-    // Rule 2 — attendance locks on the first save. Once recorded for a class on a given day it
-    // can't be edited or overwritten; the teacher gets exactly one submission.
-    const existing = await AttendanceModel.findByClassAndDate(classId, date);
-    if (existing.length > 0) {
-      const err = new Error(
-        "Attendance for this session has already been recorded and can no longer be changed."
-      );
-      err.statusCode = 409;
-      throw err;
-    }
-
-    try {
-      const saved = await AttendanceModel.bulkMark(classId, date, records, markedBy);
-      // Parents whose child has now attended enough of the class get the mid-course "how is the
-      // mentor doing?" prompt (modules/mentor-reviews/) — in the background, never failing this save.
-      setImmediate(() => require("../mentor-reviews/mentor-review.service").afterAttendance(classId)
-        .catch((err) => console.error("[mentor-reviews] mid-course prompt failed:", err.message)));
-      return saved;
-    } catch (e) {
-      // Two saves landing at nearly the same instant: the check above passed for both, but the
-      // unique (classId, date, learnerId) index lets only the first insert through. Surface the
-      // loser as the same "already recorded" 409 rather than a raw 500.
-      if (e.code === "ER_DUP_ENTRY") {
-        const err = new Error(
-          "Attendance for this session has already been recorded and can no longer be changed."
-        );
-        err.statusCode = 409;
-        throw err;
-      }
-      throw e;
-    }
+    const saved = await AttendanceModel.bulkMark(classId, date, records, markedBy);
+    // Parents whose child has now attended enough of the class get the mid-course "how is the
+    // mentor doing?" prompt (modules/mentor-reviews/) — in the background, never failing this save.
+    setImmediate(() => require("../mentor-reviews/mentor-review.service").afterAttendance(classId)
+      .catch((err) => console.error("[mentor-reviews] mid-course prompt failed:", err.message)));
+    return saved;
   },
 
   async getByClassAndDate(classId, date) {

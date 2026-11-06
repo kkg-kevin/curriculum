@@ -7,8 +7,9 @@ const CourseModel = require("../courses/course.model");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
-const AssessmentSubmissionModel = require("../assessments/submissions/assessment-submission.model");
 const AssessmentRevocationModel = require("../assessments/submissions/assessment-revocation.model");
+const CountedWork = require("../assessments/submissions/counted-work");
+const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 const AssessmentSubmissionService = require("../assessments/submissions/assessment-submission.service");
 const CompetencyService = require("../curriculum/competency-framework/competency.service");
 const AttendanceModel = require("../attendance/attendance.model");
@@ -85,45 +86,49 @@ async function getSessionRequiredAssessmentIds(session) {
   return ids.filter((id, i) => !!found[i]);
 }
 
-// A submission only counts toward a course report once its own report has been published to the
-// learner (see assessment-submission.service.js's publishReport) — otherwise a course report
-// could reveal a score the learner hasn't seen released on that assessment's own page yet.
-async function getPublishedGradedAssessmentIds(learnerId) {
-  const submissions = await liveGradedSubmissions(learnerId);
-  return new Set(submissions.filter((s) => s.reportPublished).map((s) => s.assessmentId));
-}
-
-// A learner's graded submissions whose issue still stands — work on an assessment the educator has
-// since revoked (its issue deleted) no longer counts towards any report.
-// Work on an assessment revoked for this learner alone (assessment-revocation.model.js — every
-// attempt) doesn't count either.
-async function liveGradedSubmissions(learnerId) {
-  const graded = await AssessmentSubmissionModel.findAll({ learnerId, status: "graded" });
-  const issueIds = [...new Set(graded.map((s) => s.issueId).filter(Boolean))];
-  if (!issueIds.length) return graded;
-  const standing = new Set(await db("assessment_issues").whereIn("id", issueIds).pluck("id"));
-  const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
-  return graded.filter((s) => !s.issueId || (standing.has(s.issueId) && !revoked.has(s.issueId)));
+// Which work counts is one rule for every report (assessments/submissions/counted-work.js): its
+// issue still stands, it isn't revoked for the learner, only their latest attempt at a class issue
+// counts (reissue chain order), and only once its report is released — so a report never reveals
+// a score the learner hasn't seen on that assessment's own page. Work counts in the session it was
+// issued for, never in another session that happens to attach the same assessment.
+// `forSession(sessionId)` → the assessment ids done in that session.
+function getPublishedGraded(learnerId) {
+  return CountedWork.publishedGradedBySession(learnerId);
 }
 
 // A session's required assessments for one learner: those revoked for them alone are no longer
 // asked of them (their session and course can still finish).
+// Nor are those the class issued to chosen learners only, without them (6 Nov 2026).
 async function getLearnerRequiredAssessmentIds(session, learnerId, classId) {
   const ids = await getSessionRequiredAssessmentIds(session);
   if (!ids.length || !learnerId) return ids;
   const revoked = await AssessmentRevocationModel.revokedAssessmentIds(learnerId, classId, session.id);
-  return revoked.size ? ids.filter((id) => !revoked.has(id)) : ids;
+  const notTheirs = await notIssuedToThem(learnerId, classId, session.id);
+  return revoked.size || notTheirs.size ? ids.filter((id) => !revoked.has(id) && !notTheirs.has(id)) : ids;
+}
+
+// The assessments this class issued to chosen learners only, leaving this learner out — in one
+// session, or (no sessionId) anywhere in the class.
+async function notIssuedToThem(learnerId, classId, sessionId = null) {
+  if (!classId || !learnerId) return new Set();
+  const q = db("assessment_issues").where({ classId }).whereNotNull("forLearnerIds").select("assessmentId", "forLearnerIds");
+  if (sessionId) q.where({ sessionId });
+  const rows = await q;
+  return new Set(rows.filter((r) => !AssessmentIssueModel.isForLearner(r, learnerId)).map((r) => r.assessmentId));
 }
 
 async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null) {
-  const publishedIds = await getPublishedGradedAssessmentIds(learnerId);
-  const graded = await liveGradedSubmissions(learnerId);
-  // One piece of work per assessment: a reissued assessment has several marked attempts — its
-  // latest released one counts (an attempt still unreleased leaves the earlier one standing).
+  // The work that counts (counted-work.js — a reissued assessment's latest released attempt), from
+  // this session only, or for a course report from the course's sessions.
+  const sessionIds = sessionId
+    ? new Set([sessionId])
+    : new Set((await SessionModel.findByCourseId(courseId)).map((s) => s.id));
+  const { counted } = await CountedWork.sortLearnerWork(learnerId, { published: true });
+  // One piece of work per assessment (the same assessment issued twice in a course — the latest marked).
   const latestByAssessment = new Map();
-  graded
-    .filter((s) => requiredAssessmentIds.includes(s.assessmentId) && publishedIds.has(s.assessmentId) && s.reportPublished)
-    .forEach((s) => {
+  counted
+    .filter((entry) => requiredAssessmentIds.includes(entry.submission.assessmentId) && CountedWork.inSessions(entry, sessionIds))
+    .forEach(({ submission: s }) => {
       const held = latestByAssessment.get(s.assessmentId);
       if (!held || new Date(s.gradedAt || 0) > new Date(held.gradedAt || 0)) latestByAssessment.set(s.assessmentId, s);
     });
@@ -168,7 +173,8 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
   const indicatorBreakdown = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(
     learnerId,
     requiredAssessmentIds,
-    curriculumId
+    curriculumId,
+    sessionIds
   );
 
   // The curriculum's own score/level/band per competency — a different number from the flat
@@ -176,7 +182,7 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
   // Profile Competencies tab. Scoped to THIS course's assessments, matching indicatorBreakdown:
   // a course report shouldn't fold in competency standing the learner earned on other courses.
   const competencyScores = curriculumId
-    ? await CompetencyService.getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, requiredAssessmentIds)
+    ? await CompetencyService.getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, requiredAssessmentIds, sessionIds)
     : [];
 
   // Snapshotted at generate time like everything else here, so neither the learner's report list
@@ -226,9 +232,9 @@ async function isCourseReadyForLearner(courseId, classId, learnerId) {
   const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
   const sessions = allSessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
   if (sessions.length === 0) return false;
-  const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
+  const graded = await getPublishedGraded(learnerId);
   const reports = await Promise.all(sessions.map(({ session }) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id })));
-  return sessions.every(({ requiredIds }, i) => sessionDone(reports[i], requiredIds, gradedIds));
+  return sessions.every(({ session, requiredIds }, i) => sessionDone(reports[i], requiredIds, graded.forSession(session.id)));
 }
 
 // Builds/refreshes a single session's report for one learner, published in the same step — no
@@ -249,7 +255,7 @@ async function generateSessionReport({ learnerId, session, classId, curriculumId
   }
 
   const existing = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
-  const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
+  const gradedIds = (await getPublishedGraded(learnerId)).forSession(session.id);
   const markedCount = requiredIds.filter((id) => gradedIds.has(id)).length;
   const complete = markedCount === requiredIds.length;
   if (existing?.content?.notSubmitted && !complete) return existing;
@@ -330,9 +336,19 @@ async function classifySessionWork(learnerId, session, classId) {
   const existingReport = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
   if (existingReport?.content?.notSubmitted) return { state: "resolved_no_submit", missingAssessmentIds: [], ungraded: [] };
 
-  const publishedGradedIds = await getPublishedGradedAssessmentIds(learnerId);
-  const allSubs = await AssessmentSubmissionModel.findAll({ learnerId });
-  const subByAssessment = new Map(allSubs.map((s) => [s.assessmentId, s]));
+  const publishedGradedIds = (await getPublishedGraded(learnerId)).forSession(session.id);
+  // Only live work for this session (counted-work.js): work on an issue revoked for everyone is
+  // gone from here, so its session can be filed "not submitted" or the assessment issued again —
+  // it never sits as "needs grading" with nothing in any marking queue. Per assessment, the
+  // learner's latest attempt.
+  const { live } = await CountedWork.sortLearnerWork(learnerId);
+  const sessionIds = new Set([session.id]);
+  const subByAssessment = new Map();
+  for (const entry of live.filter((e) => CountedWork.inSessions(e, sessionIds))) {
+    const held = subByAssessment.get(entry.submission.assessmentId);
+    if (!held || entry.attempt > held.attempt) subByAssessment.set(entry.submission.assessmentId, entry);
+  }
+  for (const [id, entry] of subByAssessment) subByAssessment.set(id, entry.submission);
 
   const missingAssessmentIds = [];
   const ungraded = [];
@@ -398,7 +414,7 @@ const ReportService = {
       // this session — so opening a session's summary is enough to publish its report the moment
       // it becomes ready, without waiting for the course's full Reports page to be opened too.
       await generateSessionReport({ learnerId: learner.id, session, classId, curriculumId: cls?.curriculumId });
-      const gradedIds = await getPublishedGradedAssessmentIds(learner.id);
+      const gradedIds = (await getPublishedGraded(learner.id)).forSession(session.id);
       const gradedCount = requiredIds.filter((id) => gradedIds.has(id)).length;
       const report = await ReportModel.findOne({ learnerId: learner.id, courseId: session.courseId, classId, sessionId });
       return {
@@ -437,14 +453,20 @@ const ReportService = {
     await ensureSessionReportsGenerated(classId, courseId, learnerIds);
 
     return Promise.all(learners.map(async (learner) => {
-      const gradedIds = await getPublishedGradedAssessmentIds(learner.id);
+      const graded = await getPublishedGraded(learner.id);
       // What's asked of this learner: the course's required assessments less any revoked for them.
-      const revokedForThem = new Set(await db("assessment_revocations").where({ learnerId: learner.id, classId }).pluck("assessmentId"));
+      const revokedForThem = new Set([
+        ...(await db("assessment_revocations").where({ learnerId: learner.id, classId }).pluck("assessmentId")),
+        ...(await notIssuedToThem(learner.id, classId)),
+      ]);
       const theirRequiredIds = requiredAssessmentIds.filter((id) => !revokedForThem.has(id));
-      const gradedCount = theirRequiredIds.filter((id) => gradedIds.has(id)).length;
+      // Done in any of the course's sessions that attach it.
+      const doneInCourse = new Set(sessions.flatMap((session) => [...graded.forSession(session.id)]));
+      const gradedCount = theirRequiredIds.filter((id) => doneInCourse.has(id)).length;
       const sessionRows = await Promise.all(sessions.map(async (session) => {
         const sessionRequiredIds = await getLearnerRequiredAssessmentIds(session, learner.id, classId);
-        const sessionGradedCount = sessionRequiredIds.filter((id) => gradedIds.has(id)).length;
+        const sessionGraded = graded.forSession(session.id);
+        const sessionGradedCount = sessionRequiredIds.filter((id) => sessionGraded.has(id)).length;
         return {
           sessionId: session.id,
           sessionTitle: session.title || null,
@@ -506,9 +528,9 @@ const ReportService = {
     const allSessions = await SessionModel.findByCourseId(courseId);
     const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
     const sessions = allSessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
-    const gradedIds = await getPublishedGradedAssessmentIds(learnerId);
+    const graded = await getPublishedGraded(learnerId);
     const reports = await Promise.all(sessions.map(({ session }) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id })));
-    return { totalSessions: sessions.length, doneSessions: sessions.filter(({ requiredIds }, i) => sessionDone(reports[i], requiredIds, gradedIds)).length };
+    return { totalSessions: sessions.length, doneSessions: sessions.filter(({ session, requiredIds }, i) => sessionDone(reports[i], requiredIds, graded.forSession(session.id))).length };
   },
 
   // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,

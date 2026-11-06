@@ -102,6 +102,120 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (6 Nov 2026) — Issue to chosen learners, checkbox reissue / revoke, attendance unlocked, no blank written answers
+
+**Portal and backend** from `curriculum` (branch `modules`) at `1ee1861`. The website is unchanged since
+"5 Nov 2026, night" (below). Includes the "5 Nov 2026, evening" release below — if that isn't up yet, this
+replaces it (follow its Verify steps too).
+
+### Upload in this order
+
+0. **Take a database backup** — two new migrations.
+1. **Backend** — `backend-deploy.zip` (673 files, 167 migrations), then Restart. Two new migrations, applied on
+   Restart:
+   - `20261106090000` — removes duplicate copies of assessments that learners were given on top of their
+     class's issue (only unstarted copies, or copies whose work can move onto the class issue — no work is
+     lost), and adds a key so an attempt can be reissued to a learner only once.
+   - `20261106120000` — `assessment_issues.forLearnerIds` (an assessment issued to chosen learners only;
+     empty = the whole class, as every issue so far).
+
+   Check: `SHOW COLUMNS FROM assessment_issues LIKE 'forLearnerIds';` (1 row) and
+   `SHOW INDEX FROM assessment_issues WHERE Key_name = 'assessment_issues_one_reissue_per_attempt';` (2 rows).
+   If the column is missing: Run JS script → `db:migrate`. If only the key is missing, the database already had
+   an attempt reissued twice to one learner (the migration skips the key rather than delete anything) — it
+   still works; send me the result of
+   `SELECT reissuedFromIssueId, learnerId, COUNT(*) FROM assessment_issues WHERE reissuedFromIssueId IS NOT NULL GROUP BY reissuedFromIssueId, learnerId HAVING COUNT(*) > 1;`
+2. **Portal** — `index.html` + `assets.zip` (entry `index-C_w2b5YV.js`). **After the backend**: an older backend
+   ignores the new "chosen learners" choice and would issue to the whole class.
+
+No new cron, environment variable or npm package.
+
+### What changed
+
+**Issue to chosen learners.** The Issue dialog (teacher portal → Assessments) has a **Who gets it** list:
+"Everyone in <class>" is ticked to start with (as before — learners who join later get it too); untick it
+and tick learners to issue it to them only. Only they see it, can open it, are on its roster and are asked
+for it in their reports — the rest of the class can still finish the session and course. Such an issue shows
+"· N chosen" with **Add learners…**; issuing it to everyone later makes it a whole-class issue. Group
+assessments always go to the whole class.
+
+**Reissue and Revoke with checkboxes.**
+- **Reissue…**: an "Everyone who can have another try" box above a box per learner; learners who can't be
+  picked say why. The new attempt replaces the earlier one on the learner's list (their earlier work and the
+  educator's feedback stay on the roster's attempt history; an old link to it opens with "Open your new
+  attempt").
+- **Revoke…** (roster page, and now the Assessments page too instead of a yes/no box): "Everyone in the
+  class" (the assessment comes off the class — learners who join later don't get it either) or tick learners
+  (only theirs; Give it back undoes it).
+
+**Which work counts — one rule** for reports, competencies, Progress Arc and Reports & Analytics: only work on
+an assessment still issued and not revoked for the learner, and only their latest attempt when reissued.
+Revoked work and replaced attempts no longer count in competencies or analytics. Work counts only in the
+session it was issued for. After **revoking for everyone**, that session can be issued again or marked not
+submitted (it no longer sits as "needs grading" with nothing to mark).
+
+**Written answers can't be handed in blank.** Short answer, long answer, essay, reflection, scenario,
+practical task and open-ended questions: Submit stays greyed with "Write your answer to question N…", and each
+blank one is marked "Answer needed" (Save still works). Not enforced once a time limit has run out, nor for a
+survey's open questions or uploads.
+
+**Attendance has no lock.** A past session can be marked late, and saved attendance corrected (**Save
+changes**); only future days are refused. A session Year Completion closed as "not marked" counts as taken
+once its attendance is marked.
+
+**Class names.** The teacher portal names a class with its stream — Home Learning classes show the child:
+"Issue … to Crib · Derrick Maina" instead of several identical "Crib" buttons.
+
+### Verify
+
+1. Educator → Assessments → Issue on an assessment: untick "Everyone", tick one learner, Issue → the button
+   shows "· 1 chosen". Sign in as that learner: it's listed; as another learner of the class: it isn't.
+2. Roster → **Reissue…** → tick one learner whose work is marked → as that learner, only the new attempt is
+   on the list.
+3. Roster → **Revoke…** → tick one learner → gone from their list; Give it back restores it.
+4. As a learner, open an assessment with a written question, leave it blank: Submit is greyed with the
+   question number; type an answer → Submit works.
+5. Educator → Attendance → go back to a past session day: the roster can be marked and saved; open a saved
+   day, change a mark, **Save changes**.
+6. A Home Learning educator's Assessments page: each child's class has its own name.
+
+---
+
+## This release (5 Nov 2026, night) — Website only: pathway pages and enrolment redesigned
+
+**Website only** from `curriculum-web` (branch `new`) at `278b4e8`. Portal and backend unchanged since
+"5 Nov 2026, evening" (below) — if that isn't up yet, deploy it first.
+
+### Upload
+
+**Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-BrGmvEJZ.js`, 31 pages). Unzip over the old files: the
+stage folders under `pathways/<pathway>/<stage>/` are no longer in the zip — delete them if they're still
+on the server (an old address still works: it opens the pathway with that stage chosen).
+
+No backend, cron or environment change.
+
+### What changed
+
+- **Pathway page:** the stages run down the left; choosing one shows its courses on the right at once (an
+  accordion on a phone), with **Enrol** for that stage. The side price card, "How enrolling works" and
+  "Where it runs" are gone; once the top Enrol button scrolls away, a price + Enrol bar slides up.
+- **Plans** are a price list — a row per plan (name, summary, features, price, Choose plan), not cards.
+- **Stage pages retired:** `/pathways/<pathway>/<stage>` opens the pathway with that stage chosen; stage
+  pages are no longer pre-rendered or in the sitemap.
+- **Enrol is a checkout:** "Enrol in <pathway>", one step bar (Learner → Quick quiz → Plan & hub → Your
+  details → Pay), a summary beside it (plan, stage, hub, first payment), the date of birth answered with the
+  learner's stage straight away, and "Take the quick quiz" / "Skip the quiz" as a choice.
+
+### Verify
+
+1. Open a pathway: stages on the left; click another stage — its courses change at once; Enrol on it opens
+   the checkout.
+2. On a phone: the stages are an accordion; the price + Enrol bar sits at the bottom.
+3. Enrol: type a date of birth — the stage appears under it and in the summary; skip the quiz → Plan &
+   hub; choose a hub → the summary shows it. (Stop before paying.)
+
+---
+
 ## This release (5 Nov 2026, evening) — TOT learner sign-in, parent feedback on mentors, educator performance profiles, a foldable admin menu
 
 **Portal and backend** from `curriculum` (branch `modules`) at `107d72a`; **website** from `curriculum-web`
