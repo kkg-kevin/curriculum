@@ -9,6 +9,7 @@ const db = require("../../config/db");
 const { pct, inChunks, fullName } = require("./analytics.utils");
 const { loadWork } = require("./analytics.work");
 const { className } = require("./analytics.scope");
+const CountedWork = require("../assessments/submissions/counted-work");
 
 const FLAGS = {
   lowScore: { label: "Low scores", threshold: 40 },
@@ -21,8 +22,10 @@ async function getAtRisk(scope) {
   const { period } = scope;
   const learnerIds = [...scope.learnerIds];
 
-  const graded = await inChunks(learnerIds, (ids) => db("assessment_submissions").whereIn("learnerId", ids).where({ status: "graded" })
-    .whereBetween("gradedAt", [period.start, period.end]).select("learnerId", "totalScore", "maxScore"));
+  // Only work that counts (counted-work.js): not revoked, issue still standing, latest attempt.
+  const graded = (await CountedWork.sortWork(await inChunks(learnerIds, (ids) => db("assessment_submissions").whereIn("learnerId", ids).where({ status: "graded" })
+    .whereBetween("gradedAt", [period.start, period.end]).select("id", "issueId", "learnerId", "status", "reportPublished", "gradedAt", "totalScore", "maxScore"))))
+    .counted.map((e) => e.submission);
   const marks = new Map();
   for (const s of graded) {
     const m = marks.get(s.learnerId) || { e: 0, p: 0, n: 0 };

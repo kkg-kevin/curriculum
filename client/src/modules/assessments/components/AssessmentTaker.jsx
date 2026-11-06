@@ -16,14 +16,39 @@ const fieldStyle = {
 const FILE_KINDS = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload"];
 const TEXT_KINDS = ["shortAnswer", "longAnswer", "essay", "reflection", "scenarioResponse", "openEnded", "practicalTask"];
 
-function QuestionShell({ index, item, children }) {
+// Questions answered by writing can't be handed in blank (6 Nov 2026) — the server refuses it too
+// (grading.utils.js's unansweredWrittenItems; keep the two in step). Read off the item's saved
+// kind, as the server does. A survey's open questions stay optional.
+export const WRITTEN_KINDS = TEXT_KINDS;
+
+// The written questions still blank in these answers ([{ itemId, response }]): [{ itemId, number }].
+export function unansweredWrittenItems(assessment, answers = []) {
+  if (!assessment || assessment.type === "survey") return [];
+  const byItem = new Map((answers || []).map((a) => [a?.itemId, a?.response]));
+  const blank = (r) => r === undefined || r === null || (typeof r === "string" && r.trim() === "");
+  return (assessment.items || [])
+    .map((item, index) => ({ item, number: index + 1 }))
+    .filter(({ item }) => WRITTEN_KINDS.includes(item.kind) && blank(byItem.get(item.id)))
+    .map(({ item, number }) => ({ itemId: item.id, number }));
+}
+
+// "question 2", "questions 2 and 5", "questions 1, 3 and 4".
+export function questionList(numbers) {
+  if (numbers.length === 1) return `question ${numbers[0]}`;
+  return `questions ${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}`;
+}
+
+function QuestionShell({ index, item, needsAnswer = false, children }) {
   return (
-    <div style={{ padding: "16px 18px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ padding: "16px 18px", backgroundColor: "#fff", border: `1.5px solid ${needsAnswer ? "#FDE68A" : T.border}`, borderRadius: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: T.accent, flexShrink: 0 }}>{index + 1}.</span>
         <div style={{ flex: 1, minWidth: 0, fontSize: 14 }}>
           <RichContent html={item.question} />
         </div>
+        {needsAnswer && (
+          <span style={{ flexShrink: 0, padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "#92400E", backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }}>Answer needed</span>
+        )}
       </div>
       <div style={{ marginLeft: 22 }}>{children}</div>
     </div>
@@ -300,7 +325,8 @@ function ItemField({ item, value, onChange }) {
 // `assessment.deliverables`, not `items` — a project's BUILDER_REGISTRY entry sets
 // supportsItems: false). Observation assessments are graded entirely from the teacher's own
 // in-class review, so they're deliberately left with no learner input here.
-export default function AssessmentTaker({ assessment, initialAnswers = [], onChange }) {
+// `needsAnswerIds` (a Set): written questions still blank — marked "Answer needed".
+export default function AssessmentTaker({ assessment, initialAnswers = [], onChange, needsAnswerIds = null }) {
   // A learner can spend a long time reading or thinking without touching anything — having an
   // assessment open (and on screen) counts as activity, so the 30-minute idle sign-out doesn't
   // cut them off mid-attempt. See context/session.js.
@@ -350,7 +376,7 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
           {g.items.map((item) => {
             const i = n++;
             return (
-              <QuestionShell key={item.id} index={i} item={item}>
+              <QuestionShell key={item.id} index={i} item={item} needsAnswer={!!needsAnswerIds?.has(item.id)}>
                 <ItemField item={item} value={answers.get(item.id)} onChange={(v) => setResponse(item.id, v)} />
               </QuestionShell>
             );

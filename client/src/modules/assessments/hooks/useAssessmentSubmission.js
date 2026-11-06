@@ -20,8 +20,10 @@ export function useIssueAssessment() {
   return useMutation({
     mutationFn: assessmentSubmissionApi.issue,
     onSuccess: (issue) => {
-      qc.invalidateQueries({ queryKey: KEYS.issuesForClass(issue.classId) });
-      toast.success("Assessment issued to the class");
+      // The class's issues, the roster and learners' lists all follow.
+      qc.invalidateQueries({ queryKey: ["assessment-issues"] });
+      const chosen = Array.isArray(issue?.forLearnerIds) ? issue.forLearnerIds.length : 0;
+      toast.success(chosen ? `Assessment issued to ${chosen} chosen learner${chosen === 1 ? "" : "s"}` : "Assessment issued to the class");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to issue assessment"),
   });
@@ -66,10 +68,17 @@ export function useRevokeIssue() {
 
 // The signed-in learner's own list — or, given a learnerId, that learner's list read by an
 // admin/school viewing their profile.
-export function useIssuedForLearner(learnerId) {
+// An attempt a reissue replaced comes back flagged `replacedBy` and is left out here — the new
+// attempt takes its place on every list. A page that opens an attempt by its id (its own page,
+// report links, the new attempt's "last time" feedback) passes { includeReplaced: true }.
+export function useIssuedForLearner(learnerId, { includeReplaced = false } = {}) {
   return useQuery({
     queryKey: learnerId ? KEYS.issuedLearnerStaff(learnerId) : KEYS.issuedLearner(),
     queryFn:  () => (learnerId ? assessmentSubmissionApi.getIssuedForLearnerAsStaff(learnerId) : assessmentSubmissionApi.getIssuedForLearner()),
+    select: includeReplaced ? undefined : (res) => {
+      const rows = (res?.data || []).filter((row) => !row.replacedBy);
+      return { ...res, data: rows, count: rows.length };
+    },
   });
 }
 

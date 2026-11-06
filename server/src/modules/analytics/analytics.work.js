@@ -9,6 +9,8 @@
 
 const db = require("../../config/db");
 const { endOfKenyaDay, hoursBetween, inChunks, json } = require("./analytics.utils");
+const CountedWork = require("../assessments/submissions/counted-work");
+const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
 
 async function loadWork(scope, start, end) {
   const learnerIds = [...scope.learnerIds];
@@ -58,24 +60,32 @@ async function loadWork(scope, start, end) {
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
   // Revoked for chosen learners (assessment_revocations, keyed by the class issue): no task for
-  // them on it, nor on any reissue of it. A reissue's class issue is found by walking up.
+  // them on it, nor on any reissue of it. A reissue's class issue is found by walking up its chain
+  // — loaded from the database, so a class issue older than the period still counts
+  // (counted-work.js). A reissue whose earlier attempt is gone isn't a task at all.
+  // Reissued: a learner's attempt that a later one in the period replaces isn't a task of its own —
+  // one task per learner per class issue, their latest (as in reports).
   const revokedPairs = new Set((await inChunks(learnerIds, (ids) => db("assessment_revocations").whereIn("learnerId", ids).select("issueId", "learnerId")))
     .map((r) => `${r.issueId}:${r.learnerId}`));
-  const issueById = new Map(uniqueIssues.map((i) => [i.id, i]));
+  const chains = await CountedWork.loadIssueChains(uniqueIssues.filter((i) => i.reissuedFromIssueId).map((i) => i.id));
   const rootIdOf = (issue) => {
-    let current = issue;
-    for (let hops = 0; current?.reissuedFromIssueId && issueById.has(current.reissuedFromIssueId) && hops < 50; hops += 1) current = issueById.get(current.reissuedFromIssueId);
-    return current.id;
+    if (!issue.reissuedFromIssueId) return issue.id;
+    const chain = CountedWork.chainOf(chains.get(issue.id) || issue, chains);
+    return chain ? chain.root.id : null;
   };
+  const superseded = new Set(uniqueIssues.filter((i) => i.reissuedFromIssueId && i.learnerId).map((i) => `${i.reissuedFromIssueId}:${i.learnerId}`));
 
   const now = Date.now();
   const tasks = [];
   for (const issue of uniqueIssues) {
-    const rootId = revokedPairs.size ? rootIdOf(issue) : issue.id;
+    const rootId = rootIdOf(issue);
+    if (!rootId) continue;
     const recipients = (issue.learnerId
       ? (scope.learnerIds.has(issue.learnerId) ? [issue.learnerId] : [])
       : [...(learnersByClass.get(issue.classId) || [])])
-      .filter((learnerId) => !revokedPairs.has(`${rootId}:${learnerId}`));
+      .filter((learnerId) => !revokedPairs.has(`${rootId}:${learnerId}`) && !superseded.has(`${issue.id}:${learnerId}`)
+        // Issued to chosen learners only: a task for them alone.
+        && AssessmentIssueModel.isForLearner(issue, learnerId));
     const dueEnd = issue.dueDate ? endOfKenyaDay(String(issue.dueDate).slice(0, 10)) : null;
     for (const learnerId of recipients) {
       const sub = subByKey.get(`${issue.id}:${learnerId}`) || groupSubByIssueLearner.get(`${issue.id}:${learnerId}`) || null;

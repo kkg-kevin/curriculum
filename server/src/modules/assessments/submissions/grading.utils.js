@@ -224,7 +224,38 @@ function redactUnpublishedReport(submission) {
   };
 }
 
+// Questions the learner answers by writing (6 Nov 2026): one can't be handed in blank. Client copy:
+// AssessmentTaker.jsx's WRITTEN_KINDS / unansweredWrittenItems — keep the two in step.
+const WRITTEN_KINDS = ["shortAnswer", "longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
+
+function isBlankResponse(response) {
+  if (response === undefined || response === null) return true;
+  if (typeof response === "string") return response.trim() === "";
+  return false;
+}
+
+// The written questions left blank in these answers, each with its number as the learner sees it
+// (1-based, in the assessment's order). A survey's open questions stay optional — it's feedback,
+// not work — so a survey never has any.
+function unansweredWrittenItems(assessment, answers = []) {
+  if (!assessment || assessment.type === "survey") return [];
+  const byItem = new Map((answers || []).map((a) => [a?.itemId, a?.response]));
+  return (assessment.items || [])
+    .map((item, index) => ({ item, number: index + 1 }))
+    .filter(({ item }) => WRITTEN_KINDS.includes(item.kind) && isBlankResponse(byItem.get(item.id)))
+    .map(({ item, number }) => ({ itemId: item.id, number }));
+}
+
+// "question 2", "questions 2 and 5", "questions 1, 3 and 4".
+function questionList(numbers) {
+  if (numbers.length === 1) return `question ${numbers[0]}`;
+  return `questions ${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}`;
+}
+
 module.exports = {
+  WRITTEN_KINDS,
+  unansweredWrittenItems,
+  questionList,
   redactUnpublishedReport,
   AUTO_GRADABLE_KINDS,
   isAutoGradableItem,

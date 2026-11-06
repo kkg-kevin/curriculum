@@ -13,6 +13,8 @@ const issueAssessmentSchema = z.object({
   // Left as plain .optional() (no .default()) so an omitted value means "don't touch this on
   // re-issue" rather than an implicit false — see issueAssessment in the service.
   groupMode:    z.boolean().optional(),
+  // Chosen learners of the class only (6 Nov 2026) — left out, the whole class gets it.
+  learnerIds:   z.array(z.string().min(1).max(36)).min(1, "Choose at least one learner").max(500).optional(),
 });
 
 // A learner has just completed every other section of this session — see

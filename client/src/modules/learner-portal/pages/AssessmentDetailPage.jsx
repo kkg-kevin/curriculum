@@ -6,7 +6,7 @@ import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessm
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
 import { normalizeLegacyItem, entryMarks, canDoLevelFor } from "../../assessments/schemas/assessment.schema";
-import AssessmentTaker from "../../assessments/components/AssessmentTaker";
+import AssessmentTaker, { unansweredWrittenItems, questionList } from "../../assessments/components/AssessmentTaker";
 import RichContent from "../../assessments/components/RichContent";
 import GroupPanel from "../../assessments/components/GroupPanel";
 import { useGroupForLearner } from "../../classes/hooks/useClassGroups";
@@ -235,7 +235,9 @@ export default function AssessmentDetailPage() {
   const navigate = usePortalNavigate();
   // viewOnly: a parent looking at their child's work (parent portal) — they can see it, not do it.
   const { cls, learner, viewOnly, selectedHub } = useOutletContext();
-  const { data, isLoading } = useIssuedForLearner();
+  // Every attempt, a replaced one too — it can still be opened by its id (report links), and a
+  // reissue shows the one before it as guidance.
+  const { data, isLoading } = useIssuedForLearner(undefined, { includeReplaced: true });
   // A Developmental Stage or Pathway diagnostic never shows up in useIssuedForLearner()
   // above — getIssuedRowsForLearner (server) deliberately excludes them, since the general "My
   // Assessments" list they normally feed isn't where diagnostics belong. But once graded, a
@@ -304,6 +306,11 @@ export default function AssessmentDetailPage() {
     startSubmission(issueId, { onSuccess: (sub) => setActiveSubmission(sub) });
   };
   const handleSaveDraft = () => saveDraft({ id: submission.id, answers: draftAnswers || submission.answers || [] });
+  // Written questions still blank: Submit waits for them (the server refuses them too). The time
+  // limit running out hands in whatever is there (handleSubmit straight from the banner).
+  const currentAnswers = draftAnswers || submission?.answers || [];
+  const unanswered = assessment ? unansweredWrittenItems(assessment, currentAnswers) : [];
+  const unansweredIds = new Set(unanswered.map((u) => u.itemId));
   const handleSubmit = () => submitAssessment({ id: submission.id, answers: draftAnswers || submission.answers || [] }, {
     onSuccess: (sub) => setActiveSubmission(sub),
   });
@@ -323,6 +330,16 @@ export default function AssessmentDetailPage() {
       </div>
 
       {row.issue.reissuedFromIssueId && <ReissueNotice originalRow={originalRow} />}
+
+      {/* An earlier attempt a reissue replaced (opened from an old link) — point at the new one. */}
+      {row.replacedBy && (
+        <div style={{ ...cardStyle, padding: "14px 20px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <p style={{ margin: 0, flex: 1, minWidth: 200, fontSize: 13, color: T.ink }}>This was an earlier attempt — your teacher gave you another try, which replaces it.</p>
+          <button type="button" onClick={() => navigate(`/learner-portal/assessments/${row.replacedBy}`)} style={{ padding: "8px 16px", backgroundColor: T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            Open your new attempt
+          </button>
+        </div>
+      )}
 
       {row.issue.groupMode && <GroupPanel group={group} />}
 
@@ -356,12 +373,17 @@ export default function AssessmentDetailPage() {
           {row.issue.timeLimitMinutes && (
             <TimeLimitBanner createdAt={submission.createdAt} timeLimitMinutes={row.issue.timeLimitMinutes} onExpire={handleSubmit} />
           )}
-          <AssessmentTaker assessment={assessment} initialAnswers={submission.answers} onChange={setDraftAnswers} />
+          <AssessmentTaker assessment={assessment} initialAnswers={submission.answers} onChange={setDraftAnswers} needsAnswerIds={unansweredIds} />
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" onClick={handleSaveDraft} disabled={saving} style={{ padding: "10px 20px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: saving ? "not-allowed" : "pointer" }}>
               {saving ? "Saving…" : "Save Draft"}
             </button>
-            <button type="button" onClick={handleSubmit} disabled={submitting} style={{ padding: "10px 24px", backgroundColor: submitting ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: submitting ? "not-allowed" : "pointer" }}>
+            {unanswered.length > 0 && (
+              <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 600, color: "#92400E" }}>
+                Write your answer to {questionList(unanswered.map((u) => u.number))} to hand it in.
+              </span>
+            )}
+            <button type="button" onClick={handleSubmit} disabled={submitting || unanswered.length > 0} style={{ padding: "10px 24px", backgroundColor: submitting || unanswered.length > 0 ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: submitting || unanswered.length > 0 ? "not-allowed" : "pointer" }}>
               {submitting ? "Submitting…" : "Submit"}
             </button>
           </div>

@@ -1174,9 +1174,9 @@ const CompetencyService = {
   // actually covers, not everything the learner has ever been graded on curriculum-wide. Only
   // counts assessments whose own report has been published to the learner, matching the
   // indicator breakdown shown alongside it (see getLearnerIndicatorProgressForAssessments).
-  async getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, assessmentIds) {
+  async getLearnerCompetencyScoresForAssessments(curriculumId, learnerId, assessmentIds, sessionIds = null) {
     const AssessmentSubmissionService = require("../../assessments/submissions/assessment-submission.service");
-    const rows = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds, curriculumId);
+    const rows = await AssessmentSubmissionService.getLearnerIndicatorProgressForAssessments(learnerId, assessmentIds, curriculumId, sessionIds);
     const ageCategoryId = await this._resolveLearnerStageId(curriculumId, learnerId);
     return this._competencyScoresFromIndicatorMarks(curriculumId, ageCategoryId, rows);
   },

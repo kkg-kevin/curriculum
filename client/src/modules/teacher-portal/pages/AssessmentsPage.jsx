@@ -16,7 +16,9 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
-import { useIssueAssessment, useGradeSubmission, useRevokeIssue } from "../../assessments/hooks/useAssessmentSubmission";
+import { useIssueAssessment, useGradeSubmission } from "../../assessments/hooks/useAssessmentSubmission";
+import { learnerApi } from "../../learners/services/learnerApi";
+import { LearnerChecklist, usePicked, RevokeIssueDialog } from "../components/IssueLearnerDialogs";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 
@@ -103,31 +105,37 @@ function assessmentSummary(assessment) {
 }
 
 // One eligible class's issue action for one specific (assessment, session) occurrence — either
-// a "not yet issued" CTA, or a shortcut into the roster if it already has been.
+// a "not yet issued" CTA, or a shortcut into the roster if it already has been. An issue for chosen
+// learners only says how many, and can be issued to more ("Add learners…"). Revoke opens the
+// checkbox dialog: chosen learners, or everyone.
 function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
   const navigate = useNavigate();
-  const { mutate: revoke, isPending: revoking } = useRevokeIssue();
+  const [revoking, setRevoking] = useState(false);
+  const chosen = Array.isArray(issue?.forLearnerIds) ? issue.forLearnerIds.length : 0;
+  const pill = { display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" };
   if (issue) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <button
           type="button"
           onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+          style={{ ...pill, backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}` }}
         >
-          <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster
+          <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster{chosen ? ` · ${chosen} chosen` : ""}
         </button>
+        {chosen > 0 && (
+          <button type="button" disabled={isIssuing} onClick={(e) => { e.stopPropagation(); onIssue(cls, issue); }} style={{ ...pill, background: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}` }}>
+            <PersonIcon sx={{ fontSize: 13 }} /> Add learners…
+          </button>
+        )}
         <button
           type="button"
-          disabled={revoking}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (window.confirm(`Revoke "${item.assessmentName}" from ${cls.gradeName}? It disappears from every learner's assessments. Work already handed in is kept but no longer counts in their reports.`)) revoke(issue.id);
-          }}
-          style={{ padding: "6px 10px", background: "none", border: "1.5px solid #FECACA", borderRadius: 20, color: "#B91C1C", fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: revoking ? "wait" : "pointer" }}
+          onClick={(e) => { e.stopPropagation(); setRevoking(true); }}
+          style={{ ...pill, padding: "6px 10px", background: "none", border: "1.5px solid #FECACA", color: "#B91C1C" }}
         >
-          {revoking ? "Revoking…" : "Revoke"}
+          Revoke…
         </button>
+        {revoking && <RevokeIssueDialog issueId={issue.id} onClose={() => setRevoking(false)} />}
       </span>
     );
   }
@@ -148,23 +156,59 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
 // about to send before committing, and lets them attach an optional due date plus an optional
 // time limit (e.g. "due Friday, but once a learner opens it they have 2 hours") — the server/
 // model already support both on assessment_issues; this dialog is the only piece that was missing.
-function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCancel }) {
+//
+// Who gets it (6 Nov 2026): the "Everyone in the class" box (ticked to start with) issues it to the
+// whole class, learners who join later included; untick it and tick learners to issue it to them
+// only. `existing` is an issue already made for chosen learners — the dialog then adds learners to
+// it (those who have it already can't be unticked here; that's Revoke). A group assessment is
+// always for the whole class.
+function IssueConfirmDialog({ item, cls, groupMode, existing = null, isIssuing, onConfirm, onCancel }) {
   const [dueDate, setDueDate] = useState("");
   const [timeLimitMinutes, setTimeLimitMinutes] = useState("");
+  const already = new Set(Array.isArray(existing?.forLearnerIds) ? existing.forLearnerIds : []);
+  const [everyone, setEveryone] = useState(!existing);
+  const [picked, toggle] = usePicked();
+  const { data: learnersData, isLoading: learnersLoading } = useQuery({
+    queryKey: ["learners", "byClass", cls.id],
+    queryFn: () => learnerApi.getAll({ classId: cls.id }),
+    enabled: !!cls.id,
+  });
+  const rows = (learnersData?.data || []).map((learner) => ({ learner }));
+  const whole = groupMode || everyone;
+  const canConfirm = whole || picked.size > 0;
   const color = TYPE_COLORS[item.assessmentType] || T.accentLight;
   const modeKey = groupMode ? "group" : "individual";
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,38,69,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", boxSizing: "border-box", padding: "22px 26px", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", fontFamily: "Inter, sans-serif" }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: T.ink }}>{item.assessmentName}</h3>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
           <span style={badgeStyle(color)}>{TYPE_LABELS[item.assessmentType] || item.assessmentType}</span>
           <span style={badgeStyle(MODE_COLORS[modeKey])}>{MODE_LABELS[modeKey]}</span>
         </div>
         <p style={{ margin: "0 0 4px", fontSize: 13, color: T.inkMuted }}>
-          Issuing <strong>{item.moduleName ? `${item.moduleName} · ` : ""}{item.sessionLabel}</strong> to <strong>{cls.gradeName}</strong>.
+          {existing ? "Adding learners to" : "Issuing"} <strong>{item.moduleName ? `${item.moduleName} · ` : ""}{item.sessionLabel}</strong> {existing ? "in" : "to"} <strong>{cls.gradeName}</strong>.
         </p>
+        <p style={{ margin: "14px 0 6px", fontSize: 12, fontWeight: 700, color: T.inkMuted }}>Who gets it</p>
+        {learnersLoading ? (
+          <p style={{ margin: 0, fontSize: 12.5, color: T.inkFaint }}>Loading learners…</p>
+        ) : (
+          <LearnerChecklist
+            rows={rows}
+            picked={picked}
+            onToggle={toggle}
+            showStatus={false}
+            blockerOf={(row) => (already.has(row.learner.id) ? "Already has it" : null)}
+            everyone={{
+              label: `Everyone in ${cls.gradeName}`,
+              hint: groupMode ? "A group assessment is issued to the whole class." : "Including learners who join later. Untick to choose learners.",
+              checked: whole,
+              locked: groupMode,
+              onChange: setEveryone,
+            }}
+          />
+        )}
         <label style={{ display: "block", marginTop: 16, fontSize: 12, fontWeight: 700, color: T.inkMuted }}>
           Due date (optional)
           <input
@@ -200,11 +244,11 @@ function IssueConfirmDialog({ item, cls, groupMode, isIssuing, onConfirm, onCanc
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(dueDate || null, timeLimitMinutes ? Number(timeLimitMinutes) : null)}
-            disabled={isIssuing}
-            style={{ padding: "8px 18px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: isIssuing ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
+            onClick={() => onConfirm(dueDate || null, timeLimitMinutes ? Number(timeLimitMinutes) : null, whole ? null : [...picked])}
+            disabled={isIssuing || !canConfirm}
+            style={{ padding: "8px 18px", backgroundColor: isIssuing || !canConfirm ? "#F3F4F6" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: isIssuing || !canConfirm ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
           >
-            {isIssuing ? "Issuing…" : "Confirm & Issue"}
+            {isIssuing ? "Issuing…" : whole ? `Issue to ${cls.gradeName}` : `Issue to ${picked.size} learner${picked.size === 1 ? "" : "s"}`}
           </button>
         </div>
       </div>
@@ -260,7 +304,7 @@ function SessionAssessmentCard({ assessment, sessionId, courseId, moduleName, el
             moduleName,
           };
           return (
-            <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c) => onIssue(item, c, groupMode)} isIssuing={issuingKey === key} />
+            <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c, existing) => onIssue(item, c, existing ? !!existing.groupMode : groupMode, existing)} isIssuing={issuingKey === key} />
           );
         })}
       </div>
@@ -659,14 +703,21 @@ export default function AssessmentsPage() {
   // teacher can see the admin-authored name/type and optionally set a due date first.
   const [issueDialog, setIssueDialog] = useState(null);
 
-  const handleIssue = (item, cls, groupMode) => {
-    setIssueDialog({ item, cls, groupMode });
+  const handleIssue = (item, cls, groupMode, existing = null) => {
+    setIssueDialog({ item, cls, groupMode, existing });
   };
 
-  const confirmIssue = (dueDate, timeLimitMinutes) => {
-    const { item, cls, groupMode } = issueDialog;
+  // learnerIds null = the whole class; a list = those learners only (added to an existing list).
+  const confirmIssue = (dueDate, timeLimitMinutes, learnerIds) => {
+    const { item, cls, groupMode, existing } = issueDialog;
     issueAssessment(
-      { assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id, groupMode, dueDate, timeLimitMinutes },
+      {
+        assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id,
+        // Adding learners never changes an issued assessment's mode.
+        ...(existing ? {} : { groupMode }),
+        dueDate, timeLimitMinutes,
+        ...(learnerIds ? { learnerIds } : {}),
+      },
       { onSuccess: () => setIssueDialog(null) }
     );
   };
@@ -746,6 +797,7 @@ export default function AssessmentsPage() {
           item={issueDialog.item}
           cls={issueDialog.cls}
           groupMode={issueDialog.groupMode}
+          existing={issueDialog.existing}
           isIssuing={issuing}
           onConfirm={confirmIssue}
           onCancel={() => setIssueDialog(null)}

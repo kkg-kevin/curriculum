@@ -10,6 +10,7 @@ const db = require("../../config/db");
 const CompetencyModel = require("../settings/competencies/competency.model");
 const { pct, round, mean, levelKey, emptyLevels, inChunks, fullName, json, kenyaDay } = require("./analytics.utils");
 const { className } = require("./analytics.scope");
+const CountedWork = require("../assessments/submissions/counted-work");
 
 const capped = (earned, possible) => (possible > 0 ? Math.min(100, (earned / possible) * 100) : null);
 
@@ -23,7 +24,9 @@ async function getCompetencies(scope) {
   const { period } = scope;
   let subs = await inChunks([...scope.learnerIds], (ids) => db("assessment_submissions").whereIn("learnerId", ids)
     .where({ status: "graded" }).whereBetween("gradedAt", [period.start, period.end])
-    .select("id", "issueId", "learnerId", "classId", "indicatorBreakdown", "gradedAt"));
+    .select("id", "issueId", "learnerId", "classId", "status", "reportPublished", "indicatorBreakdown", "gradedAt"));
+  // Only work that counts: not revoked, issue still standing, a reissued learner's latest attempt.
+  subs = (await CountedWork.sortWork(subs)).counted.map((e) => e.submission);
   if (scope.filters.courseId || scope.narrowedByClass) {
     const issues = await inChunks(subs.map((s) => s.issueId), (ids) => db("assessment_issues").whereIn("id", ids).select("id", "courseId", "classId"));
     const issueById = new Map(issues.map((i) => [i.id, i]));

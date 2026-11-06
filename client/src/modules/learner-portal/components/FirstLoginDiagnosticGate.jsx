@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FiActivity, FiSend } from "react-icons/fi";
 import { usePathways } from "../../curriculum/hooks/useCompetencies";
 import { usePathwayDiagnosticsForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment } from "../../assessments/hooks/useAssessmentSubmission";
-import AssessmentTaker from "../../assessments/components/AssessmentTaker";
+import AssessmentTaker, { unansweredWrittenItems, questionList } from "../../assessments/components/AssessmentTaker";
 import { useEnsureDiagnosticsIssued, useMarkHubOnboardingComplete } from "../hooks/usePortalOnboarding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 
@@ -78,6 +78,8 @@ function DiagnosticStep({ row, index, total, contextLabel, onDone }) {
   const handleStart = () => startSubmission(issue.id, { onSuccess: setActiveSubmission });
   const handleSaveDraft = () => saveDraft({ id: submission.id, answers: draftAnswers || submission.answers || [] });
   const handleSubmit = () => submitAssessment({ id: submission.id, answers: draftAnswers || submission.answers || [] }, { onSuccess: onDone });
+  // Written questions can't be handed in blank (the server refuses them too).
+  const unanswered = assessment && submission ? unansweredWrittenItems(assessment, draftAnswers || submission.answers || []) : [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 720, marginInline: "auto" }}>
@@ -106,12 +108,17 @@ function DiagnosticStep({ row, index, total, contextLabel, onDone }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <AssessmentTaker assessment={assessment} initialAnswers={submission.answers} onChange={setDraftAnswers} />
+          <AssessmentTaker assessment={assessment} initialAnswers={submission.answers} onChange={setDraftAnswers} needsAnswerIds={new Set(unanswered.map((u) => u.itemId))} />
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button type="button" onClick={handleSaveDraft} disabled={saving} style={{ padding: "10px 20px", backgroundColor: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: saving ? "not-allowed" : "pointer" }}>
               {saving ? "Saving…" : "Save Draft"}
             </button>
-            <button type="button" onClick={handleSubmit} disabled={submitting} style={{ padding: "10px 24px", backgroundColor: submitting ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: submitting ? "not-allowed" : "pointer" }}>
+            {unanswered.length > 0 && (
+              <span style={{ alignSelf: "center", fontSize: 12.5, fontWeight: 600, color: "#92400E" }}>
+                Write your answer to {questionList(unanswered.map((u) => u.number))} to hand it in.
+              </span>
+            )}
+            <button type="button" onClick={handleSubmit} disabled={submitting || unanswered.length > 0} style={{ padding: "10px 24px", backgroundColor: submitting || unanswered.length > 0 ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: submitting || unanswered.length > 0 ? "not-allowed" : "pointer" }}>
               {submitting ? "Submitting…" : total > index + 1 ? "Submit & Continue" : "Submit"}
             </button>
           </div>
