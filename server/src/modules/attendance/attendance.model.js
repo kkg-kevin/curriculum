@@ -23,14 +23,13 @@ const AttendanceModel = {
     return firstOrNull(db(TABLE).where({ id }));
   },
 
-  // Attendance is write-once per class+date (see AttendanceService.markAttendance, which rejects
-  // a second save before this is ever reached). A plain insert of the whole set — no prior rows
-  // exist to reconcile against. The unique (classId, date, learnerId) index is the last-line
-  // guard against a concurrent double-submit: the loser's insert fails outright rather than
-  // silently overwriting, matching the "locked on first save" contract.
+  // Saves a class's marks for a day — first time or a correction (6 Nov 2026, no locking). One
+  // row per (classId, date, learnerId), the unique index: a learner already marked that day has
+  // their status, note and marker updated in place (row id and createdAt kept); anyone new is
+  // added. Learners left out of `records` keep whatever they had.
   async bulkMark(classId, date, records, markedBy) {
     const now = new Date();
-    const created = records.map((r) => ({
+    const rows = records.map((r) => ({
       id: generateId(),
       classId,
       date,
@@ -42,8 +41,12 @@ const AttendanceModel = {
       updatedAt: now,
     }));
 
-    if (created.length) await db(TABLE).insert(created);
-    return created;
+    if (rows.length) {
+      await db(TABLE).insert(rows)
+        .onConflict(["classId", "date", "learnerId"])
+        .merge(["status", "notes", "markedBy", "updatedAt"]);
+    }
+    return db(TABLE).where({ classId, date });
   },
 
   async deleteByLearnerId(learnerId) {

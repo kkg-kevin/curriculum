@@ -60,8 +60,7 @@ function StatusSegmented({ value, onChange, disabled = false }) {
       {STATUS_ORDER.map((s) => {
         const cfg = STATUS_CONFIG[s];
         const active = value === s;
-        // When locked, only the chosen status stays visible (as a static chip) — the other
-        // three are hidden so a read-only recorded row can't be mistaken for an editable one.
+        // When disabled, only the chosen status stays visible (as a static chip).
         if (disabled && !active) return null;
         return (
           <button
@@ -200,14 +199,12 @@ export default function AttendancePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId, date, existingData]);
 
-  // Attendance is locked (view-only, no save) once EITHER: it's already been recorded for this
-  // class+date — it's write-once, no edits — OR the session day is in the past, since a passed
-  // session's attendance can no longer be marked. The server enforces both (see
-  // attendance.service.js); this just keeps the UI honest so a teacher isn't offered a Save
-  // button that will only bounce with a 409.
+  // No locking (6 Nov 2026): a past session can be marked late, and a saved day corrected — saving
+  // again updates the marks (attendance.service.js). Only a day still to come is refused, and the
+  // date picker never offers one.
   const alreadyRecorded = (existingData?.data || []).length > 0;
   const isPastSession = date < todayStr();
-  const locked = alreadyRecorded || isPastSession;
+  const locked = date > todayStr();
 
   const setLearnerStatus = (learnerId, status) => {
     if (locked) return;
@@ -362,29 +359,27 @@ export default function AttendancePage() {
                     style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
                   />
                 </div>
-                {locked ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, backgroundColor: alreadyRecorded ? T.tintBg : "#F9FAFB", border: `1.5px solid ${alreadyRecorded ? T.tintBorder : T.border}`, fontSize: 12.5, fontWeight: 700, color: alreadyRecorded ? T.accent : T.inkMuted }}>
-                    <CheckCircleOutlineIcon fontSize="small" /> {alreadyRecorded ? "Recorded — locked" : "Session passed — locked"}
-                  </span>
-                ) : (
+                {!locked && (
                   <button
                     type="button"
                     onClick={handleSave}
                     disabled={saving || learners.length === 0 || !isSessionDay}
                     style={{ padding: "10px 22px", backgroundColor: saving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: (saving || !isSessionDay) ? "not-allowed" : "pointer", opacity: isSessionDay ? 1 : 0.5 }}
                   >
-                    {saving ? "Saving…" : "Save Attendance"}
+                    {saving ? "Saving…" : alreadyRecorded ? "Save changes" : "Save Attendance"}
                   </button>
                 )}
               </div>
 
-              {/* Banner only for the "recorded — locked" case; a past session with no record gets
-                  its own full empty-state card below instead. */}
-              {alreadyRecorded && isSessionDay && !calendarLoading && (
-                <div style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
-                  <span style={{ fontSize: 18, color: T.accent, display: "flex" }}><CheckCircleOutlineIcon fontSize="inherit" /></span>
-                  <p style={{ margin: 0, fontSize: 12.5, color: T.accent, fontWeight: 600 }}>
-                    Attendance for this session has already been recorded — it can't be changed.
+              {/* Already saved: say so — it can still be corrected. A past day not yet marked can be
+                  marked now. */}
+              {isSessionDay && !calendarLoading && !existingLoading && (alreadyRecorded || isPastSession) && (
+                <div style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, backgroundColor: alreadyRecorded ? T.tintBg : "#FFFBEB", border: `1.5px solid ${alreadyRecorded ? T.tintBorder : "#FDE68A"}` }}>
+                  <span style={{ fontSize: 18, color: alreadyRecorded ? T.accent : "#B45309", display: "flex" }}>{alreadyRecorded ? <CheckCircleOutlineIcon fontSize="inherit" /> : <EventNoteOutlinedIcon fontSize="inherit" />}</span>
+                  <p style={{ margin: 0, fontSize: 12.5, color: alreadyRecorded ? T.accent : "#92400E", fontWeight: 600 }}>
+                    {alreadyRecorded
+                      ? "Attendance for this session is recorded. Change any mark and save to correct it."
+                      : "This session has passed and wasn't marked — you can still mark it now."}
                   </p>
                 </div>
               )}
@@ -397,17 +392,6 @@ export default function AttendancePage() {
                   <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>No session scheduled</h3>
                   <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
                     {selectedClass?.gradeName || "This class"} has no session on the timetable for {formatDisplayDate(date)} — nothing to mark. Use the arrows above to jump to the nearest session day.
-                  </p>
-                </div>
-              ) : isPastSession && !alreadyRecorded && !existingLoading ? (
-                // A session day that came and went with nobody marking it — there's nothing to
-                // show and nothing can be added now. Distinct from the "recorded — locked" case,
-                // which does render the (read-only) roster below.
-                <div style={{ ...cardStyle, textAlign: "center", padding: "48px 24px" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#FFFBEB", border: "1.5px solid #FDE68A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: "#B45309", fontSize: 22 }}><EventNoteOutlinedIcon fontSize="inherit" /></div>
-                  <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>Session passed — not marked</h3>
-                  <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
-                    Attendance for {formatDisplayDate(date)} was never recorded, and this session has now passed — it can no longer be marked.
                   </p>
                 </div>
               ) : (

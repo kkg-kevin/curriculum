@@ -103,11 +103,11 @@ const SessionOccurrenceService = {
     return SessionOccurrenceModel.findByClassId(classId);
   },
 
-  // Flips not_taken -> taken for any occurrence whose (classId, date) now has attendance rows.
-  // One-directional: attendance being deleted (which the app never does) wouldn't un-set this,
-  // matching attendance's own write-once posture.
+  // Flips an occurrence to taken once its (classId, date) has attendance rows — from not_taken, or
+  // from locked_not_marked: attendance has no lock (6 Nov 2026), so a session closed as not marked
+  // and marked late afterwards counts as taken. One-directional: attendance is never deleted.
   async _syncAttendanceTaken(classId, occurrences) {
-    const stillOpen = occurrences.filter((o) => o.attendanceState === "not_taken");
+    const stillOpen = occurrences.filter((o) => o.attendanceState === "not_taken" || o.attendanceState === "locked_not_marked");
     if (!stillOpen.length) return;
     const dates = [...new Set(stillOpen.map((o) => o.date))];
     const marked = new Set();
@@ -118,7 +118,7 @@ const SessionOccurrenceService = {
       })
     );
     const ids = stillOpen.filter((o) => marked.has(o.date)).map((o) => o.id);
-    if (ids.length) await SessionOccurrenceModel.setAttendanceState(ids, "taken");
+    if (ids.length) await SessionOccurrenceModel.setAttendanceState(ids, "taken", { attendanceLockedAt: null, attendanceLockedBy: null });
   },
 
   // Closes out every occurrence in the class older than the auto-lock window that never had
