@@ -34,6 +34,8 @@ const childSchema = z.discriminatedUnion("mode", [
 
 // POST /api/public/orders — a checkout from the website cart.
 const placeOrderSchema = z.object({
+  // An affiliate's code typed at sign-up (modules/affiliates/); optional, never refuses a sign-up.
+  referralCode: z.string().trim().max(40).optional().nullable(),
   lines: z.array(lineSchema).min(1, "Your cart is empty").max(30, "That's too many lines for one order"),
   customer: z.object({
     name: z.string().trim().min(2, "Enter your name").max(150),

@@ -20,6 +20,8 @@ const packageClubsSchema = z.object({
 const signupSchema = z.object({
   hubId: requiredText(36, "Choose a club"),
   packageSlug: requiredText(160, "Choose a package"),
+  // An affiliate's code typed at sign-up (modules/affiliates/); optional, never refuses a sign-up.
+  referralCode: z.string().trim().max(40).optional().nullable(),
   // The period chosen on the package card (6 Nov 2026); left out, the package's default.
   billingPeriod: z.enum(OFFERED_PERIODS).optional(),
   parent: z.object({

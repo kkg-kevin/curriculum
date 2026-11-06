@@ -37,6 +37,8 @@ const submitPathwayEnrollmentSchema = z.preprocess(withChildren, z.object({
   // billed at the default period.
   packageId: z.string().trim().max(64).optional().nullable(),
   billingPeriod: z.enum(["weekly", "monthly", "quarterly", "annually"]).optional().nullable(),
+  // An affiliate's code typed at sign-up (modules/affiliates/); optional, never refuses a sign-up.
+  referralCode: z.string().trim().max(40).optional().nullable(),
 }).superRefine((data, ctx) => {
   if (!data.parentPassword && !data.parentToken) ctx.addIssue({ code: "custom", path: ["parentPassword"], message: "Enter your password" });
   const seen = new Set();

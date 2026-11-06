@@ -204,6 +204,11 @@ const HomeLearningSignupService = {
       learnerName: names.slice(0, 150), interestedIn: "home_schooling", referenceId: pkg.slug, homeLearningHouseholdId: household.id, visitSource,
       message: `Signed up on the website: ${pkg.name} for ${data.children.length} ${data.children.length === 1 ? "child" : "children"}. Awaiting payment (${invoice.invoiceNumber}).`,
     }).catch(() => {});
+    // Credited to an affiliate's link or code, if any (never fails the sign-up).
+    await require("../affiliates/affiliate.service").recordReferral({
+      ownerAdminId, programme: "home_learning", recordId: household.id, invoiceId: invoice.id, code: data.referralCode, visitSource, detail: pkg.name,
+      parent: { userId: created.parentUserId, name: data.parent.name, email: data.parent.email, phone: data.parent.phone },
+    });
     await NotificationService._notify(ownerAdminId, {
       type: "home_learning_signup",
       title: "New Home Learning sign-up",

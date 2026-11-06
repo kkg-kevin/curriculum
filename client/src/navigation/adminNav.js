@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -98,6 +98,17 @@ export const ADMIN_SECTIONS = [
       },
       // Educators' payment requests — Billing's Educator Claims tab, for whoever reviews or approves them.
       { name: "Educator claims", path: "/billing?tab=claims", icon: FiFileText, module: ["claims", "claims-approval"], match: (l) => tabOf(l) === "claims" || l.pathname.startsWith("/billing/claims") || l.pathname.startsWith("/billing/claim-invoices") },
+      // Affiliate marketing (AffiliatesPage's tabs, ?tab=).
+      {
+        name: "Affiliates", path: "/affiliates", icon: FiGift, module: "affiliates",
+        children: [
+          { name: "Affiliates", path: "/affiliates?tab=affiliates", isDefault: true, match: (l) => l.pathname === "/affiliates" && (!tabOf(l) || tabOf(l) === "affiliates") },
+          { name: "Referrals", path: "/affiliates?tab=referrals" },
+          { name: "Commissions", path: "/affiliates?tab=commissions" },
+          { name: "Payouts", path: "/affiliates?tab=payouts" },
+          { name: "Settings", path: "/affiliates?tab=settings" },
+        ],
+      },
     ],
   },
   {

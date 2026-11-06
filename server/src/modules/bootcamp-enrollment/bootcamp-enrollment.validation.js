@@ -48,6 +48,8 @@ function withChildren(body) {
 // "Sign in" or a sign-up just made ("Enrol another child").
 const submitBootcampEnrollmentSchema = z.preprocess(withChildren, z.object({
   bootcampIdOrSlug: z.string().trim().min(1, "Bootcamp is required"),
+  // An affiliate's code typed at sign-up (modules/affiliates/); optional, never refuses a sign-up.
+  referralCode: z.string().trim().max(40).optional().nullable(),
   parentName: z.string().trim().min(2, "Please enter your name").max(120),
   parentEmail: z.string().trim().email("Enter a valid email address").max(160),
   parentPhone: phone,

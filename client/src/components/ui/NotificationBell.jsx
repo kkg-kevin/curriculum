@@ -132,6 +132,16 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "affiliate_referral":
+    case "affiliate_commission":
+    case "affiliate_approved":
+    case "affiliate_payout_paid":
+    case "affiliate_payout_rejected":
+      // The affiliate's own Refer & earn page (set by the server for their portal).
+      return p.route || "/parent/refer";
+    case "affiliate_payout_requested":
+    case "affiliate_joined":
+      return p.route || "/affiliates";
     case "qa_visit_announced":
     case "qa_review_submitted":
     case "qa_visit_due":

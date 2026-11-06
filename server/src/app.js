@@ -64,6 +64,7 @@ const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
+const { router: affiliateRoutes, publicRouter: publicAffiliateRoutes } = require("./modules/affiliates/affiliate.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -195,6 +196,9 @@ app.use("/api/public", publicMentorReviewRoutes);
 // (/public/educators/:slug). Only what educator-profile.service.js's publicView allows; nothing is
 // collected from anyone.
 app.use("/api/public", publicEducatorProfileRoutes);
+// Unauthenticated by design — the website checks a typed referral code (only valid / not, never
+// whose it is). See modules/affiliates/.
+app.use("/api/public", publicAffiliateRoutes);
 // Unauthenticated by design — the anonymous public diagnostic feature (pick a pathway, take a
 // diagnostic, see a graded report on the spot). Reads/grades against the ONE admin tenant
 // PUBLIC_CONTENT_ADMIN_ID designates (see env.js) — never the caller's own tenant, since there
@@ -367,6 +371,9 @@ app.use("/api/mentor-reviews", protect, attachOwnRecords, mentorReviewRoutes);
 // The educator performance profile — internal views, the educator's own, publishing, Find a mentor
 // (parents) and mentor requests. See modules/educator-profiles/.
 app.use("/api/educator-profiles", protect, attachOwnRecords, educatorProfileRoutes);
+// Affiliate marketing — admins manage affiliates, commissions and payouts; parents and educators
+// see their own "Refer & earn" (/me). See modules/affiliates/.
+app.use("/api/affiliates", protect, attachOwnRecords, affiliateRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -40,6 +40,8 @@ function runInvoicePaidHooks(invoice) {
     () => require("../orders/orders.service").activateForPaidInvoice(invoice),
     // "I've paid" notices still waiting on it have nothing left to confirm.
     () => require("../payments/payment-notices.service").closeForPaidInvoice(invoice),
+    // A referred family's invoice earns its affiliate a commission (modules/affiliates/).
+    () => require("../affiliates/affiliate.service").onInvoicePaid(invoice),
   ]);
 }
 

@@ -171,6 +171,14 @@ const PathwayEnrollmentService = {
       console.error("[pathway-enrollment] could not start the subscription:", err.message);
     }
     for (const { lead, learner } of enrolled) await LeadModel.update(lead.id, { learnerId: learner.id, invoiceId: invoice?.id || null });
+    // Credited to an affiliate's link or code, if any (never fails the enrolment).
+    if (subscription) {
+      await require("../affiliates/affiliate.service").recordReferral({
+        ownerAdminId: plan.ownerAdminId, programme: "pathway", recordId: subscription.id, invoiceId: invoice?.id || null,
+        code: data.referralCode, visitSource, detail: `${pathway.name} · ${plan.name}`,
+        parent: { userId: parentUser?.id || null, name: data.parentName, email: data.parentEmail, phone: data.parentPhone },
+      });
+    }
 
     return {
       learners: enrolled.map(({ child, course, stage }) => ({

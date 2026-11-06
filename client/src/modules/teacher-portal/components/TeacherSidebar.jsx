@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiHeart } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -18,6 +18,8 @@ const menuItems = [
   { name: "Hub Check-ins",   path: "/teacher-portal/checkins", icon: FiClipboard },
   // What families say — anonymous, from 3 reviews (modules/mentor-reviews).
   { name: "Parent feedback", path: "/teacher-portal/feedback", icon: FiHeart },
+  // Their referral link and commissions (modules/affiliates).
+  { name: "Refer & earn",    path: "/teacher-portal/refer", icon: FiGift },
   // One page: their performance, their public profile, teaching and account (tabs).
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
 ];

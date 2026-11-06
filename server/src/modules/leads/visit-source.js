@@ -13,6 +13,9 @@ const visitSourceSchema = z.object({
   utmMedium: text,
   utmCampaign: text,
   firstVisitAt: z.string().datetime().optional(),
+  // An affiliate's link (?ref=CODE) and when it was followed (modules/affiliates/).
+  ref: z.string().trim().max(40).optional(),
+  refAt: z.string().datetime().optional(),
 });
 
 const MAX_HEADER = 2000;
