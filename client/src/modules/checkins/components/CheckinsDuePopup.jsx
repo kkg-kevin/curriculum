@@ -3,18 +3,23 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight, FiCalendar, FiCheckCircle, FiClipboard, FiMapPin, FiTrendingDown, FiTrendingUp, FiUser, FiVideo, FiX } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
-import { usePermissions } from "../../../hooks/usePermissions";
 import { useDueCheckins } from "../hooks/useCheckins";
-import { CheckinStyles, FORMAT_LABEL, FREQUENCY_LABEL, btn, font, formatDate } from "../shared";
+import { CheckinStyles, FORMAT_LABEL, FREQUENCY_LABEL, btn, font, formatDate, safeMeetingLink } from "../shared";
 
-// Shown when a hub's Account Manager or Training Lead signs in and has check-ins whose day has
-// come with no report yet (GET /api/checkins/due). "Remind me later" hides it until they next
+// Shown at sign-in (GET /api/checkins/due) with two kinds of check-in:
+//   write   for a hub's Account Manager or Training Lead: check-ins whose day has come with no
+//           report yet;
+//   attend  for everyone chosen to take part (6 Nov 2026 — our team, the hub's login, mentors,
+//           parents): a check-in coming up in the next few days or today, with Join for an online
+//           one on its day. "Remind me later" hides it until they next
 // sign in — remembered for this browser tab, so reloading doesn't bring it back. Mounted in each
 // portal they can be in:
 //   admin   the admin app (MainLayout) — an admin named on a hub; reports at /checkins
 //   hub     the hub portal (SchoolPortalLayout) — an Account Manager / Training Lead session
 //   teacher the teacher portal (TeacherPortalLayout) — an educator named on a hub; "Write report"
-//           first switches them to their Account Manager / Training Lead sign-in
+//           first switches them to their Account Manager / Training Lead sign-in; a mentor taking part
+//   hublogin the hub's own login (SchoolPortalLayout), taking part
+//   parent  the parent portal (ParentPortalLayout), taking part
 
 const dismissedKey = (userId) => `checkins.duePopup.dismissed:${userId}`;
 function isDismissed(userId) {
@@ -24,6 +29,14 @@ function isDismissed(userId) {
 const SHOWN = 3;
 const kenyaToday = () => new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
 const daysBetween = (from, to) => Math.round((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000);
+
+// When a check-in to attend is: today, tomorrow, or in a few days.
+function comingLook(scheduledDate) {
+  const days = daysBetween(kenyaToday(), scheduledDate);
+  if (days <= 0) return { text: "Today", bg: "#DCFCE7", color: "#166534" };
+  if (days === 1) return { text: "Tomorrow", bg: "#E0F2FE", color: "#075985" };
+  return { text: `In ${days} days`, bg: "#EFF6FF", color: "#1D4ED8" };
+}
 
 // "Today", or how long it has been waiting.
 function dueLook(scheduledDate) {
@@ -59,14 +72,23 @@ const PARTS = [
 
 export default function CheckinsDuePopup() {
   const { user, switchRole } = useAuth();
-  const { can } = usePermissions();
-  const mode = user?.hubLead ? "hub" : user?.role === "teacher" ? "teacher" : "admin";
-  const allowed = !!user && (mode === "hub"
-    || (mode === "teacher" && (user.roles || []).includes("hubLead"))
-    || (mode === "admin" && can("checkins-manage", "view")));
-  const base = mode === "admin" ? "/checkins" : "/school-portal/checkins";
+  const mode = user?.hubLead ? "hub"
+    : user?.role === "teacher" ? "teacher"
+    : user?.role === "school" ? "hublogin"
+    : user?.role === "learner" ? "parent"
+    : "admin";
+  // Everyone may be taking part in a check-in; the server answers with only theirs. (A child's own
+  // username login never is.)
+  const allowed = !!user && !(mode === "parent" && user.username);
+  // Where each opens: a report to write in the sign-in that writes it; a check-in to attend in the
+  // person's own portal.
+  const writeBase = mode === "admin" ? "/checkins" : "/school-portal/checkins";
+  const attendBase = { admin: "/checkins", hub: "/school-portal/checkins", hublogin: "/school-portal/checkins", teacher: "/teacher-portal/checkins", parent: "/parent/checkins" }[mode];
   const [dismissed, setDismissed] = useState(() => (user ? isDismissed(user.id) : false));
   const { data: due = [] } = useDueCheckins({ enabled: allowed && !dismissed });
+  const toWrite = due.filter((s) => s.kind !== "attend");
+  const toAttend = due.filter((s) => s.kind === "attend");
+  const base = toWrite.length ? writeBase : attendBase;
   const navigate = useNavigate();
   const dialogRef = useRef(null);
   const visible = allowed && !dismissed && due.length > 0;
@@ -75,9 +97,9 @@ export default function CheckinsDuePopup() {
     try { sessionStorage.setItem(dismissedKey(user.id), "1"); } catch { /* private mode: shows again next page load */ }
     setDismissed(true);
   };
-  const open = async (path) => {
+  const open = async (path, kind = "write") => {
     close();
-    if (mode === "teacher") {
+    if (mode === "teacher" && kind === "write") {
       try { await switchRole("hubLead"); } catch { return; }
     }
     navigate(path);
@@ -99,6 +121,9 @@ export default function CheckinsDuePopup() {
     ? s.trainingLeadName && { name: s.trainingLeadName, role: "Training Lead" }
     : s.accountManagerName && { name: s.accountManagerName, role: "Account Manager" });
   const extra = due.length - SHOWN;
+  const title = toWrite.length
+    ? `${firstName ? `${firstName}, you` : "You"} have ${toWrite.length === 1 ? "a report" : `${toWrite.length} reports`} to write${toAttend.length ? ` and ${toAttend.length === 1 ? "a check-in" : `${toAttend.length} check-ins`} coming up` : ""}`
+    : `${firstName ? `${firstName}, ` : ""}${toAttend.length === 1 ? "a hub check-in is" : `${toAttend.length} hub check-ins are`} coming up`;
 
   return createPortal(
     <div role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }} className="ci-due-backdrop" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: font }}>
@@ -129,17 +154,19 @@ export default function CheckinsDuePopup() {
             <div style={{ minWidth: 0, paddingRight: 28 }}>
               <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.7)" }}>Hub check-ins</p>
               <h2 id="ci-due-title" style={{ margin: 0, fontSize: 20, fontWeight: 900, lineHeight: 1.25, letterSpacing: "-0.3px" }}>
-                {firstName ? `${firstName}, you` : "You"} have {due.length === 1 ? "a report" : `${due.length} reports`} to write
+                {title.charAt(0).toUpperCase() + title.slice(1)}
               </h2>
               <p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>
-                Once a check-in has happened, share how it went. It only takes three parts:
+                {toWrite.length
+                  ? "Once a check-in has happened, share how it went. It only takes three parts:"
+                  : "You've been asked to take part. Here's when — and the link to join an online one. The report comes to you afterwards."}
               </p>
-              {mode === "teacher" && (
+              {mode === "teacher" && toWrite.length > 0 && (
                 <p style={{ margin: "6px 0 0", fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>
                   Writing one switches you to your Account Manager / Training Lead sign-in.
                 </p>
               )}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+              <div style={{ display: toWrite.length ? "flex" : "none", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
                 {PARTS.map(({ icon: Icon, label }) => (
                   <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 999, background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.22)", fontSize: 12, fontWeight: 700 }}>
                     <Icon size={12} /> {label}
@@ -152,16 +179,18 @@ export default function CheckinsDuePopup() {
 
         {/* Check-ins */}
         <div style={{ padding: "18px 20px 6px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, background: "#F8FAFC" }}>
-          {due.slice(0, SHOWN).map((s) => {
-            const look = dueLook(s.scheduledDate);
-            const partner = partnerOf(s);
+          {[...toWrite, ...toAttend].slice(0, SHOWN).map((s) => {
+            const attending = s.kind === "attend";
+            const look = attending ? comingLook(s.scheduledDate) : dueLook(s.scheduledDate);
+            const partner = attending ? null : partnerOf(s);
+            const join = attending && s.format === "online" && s.scheduledDate <= kenyaToday() ? safeMeetingLink(s.meetingLink) : null;
             return (
+              <div key={s.id} style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
               <button
-                key={s.id}
                 type="button"
                 className="ci-due-row"
-                onClick={() => open(`${base}/sessions/${s.id}`)}
-                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #E5E7EB", background: "#fff", textAlign: "left", cursor: "pointer", fontFamily: font }}
+                onClick={() => open(`${attending ? attendBase : writeBase}/sessions/${s.id}`, s.kind)}
+                style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, padding: "12px 14px", borderRadius: 14, border: "1.5px solid #E5E7EB", background: "#fff", textAlign: "left", cursor: "pointer", fontFamily: font }}
               >
                 <HubAvatar name={s.hubName} photo={s.hubPhoto} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -179,9 +208,15 @@ export default function CheckinsDuePopup() {
                   )}
                 </div>
                 <span className="ci-due-go" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, background: "#25476a", color: "#fff", fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>
-                  Write report <FiArrowRight size={13} />
+                  {attending ? "View" : "Write report"} <FiArrowRight size={13} />
                 </span>
               </button>
+              {join && (
+                <a href={join} target="_blank" rel="noopener noreferrer" onClick={close} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 14, background: "#047857", color: "#fff", fontSize: 13, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}>
+                  <FiVideo size={14} /> Join
+                </a>
+              )}
+              </div>
             );
           })}
           {extra > 0 && (

@@ -25,7 +25,63 @@ async function send(recipientIds, event, ownerAdminId) {
   })));
 }
 
+// Where a person reads check-ins, from their own portal (6 Nov 2026): our team in the admin app, the
+// hub's login in the hub portal, a mentor in the teacher portal, a parent in /parent.
+const PORTAL = { admin: "/checkins", collaborator: "/checkins", school: "/school-portal/checkins", teacher: "/teacher-portal/checkins", learner: "/parent/checkins" };
+async function portalsOf(userIds) {
+  const db = require("../../config/db");
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!ids.length) return new Map();
+  const users = await db("users").whereIn("id", ids).select("id", "role");
+  return new Map(users.map((u) => [u.id, PORTAL[u.role] || "/checkins"]));
+}
+
+// One notification per person, its link into their own portal (`event(base)` builds it).
+async function sendToPortals(recipientIds, event, ownerAdminId) {
+  const portals = await portalsOf(recipientIds);
+  await Promise.all([...portals.entries()].map(([id, base]) => {
+    const e = event(base);
+    return NotificationService.notifyPerson(id, { ...e, ownerAdminId, dedupeKey: `${e.dedupeKey}:${id}` }).catch((err) => {
+      console.error("[checkins] could not send a notification:", err.message);
+    });
+  }));
+}
+
 const CheckinNotifications = {
+  // Chosen to take part in a hub's check-ins (when they're set up, or added later).
+  invited(schedule, hubName, userIds) {
+    return sendToPortals(userIds, (base) => ({
+      type: "checkin_invited",
+      title: `You're invited to check-ins with ${hubName}`,
+      message: `${FREQUENCY[schedule.frequency] || schedule.frequency} check-ins with ${hubName} (${FORMAT[schedule.format] || schedule.format}), starting ${day(schedule.startDate)}.${schedule.format === "online" && schedule.meetingLink ? " You'll get the link to join before each one." : ""}`.replace(/^./, (c) => c.toUpperCase()),
+      payload: { route: base, scheduleId: schedule.id },
+      dedupeKey: `checkin_invited:${schedule.id}`,
+    }), schedule.ownerAdminId);
+  },
+
+  // On the day, to everyone taking part (the Account Manager and Training Lead get "due").
+  today(session, hubName, userIds) {
+    const join = session.format === "online" && session.meetingLink ? ` Join here: ${session.meetingLink}` : "";
+    return sendToPortals(userIds, (base) => ({
+      type: "checkin_today",
+      title: `Check-in with ${hubName} today`,
+      message: `Today's check-in with ${hubName} is ${FORMAT[session.format] || session.format}.${join}`,
+      payload: { route: `${base}/sessions/${session.id}`, sessionId: session.id, meetingLink: session.meetingLink || null },
+      dedupeKey: `checkin_today:${session.id}:${session.scheduledDate}`,
+    }), session.ownerAdminId);
+  },
+
+  // The report is in — to everyone involved (not whoever wrote it).
+  reportReady(session, hubName, userIds) {
+    return sendToPortals(userIds, (base) => ({
+      type: "checkin_report_ready",
+      title: `Report from the check-in with ${hubName}`,
+      message: `The report from the ${day(session.scheduledDate)} check-in with ${hubName} is ready to read.`,
+      payload: { route: `${base}/sessions/${session.id}`, sessionId: session.id },
+      dedupeKey: `checkin_report_ready:${session.id}`,
+    }), session.ownerAdminId);
+  },
+
   // A schedule names someone for the first time (or a change puts them on it).
   assigned(schedule, hubName, userIds) {
     return send(userIds, {

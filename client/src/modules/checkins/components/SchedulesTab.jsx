@@ -30,11 +30,14 @@ export default function SchedulesTab({ canManage }) {
                 <strong style={{ fontSize: 14, color: T.ink }}>{s.hubName}</strong>
                 <Pill look={{ bg: "#EFF6FF", color: "#1D4ED8" }}>{FREQUENCY_LABEL[s.frequency]}</Pill>
                 <Pill look={{ bg: "#F3F4F6", color: "#374151" }}>{FORMAT_LABEL[s.format]}</Pill>
+                {s.templateName && <Pill look={{ bg: "#F5F3FF", color: "#6D28D9" }}>{s.templateName}</Pill>}
                 {s.status === "ended" && <Pill look={{ bg: "#F3F4F6", color: "#6B7280" }}>Ended</Pill>}
               </div>
               <div style={{ marginTop: 4, fontSize: 12.5, color: T.inkMuted, display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <span>From {formatDate(s.startDate)}{s.status === "ended" && s.endDate ? ` to ${formatDate(s.endDate)}` : ""}</span>
                 <span>Account Manager: {s.accountManagerName || "—"} · Training Lead: {s.trainingLeadName || "—"}</span>
+                <span>{s.participants?.length ? `${s.participants.length} more taking part` : "Nobody else taking part"}</span>
+                {s.format === "online" && <span>{s.meetingLink ? "Join link set" : "No join link"}</span>}
               </div>
             </div>
             {canManage && s.status === "active" && (

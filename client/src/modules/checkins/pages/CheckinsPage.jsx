@@ -4,8 +4,10 @@ import { useAuth } from "../../../context/AuthContext";
 import CheckinList from "../components/CheckinList";
 import SchedulesTab from "../components/SchedulesTab";
 import TasksTab from "../components/TasksTab";
-import { FiCalendar, FiCheckSquare, FiClipboard, FiGrid, FiList } from "react-icons/fi";
-import { CheckinStyles, Tabs, font, isHubViewer } from "../shared";
+// Templates are QA's own screen, saving to check-ins (qa/templateSources.js).
+import TemplatesTab from "../../qa/components/TemplatesTab";
+import { FiCalendar, FiCheckSquare, FiClipboard, FiFileText, FiGrid, FiList } from "react-icons/fi";
+import { CheckinStyles, Tabs, font, isHubViewer, isParticipantViewer } from "../shared";
 
 // Hub check-ins. Everyone has My check-ins and My tasks (from check-ins' resolutions); in the admin app, check-in managers (the workspace's
 // admins, or staff whose role includes "Hub check-ins: schedules & every hub") also get every
@@ -17,6 +19,8 @@ export default function CheckinsPage() {
   // A hub's Account Manager / Training Lead (the hub portal) has just their own check-ins.
   const { user } = useAuth();
   const hubViewer = isHubViewer(user);
+  // An educator or a parent taking part: just the check-ins they're on.
+  const participantViewer = isParticipantViewer(user);
   // The hub portal's hub switcher (useSchoolPortalScope) — which hub's check-ins the hub reads.
   const { selectedHubId } = useOutletContext() || {};
   const isManager = !user?.hubLead && !hubViewer && can("checkins-manage", "view");
@@ -29,6 +33,7 @@ export default function CheckinsPage() {
       { key: "all", label: "All check-ins", icon: FiGrid },
       { key: "all-tasks", label: "All tasks", icon: FiList },
       { key: "schedules", label: "Schedules", icon: FiCalendar },
+      { key: "templates", label: "Templates", icon: FiFileText },
     ] : []),
   ];
   const tab = tabs.some((t) => t.key === params.get("tab")) ? params.get("tab") : "mine";
@@ -44,13 +49,17 @@ export default function CheckinsPage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "26px 30px", marginBottom: 18 }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Hub Check-ins</h1>
         <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, maxWidth: 620 }}>
-          {hubViewer
+          {participantViewer
+            ? "The hub check-ins you've been asked to take part in — when they are, the link to join an online one, and each report once it's written."
+            : hubViewer
             ? "Regular check-ins on how your hub is running, with your Account Manager and Training Lead. After each one they write a report: the highs, the lows and the resolutions."
-            : "Regular check-ins on how each hub is running. When one is due, write its report: the highs, the lows and the resolutions."}
+            : "Regular check-ins on how each hub is running. When one is due, write its report: the template's items if its schedule has one, then the highs, the lows and the resolutions."}
         </p>
       </div>
 
-      {hubViewer ? (
+      {participantViewer ? (
+        <CheckinList key="taking-part" scope="mine" hubView participantView />
+      ) : hubViewer ? (
         <CheckinList key={selectedHubId || "hub"} scope="mine" hubView hubId={selectedHubId} />
       ) : (
         <>
@@ -63,6 +72,7 @@ export default function CheckinsPage() {
           {tab === "all" && isManager && <CheckinList key="all" scope="all" />}
           {tab === "all-tasks" && isManager && <TasksTab key="all-tasks" scope="all" />}
           {tab === "schedules" && isManager && <SchedulesTab canManage={canManage} />}
+          {tab === "templates" && isManager && <TemplatesTab source="checkins" />}
         </>
       )}
     </div>

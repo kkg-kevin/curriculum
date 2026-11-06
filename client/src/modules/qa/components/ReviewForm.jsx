@@ -18,8 +18,9 @@ const TONE = {
 };
 
 // One item to answer: yes / no / not applicable, a rubric level (showing what it looks like for this
-// item), or a comment — and, for the first two, an optional note.
-function Item({ criterion, scale, answer, onChange }) {
+// item), or a comment — and, for the first two, an optional note. Hub check-in reports answer their
+// template's items with it too (CheckinSessionPage).
+export function TemplateItem({ criterion, scale, answer, onChange }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(answer?.comment));
   const set = (patch) => onChange({ ...answer, ...patch });
   const value = answer?.value;
@@ -125,7 +126,7 @@ export default function ReviewForm({ visit, onSave, saving, sent = false, onCanc
         <section key={s.id} className="qa-card" style={{ ...card, padding: "16px 20px", ...stack(10) }}>
           <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink, overflowWrap: "anywhere" }}>{s.title}</h2>
           {s.criteria.map((c) => (
-            <Item key={c.id} criterion={c} scale={template.scale || []} answer={answers[c.id]} onChange={(a) => setAnswers((prev) => ({ ...prev, [c.id]: a }))} />
+            <TemplateItem key={c.id} criterion={c} scale={template.scale || []} answer={answers[c.id]} onChange={(a) => setAnswers((prev) => ({ ...prev, [c.id]: a }))} />
           ))}
         </section>
       ))}

@@ -358,6 +358,17 @@ const CHECKS = {
       usage("schedules", ["active visit schedule", "active visit schedules"], db("qa_schedules").where({ templateId: id, status: "active" }), { table: "qa_schedules", labelFrom: null }),
     ],
   },
+
+  // A check-in template (modules/checkins/): check-ins and active schedules use it. Archive it
+  // instead — reports keep their own copy either way.
+  checkinTemplate: {
+    name: "checkin_templates",
+    alternative: { action: "archive", label: "Archive the template instead" },
+    uses: (id) => [
+      usage("checkins", ["check-in", "check-ins"], db("checkin_sessions").where({ templateId: id }), { table: "checkin_sessions", labelFrom: null }),
+      usage("schedules", ["active check-in schedule", "active check-in schedules"], db("checkin_schedules").where({ templateId: id, status: "active" }), { table: "checkin_schedules", labelFrom: null }),
+    ],
+  },
 };
 
 // The workspace a record belongs to — so a check (which stops before the route's own delete, where
@@ -383,6 +394,7 @@ const OWNER = {
   game: (id) => db("event_games").where({ id }).first("ownerAdminId"),
   supervisor: (id) => db("users").where({ id }).first("invitedByAdminId as ownerAdminId"),
   qaTemplate: (id) => db("qa_templates").where({ id }).first("ownerAdminId"),
+  checkinTemplate: (id) => db("checkin_templates").where({ id }).first("ownerAdminId"),
 };
 
 const UsageService = {

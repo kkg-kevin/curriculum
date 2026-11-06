@@ -1,4 +1,4 @@
-import api from "../../../services/api";
+import api, { checkDelete } from "../../../services/api";
 
 // Hub check-ins (server/src/modules/checkins/). The check-ins list takes its filters as query
 // params and answers { sessions, total, page, limit, counts, today }.
@@ -7,7 +7,18 @@ const data = (r) => r.data.data;
 
 export const checkinsApi = {
   people: () => api.get(`${BASE}/people`).then(data),
+
+  // Templates — the same as QA's (qa/templateSources.js), managers only.
+  templates: (params) => api.get(`${BASE}/templates`, { params }).then(data),
+  template: (id) => api.get(`${BASE}/templates/${id}`).then(data),
+  createTemplate: (body) => api.post(`${BASE}/templates`, body).then(data),
+  updateTemplate: (id, body) => api.put(`${BASE}/templates/${id}`, body).then(data),
+  setTemplateStatus: (id, status) => api.put(`${BASE}/templates/${id}/status`, { status }).then(data),
+  deleteTemplate: (id) => api.delete(`${BASE}/templates/${id}`).then(data),
+  checkDeleteTemplate: (id) => checkDelete(`${BASE}/templates/${id}`),
   hubs: () => api.get(`${BASE}/hubs`).then(data),
+  // Who can take part in a hub's check-ins: { team, hub, mentors, parents } (managers).
+  hubPeople: (hubId) => api.get(`${BASE}/hubs/${hubId}/people`).then(data),
   due: () => api.get(`${BASE}/due`).then(data),
 
   schedules: (params) => api.get(`${BASE}/schedules`, { params }).then(data),

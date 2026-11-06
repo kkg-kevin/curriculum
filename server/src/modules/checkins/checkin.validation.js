@@ -1,6 +1,9 @@
 const { z } = require("zod");
 const { FREQUENCIES, FORMATS } = require("./checkin.constants");
 const { hasContent } = require("./checkin.rules");
+const { meetingLinkSchema } = require("../learning-hubs/learning-hub.validation");
+// Templates are the same as quality assurance's (qa.rules.js), so their shape is checked the same way.
+const { templateSchema, templateStatusSchema } = require("../qa/qa.validation");
 
 const date = (message = "Use a date") => z.string().regex(/^\d{4}-\d{2}-\d{2}$/, message);
 const id = (message) => z.string({ error: message }).min(1, message).max(36);
@@ -12,11 +15,19 @@ const scheduleSchema = z.object({
   frequency: z.enum(FREQUENCIES, { message: "Choose how often" }),
   startDate: date("Choose the date of the first check-in"),
   format: z.enum(FORMATS, { message: "Online or in person?" }),
+  // Optional — without one the report is the highs, lows and resolutions only.
+  templateId: z.string().max(36).optional().nullable().transform((v) => v || null),
+  // Who takes part (6 Nov 2026): logins chosen from the hub's people — checked against
+  // participantOptions in checkin.service.js. The Account Manager and Training Lead always do.
+  participantIds: z.array(z.string().min(1).max(36)).max(3000, "That's too many people").optional().default([]),
+  // The link to join an online check-in (any meeting link — Meet, Zoom, Teams…).
+  meetingLink: meetingLinkSchema.optional().nullable().transform((v) => v || null),
 });
 
 const listSessionsSchema = z.object({
   scope: z.enum(["mine", "all"]).optional().default("mine"),
-  view: z.enum(["due", "upcoming", "reported", "all"]).optional().default("due"),
+  // "coming": not reported yet, today or later — what people reading check-ins look ahead at.
+  view: z.enum(["due", "upcoming", "coming", "reported", "all"]).optional().default("due"),
   hubId: z.string().max(36).optional(),
   staffId: z.string().max(36).optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
@@ -27,7 +38,15 @@ const listSessionsSchema = z.object({
 // client's sanitizeHtml). Each is checked for being filled in by checkin.rules.js, so every
 // missing one is named at once.
 const text = z.string().trim().max(50000, "That part of the report is too long").optional().nullable().transform((v) => v || "");
-const reportSchema = z.object({ highs: text, lows: text, resolutions: text });
+// With a template, its answers too ({ [itemId]: { value, comment } }) — checked against the
+// check-in's template in checkin.service.js (qa.rules.js's cleanAnswers / reviewProblems rules).
+const reportSchema = z.object({
+  highs: text, lows: text, resolutions: text,
+  answers: z.record(z.string(), z.object({
+    value: z.union([z.string().max(20), z.number()]).optional().nullable(),
+    comment: z.string().max(2000, "A comment is too long").optional().nullable(),
+  })).optional().default({}),
+});
 
 // A task from the resolutions: what (rich text, like the report), who (the check-in's Account
 // Manager or Training Lead, or an admin — checked in checkin.service.js), and by when.
@@ -44,4 +63,4 @@ const listTasksSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
 });
 
-module.exports = { scheduleSchema, listSessionsSchema, reportSchema, taskSchema, taskStatusSchema, listTasksSchema };
+module.exports = { scheduleSchema, listSessionsSchema, reportSchema, taskSchema, taskStatusSchema, listTasksSchema, templateSchema, templateStatusSchema };

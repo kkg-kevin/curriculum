@@ -3,9 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { FiArrowDown, FiArrowLeft, FiArrowUp, FiBookOpen, FiChevronDown, FiPlus, FiTrash2 } from "react-icons/fi";
 import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
-import { reportHtml } from "../../checkins/shared";
-import { useQaMutation, useQaTemplate } from "../hooks/useQa";
-import { qaApi } from "../services/qaApi";
+import { reportHtml, useCheckinsBase } from "../../checkins/shared";
+import { templateSource, useSourceMutation, useSourceTemplate } from "../templateSources";
 import { KIND_LABEL, QaStyles, T, btn, card, font, hint, input, label, useQaBase } from "../shared";
 
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -18,32 +17,12 @@ const DEFAULT_SCALE = [
 const blankItem = (kind = "yes_no") => ({ id: newId(), text: "", help: "", kind, descriptors: {} });
 const blankSection = () => ({ id: newId(), title: "", criteria: [blankItem()] });
 
-// A ready template to start from — a classroom observation.
-function example() {
+// A ready template to start from — the source's own (a classroom observation for QA, a monthly
+// hub check-in for check-ins; qa/templateSources.js).
+function example(source) {
   const item = (text, kind, help = "") => ({ ...blankItem(kind), text, help: help ? `<p>${help}</p>` : "" });
-  return {
-    name: "Classroom observation",
-    description: "<p>How a lesson is prepared, taught and managed. Sit in for the whole lesson where you can.</p>",
-    scale: DEFAULT_SCALE,
-    sections: [
-      { id: newId(), title: "Preparation", criteria: [
-        item("Lesson plan is ready and follows the curriculum", "yes_no"),
-        item("Materials, devices and kits are ready before learners arrive", "yes_no"),
-        item("The lesson's objective is shared with learners", "yes_no"),
-      ] },
-      { id: newId(), title: "Teaching", criteria: [
-        item("Explains concepts clearly, at the learners' level", "rubric"),
-        item("Checks understanding during the lesson", "rubric", "Questions, quick checks, walking round."),
-        item("Every learner gets hands-on time", "rubric"),
-      ] },
-      { id: newId(), title: "Class management", criteria: [
-        item("Starts and ends on time", "yes_no"),
-        item("Learners are engaged and on task", "rubric"),
-        item("Devices and kits are handled safely and packed away", "yes_no"),
-      ] },
-      { id: newId(), title: "Notes", criteria: [item("Anything else observed", "comment")] },
-    ],
-  };
+  const section = (title, criteria) => ({ id: newId(), title, criteria });
+  return { scale: DEFAULT_SCALE, ...source.example(item, section) };
 }
 
 const fresh = () => ({ name: "", description: "", scale: DEFAULT_SCALE, sections: [blankSection()] });
@@ -78,18 +57,23 @@ function IconButton({ onClick, label: text, disabled, children, danger }) {
   );
 }
 
-// Makes or changes a QA template: its name, the rubric's levels, and sections of items — each
+// Makes or changes a template: its name, the rubric's levels, and sections of items — each
 // answered yes / no, on the rubric (with what each level looks like for it, optionally), or with a
 // comment. /templates/new (?from=<id> copies one), /templates/:id. Someone who can't change it sees
-// it read only, and can copy it.
-export default function TemplateEditorPage() {
+// it read only, and can copy it. `source` "qa" (QA visits) or "checkins" (hub check-ins) — where
+// it saves and how it's worded (qa/templateSources.js).
+export default function TemplateEditorPage({ source: sourceName = "qa" }) {
+  const source = templateSource(sourceName);
+  const words = source.words;
   const { id } = useParams();
   const [params] = useSearchParams();
   const fromId = params.get("from");
-  const base = useQaBase();
+  const qaBase = useQaBase();
+  const checkinsBase = useCheckinsBase();
+  const base = sourceName === "checkins" ? checkinsBase : qaBase;
   const navigate = useNavigate();
   const isNew = !id;
-  const { data: existing, isLoading } = useQaTemplate(id || fromId);
+  const { data: existing, isLoading } = useSourceTemplate(source, id || fromId);
   const [form, setForm] = useState(isNew && !fromId ? fresh() : null);
   const [problems, setProblems] = useState([]);
   const [openDescriptors, setOpenDescriptors] = useState({});
@@ -99,7 +83,7 @@ export default function TemplateEditorPage() {
     if (existing && !form) setForm(toForm(existing, isNew));
   }, [existing, form, isNew]);
 
-  const save = useQaMutation((body) => (isNew ? qaApi.createTemplate(body) : qaApi.updateTemplate(id, body)), isNew ? "Template made" : "Template saved");
+  const save = useSourceMutation(source, (body) => (isNew ? source.api.create(body) : source.api.update(id, body)), isNew ? "Template made" : "Template saved");
   const readOnly = !isNew && existing && !existing.canEdit;
   const usesRubric = form?.sections.some((s) => s.criteria.some((c) => c.kind === "rubric"));
 
@@ -128,7 +112,7 @@ export default function TemplateEditorPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: T.ink }}>{isNew ? "New template" : readOnly ? form.name : "Edit template"}</h1>
           {isNew && !fromId && (
-            <button type="button" className="ci-btn" onClick={() => { if (form.sections.every((s) => !s.title && s.criteria.every((c) => !c.text)) || window.confirm("Replace what you've written with the example?")) setForm(example()); }} style={btn("secondary", { size: "sm" })}>
+            <button type="button" className="ci-btn" onClick={() => { if (form.sections.every((s) => !s.title && s.criteria.every((c) => !c.text)) || window.confirm("Replace what you've written with the example?")) setForm(example(source)); }} style={btn("secondary", { size: "sm" })}>
               Start from an example
             </button>
           )}
@@ -137,7 +121,7 @@ export default function TemplateEditorPage() {
         {readOnly && <p style={{ ...hint, marginTop: -6 }}>Made by someone else — only they (or an admin) can change it. Copy it to make your own version.</p>}
         <div>
           <label htmlFor="qa-t-name" style={label}>Name</label>
-          <input id="qa-t-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} disabled={readOnly} placeholder="e.g. Classroom observation" style={input} maxLength={150} />
+          <input id="qa-t-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} disabled={readOnly} placeholder={words.namePlaceholder} style={input} maxLength={150} />
         </div>
         <div>
           <p style={label}>Description <span style={{ fontWeight: 500, color: T.inkFaint }}>(optional)</span></p>
@@ -145,12 +129,12 @@ export default function TemplateEditorPage() {
             <RichContent html={form.description} emptyText="No description." />
           ) : (
             <>
-              <p style={{ ...hint, margin: "0 0 6px" }}>What this template is for and how to use it — reviewers see it at the top of every review.</p>
+              <p style={{ ...hint, margin: "0 0 6px" }}>{words.descriptionHelp}</p>
               <RichTextEditor value={form.description} onChange={(html) => setForm((f) => ({ ...f, description: html }))} minHeight={90} maxHeight={320} />
             </>
           )}
         </div>
-        {!isNew && !readOnly && <p style={{ ...hint, margin: 0 }}>Changes apply to visits whose review hasn&apos;t been started. Reports already begun keep the version they were written on.</p>}
+        {!isNew && !readOnly && <p style={{ ...hint, margin: 0 }}>{words.changes}</p>}
       </section>
 
       {usesRubric && (
@@ -176,7 +160,7 @@ export default function TemplateEditorPage() {
         <section key={section.id} style={{ ...card, padding: "16px 20px", display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: T.inkFaint, textTransform: "uppercase", flexShrink: 0 }}>Section {si + 1}</span>
-            <input value={section.title} onChange={(e) => setSection(si, { title: e.target.value })} disabled={readOnly} placeholder="e.g. Preparation" aria-label={`Section ${si + 1} title`} style={{ ...input, fontWeight: 700, flex: 1 }} maxLength={150} />
+            <input value={section.title} onChange={(e) => setSection(si, { title: e.target.value })} disabled={readOnly} placeholder={words.sectionPlaceholder} aria-label={`Section ${si + 1} title`} style={{ ...input, fontWeight: 700, flex: 1 }} maxLength={150} />
             {!readOnly && (
               <>
                 <IconButton label="Move section up" disabled={si === 0} onClick={() => setForm((f) => ({ ...f, sections: move(f.sections, si, -1) }))}><FiArrowUp size={13} /></IconButton>
@@ -189,7 +173,7 @@ export default function TemplateEditorPage() {
           {section.criteria.map((item, ci) => (
             <div key={item.id} style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid #EEF1F4", background: "#FBFCFD", display: "grid", gap: 8 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <input value={item.text} onChange={(e) => setItem(si, ci, { text: e.target.value })} disabled={readOnly} placeholder="What to check — e.g. Starts the lesson on time" aria-label="Item" style={{ ...input, flex: "1 1 320px" }} maxLength={500} />
+                <input value={item.text} onChange={(e) => setItem(si, ci, { text: e.target.value })} disabled={readOnly} placeholder={words.itemPlaceholder} aria-label="Item" style={{ ...input, flex: "1 1 320px" }} maxLength={500} />
                 <select value={item.kind} onChange={(e) => setItem(si, ci, { kind: e.target.value })} disabled={readOnly} aria-label="Answered with" style={{ ...input, width: "auto", flex: "0 0 auto" }}>
                   {Object.entries(KIND_LABEL).map(([k, text]) => <option key={k} value={k}>{text}</option>)}
                 </select>
@@ -206,12 +190,12 @@ export default function TemplateEditorPage() {
                 !isEmptyHtml(item.help) && <div style={{ fontSize: 12.5 }}><RichContent html={item.help} /></div>
               ) : openGuidance[item.id] || !isEmptyHtml(item.help) ? (
                 <div>
-                  <p style={{ ...hint, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 5 }}><FiBookOpen size={12} /> Guidance for the reviewer — what to look for, examples, what good looks like</p>
+                  <p style={{ ...hint, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 5 }}><FiBookOpen size={12} /> {words.guidance}</p>
                   <RichTextEditor value={item.help} onChange={(html) => { setOpenGuidance((o) => (o[item.id] ? o : { ...o, [item.id]: true })); setItem(si, ci, { help: html }); }} minHeight={70} maxHeight={260} />
                 </div>
               ) : (
                 <button type="button" onClick={() => setOpenGuidance((o) => ({ ...o, [item.id]: true }))} style={{ justifySelf: "start", border: 0, background: "none", padding: 0, color: T.accentMid, fontWeight: 700, fontSize: 12.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: font }}>
-                  <FiPlus size={12} /> Add guidance for the reviewer
+                  <FiPlus size={12} /> {words.addGuidance}
                 </button>
               )}
               {item.kind === "rubric" && (

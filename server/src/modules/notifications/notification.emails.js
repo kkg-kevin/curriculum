@@ -25,6 +25,10 @@ const CLAIM_REVIEWER_ROLES = ["admin", "supervisor"];
 // who manage check-ins too.
 const CHECKIN_ROLES = ["admin", "collaborator", "teacher"];
 const checkinPath = (p) => (typeof p.route === "string" && p.route.startsWith("/checkins") ? p.route : "/checkins");
+// Everyone who can take part in a hub's check-in (6 Nov 2026): our team, the hub's login, mentors,
+// parents — each opens it in their own portal (checkin.notifications.js's PORTAL).
+const CHECKIN_PARTICIPANT_ROLES = ["admin", "collaborator", "teacher", "school", "learner"];
+const participantCheckinPath = (p) => (typeof p.route === "string" && /^\/([a-z-]+\/)?checkins(\/|$)/.test(p.route) ? p.route : "/checkins");
 // Quality assurance: whoever reviews — supervisors, admins and staff.
 const QA_REVIEWER_ROLES = ["admin", "collaborator", "supervisor"];
 const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
@@ -134,6 +138,9 @@ const EMAIL_TYPES = {
   checkin_due: { label: "A hub check-in of yours is due — write its report", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Hub check-in" }, path: checkinPath },
   checkin_task_assigned: { label: "You're given a task from a hub check-in", roles: CHECKIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Check-in task" }, path: checkinPath },
   checkin_task_due: { label: "A check-in task of yours is due", roles: CHECKIN_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Check-in task" }, path: checkinPath },
+  checkin_invited: { label: "You're invited to a hub's check-ins", roles: CHECKIN_PARTICIPANT_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Hub check-in" }, path: participantCheckinPath },
+  checkin_today: { label: "A check-in you're taking part in is today", roles: CHECKIN_PARTICIPANT_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Hub check-in" }, path: participantCheckinPath },
+  checkin_report_ready: { label: "The report from a check-in you took part in is ready", roles: CHECKIN_PARTICIPANT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Check-in report" }, path: participantCheckinPath },
   // Quality assurance (modules/qa/qa.notifications.js) — the educator hears of an announced visit
   // and of each report; the reviewer (a supervisor, admin or staff) of a visit due and a reply.
   qa_visit_announced: { label: "A QA visit to you is coming up", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
@@ -332,6 +339,7 @@ const groupFor = (roles) => {
   if (roles === EDUCATOR_ROLES) return "Educators";
   if (roles === CLAIM_REVIEWER_ROLES) return "You and your supervisors";
   if (roles === CHECKIN_ROLES) return "Hub check-ins (Account Managers and Training Leads)";
+  if (roles === CHECKIN_PARTICIPANT_ROLES) return "Hub check-ins (everyone taking part)";
   return "You (the admin)";
 };
 

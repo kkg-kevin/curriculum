@@ -66,7 +66,7 @@ function SchoolPortalLayout() {
         <Footer />
       </div>
 
-      {hubLead && <CheckinsDuePopup />}
+      <CheckinsDuePopup />
     </div>
   );
 }

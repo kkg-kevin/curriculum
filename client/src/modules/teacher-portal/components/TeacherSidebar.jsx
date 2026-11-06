@@ -15,6 +15,7 @@ const menuItems = [
   // Claims and Invoices — two tabs of one page (PaymentsPage), so either address lights it up.
   { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices"] },
   { name: "QA Reviews",      path: "/teacher-portal/qa", icon: FiStar },
+  { name: "Hub Check-ins",   path: "/teacher-portal/checkins", icon: FiClipboard },
   // What families say — anonymous, from 3 reviews (modules/mentor-reviews).
   { name: "Parent feedback", path: "/teacher-portal/feedback", icon: FiHeart },
   // One page: their performance, their public profile, teaching and account (tabs).

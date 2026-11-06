@@ -219,6 +219,9 @@ export default function AppRoutes() {
         <Route path="checkins" element={<CheckinsPage />} />
         <Route path="checkins/actions" element={<CheckinsPage />} />
         <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+        {/* Check-in report templates — QA's template editor, saving to check-ins (managers). */}
+        <Route path="checkins/templates/new" element={<QaTemplateEditorPage key="checkins-template" source="checkins" />} />
+        <Route path="checkins/templates/:id" element={<QaTemplateEditorPage key="checkins-template" source="checkins" />} />
         {/* Quality assurance — visits to educators, their reviews, schedules and templates (modules/qa). */}
         <Route path="qa" element={<QaPage />} />
         <Route path="qa/visits/:id" element={<QaVisitPage />} />
@@ -333,6 +336,9 @@ export default function AppRoutes() {
           <Route path="learning/*" element={<TotLearnerHandoff />} />
           {/* QA visits to this educator: announced ones coming up, and the reports, to reply to. */}
           <Route path="qa" element={<MyQaPage />} />
+          {/* Hub check-ins this educator takes part in (modules/checkins). */}
+          <Route path="checkins" element={<CheckinsPage />} />
+          <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
           {/* What families say about this educator — anonymous, from 3 reviews (modules/mentor-reviews). */}
           <Route path="feedback" element={<MyFeedbackPage />} />
           {/* Their performance profile, and their public one (modules/educator-profiles). */}
@@ -448,6 +454,9 @@ export default function AppRoutes() {
           <Route path="feedback" element={<MentorFeedbackPage />} />
           {/* Find a mentor — published educator profiles, and asking for one (modules/educator-profiles). */}
           <Route path="mentors" element={<FindMentorPage />} />
+          {/* Hub check-ins this parent takes part in (modules/checkins). */}
+          <Route path="checkins" element={<CheckinsPage />} />
+          <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
           <Route path="mentors/:slug" element={<MentorProfilePage />} />
           <Route path="account" element={<ParentAccountPage />} />
           <Route path="family" element={<LearnerFamilyPage />} />

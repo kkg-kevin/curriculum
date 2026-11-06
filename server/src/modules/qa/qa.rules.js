@@ -43,8 +43,9 @@ function normaliseTemplate({ name, description, scale, sections }) {
   };
 }
 
-// What a template still needs, every problem at once.
-function templateProblems(template) {
+// What a template still needs, every problem at once. `noun` is what it's used on ("visit", or
+// "check-in" — hub check-ins use these same rules, modules/checkins/).
+function templateProblems(template, { noun = "visit" } = {}) {
   const problems = [];
   if (!template.name) problems.push("Name the template");
   if (!template.sections.length) problems.push("Add at least one section");
@@ -64,7 +65,7 @@ function templateProblems(template) {
     });
   });
   if (!template.sections.some((s) => s.criteria.some((c) => c.kind !== "comment"))) {
-    if (template.sections.length) problems.push("Add at least one yes / no or rubric item, so the visit has a score");
+    if (template.sections.length) problems.push(`Add at least one yes / no or rubric item, so the ${noun} has a score`);
   }
   return [...new Set(problems)];
 }

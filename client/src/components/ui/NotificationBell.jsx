@@ -114,6 +114,8 @@ function resolveNotificationPath(n) {
       // News about the educator's own claim — that course's page in the teacher-portal.
       return p.route || "/teacher-portal/claims";
     case "checkin_assigned":
+    case "checkin_invited":
+    case "checkin_report_ready":
     case "checkin_due":
     case "checkin_task_assigned":
     case "checkin_task_due":

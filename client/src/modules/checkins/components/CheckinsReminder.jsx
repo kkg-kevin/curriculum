@@ -14,7 +14,9 @@ export default function CheckinsReminder() {
 }
 
 function Reminder() {
-  const { data: due = [] } = useDueCheckins();
+  const { data = [] } = useDueCheckins();
+  // Reports to write only — check-ins I just take part in are the pop-up's.
+  const due = data.filter((s) => s.kind !== "attend");
   if (!due.length) return null;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "14px 18px", marginBottom: 20, borderRadius: 14, background: "#FFFBEB", border: "1px solid #FDE68A", fontFamily: font }}>
