@@ -12,6 +12,7 @@ import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { reportApi } from "../../reports/services/reportApi";
 import { useGenerateReport } from "../../reports/hooks/useReports";
+import { classLabel } from "../../../utils/classLabel";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -171,7 +172,7 @@ function NeedsPublishingSection({ rows, navigate }) {
           <div key={row.report.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid #F9FAFB", flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
-              <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{row.course.name} · {row.cls.gradeName || row.cls.name}</p>
+              <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{row.course.name} · {classLabel(row.cls)}</p>
             </div>
             <button
               type="button"
@@ -203,7 +204,7 @@ function CourseReportCard({ cls, course, rows, onGenerate, isGeneratingRow, navi
         <AssignmentIcon sx={{ fontSize: 18, color: T.accentLight }} />
         <div>
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{course.name}</p>
-          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{cls.gradeName || cls.name}</p>
+          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{classLabel(cls)}</p>
         </div>
       </div>
       {/* A course's sessions can keep referencing assessments that were later deleted —

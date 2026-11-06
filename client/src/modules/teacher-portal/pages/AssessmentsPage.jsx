@@ -21,6 +21,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import { LearnerChecklist, usePicked, RevokeIssueDialog } from "../components/IssueLearnerDialogs";
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
+import { classLabel } from "../../../utils/classLabel";
 
 const T = {
   accent: "#25476a",
@@ -121,7 +122,7 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
           onClick={() => navigate(`/teacher-portal/assessments/${issue.id}`)}
           style={{ ...pill, backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}` }}
         >
-          <VisibilityIcon sx={{ fontSize: 13 }} /> {cls.gradeName} roster{chosen ? ` · ${chosen} chosen` : ""}
+          <VisibilityIcon sx={{ fontSize: 13 }} /> {classLabel(cls)} roster{chosen ? ` · ${chosen} chosen` : ""}
         </button>
         {chosen > 0 && (
           <button type="button" disabled={isIssuing} onClick={(e) => { e.stopPropagation(); onIssue(cls, issue); }} style={{ ...pill, background: "#fff", color: T.accent, border: `1.5px solid ${T.tintBorder}` }}>
@@ -146,7 +147,7 @@ function IssueRow({ item, cls, issue, onIssue, isIssuing }) {
       disabled={isIssuing}
       style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: isIssuing ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isIssuing ? "not-allowed" : "pointer" }}
     >
-      <SendIcon sx={{ fontSize: 13 }} /> Issue {TYPE_LABELS[item.assessmentType] || item.assessmentType} to {cls.gradeName}
+      <SendIcon sx={{ fontSize: 13 }} /> Issue {TYPE_LABELS[item.assessmentType] || item.assessmentType} to {classLabel(cls)}
     </button>
   );
 }
@@ -188,7 +189,7 @@ function IssueConfirmDialog({ item, cls, groupMode, existing = null, isIssuing, 
           <span style={badgeStyle(MODE_COLORS[modeKey])}>{MODE_LABELS[modeKey]}</span>
         </div>
         <p style={{ margin: "0 0 4px", fontSize: 13, color: T.inkMuted }}>
-          {existing ? "Adding learners to" : "Issuing"} <strong>{item.moduleName ? `${item.moduleName} · ` : ""}{item.sessionLabel}</strong> {existing ? "in" : "to"} <strong>{cls.gradeName}</strong>.
+          {existing ? "Adding learners to" : "Issuing"} <strong>{item.moduleName ? `${item.moduleName} · ` : ""}{item.sessionLabel}</strong> {existing ? "in" : "to"} <strong>{classLabel(cls)}</strong>.
         </p>
         <p style={{ margin: "14px 0 6px", fontSize: 12, fontWeight: 700, color: T.inkMuted }}>Who gets it</p>
         {learnersLoading ? (
@@ -201,7 +202,7 @@ function IssueConfirmDialog({ item, cls, groupMode, existing = null, isIssuing, 
             showStatus={false}
             blockerOf={(row) => (already.has(row.learner.id) ? "Already has it" : null)}
             everyone={{
-              label: `Everyone in ${cls.gradeName}`,
+              label: `Everyone in ${classLabel(cls)}`,
               hint: groupMode ? "A group assessment is issued to the whole class." : "Including learners who join later. Untick to choose learners.",
               checked: whole,
               locked: groupMode,
@@ -248,7 +249,7 @@ function IssueConfirmDialog({ item, cls, groupMode, existing = null, isIssuing, 
             disabled={isIssuing || !canConfirm}
             style={{ padding: "8px 18px", backgroundColor: isIssuing || !canConfirm ? "#F3F4F6" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: isIssuing || !canConfirm ? "not-allowed" : "pointer", fontFamily: "Inter, sans-serif" }}
           >
-            {isIssuing ? "Issuing…" : whole ? `Issue to ${cls.gradeName}` : `Issue to ${picked.size} learner${picked.size === 1 ? "" : "s"}`}
+            {isIssuing ? "Issuing…" : whole ? `Issue to ${classLabel(cls)}` : `Issue to ${picked.size} learner${picked.size === 1 ? "" : "s"}`}
           </button>
         </div>
       </div>
@@ -637,12 +638,12 @@ export default function AssessmentsPage() {
     const classById = new Map(myClasses.map((c) => [c.id, c]));
     const rows = [];
     needsGradingResults.forEach((r) => (r.data?.data || []).forEach((row) => {
-      rows.push({ ...row, className: classById.get(row.submission.classId)?.gradeName });
+      rows.push({ ...row, className: classLabel(classById.get(row.submission.classId), "") });
     }));
     // A diagnostic issue has no classId of its own to look a class up by — attach the class
     // this particular query was scoped to instead (the loop below is per-class, same as above).
     diagnosticsNeedingGradingResults.forEach((r, i) => (r.data?.data || []).forEach((row) => {
-      rows.push({ ...row, className: myClasses[i]?.gradeName, isDiagnostic: true });
+      rows.push({ ...row, className: classLabel(myClasses[i], ""), isDiagnostic: true });
     }));
     return rows.sort((a, b) => new Date(a.submission.submittedAt || 0) - new Date(b.submission.submittedAt || 0));
   }, [needsGradingResults, diagnosticsNeedingGradingResults, myClasses]);

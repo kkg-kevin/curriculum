@@ -18,6 +18,7 @@ import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
 import { attendanceApi } from "../../attendance/services/attendanceApi";
 import Avatar from "../../../components/ui/Avatar";
 import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
+import { classLabel } from "../../../utils/classLabel";
 
 const ACCENT = "#25476a";
 const T = {
@@ -157,7 +158,7 @@ export default function DashboardPage() {
                       <FiAlertCircle size={16} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{c.gradeName} — attendance not marked today</p>
+                      <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{classLabel(c)} — attendance not marked today</p>
                       <p style={{ margin: 0, fontSize: 11.5, color: T.inkMuted }}>{c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}</p>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>Mark now →</span>
@@ -175,7 +176,7 @@ export default function DashboardPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #feb139, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><SchoolIcon fontSize="small" /></div>
                     <div style={{ minWidth: 0 }}>
-                      <h3 style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: T.ink }}>{c.gradeName}</h3>
+                      <h3 style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: T.ink }}>{classLabel(c)}</h3>
                       <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Academic Year {c.academicYear}</p>
                     </div>
                   </div>

@@ -14,6 +14,7 @@ import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { useAttendanceByDateQuery, useAttendanceHistoryQuery, useMarkAttendance } from "../../attendance/hooks/useAttendance";
 import { useClassCalendar } from "../../timetable/hooks/useTimetable";
+import { classLabel } from "../../../utils/classLabel";
 
 const ACCENT = "#25476a";
 const T = {
@@ -282,7 +283,7 @@ export default function AttendancePage() {
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px 0", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Attendance</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
-            {selectedClass ? `${selectedClass.gradeName} · Academic Year ${selectedClass.academicYear}` : "Mark daily attendance and review history for your classes."}
+            {selectedClass ? `${classLabel(selectedClass)} · Academic Year ${selectedClass.academicYear}` : "Mark daily attendance and review history for your classes."}
           </p>
         </div>
       </div>
@@ -319,7 +320,7 @@ export default function AttendancePage() {
                     fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
                   }}
                 >
-                  {c.gradeName}
+                  {classLabel(c)}
                 </button>
               ))}
             </div>
@@ -391,7 +392,7 @@ export default function AttendancePage() {
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: T.tintBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", color: T.accent, fontSize: 22 }}><EventNoteOutlinedIcon fontSize="inherit" /></div>
                   <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700, color: T.ink }}>No session scheduled</h3>
                   <p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>
-                    {selectedClass?.gradeName || "This class"} has no session on the timetable for {formatDisplayDate(date)} — nothing to mark. Use the arrows above to jump to the nearest session day.
+                    {selectedClass ? classLabel(selectedClass) : "This class"} has no session on the timetable for {formatDisplayDate(date)} — nothing to mark. Use the arrows above to jump to the nearest session day.
                   </p>
                 </div>
               ) : (

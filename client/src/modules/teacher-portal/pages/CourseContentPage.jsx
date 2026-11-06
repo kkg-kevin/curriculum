@@ -8,6 +8,7 @@ import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseHomePath } from "../../../routes/portalPaths";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
+import { classLabel } from "../../../utils/classLabel";
 
 const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
@@ -65,7 +66,7 @@ function ClassCard({ cls, hub, courses, teacherName, isOpen, onToggleOpen, showF
               <SchoolIcon fontSize="small" />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h3 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cls.gradeName}</h3>
+              <h3 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{classLabel(cls)}</h3>
               <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>1 class</p>
             </div>
           </div>
