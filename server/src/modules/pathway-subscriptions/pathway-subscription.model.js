@@ -30,11 +30,11 @@ const PathwayPackageModel = {
     return Number(row?.count || 0);
   },
   async create(data) {
-    const row = await createRecord(db, PACKAGES, stringifyJsonFields(data, ["features"]));
+    const row = await createRecord(db, PACKAGES, stringifyJsonFields(data, ["features", "periodPrices"]));
     return normalisePackage(await firstOrNull(db(PACKAGES).where({ id: row.id })));
   },
   async update(id, data) {
-    return normalisePackage(await updateRecord(db, PACKAGES, id, stringifyJsonFields(data, ["features"])));
+    return normalisePackage(await updateRecord(db, PACKAGES, id, stringifyJsonFields(data, ["features", "periodPrices"])));
   },
   delete(id) {
     return deleteRecord(db, PACKAGES, id);

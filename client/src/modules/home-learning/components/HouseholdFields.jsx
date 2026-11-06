@@ -1,4 +1,4 @@
-import { priceForPackage } from "../services/homeLearningApi";
+import { periodLabel, priceForPackage, pricesOf } from "../services/homeLearningApi";
 import PhotoGalleryField from "../../learning-hubs/components/PhotoGalleryField";
 import { inputStyle, labelStyle } from "./ui";
 import { pricePer } from "../../../utils/billingPeriods";
@@ -10,12 +10,21 @@ const sectionHeading = { gridColumn: "1/-1", margin: "8px 0 -4px", paddingBottom
 function PackageFields({ values, setValue, packages, currentPackageId }) {
   const offered = packages.filter((pkg) => pkg.status === "active" || pkg.id === currentPackageId);
   const pkg = packages.find((p) => p.id === values.packageId);
-  const price = priceForPackage(pkg, values.childCount);
+  const periods = pricesOf(pkg).filter((p) => p.billingPeriod !== "daily" || p.billingPeriod === values.billingPeriod);
+  const price = priceForPackage(pkg, values.childCount, values.billingPeriod || null);
   return <>
-    <label style={labelStyle}>Package<select style={inputStyle} required value={values.packageId || ""} onChange={(e) => { setValue("packageId", e.target.value); setValue("childCount", ""); }}>
+    <label style={labelStyle}>Package<select style={inputStyle} required value={values.packageId || ""} onChange={(e) => {
+      // The family's period carries over when the new package offers it, else its default.
+      const next = packages.find((p) => p.id === e.target.value);
+      const keep = pricesOf(next).some((x) => x.billingPeriod === values.billingPeriod) ? values.billingPeriod : (priceForPackage(next, null)?.billingPeriod || "");
+      setValue("packageId", e.target.value); setValue("childCount", ""); setValue("billingPeriod", keep);
+    }}>
       <option value="">{offered.length ? "Choose package" : "Create a package first"}</option>
-      {offered.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.childrenIncluded} {p.childrenIncluded === 1 ? "child" : "children"} · {pricePer(p.amount, p.billingPeriod)}{p.status === "archived" ? " (archived)" : ""}</option>)}
+      {offered.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.childrenIncluded} {p.childrenIncluded === 1 ? "child" : "children"} · {pricesOf(p).map((x) => pricePer(x.amount, x.billingPeriod)).join(" / ")}{p.status === "archived" ? " (archived)" : ""}</option>)}
     </select></label>
+    {periods.length > 1 && <label style={labelStyle}>Billed<select style={inputStyle} value={values.billingPeriod || price?.billingPeriod || ""} onChange={(e) => setValue("billingPeriod", e.target.value)}>
+      {periods.map((p) => <option key={p.billingPeriod} value={p.billingPeriod}>{periodLabel(p.billingPeriod)} · {pricePer(p.amount, p.billingPeriod)}</option>)}
+    </select></label>}
     {pkg?.allowExtraChildren && <label style={labelStyle}>Number of children<input style={inputStyle} type="number" min={pkg.childrenIncluded} max={pkg.maxChildren} value={values.childCount || pkg.childrenIncluded} onChange={(e) => setValue("childCount", e.target.value)} /></label>}
     {pkg && <div style={{ alignSelf: "end", paddingBottom: 10, fontSize: 13, color: price ? "#25476a" : "#B91C1C", fontWeight: 700 }}>
       {price ? `${pricePer(price.amount, price.billingPeriod)} · ${price.childCount} places` : `Up to ${pkg.maxChildren} children on this package`}

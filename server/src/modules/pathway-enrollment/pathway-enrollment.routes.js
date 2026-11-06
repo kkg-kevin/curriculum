@@ -31,9 +31,12 @@ const submitPathwayEnrollmentSchema = z.preprocess(withChildren, z.object({
   parentToken: z.string().trim().max(2000).optional(),
   children: z.array(enrollmentChildSchema).min(1, "Add at least one learner").max(6, "Up to 6 learners in one enrolment"),
   attemptId: z.string().trim().max(100).optional().nullable(),
-  // A subscription plan of this pathway (Billing → Packages → Pathways); without one the one-off
-  // price applies.
+  // A subscription plan of this pathway (Billing → Packages → Pathway plans) — required by the
+  // service — and how often the family chose to pay (one of the plan's periods; left out, the
+  // plan's shown-first period). Without it here the parse dropped it and every enrolment was
+  // billed at the default period.
   packageId: z.string().trim().max(64).optional().nullable(),
+  billingPeriod: z.enum(["weekly", "monthly", "quarterly", "annually"]).optional().nullable(),
 }).superRefine((data, ctx) => {
   if (!data.parentPassword && !data.parentToken) ctx.addIssue({ code: "custom", path: ["parentPassword"], message: "Enter your password" });
   const seen = new Set();

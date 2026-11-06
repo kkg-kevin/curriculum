@@ -8,7 +8,7 @@ const ClassModel = require("../classes/class.model");
 const UserModel = require("../auth/user.model");
 const BillingModel = require("../billing/billing.model");
 const { packageSchema, packageClubsSchema, membershipUpdateSchema, placeChildSchema, invoiceSchema } = require("./club.validation");
-const { priceForPackage, toPublicPackage, CURRENCY } = require("../home-learning/home-learning.pricing");
+const { priceForPackage, toPublicPackage, resolvePricing, periodWord, CURRENCY } = require("../home-learning/home-learning.pricing");
 const { kenyaToday } = require("../../shared/utils/age");
 const { scheduleChange, onActivation } = require("../../shared/utils/billing-periods");
 const PackageBilling = require("../billing/package-billing");
@@ -63,6 +63,12 @@ async function cleanHubIds(ownerAdminId, hubIds) {
 }
 
 // Normalises a validated package form into a row (same rules as Home Learning's packageRow).
+function pricingOf(data) {
+  const { error, ...pricing } = resolvePricing(data);
+  if (error) fail(error);
+  return pricing;
+}
+
 function packageRow(data, hubIds) {
   const extras = data.allowExtraChildren;
   return {
@@ -70,10 +76,9 @@ function packageRow(data, hubIds) {
     summary: data.summary || null,
     description: data.description || null,
     childrenIncluded: data.childrenIncluded,
-    amount: data.amount,
-    billingPeriod: data.billingPeriod,
+    // Its prices per period, and the one shown first (home-learning.pricing.js).
+    ...pricingOf(data),
     allowExtraChildren: extras,
-    extraChildAmount: extras ? data.extraChildAmount : null,
     maxChildren: extras ? (data.maxChildren ?? Math.max(data.childrenIncluded + 1, 20)) : data.childrenIncluded,
     features: data.features,
     badge: data.badge || null,
@@ -95,11 +100,12 @@ async function uniqueSlug(ownerAdminId, wanted, excludeId) {
 
 // Resolves a membership's package and what it costs for `requested` children. `currentPackageId`
 // lets a membership keep (and re-price on) a package that has since been archived.
-async function resolvePackagePrice(ownerAdminId, packageId, requested, hubId, currentPackageId = null) {
+async function resolvePackagePrice(ownerAdminId, packageId, requested, hubId, currentPackageId = null, { billingPeriod = null, keepPeriod = null } = {}) {
   const pkg = await ClubPackageModel.findById(packageId, ownerAdminId);
   if (!pkg || (pkg.status !== "active" && pkg.id !== currentPackageId)) fail("Package not found", 404);
   if (pkg.id !== currentPackageId && !ClubPackageModel.offeredAt(pkg, hubId)) fail(`${pkg.name} isn't offered at this club`);
-  const price = priceForPackage(pkg, requested);
+  if (billingPeriod && !priceForPackage(pkg, pkg.childrenIncluded, billingPeriod)) fail(`${pkg.name} isn't offered ${periodWord(billingPeriod)}`);
+  const price = priceForPackage(pkg, requested, billingPeriod || keepPeriod, { fallback: !billingPeriod });
   if (!price) {
     fail(pkg.allowExtraChildren
       ? `${pkg.name} takes up to ${pkg.maxChildren} children`
@@ -284,10 +290,14 @@ const ClubService = {
         fail("This family signed up on the website — use Approve payment to record their payment and activate them");
       }
     }
-    if (updates.packageId !== undefined || updates.childCount !== undefined) {
+    const wantedPeriod = updates.billingPeriod || null;
+    delete updates.billingPeriod;
+    if (updates.packageId !== undefined || updates.childCount !== undefined || wantedPeriod) {
       const packageId = updates.packageId ?? existing.packageId;
       if (!packageId) fail("Choose a package for this membership");
-      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.hubId, existing.packageId);
+      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.hubId, existing.packageId, {
+        billingPeriod: wantedPeriod, keepPeriod: existing.billingPeriod,
+      });
       if ((await ClubMembershipModel.countActiveChildren(id, ownerAdminId)) > place.childCount) fail("Remove children before reducing the package size");
       // The places change now; the price and period from the next period not billed yet.
       Object.assign(updates, place, scheduleChange(existing, { amount, billingPeriod }));

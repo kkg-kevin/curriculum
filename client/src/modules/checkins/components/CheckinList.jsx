@@ -13,6 +13,7 @@ const VIEWS = [
 const EMPTY_TEXT = {
   due: "No reports due.",
   upcoming: "Nothing coming up.",
+  coming: "Nothing coming up.",
   reported: "No reports yet.",
   all: "No check-ins yet.",
 };
@@ -20,15 +21,22 @@ const EMPTY_TEXT = {
 // The hub's own view: its reports first; nothing to write, so no "Report due" tab of its own.
 const HUB_VIEWS = [
   { key: "reported", label: "Reports" },
-  { key: "upcoming", label: "Upcoming" },
+  { key: "coming", label: "Coming up" },
+  { key: "all", label: "All" },
+];
+// Someone taking part (an educator, a parent): what's coming first, then the reports.
+const PARTICIPANT_VIEWS = [
+  { key: "coming", label: "Coming up" },
+  { key: "reported", label: "Reports" },
   { key: "all", label: "All" },
 ];
 
 // A list of check-ins. scope "mine": the ones I'm on (Account Manager or Training Lead). scope
 // "all" (managers): every hub's, with a filter by person too. `hubView`: the hub's own login —
 // its own check-ins (the server keeps it to them), no filters.
-export default function CheckinList({ scope, hubView = false, hubId = "" }) {
-  const views = hubView ? HUB_VIEWS : VIEWS;
+// `participantView`: someone taking part — the check-ins they're on, across hubs.
+export default function CheckinList({ scope, hubView = false, hubId = "", participantView = false }) {
+  const views = participantView ? PARTICIPANT_VIEWS : hubView ? HUB_VIEWS : VIEWS;
   const [view, setView] = useState(views[0].key);
   const [filters, setFilters] = useState({ hubId: "", staffId: "" });
   const [page, setPage] = useState(1);
@@ -68,10 +76,10 @@ export default function CheckinList({ scope, hubView = false, hubId = "" }) {
         {isError && <p style={{ ...hint, padding: 18, color: "#B91C1C" }}>{error?.message || "Check-ins couldn't be loaded."}</p>}
         {data && data.sessions.length === 0 && (
           <Empty title={EMPTY_TEXT[view]}>
-            {hubView ? "Reports from your hub's check-ins appear here once they're written." : scope === "mine" ? "Check-ins you're put on appear here." : null}
+            {participantView ? "Check-ins you're asked to take part in appear here, and their reports once written." : hubView ? "Reports from your hub's check-ins appear here once they're written." : scope === "mine" ? "Check-ins you're put on appear here." : null}
           </Empty>
         )}
-        {data?.sessions.map((s) => <SessionRow key={s.id} session={s} showHub={!hubView} />)}
+        {data?.sessions.map((s) => <SessionRow key={s.id} session={s} showHub={!hubView || participantView} />)}
         {data && <Pager page={data.page} limit={data.limit} total={data.total} onPage={setPage} />}
       </section>
     </div>

@@ -19,7 +19,18 @@ const ok = (res, data, status = 200) => res.status(status).json({ success: true,
 
 module.exports = {
   people: asyncHandler(async (req, res) => ok(res, await CheckinService.people(req))),
+
+  listTemplates: asyncHandler(async (req, res) => ok(res, await CheckinService.listTemplates(req, req.query))),
+  getTemplate: asyncHandler(async (req, res) => ok(res, await CheckinService.getTemplate(req, req.params.id))),
+  createTemplate: asyncHandler(async (req, res) => ok(res, await CheckinService.createTemplate(req, parse(V.templateSchema, req.body)), 201)),
+  updateTemplate: asyncHandler(async (req, res) => ok(res, await CheckinService.updateTemplate(req, req.params.id, parse(V.templateSchema, req.body)))),
+  setTemplateStatus: asyncHandler(async (req, res) => ok(res, await CheckinService.setTemplateStatus(req, req.params.id, parse(V.templateStatusSchema, req.body).status))),
+  deleteTemplate: asyncHandler(async (req, res) => {
+    const result = await CheckinService.deleteTemplate(req, res, req.params.id);
+    if (result) ok(res, result); // null: ?check=1 already answered
+  }),
   hubs: asyncHandler(async (req, res) => ok(res, await CheckinService.hubs(req))),
+  hubPeople: asyncHandler(async (req, res) => ok(res, await CheckinService.hubPeople(req, req.params.id))),
   due: asyncHandler(async (req, res) => ok(res, await CheckinService.dueForMe(req))),
 
   listSchedules: asyncHandler(async (req, res) => ok(res, await CheckinService.listSchedules(req, req.query))),

@@ -1,9 +1,13 @@
 const db = require("../../config/db");
 const CheckinModel = require("./checkin.model");
 const CheckinNotifications = require("./checkin.notifications");
-const { contextOf, assignedHubIds, isAssignedTo, workspacePeople } = require("./checkin.access");
+const { contextOf, assignedHubIds, isAssignedTo, workspacePeople, participantOptions, isParticipant } = require("./checkin.access");
 const { todayInKenya, addDays, occurrenceDates } = require("./checkin.dates");
 const { sessionState, reportProblems, taskState } = require("./checkin.rules");
+// Templates and their answers follow quality assurance's rules exactly.
+const { normaliseTemplate, templateProblems, scoreReview, cleanAnswers } = require("../qa/qa.rules");
+const { DEFAULT_SCALE } = require("../qa/qa.constants");
+const UsageService = require("../usage/usage.service");
 const { GENERATE_AHEAD_DAYS } = require("./checkin.constants");
 const { HUB_LEAD_ROLE, canBeHubLead, extraRolesOf } = require("../auth/account-roles");
 const UserSessionModel = require("../auth/user-session.model");
@@ -83,8 +87,54 @@ function sessionRowsFor(schedule, from, today) {
     format: schedule.format,
     accountManagerId: schedule.accountManagerId || null,
     trainingLeadId: schedule.trainingLeadId || null,
+    templateId: schedule.templateId || null,
+    meetingLink: schedule.meetingLink || null,
     status: "open",
   }));
+}
+
+// ---- Who takes part (6 Nov 2026) ----
+//   Chosen when the check-ins are set up (participantOptions: our team, the hub's login, its
+//   mentors, parents of its learners) and kept on the schedule; each check-in gets its own copy
+//   (checkin_participants) as it's put on the calendar. A change to the schedule's people applies
+//   to every check-in not reported yet. They're told when chosen, get the pop-up as a check-in comes
+//   round and a notice on its day (with the link to join an online one), and the report once it's in.
+
+const KINDS = ["team", "hub", "mentor", "parent"];
+const GROUP_OF = { team: "team", hub: "hub", mentors: "mentor", parents: "parent" };
+
+function participantsOfSchedule(schedule) {
+  let list = schedule?.participants;
+  if (typeof list === "string") {
+    try { list = JSON.parse(list); } catch { list = []; }
+  }
+  return Array.isArray(list) ? list.filter((p) => p?.userId && KINDS.includes(p.kind)) : [];
+}
+
+// The chosen logins, each with its group — only people the hub can have; its Account Manager and
+// Training Lead are left out (they run the check-in, so they're always involved).
+async function resolveParticipants(ctx, hubId, ids, people) {
+  if (!ids?.length) return [];
+  const options = await participantOptions(ctx.ownerAdminId, hubId);
+  if (!options) fail("Hub not found", 404);
+  const kindOf = new Map();
+  for (const [group, kind] of Object.entries(GROUP_OF)) {
+    for (const p of options[group]) if (!kindOf.has(p.userId)) kindOf.set(p.userId, kind);
+  }
+  const leads = new Set([people.accountManagerId, people.trainingLeadId].filter(Boolean));
+  const chosen = [...new Set(ids)].filter((id) => kindOf.has(id) && !leads.has(id));
+  return chosen.map((userId) => ({ userId, kind: kindOf.get(userId) }));
+}
+
+// A schedule's people onto its check-ins not reported yet (from today on when `upcomingOnly`).
+// `replace` also takes off anyone no longer chosen.
+async function syncParticipants(schedule, { replace = false, upcomingOnly = false, connection = db, today = todayInKenya() } = {}) {
+  const participants = participantsOfSchedule(schedule);
+  let q = connection("checkin_sessions").where({ scheduleId: schedule.id, status: "open" });
+  if (upcomingOnly) q = q.where("scheduledDate", ">=", today);
+  const sessions = await q.select("id", "ownerAdminId");
+  if (replace) await CheckinModel.removeOtherParticipants(sessions.map((s) => s.id), participants, connection);
+  await CheckinModel.addParticipants(sessions, participants, connection);
 }
 
 // A schedule's check-ins still ahead and not reported: safe to rewrite or remove.
@@ -92,10 +142,13 @@ const unreportedUpcoming = (connection, scheduleId, today) => connection("checki
   .where({ scheduleId, status: "open" })
   .where("scheduledDate", ">", today);
 
-// Puts every active schedule's upcoming check-ins on the calendar.
+// Puts every active schedule's upcoming check-ins on the calendar, with the people taking part.
 async function generateAll(ownerAdminId = null, today = todayInKenya()) {
   const schedules = await CheckinModel.activeSchedules(ownerAdminId);
-  for (const schedule of schedules) await CheckinModel.insertSessionsIgnoringExisting(sessionRowsFor(schedule, schedule.generateFrom, today));
+  for (const schedule of schedules) {
+    await CheckinModel.insertSessionsIgnoringExisting(sessionRowsFor(schedule, schedule.generateFrom, today));
+    if (participantsOfSchedule(schedule).length) await syncParticipants(schedule, { upcomingOnly: true, today });
+  }
   return schedules.length;
 }
 
@@ -106,7 +159,13 @@ async function sendDueNotices(ownerAdminId = null, today = todayInKenya()) {
   if (ownerAdminId) q = q.where({ ownerAdminId });
   const sessions = await q;
   const names = await hubNames(sessions.map((s) => s.hubId));
-  for (const s of sessions) await CheckinNotifications.due(s, names.get(s.hubId) || "a hub");
+  for (const s of sessions) {
+    const hubName = names.get(s.hubId) || "a hub";
+    await CheckinNotifications.due(s, hubName);
+    // Everyone taking part: it's today (with the link to join an online one).
+    const people = await db("checkin_participants").where({ sessionId: s.id }).pluck("userId");
+    if (people.length) await CheckinNotifications.today(s, hubName, people);
+  }
   return sessions.length;
 }
 
@@ -166,14 +225,24 @@ async function decorateSessions(sessions, today) {
     state: sessionState(s, today),
     reportSubmittedAt: s.reportSubmittedAt,
     reportSubmittedByName: names.get(s.reportSubmittedBy) || null,
+    hasTemplate: Boolean(s.templateId || s.template),
+    meetingLink: s.meetingLink || null,
+    score: s.score == null ? null : Number(s.score),
   }));
 }
 
-const mine = (ctx) => (w) => w.where({ accountManagerId: ctx.userId }).orWhere({ trainingLeadId: ctx.userId });
+// The check-ins I run (Account Manager / Training Lead).
+const leads = (ctx) => (w) => w.where({ accountManagerId: ctx.userId }).orWhere({ trainingLeadId: ctx.userId });
+// …and the ones I take part in.
+const mine = (ctx) => (w) => w.where({ accountManagerId: ctx.userId }).orWhere({ trainingLeadId: ctx.userId })
+  .orWhereIn("id", db("checkin_participants").where({ userId: ctx.userId }).select("sessionId"));
 
 async function loadSession(ctx, id, { forUpdate = false, connection = db } = {}) {
   const session = await CheckinModel.findSession(id, connection, forUpdate);
-  if (!session || session.ownerAdminId !== ctx.ownerAdminId) fail("Check-in not found", 404);
+  if (!session) fail("Check-in not found", 404);
+  // Someone taking part reads it, whatever else they are.
+  if (await isParticipant(session.id, ctx.userId)) return session;
+  if (ctx.isParticipantOnly || session.ownerAdminId !== ctx.ownerAdminId) fail("Check-in not found", 404);
   if (ctx.isHub) {
     if (session.hubId !== ctx.hubId) fail("Check-in not found", 404);
     return session;
@@ -185,7 +254,10 @@ async function loadSession(ctx, id, { forUpdate = false, connection = db } = {})
   return session;
 }
 
-const canWriteReport = (ctx, session) => !ctx.isHub && (ctx.isManager || isAssignedTo(ctx, session));
+// The report is written by the check-in's Account Manager or Training Lead, or a manager of its own
+// workspace — never from the teacher or parent portals (taking part is reading only).
+const canWriteReport = (ctx, session) => !ctx.isHub && !ctx.isParticipantOnly
+  && ((ctx.isManager && session.ownerAdminId === ctx.ownerAdminId) || isAssignedTo(ctx, session));
 
 // ---- Tasks from the resolutions ----
 //   Whoever can write the report sets a check-in's tasks (from its day on, like the report): what,
@@ -249,8 +321,147 @@ async function assertTaskFits(session, data) {
   if (data.dueDate < session.scheduledDate) fail("The deadline can't be before the check-in");
 }
 
+// Someone taking part sees a coming check-in in the pop-up from this many days before it.
+const ATTEND_NOTICE_DAYS = 3;
+
+// A check-in's people: counts per group for everyone; names too for those who run or manage it.
+async function participantView(session, withNames) {
+  const rows = await CheckinModel.participantsOf(session.id);
+  const counts = { team: 0, hub: 0, mentor: 0, parent: 0 };
+  rows.forEach((r) => { counts[r.kind] = (counts[r.kind] || 0) + 1; });
+  if (!withNames) return { counts, total: rows.length };
+  const names = await peopleNames(rows.map((r) => r.userId));
+  const people = rows.map((r) => ({ userId: r.userId, kind: r.kind, name: names.get(r.userId) || "Someone" }))
+    .sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.name.localeCompare(b.name));
+  return { counts, total: rows.length, people };
+}
+
+// ---- Templates (6 Nov 2026) ----
+//   The same as quality assurance templates (qa.rules.js): sections of items answered yes / no,
+//   on the template's rubric, or with a comment; a description and guidance per item; a score.
+//   Check-in managers make them and pick one per schedule (optional); whoever made one (or an
+//   admin) changes, archives or deletes it — one in use can only be archived. A check-in keeps its
+//   own copy of the template once its report is in, so changing a template never changes a report.
+
+const canEditTemplate = (ctx, template) => !ctx.isStaff || template.createdBy === ctx.userId;
+const templateBody = (t) => ({ name: t.name, description: t.description || null, scale: t.scale || [], sections: t.sections || [] });
+
+async function loadTemplate(ctx, id) {
+  const template = await CheckinModel.findTemplate(id);
+  if (!template || template.ownerAdminId !== ctx.ownerAdminId) fail("Template not found", 404);
+  return template;
+}
+
+// A schedule's template: one of this workspace's, in use (not archived) — or none.
+async function assertScheduleTemplate(ctx, templateId, currentTemplateId = null) {
+  if (!templateId) return;
+  const template = await loadTemplate(ctx, templateId);
+  if (template.status !== "active" && templateId !== currentTemplateId) fail(`"${template.name}" is archived — choose another template, or bring it back first`, 409);
+}
+
+// The template a check-in's report is written on: its own copy once reported, else its template.
+async function sessionTemplate(session) {
+  if (session.template) return session.template;
+  if (!session.templateId) return null;
+  const t = await CheckinModel.findTemplate(session.templateId);
+  return t && t.ownerAdminId === session.ownerAdminId ? templateBody(t) : null;
+}
+
+// What a template's answers still need before the report can be sent: every yes / no and rubric
+// item answered ("not applicable" counts) — QA's rule, without its summary parts (a check-in's
+// summary is its highs, lows and resolutions).
+function answerProblems(template, answers = {}) {
+  const problems = [];
+  for (const s of template.sections) {
+    const missing = s.criteria.filter((c) => {
+      if (c.kind === "comment") return false;
+      const value = answers[c.id]?.value;
+      if (c.kind === "yes_no") return !["yes", "no", "na"].includes(value);
+      return value !== "na" && !template.scale.some((l) => String(l.score) === String(value));
+    });
+    if (missing.length) problems.push(`Answer ${missing.length === 1 ? "1 item" : `${missing.length} items`} in "${s.title}" (or mark them not applicable)`);
+  }
+  return problems;
+}
+
 const CheckinService = {
   contextOf,
+
+  // ---- Templates (managers) ----
+
+  async listTemplates(req, { status } = {}) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const rows = await CheckinModel.listTemplates({ ownerAdminId: ctx.ownerAdminId, status: status || undefined });
+    const ids = rows.map((t) => t.id);
+    const [useCounts, scheduleCounts, names] = await Promise.all([
+      ids.length ? db("checkin_sessions").whereIn("templateId", ids).where({ status: "reported" }).select("templateId").count({ n: "*" }).groupBy("templateId") : [],
+      ids.length ? db("checkin_schedules").whereIn("templateId", ids).where({ status: "active" }).select("templateId").count({ n: "*" }).groupBy("templateId") : [],
+      peopleNames(rows.map((t) => t.createdBy)),
+    ]);
+    const uses = new Map(useCounts.map((r) => [r.templateId, Number(r.n)]));
+    const schedules = new Map(scheduleCounts.map((r) => [r.templateId, Number(r.n)]));
+    return rows.map((t) => ({
+      id: t.id, name: t.name, status: t.status, updatedAt: t.updatedAt,
+      sectionCount: (t.sections || []).length,
+      itemCount: (t.sections || []).reduce((n, s) => n + (s.criteria || []).length, 0),
+      // "visits" — the shared template list reads the same field for QA's visits.
+      visits: uses.get(t.id) || 0, schedules: schedules.get(t.id) || 0,
+      createdByName: names.get(t.createdBy) || null, canEdit: canEditTemplate(ctx, t),
+    }));
+  },
+
+  async getTemplate(req, id) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const t = await loadTemplate(ctx, id);
+    return { id: t.id, ...templateBody(t), status: t.status, canEdit: canEditTemplate(ctx, t) };
+  },
+
+  // A new template starts from the default rubric scale when none is given.
+  async createTemplate(req, data) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const template = normaliseTemplate({ ...data, scale: data.scale?.length ? data.scale : DEFAULT_SCALE });
+    const problems = templateProblems(template, { noun: "check-in" });
+    if (problems.length) throw Object.assign(new Error(problems[0]), { statusCode: 400, errors: problems.map((message) => ({ message })) });
+    const created = await CheckinModel.createTemplate({ ...template, ownerAdminId: ctx.ownerAdminId, status: "active", createdBy: ctx.userId, updatedBy: ctx.userId });
+    return this.getTemplate(req, created.id);
+  },
+
+  // Changing a template changes the check-ins not reported yet; reports already in keep their copy.
+  async updateTemplate(req, id, data) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const before = await loadTemplate(ctx, id);
+    if (!canEditTemplate(ctx, before)) fail("Only the person who made this template (or an admin) can change it", 403);
+    const template = normaliseTemplate(data);
+    const problems = templateProblems(template, { noun: "check-in" });
+    if (problems.length) throw Object.assign(new Error(problems[0]), { statusCode: 400, errors: problems.map((message) => ({ message })) });
+    await CheckinModel.updateTemplate(id, { ...template, updatedBy: ctx.userId });
+    return this.getTemplate(req, id);
+  },
+
+  async setTemplateStatus(req, id, status) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const template = await loadTemplate(ctx, id);
+    if (!canEditTemplate(ctx, template)) fail("Only the person who made this template (or an admin) can archive it", 403);
+    await CheckinModel.updateTemplate(id, { status, updatedBy: ctx.userId });
+    return this.getTemplate(req, id);
+  },
+
+  // Refused while check-ins or active schedules use it (UsageService) — archive it instead.
+  async deleteTemplate(req, res, id) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const template = await loadTemplate(ctx, id);
+    if (!canEditTemplate(ctx, template)) fail("Only the person who made this template (or an admin) can delete it", 403);
+    if (await UsageService.guardDelete(req, res, "checkinTemplate", id, "This template")) return null;
+    await CheckinModel.deleteTemplate(id);
+    return { deleted: true };
+  },
+
   keepCurrent,
   generateAll,
   sendDueNotices,
@@ -270,6 +481,15 @@ const CheckinService = {
     const hubs = await q;
     const names = await peopleNames(hubs.flatMap((h) => [h.accountManagerId, h.trainingLeadId]));
     return hubs.map((h) => ({ ...h, accountManagerName: names.get(h.accountManagerId) || null, trainingLeadName: names.get(h.trainingLeadId) || null }));
+  },
+
+  // Who can take part in a hub's check-ins (managers, setting them up).
+  async hubPeople(req, hubId) {
+    const ctx = contextOf(req);
+    requireManager(ctx);
+    const options = await participantOptions(ctx.ownerAdminId, hubId);
+    if (!options) fail("Hub not found", 404);
+    return options;
   },
 
   // For the hub form (learning-hub.controller.js): the Account Manager and Training Lead it names
@@ -320,11 +540,19 @@ const CheckinService = {
     const ctx = contextOf(req);
     requireManager(ctx);
     const rows = await CheckinModel.listSchedules({ ownerAdminId: ctx.ownerAdminId, hubId, status });
-    const [names, hubs] = await Promise.all([peopleNames(rows.flatMap((s) => [s.accountManagerId, s.trainingLeadId])), hubNames(rows.map((s) => s.hubId))]);
+    const templateIds = [...new Set(rows.map((s) => s.templateId).filter(Boolean))];
+    const [names, hubs, templates] = await Promise.all([
+      peopleNames(rows.flatMap((s) => [s.accountManagerId, s.trainingLeadId])),
+      hubNames(rows.map((s) => s.hubId)),
+      templateIds.length ? db("checkin_templates").whereIn("id", templateIds).select("id", "name") : [],
+    ]);
+    const templateNames = new Map(templates.map((t) => [t.id, t.name]));
     return rows.map((s) => ({
       id: s.id, hubId: s.hubId, hubName: hubs.get(s.hubId) || null, frequency: s.frequency, startDate: s.startDate, endDate: s.endDate,
       format: s.format, status: s.status, accountManagerId: s.accountManagerId, accountManagerName: names.get(s.accountManagerId) || null,
       trainingLeadId: s.trainingLeadId, trainingLeadName: names.get(s.trainingLeadId) || null, createdAt: s.createdAt,
+      templateId: s.templateId || null, templateName: templateNames.get(s.templateId) || null,
+      participants: participantsOfSchedule(s), meetingLink: s.meetingLink || null,
     }));
   },
 
@@ -334,17 +562,23 @@ const CheckinService = {
     const hub = await hubOf(ctx, data.hubId);
     const people = peopleOfHub(hub);
     await assertAssignable(ctx, people);
+    await assertScheduleTemplate(ctx, data.templateId);
+    const participants = await resolveParticipants(ctx, data.hubId, data.participantIds, people);
+    const { participantIds, ...fields } = data;
     const today = todayInKenya();
     let schedule;
     await CheckinModel.transaction(async (trx) => {
       schedule = await CheckinModel.createSchedule({
-        ...data, ...people, ownerAdminId: ctx.ownerAdminId, status: "active",
+        ...fields, ...people, ownerAdminId: ctx.ownerAdminId, status: "active",
+        participants: JSON.stringify(participants),
         generateFrom: data.startDate > today ? data.startDate : today,
         createdBy: ctx.userId, updatedBy: ctx.userId,
       }, trx);
       await CheckinModel.insertSessionsIgnoringExisting(sessionRowsFor(schedule, schedule.generateFrom, today), trx);
+      await syncParticipants(schedule, { connection: trx, today });
     });
     await CheckinNotifications.assigned(schedule, hub.name, [schedule.accountManagerId, schedule.trainingLeadId].filter((id) => id !== ctx.userId));
+    await CheckinNotifications.invited(schedule, hub.name, participants.map((p) => p.userId).filter((id) => id !== ctx.userId));
     return (await this.listSchedules(req)).find((s) => s.id === schedule.id);
   },
 
@@ -358,17 +592,23 @@ const CheckinService = {
     const hub = await hubOf(ctx, data.hubId);
     const people = peopleOfHub(hub);
     await assertAssignable(ctx, people);
+    await assertScheduleTemplate(ctx, data.templateId, before.templateId);
+    const participants = await resolveParticipants(ctx, data.hubId, data.participantIds, people);
+    const hadBefore = new Set(participantsOfSchedule(before).map((p) => p.userId));
+    const { participantIds, ...fields } = data;
 
     const today = todayInKenya();
     const timingChanged = data.frequency !== before.frequency || data.startDate !== before.startDate;
+    const templateChanged = (data.templateId || null) !== (before.templateId || null);
     let schedule;
     await CheckinModel.transaction(async (trx) => {
       schedule = await CheckinModel.updateSchedule(id, {
-        ...data, ...people, updatedBy: ctx.userId,
+        ...fields, ...people, updatedBy: ctx.userId, participants: JSON.stringify(participants),
         ...(timingChanged ? { generateFrom: data.startDate > today ? data.startDate : today } : {}),
       }, trx);
       if (timingChanged) {
         // The upcoming unreported check-ins follow the new pattern.
+        await CheckinModel.removeParticipantsOf(await unreportedUpcoming(trx, id, today).pluck("id"), trx);
         await unreportedUpcoming(trx, id, today).del();
         await CheckinModel.insertSessionsIgnoringExisting(sessionRowsFor(schedule, schedule.generateFrom, today), trx);
       } else {
@@ -376,9 +616,18 @@ const CheckinService = {
           format: schedule.format, accountManagerId: schedule.accountManagerId, trainingLeadId: schedule.trainingLeadId, updatedAt: new Date(),
         });
       }
+      // A new template: every check-in of the schedule not reported yet (due ones too) uses it.
+      if (templateChanged) {
+        await trx("checkin_sessions").where({ scheduleId: id, status: "open" }).update({ templateId: schedule.templateId || null, updatedAt: new Date() });
+      }
+      // The people and the meeting link: every check-in not reported yet.
+      await trx("checkin_sessions").where({ scheduleId: id, status: "open" }).update({ meetingLink: schedule.meetingLink || null, updatedAt: new Date() });
+      await syncParticipants(schedule, { replace: true, connection: trx, today });
     });
     const newPeople = [schedule.accountManagerId, schedule.trainingLeadId].filter((p) => p && p !== before.accountManagerId && p !== before.trainingLeadId && p !== ctx.userId);
     if (newPeople.length) await CheckinNotifications.assigned(schedule, hub.name, newPeople);
+    const invitedNow = participants.map((p) => p.userId).filter((u) => !hadBefore.has(u) && u !== ctx.userId);
+    if (invitedNow.length) await CheckinNotifications.invited(schedule, hub.name, invitedNow);
     return (await this.listSchedules(req)).find((s) => s.id === id);
   },
 
@@ -394,6 +643,7 @@ const CheckinService = {
     let removed = 0;
     await CheckinModel.transaction(async (trx) => {
       await CheckinModel.updateSchedule(id, { status: "ended", endDate: today < schedule.startDate ? schedule.startDate : today, updatedBy: ctx.userId }, trx);
+      await CheckinModel.removeParticipantsOf(await unreportedUpcoming(trx, id, today).pluck("id"), trx);
       removed = await unreportedUpcoming(trx, id, today).del();
     });
     return { ended: true, removedCheckins: removed };
@@ -407,12 +657,22 @@ const CheckinService = {
     if (ctx.isHub && !(ctx.hubId && ctx.ownerAdminId)) {
       return { sessions: [], total: 0, page: filters.page, limit: filters.limit, counts: { due: 0, upcoming: 0, reported: 0 }, today };
     }
-    await keepCurrent(ctx.ownerAdminId);
-    let q = CheckinModel.sessionsQuery(ctx.ownerAdminId);
+    let q;
+    if (ctx.isParticipantOnly) {
+      // An educator or a parent: the check-ins they take part in, in whichever workspace.
+      const mineIds = db("checkin_participants").where({ userId: ctx.userId }).select("sessionId");
+      const owners = await db("checkin_sessions").whereIn("id", mineIds).distinct("ownerAdminId").pluck("ownerAdminId");
+      for (const ownerAdminId of owners) await keepCurrent(ownerAdminId);
+      q = db("checkin_sessions").whereIn("id", db("checkin_participants").where({ userId: ctx.userId }).select("sessionId"));
+    } else {
+      await keepCurrent(ctx.ownerAdminId);
+      q = CheckinModel.sessionsQuery(ctx.ownerAdminId);
+    }
 
     // The hub itself: its own check-ins, whatever the scope. "mine": the ones I'm on. "all":
     // everything I'm allowed to see (managers: every hub).
-    if (ctx.isHub) q = q.where({ hubId: ctx.hubId });
+    if (ctx.isParticipantOnly) { /* already only theirs */ }
+    else if (ctx.isHub) q = q.where({ hubId: ctx.hubId });
     else if (filters.scope === "mine") q = q.where(mine(ctx));
     else if (!ctx.isManager) {
       const hubs = await assignedHubIds(ctx);
@@ -424,6 +684,7 @@ const CheckinService = {
     const views = {
       due: (x) => x.where({ status: "open" }).where("scheduledDate", "<=", today),
       upcoming: (x) => x.where({ status: "open" }).where("scheduledDate", ">", today),
+      coming: (x) => x.where({ status: "open" }).where("scheduledDate", ">=", today),
       reported: (x) => x.where({ status: "reported" }),
       all: (x) => x,
     };
@@ -433,42 +694,56 @@ const CheckinService = {
     }
     const listed = views[filters.view](q.clone());
     const total = Number((await listed.clone().count({ n: "*" }).first())?.n || 0);
-    const ascending = filters.view === "upcoming";
+    const ascending = filters.view === "upcoming" || filters.view === "coming";
     const rows = await CheckinModel.findSessions(listed.clone()
       .orderBy("scheduledDate", ascending ? "asc" : "desc")
       .limit(filters.limit).offset((filters.page - 1) * filters.limit));
     return { sessions: await decorateSessions(rows, today), total, page: filters.page, limit: filters.limit, counts, today };
   },
 
-  // The sign-in pop-up: my check-ins whose day has come and whose report isn't in yet.
+  // The sign-in pop-up. `kind` "write": a check-in I run whose day has come and whose report isn't
+  // in yet. `kind` "attend": one I take part in, from ATTEND_NOTICE_DAYS before its day until the
+  // day itself (with the link to join an online one).
   async dueForMe(req) {
     const ctx = contextOf(req);
     const owners = await db("checkin_sessions").where(mine(ctx)).distinct("ownerAdminId").pluck("ownerAdminId");
     for (const ownerAdminId of owners) await keepCurrent(ownerAdminId);
     const today = todayInKenya();
-    const rows = await CheckinModel.findSessions(db("checkin_sessions")
-      .where(mine(ctx)).where({ status: "open" }).where("scheduledDate", "<=", today)
+    const writeRows = await CheckinModel.findSessions(db("checkin_sessions")
+      .where(leads(ctx)).where({ status: "open" }).where("scheduledDate", "<=", today)
       .orderBy("scheduledDate", "asc").limit(20));
-    const sessions = await decorateSessions(rows, today);
+    const attendRows = await CheckinModel.findSessions(db("checkin_sessions")
+      .whereIn("id", db("checkin_participants").where({ userId: ctx.userId }).select("sessionId"))
+      .whereNot((w) => w.where({ accountManagerId: ctx.userId }).orWhere({ trainingLeadId: ctx.userId }))
+      .where({ status: "open" }).whereBetween("scheduledDate", [today, addDays(today, ATTEND_NOTICE_DAYS)])
+      .orderBy("scheduledDate", "asc").limit(20));
+    const rows = [...writeRows, ...attendRows];
+    const kinds = new Map([...writeRows.map((r) => [r.id, "write"]), ...attendRows.map((r) => [r.id, "attend"])]);
+    const sessions = (await decorateSessions(rows, today)).map((s) => ({ ...s, kind: kinds.get(s.id) }));
     // The hub's logo, for the pop-up's cards.
     const photos = sessions.length ? await db("learning_hubs").whereIn("id", [...new Set(sessions.map((s) => s.hubId))]).select("id", "photo") : [];
     const photoOf = new Map(photos.map((h) => [h.id, h.photo || null]));
     return sessions.map((s) => ({ ...s, hubPhoto: photoOf.get(s.hubId) || null }));
   },
 
-  // One check-in, its report, and the hub's last few reports before it.
+  // One check-in, its report, and the hub's last few reports before it. Someone only taking part
+  // sees this check-in alone: no earlier reports, and the people as numbers per group.
   async getSession(req, id) {
     const ctx = contextOf(req);
-    if (!ctx.ownerAdminId) fail("Check-in not found", 404);
-    await keepCurrent(ctx.ownerAdminId);
+    if (!ctx.ownerAdminId && !ctx.isParticipantOnly) fail("Check-in not found", 404);
     const session = await loadSession(ctx, id);
+    await keepCurrent(session.ownerAdminId);
+    const fullView = ctx.isManager || isAssignedTo(ctx, session) || (ctx.isHub && session.hubId === ctx.hubId)
+      || (!ctx.isParticipantOnly && session.ownerAdminId === ctx.ownerAdminId && (await assignedHubIds(ctx)).includes(session.hubId));
     const today = todayInKenya();
     const [view] = await decorateSessions([session], today);
-    const earlierRows = await CheckinModel.findSessions(CheckinModel.sessionsQuery(ctx.ownerAdminId)
+    const earlierRows = !fullView ? [] : await CheckinModel.findSessions(CheckinModel.sessionsQuery(session.ownerAdminId)
       .where({ hubId: session.hubId, status: "reported" }).whereNot({ id })
       .where("scheduledDate", "<=", session.scheduledDate)
       .orderBy("scheduledDate", "desc").limit(5));
-    const earlier = (await decorateSessions(earlierRows, today)).map((s, i) => ({ ...s, report: earlierRows[i].report }));
+    const earlier = (await decorateSessions(earlierRows, today)).map((s, i) => ({
+      ...s, report: earlierRows[i].report, template: earlierRows[i].template, answers: earlierRows[i].answers, sectionScores: earlierRows[i].sectionScores,
+    }));
     const writable = canWriteReport(ctx, session);
     const manageTasks = canManageTasks(ctx, session, today);
     const taskRows = await db("checkin_tasks").where({ sessionId: id }).orderBy([{ column: "dueDate", order: "asc" }, { column: "createdAt", order: "asc" }]);
@@ -476,12 +751,20 @@ const CheckinService = {
     return {
       ...view,
       report: session.report || null,
+      // The template the report is (or will be) written on, its answers and score.
+      template: await sessionTemplate(session),
+      answers: session.answers || {},
+      sectionScores: session.sectionScores || [],
+      meetingLink: session.meetingLink || null,
+      // Who takes part: names for those running it (and the hub, and managers); numbers for the rest.
+      participants: await participantView(session, fullView),
       earlierReports: earlier,
       tasks,
       taskAssignees: manageTasks ? await taskAssignees(session) : [],
       permissions: {
         // From the check-in's day on; once reported, it can still be corrected.
         canWriteReport: writable && view.state !== "upcoming",
+        isParticipantOnly: !fullView,
         canManageTasks: manageTasks,
         isManager: ctx.isManager,
       },
@@ -564,21 +847,40 @@ const CheckinService = {
     return { deleted: true, sessionId: task.sessionId };
   },
 
-  async saveReport(req, id, report) {
+  // The report: highs, lows, resolutions — and, when the check-in has a template, an answer to each
+  // of its items (every yes / no and rubric item, "not applicable" counts), scored the QA way. The
+  // first send keeps a copy of the template on the check-in; a correction keeps that copy.
+  async saveReport(req, id, body) {
     const ctx = contextOf(req);
+    const { answers: rawAnswers = {}, ...report } = body;
     const problems = reportProblems(report);
-    if (problems.length) throw Object.assign(new Error(problems[0]), { statusCode: 400, errors: problems.map((message) => ({ message })) });
     const today = todayInKenya();
+    let firstSend = null;
     await CheckinModel.transaction(async (trx) => {
       const session = await loadSession(ctx, id, { forUpdate: true, connection: trx });
       if (!canWriteReport(ctx, session)) fail("Only the check-in's Account Manager and Training Lead can write its report", 403);
       if (session.scheduledDate > today) fail("This check-in hasn't come round yet — write its report on or after its day", 409);
+      const template = await sessionTemplate(session);
+      const answers = template ? cleanAnswers(template, rawAnswers) : {};
+      const all = [...(template ? answerProblems(template, answers) : []), ...problems];
+      if (all.length) throw Object.assign(new Error(all[0]), { statusCode: 400, errors: all.map((message) => ({ message })) });
+      const scored = template ? scoreReview(template, answers) : { score: null, sectionScores: [] };
       const first = session.status !== "reported";
       await CheckinModel.updateSession(id, {
         report, status: "reported", updatedBy: ctx.userId,
+        ...(template ? { template, answers, score: scored.score, sectionScores: scored.sectionScores } : {}),
         ...(first ? { reportSubmittedAt: new Date(), reportSubmittedBy: ctx.userId } : {}),
       }, trx);
+      if (first) firstSend = session;
     });
+    // The report goes to everyone involved: those taking part, and whichever of the Account Manager
+    // and Training Lead didn't write it.
+    if (firstSend) {
+      const people = await db("checkin_participants").where({ sessionId: id }).pluck("userId");
+      const recipients = [...new Set([...people, firstSend.accountManagerId, firstSend.trainingLeadId])].filter((u) => u && u !== ctx.userId);
+      const names = await hubNames([firstSend.hubId]);
+      if (recipients.length) await CheckinNotifications.reportReady(firstSend, names.get(firstSend.hubId) || "the hub", recipients);
+    }
     return this.getSession(req, id);
   },
 };

@@ -119,6 +119,9 @@ const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
 // The hub form offers an Account Manager and a Training Lead to pick — so that list can also be
 // read by anyone who can view Learning Hubs.
 const CHECKIN_PEOPLE_LIST = /^\/api\/checkins\/people$/;
+// Staff taking part in a hub's check-ins (6 Nov 2026) read those check-ins and get the pop-up
+// whatever their role says — checkin.service.js shows each person only the check-ins they're on.
+const CHECKIN_PARTICIPANT_READS = /^\/api\/checkins\/(due|sessions(\/[^/]+)?)$/;
 
 // Surfaces only the workspace owner can use, whatever a staff role says: staff/role management,
 // moving content between admins, sharing with other admins, and the cross-workspace platform
@@ -219,6 +222,7 @@ function isOwnerOnlyPath(rawPath) {
 function resolveAccess(method, rawPath) {
   const path = normalisePath(rawPath);
   const verb = method.toUpperCase();
+  if (verb === "GET" && CHECKIN_PARTICIPANT_READS.test(path)) return null;
   const override = ACTION_OVERRIDES.find((o) => o.method === verb && o.pattern.test(path));
   if (override) return { module: override.module, action: override.action, ...(override.orActions ? { orActions: override.orActions } : {}) };
   const module = resolveModuleForPath(path);

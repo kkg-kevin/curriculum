@@ -2,6 +2,7 @@ const { z } = require("zod");
 const {
   signupChildSchema, approveSignupSchema, invoiceSchema, packageSchema, phone, loginPassword, requiredText,
 } = require("../home-learning/home-learning.validation");
+const { OFFERED_PERIODS } = require("../home-learning/home-learning.pricing");
 
 // Tech Clubs reuse Home Learning's rules wherever the two mean the same thing: a package's
 // pricing fields (packageSchema), a child on the sign-up form (signupChildSchema), the payment
@@ -19,6 +20,8 @@ const packageClubsSchema = z.object({
 const signupSchema = z.object({
   hubId: requiredText(36, "Choose a club"),
   packageSlug: requiredText(160, "Choose a package"),
+  // The period chosen on the package card (6 Nov 2026); left out, the package's default.
+  billingPeriod: z.enum(OFFERED_PERIODS).optional(),
   parent: z.object({
     name: requiredText(150, "Enter your name"),
     email: z.string().trim().email("Enter a valid email address").max(255),
@@ -41,6 +44,8 @@ const membershipUpdateSchema = z.object({
   guardianName: z.string().trim().min(1, "Parent name is required").max(150).optional(),
   guardianPhone: phone.optional(),
   packageId: z.string().min(1).optional(),
+  // Which of the package's periods (6 Nov 2026) — re-priced like a package change.
+  billingPeriod: z.enum(OFFERED_PERIODS).optional(),
   childCount: z.coerce.number().int().min(1).max(50).optional(),
   status: z.enum(["pending", "active", "paused", "cancelled"]).optional(),
   notes: z.string().max(5000).optional().or(z.literal("")),

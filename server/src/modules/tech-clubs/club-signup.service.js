@@ -3,7 +3,7 @@ const ClubMembershipModel = require("./club.model");
 const ClubPackageModel = require("./club-package.model");
 const { raiseMembershipInvoice, syncMembershipChildren } = require("./club.service");
 const { signupSchema, signupChildSchema, approveSignupSchema } = require("./club.validation");
-const { priceForPackage, CURRENCY } = require("../home-learning/home-learning.pricing");
+const { priceForPackage, sellableOnline, periodWord, CURRENCY } = require("../home-learning/home-learning.pricing");
 const { firstPeriod } = require("../billing/package-billing");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
@@ -153,10 +153,12 @@ const ClubSignupService = {
 
     const pkg = await ClubPackageModel.findBySlug(data.packageSlug, ownerAdminId);
     // A daily package is never published (it's billed at month end, nothing to pay up front).
-    if (!pkg || pkg.status !== "active" || !pkg.isPublished || pkg.billingPeriod === "daily" || !ClubPackageModel.offeredAt(pkg, hub.id)) {
+    if (!pkg || pkg.status !== "active" || !pkg.isPublished || !sellableOnline(pkg) || !ClubPackageModel.offeredAt(pkg, hub.id)) {
       fail("That package is no longer available at this club — please choose another.", 404);
     }
-    const price = priceForPackage(pkg, data.children.length);
+    // The period chosen on the package card; it must be one the package is offered for.
+    if (data.billingPeriod && !priceForPackage(pkg, pkg.childrenIncluded, data.billingPeriod)) fail(`${pkg.name} isn't offered ${periodWord(data.billingPeriod)} — please choose another option.`);
+    const price = priceForPackage(pkg, data.children.length, data.billingPeriod || null);
     if (!price) {
       fail(pkg.allowExtraChildren
         ? `${pkg.name} takes up to ${pkg.maxChildren} children`

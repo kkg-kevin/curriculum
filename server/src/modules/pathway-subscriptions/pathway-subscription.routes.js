@@ -95,7 +95,7 @@ router.patch("/:id/status", authorize("admin"), asyncHandler(async (req, res) =>
   res.json({ success: true, data });
 }));
 router.put("/:id/plan", authorize("admin"), asyncHandler(async (req, res) => {
-  res.json({ success: true, data: await PathwaySubscriptionService.changePlan(own(req), req.params.id, { packageId: req.body?.packageId }) });
+  res.json({ success: true, data: await PathwaySubscriptionService.changePlan(own(req), req.params.id, { packageId: req.body?.packageId, billingPeriod: ["weekly", "monthly", "quarterly", "annually"].includes(req.body?.billingPeriod) ? req.body.billingPeriod : null }) });
 }));
 // Raise the next period's invoice now, before it starts.
 router.post("/:id/invoices", authorize("admin"), asyncHandler(async (req, res) => {

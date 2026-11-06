@@ -75,7 +75,10 @@ const PathwayEnrollmentService = {
     // one-off Settings price was removed on 4 Nov 2026. No plan chosen: it isn't sold online.
     if (!data.packageId) throw badRequest("Choose a plan to enrol — or enquire and our team will help.");
     const plan = await resolvePlan(pathway, data.packageId);
-    const planPrice = PathwaySubscriptionService.priceFor(plan, data.children.length);
+    // The period chosen on the plan card (6 Nov 2026); left out, the plan's default.
+    const wantedPeriod = ["weekly", "monthly", "quarterly", "annually"].includes(data.billingPeriod) ? data.billingPeriod : null;
+    if (wantedPeriod && !PathwaySubscriptionService.priceFor(plan, plan.childrenIncluded, wantedPeriod)) throw badRequest(`${plan.name} isn't offered for that period — please choose another option.`);
+    const planPrice = PathwaySubscriptionService.priceFor(plan, data.children.length, wantedPeriod);
     if (!planPrice) {
       throw badRequest(plan.allowExtraChildren ? `${plan.name} takes up to ${plan.maxChildren} children` : `${plan.name} covers ${plan.childrenIncluded === 1 ? "1 child" : `${plan.childrenIncluded} children`} — choose a larger plan for more`);
     }

@@ -2,21 +2,26 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiArchive, FiCopy, FiEdit2, FiPlus, FiRotateCcw, FiTrash2 } from "react-icons/fi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { useQaMutation, useQaTemplates } from "../hooks/useQa";
-import { qaApi } from "../services/qaApi";
+import { useCheckinsBase } from "../../checkins/shared";
+import { templateSource, useSourceMutation, useSourceTemplates } from "../templateSources";
 import { Empty, Pill, Segmented, T, btn, card, formatDate, hint, toolbar, useQaBase } from "../shared";
 
 // The workspace's templates — what a visit checks. Anyone who reviews can make one and use any;
 // the person who made it (or an admin) changes, archives or deletes it. One in use can't be
-// deleted — archive it instead (reports keep their own copy either way).
-export default function TemplatesTab() {
-  const base = useQaBase();
+// deleted — archive it instead (reports keep their own copy either way). `source` "qa" or
+// "checkins" (hub check-in templates, managers only) — qa/templateSources.js.
+export default function TemplatesTab({ source: sourceName = "qa" }) {
+  const source = templateSource(sourceName);
+  const words = source.words;
+  const qaBase = useQaBase();
+  const checkinsBase = useCheckinsBase();
+  const base = sourceName === "checkins" ? checkinsBase : qaBase;
   const navigate = useNavigate();
   const [status, setStatus] = useState("active");
   const [deleting, setDeleting] = useState(null);
-  const { data = [], isLoading, isError, error } = useQaTemplates({ status });
-  const setTemplateStatus = useQaMutation(({ id, next }) => qaApi.setTemplateStatus(id, next), (r) => (r.status === "archived" ? "Template archived" : "Template back in use"));
-  const remove = useQaMutation((id) => qaApi.deleteTemplate(id), "Template deleted");
+  const { data = [], isLoading, isError, error } = useSourceTemplates(source, { status });
+  const setTemplateStatus = useSourceMutation(source, ({ id, next }) => source.api.setStatus(id, next), (r) => (r.status === "archived" ? "Template archived" : "Template back in use"));
+  const remove = useSourceMutation(source, (id) => source.api.remove(id), "Template deleted");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -29,7 +34,7 @@ export default function TemplatesTab() {
         {isError && <p style={{ ...hint, padding: 18, color: "#B91C1C" }}>{error?.message || "Templates couldn't be loaded."}</p>}
         {!isLoading && data.length === 0 && (
           <Empty title={status === "active" ? "No templates yet" : "No archived templates"}>
-            {status === "active" ? "A template lists what a visit checks — like how the lesson is prepared, taught and managed." : null}
+            {status === "active" ? words.empty : null}
           </Empty>
         )}
         {data.map((t) => (
@@ -41,7 +46,7 @@ export default function TemplatesTab() {
               </div>
               <div style={{ marginTop: 4, fontSize: 12.5, color: T.inkMuted, display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <span>{t.sectionCount} {t.sectionCount === 1 ? "section" : "sections"} · {t.itemCount} {t.itemCount === 1 ? "item" : "items"}</span>
-                <span>Used on {t.visits} {t.visits === 1 ? "visit" : "visits"}{t.schedules ? ` · ${t.schedules} active ${t.schedules === 1 ? "schedule" : "schedules"}` : ""}</span>
+                <span>Used on {t.visits} {t.visits === 1 ? words.use : words.uses}{t.schedules ? ` · ${t.schedules} active ${t.schedules === 1 ? "schedule" : "schedules"}` : ""}</span>
                 {t.createdByName && <span>By {t.createdByName}</span>}
                 <span>Updated {formatDate(t.updatedAt, { day: "numeric", month: "short", year: "numeric" })}</span>
               </div>
@@ -74,7 +79,7 @@ export default function TemplatesTab() {
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
-        usageCheck={deleting ? () => qaApi.checkDeleteTemplate(deleting.id) : undefined}
+        usageCheck={deleting ? () => source.api.checkDelete(deleting.id) : undefined}
         onAlternative={deleting && deleting.status === "active" ? () => { setTemplateStatus.mutate({ id: deleting.id, next: "archived" }); setDeleting(null); } : undefined}
         onConfirm={() => { remove.mutate(deleting.id); setDeleting(null); }}
         onCancel={() => setDeleting(null)}

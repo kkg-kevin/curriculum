@@ -8,6 +8,7 @@ const KEY = ["checkins"];
 const errorText = (err) => err?.errors?.[0]?.message || err?.message || "Something went wrong";
 
 export const useCheckinPeople = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "people"], queryFn: checkinsApi.people, staleTime: 60 * 1000, enabled });
+export const useCheckinHubPeople = (hubId) => useQuery({ queryKey: [...KEY, "hub-people", hubId], queryFn: () => checkinsApi.hubPeople(hubId), enabled: !!hubId, staleTime: 60 * 1000 });
 export const useCheckinHubs = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "hubs"], queryFn: checkinsApi.hubs, staleTime: 60 * 1000, enabled });
 export const useDueCheckins = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "due"], queryFn: checkinsApi.due, enabled });
 export const useCheckinSchedules = (params, { enabled = true } = {}) => useQuery({ queryKey: [...KEY, "schedules", params], queryFn: () => checkinsApi.schedules(params), enabled });

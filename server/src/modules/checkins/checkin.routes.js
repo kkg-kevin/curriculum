@@ -15,12 +15,21 @@ router.use((req, res, next) => {
   const { role, hubLead } = req.user;
   const dueOnly = req.method === "GET" && req.path === "/due";
   const readingSessions = req.method === "GET" && /^\/sessions(\/[^/]+)?$/.test(req.path);
-  if (role === "admin" || (role === "school" && (hubLead || readingSessions)) || (role === "teacher" && dueOnly)) return next();
+  // Educators and parents: the check-ins they take part in, and the pop-up (6 Nov 2026).
+  const taking = (role === "teacher" || role === "learner") && (dueOnly || readingSessions);
+  if (role === "admin" || (role === "school" && (hubLead || readingSessions)) || taking) return next();
   next(Object.assign(new Error("You do not have permission to perform this action"), { statusCode: 403 }));
 });
 
 router.get("/people", ctl.people);
+
+// Templates (the same as QA's) — managers only, checked in checkin.service.js.
+router.route("/templates").get(ctl.listTemplates).post(ctl.createTemplate);
+router.route("/templates/:id").get(ctl.getTemplate).put(ctl.updateTemplate).delete(ctl.deleteTemplate);
+router.put("/templates/:id/status", ctl.setTemplateStatus);
 router.get("/hubs", ctl.hubs);
+// Who can take part in a hub's check-ins: our team, the hub's login, its mentors, its parents.
+router.get("/hubs/:id/people", ctl.hubPeople);
 // The sign-in pop-up: my check-ins due (today or earlier) with no report yet.
 router.get("/due", ctl.due);
 

@@ -2,7 +2,7 @@ const db = require("../../config/db");
 const { createRecord, updateRecord, deleteRecord, firstOrNull, stringifyJsonFields } = require("../../shared/utils/model.utils");
 
 const TABLE = "home_learning_packages";
-const JSON_FIELDS = ["features"];
+const JSON_FIELDS = ["features", "periodPrices"];
 const ordered = (query) => query.orderBy([{ column: "sortOrder", order: "asc" }, { column: "amount", order: "asc" }, { column: "name", order: "asc" }]);
 
 const HomeLearningPackageModel = {

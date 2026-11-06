@@ -16,7 +16,7 @@ const BillingModel = require("../billing/billing.model");
 const { createLearnerSchema } = require("../learners/learner.validation");
 const { householdSchema, enrollmentSchema, newLearnerEnrollmentSchema, invoiceSchema, packageSchema } = require("./home-learning.validation");
 const HomeLearningPackageModel = require("./home-learning-package.model");
-const { priceForPackage, toPublicPackage, CURRENCY } = require("./home-learning.pricing");
+const { priceForPackage, toPublicPackage, resolvePricing, periodWord, CURRENCY } = require("./home-learning.pricing");
 const { requirePublicContentAdminId } = require("../../shared/utils/public-content");
 const { slugify } = require("../../shared/utils/slugify");
 const { kenyaToday } = require("../../shared/utils/age");
@@ -44,10 +44,13 @@ function parseOrFail(schema, input, fallback) {
 // Resolves the household's package and what it costs for `requested` children. `currentPackageId`
 // lets a household keep (and re-price on) a package that has since been archived; new sign-ups
 // can only pick an active one.
-async function resolvePackagePrice(ownerAdminId, packageId, requested, currentPackageId = null) {
+// `billingPeriod`: the period asked for (it must be one the package offers); `keepPeriod`: the
+// family's current one, kept when the package offers it, else the package's default.
+async function resolvePackagePrice(ownerAdminId, packageId, requested, currentPackageId = null, { billingPeriod = null, keepPeriod = null } = {}) {
   const pkg = await HomeLearningPackageModel.findById(packageId, ownerAdminId);
   if (!pkg || (pkg.status !== "active" && pkg.id !== currentPackageId)) fail("Package not found", 404);
-  const price = priceForPackage(pkg, requested);
+  if (billingPeriod && !priceForPackage(pkg, pkg.childrenIncluded, billingPeriod)) fail(`${pkg.name} isn't offered ${periodWord(billingPeriod)}`);
+  const price = priceForPackage(pkg, requested, billingPeriod || keepPeriod, { fallback: !billingPeriod });
   if (!price) {
     fail(pkg.allowExtraChildren
       ? `${pkg.name} takes up to ${pkg.maxChildren} children`
@@ -58,6 +61,12 @@ async function resolvePackagePrice(ownerAdminId, packageId, requested, currentPa
 
 // Normalises a validated package form into a row: blank optionals become null, extra-child fields
 // are only kept when extras are allowed, and maxChildren defaults to the included count.
+function pricingOf(data) {
+  const { error, ...pricing } = resolvePricing(data);
+  if (error) fail(error);
+  return pricing;
+}
+
 function packageRow(data) {
   const extras = data.allowExtraChildren;
   return {
@@ -65,10 +74,9 @@ function packageRow(data) {
     summary: data.summary || null,
     description: data.description || null,
     childrenIncluded: data.childrenIncluded,
-    amount: data.amount,
-    billingPeriod: data.billingPeriod,
+    // Its prices per period, and the one shown first (home-learning.pricing.js).
+    ...pricingOf(data),
     allowExtraChildren: extras,
-    extraChildAmount: extras ? data.extraChildAmount : null,
     maxChildren: extras ? (data.maxChildren ?? Math.max(data.childrenIncluded + 1, 20)) : data.childrenIncluded,
     features: data.features,
     badge: data.badge || null,
@@ -384,8 +392,8 @@ const HomeLearningService = {
   },
 
   async create(ownerAdminId, input) {
-    const { portalPassword, ...data } = parseOrFail(householdSchema, input, "Invalid household details");
-    const price = await resolvePackagePrice(ownerAdminId, data.packageId, data.childCount);
+    const { portalPassword, billingPeriod: wantedPeriod, ...data } = parseOrFail(householdSchema, input, "Invalid household details");
+    const price = await resolvePackagePrice(ownerAdminId, data.packageId, data.childCount, null, { billingPeriod: wantedPeriod || null });
     await setParentPortalPassword(data.guardianName, data.guardianEmail, portalPassword);
     const status = data.status || "pending";
     return HouseholdModel.createHousehold({
@@ -405,7 +413,7 @@ const HomeLearningService = {
   },
 
   async update(ownerAdminId, id, input) {
-    const { portalPassword, ...updates } = parseOrFail(householdSchema.partial(), input, "Invalid household details");
+    const { portalPassword, billingPeriod: wantedPeriod, ...updates } = parseOrFail(householdSchema.partial(), input, "Invalid household details");
     const existing = await HouseholdModel.findById(id, ownerAdminId);
     if (!existing) fail("Household not found", 404);
     // A website sign-up is activated by "Approve payment" (home-learning-signup.service.js), which
@@ -417,10 +425,12 @@ const HomeLearningService = {
         fail("This family signed up on the website — use Approve payment to record their payment and activate them");
       }
     }
-    if (updates.packageId !== undefined || updates.childCount !== undefined) {
+    if (updates.packageId !== undefined || updates.childCount !== undefined || wantedPeriod) {
       const packageId = updates.packageId ?? existing.packageId;
       if (!packageId) fail("Choose a package for this household");
-      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.packageId);
+      const { amount, billingPeriod, ...place } = await resolvePackagePrice(ownerAdminId, packageId, updates.childCount ?? existing.childCount, existing.packageId, {
+        billingPeriod: wantedPeriod || null, keepPeriod: existing.billingPeriod,
+      });
       Object.assign(updates, place);
       if ((await HouseholdModel.countActive(id, ownerAdminId)) > updates.childCount) fail("Remove child enrollments before reducing the package size");
       // The places change now; the price and period from the next period not billed yet.

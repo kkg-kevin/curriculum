@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FiArrowUpRight, FiMapPin, FiVideo } from "react-icons/fi";
 import { FORMAT_LABEL, FREQUENCY_LABEL, Pill, STATE, T, formatDate, useCheckinsBase } from "../shared";
+import { ScoreBadge } from "../../qa/shared";
 
 // One check-in in a list — opens its page.
 export function SessionRow({ session, showHub = true }) {
@@ -11,6 +12,7 @@ export function SessionRow({ session, showHub = true }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {showHub && <strong style={{ fontSize: 14, color: T.ink }}>{session.hubName || "Hub"}</strong>}
           <Pill look={STATE[session.state]} />
+          {session.score != null && <ScoreBadge score={session.score} />}
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4, fontSize: 12.5, color: T.inkMuted }}>
           <span>{formatDate(session.scheduledDate)}</span>

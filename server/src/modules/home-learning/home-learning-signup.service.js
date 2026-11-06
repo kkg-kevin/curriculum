@@ -5,7 +5,7 @@ const HomeLearningService = require("./home-learning.service");
 const { raiseHouseholdInvoice } = require("./home-learning.service");
 const { firstPeriod } = require("../billing/package-billing");
 const { signupSchema, signupChildSchema, approveSignupSchema } = require("./home-learning.validation");
-const { priceForPackage, CURRENCY } = require("./home-learning.pricing");
+const { priceForPackage, sellableOnline, periodWord, CURRENCY } = require("./home-learning.pricing");
 const LearnerService = require("../learners/learner.service");
 const LearnerModel = require("../learners/learner.model");
 const AuthService = require("../auth/auth.service");
@@ -121,8 +121,10 @@ const HomeLearningSignupService = {
 
     const pkg = await HomeLearningPackageModel.findBySlug(data.packageSlug, ownerAdminId);
     // A daily package is never published (it's billed at month end, nothing to pay up front).
-    if (!pkg || pkg.status !== "active" || !pkg.isPublished || pkg.billingPeriod === "daily") fail("That package is no longer available — please choose another.", 404);
-    const price = priceForPackage(pkg, data.children.length);
+    if (!pkg || pkg.status !== "active" || !pkg.isPublished || !sellableOnline(pkg)) fail("That package is no longer available — please choose another.", 404);
+    // The period chosen on the package card; it must be one the package is offered for.
+    if (data.billingPeriod && !priceForPackage(pkg, pkg.childrenIncluded, data.billingPeriod)) fail(`${pkg.name} isn't offered ${periodWord(data.billingPeriod)} — please choose another option.`);
+    const price = priceForPackage(pkg, data.children.length, data.billingPeriod || null);
     if (!price) {
       fail(pkg.allowExtraChildren
         ? `${pkg.name} takes up to ${pkg.maxChildren} children`

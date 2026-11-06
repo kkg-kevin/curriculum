@@ -89,18 +89,17 @@ export function SummaryParts({ summary, parts = SUMMARY_PARTS }) {
   );
 }
 
-// The whole report: the score, every item's answer and note, then the summary.
-export function ReportView({ visit }) {
-  const t = visit.template;
+// Every section's items with the answer and note given — a QA report's, or a hub check-in
+// report's (CheckinSessionPage).
+export function TemplateAnswers({ template: t, answers }) {
   return (
-    <div style={stack(18)}>
-      <ScoreHeader score={visit.score} sectionScores={visit.sectionScores} />
+    <>
       {t?.sections.map((s) => (
         <div key={s.id} style={{ borderTop: "1px solid #F3F4F6", paddingTop: 14 }}>
           <h3 style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 800, color: T.ink, overflowWrap: "anywhere" }}>{s.title}</h3>
           <div style={stack(10)}>
             {s.criteria.map((c) => {
-              const a = visit.answers?.[c.id];
+              const a = answers?.[c.id];
               return (
                 <div key={c.id} style={stack(4)}>
                   <div style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -114,6 +113,16 @@ export function ReportView({ visit }) {
           </div>
         </div>
       ))}
+    </>
+  );
+}
+
+// The whole report: the score, every item's answer and note, then the summary.
+export function ReportView({ visit }) {
+  return (
+    <div style={stack(18)}>
+      <ScoreHeader score={visit.score} sectionScores={visit.sectionScores} />
+      <TemplateAnswers template={visit.template} answers={visit.answers} />
       <div style={{ borderTop: "1px solid #F3F4F6", paddingTop: 14 }}><SummaryParts summary={visit.summary} /></div>
     </div>
   );

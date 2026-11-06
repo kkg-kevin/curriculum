@@ -102,6 +102,77 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (6 Nov 2026, afternoon) — Check-in templates and participants, packages with several periods, plan carried to payment
+
+**Portal and backend** from `curriculum` (branch `modules`) at `f1c4e93`; **website** from `curriculum-web`
+(branch `new`) at `fddba3f`. Includes the "6 Nov 2026" release below — if that isn't up yet, this replaces it
+(follow its Verify steps too).
+
+### Upload in this order
+
+0. **Take a database backup** — three new migrations.
+1. **Backend** — `backend-deploy.zip` (676 files, 170 migrations), then Restart. Three new migrations, applied on
+   Restart:
+   - `20261106150000` — `checkin_templates` (check-in report templates), and on check-ins the template, answers
+     and score.
+   - `20261106170000` — `checkin_participants`, plus `participants` and `meetingLink` on check-in schedules and
+     `meetingLink` on each check-in.
+   - `20261106190000` — `periodPrices` on Home Learning, Tech Club and pathway packages (each package's one
+     price copied in, so nothing changes until a package is edited).
+
+   Check: `SHOW TABLES LIKE 'checkin_participants';` (1 row), `SHOW TABLES LIKE 'checkin_templates';` (1 row) and
+   `SHOW COLUMNS FROM pathway_packages LIKE 'periodPrices';` (1 row). If any is missing: Run JS script →
+   `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-DYa42MWF.js`). After the backend.
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-DXi111aI.js`, 31 pages). After the backend: an older
+   backend drops the period a family chooses for a pathway and bills the plan's default one.
+
+No new cron, environment variable or npm package.
+
+### What changed
+
+**Hub check-ins: templates.** Hub Check-ins → **Templates** works like QA's templates (sections of yes / no,
+rubric and comment items). A schedule may pick one; the report then needs every scored item answered as well
+as highs, lows and resolutions, and the check-in shows its score. Hubs reading their reports see the answers
+and score.
+
+**Hub check-ins: who takes part.** When setting up a hub's check-ins the admin picks the people: **our team**
+(admins and staff), **the hub** (its own login), **mentors** (educators linked to the hub) and **parents** (of
+learners at the hub). Each is told when chosen, gets a notice on the day and the sign-in pop-up from 3 days
+before, and the report once it's sent — each in their own portal (educators and parents have a new
+**Check-ins** link in the sidebar). They read, never write; the Account Manager and Training Lead still run
+the check-in and write the report. Online check-ins take a **meeting link** — Join on the check-in and in the
+pop-up.
+
+**Packages with several periods.** Billing → Packages: a Home Learning, Tech Club or pathway package can be
+offered weekly, monthly, every 3 months and yearly, each with its own price and extra-child price, and one
+"shown first". Daily is no longer offered (an existing daily package keeps billing daily until edited). Staff
+pick a family's period on the household / membership form and on a pathway subscription's Change plan.
+
+**Website: plan cards and the period carried to payment.**
+- Home Schooling, Estate Tech Club and pathway packages are cards with a **Weekly / Monthly / 3 months /
+  Yearly** switch; the price box follows it, with "Save N% compared with paying monthly".
+- The pathway and Estate Tech Club list cards show "From …", the periods on offer and **See plans / See
+  packages** (the cards in a window, Choose going straight to enrolling).
+- The period chosen follows the family: every Enrol on a pathway page carries it, the enrolment keeps the plan,
+  period and hub when they go Back or reload, the summary shows "Paid weekly" and the first payment at that
+  period, and the invoice is raised for it. **Fix:** until now every website pathway enrolment was billed at
+  the plan's default period whatever the family chose.
+- The Home Schooling / Tech Club Payment step names the real period ("your first week's payment").
+
+### Verify
+
+1. Billing → Packages → edit a package: the Prices grid shows the four periods; offer two, save; the list shows
+   both prices.
+2. Website: open that package's page — the card has the switch; switch it, the price changes; Choose → the
+   sign-up opens on that period.
+3. Website pathway: switch a plan card to another period → Enrol → Plan & hub opens on it; the summary says
+   "Paid …"; go Back and forward — still the same.
+4. Hub Check-ins → set up check-ins for a hub, tick a mentor and a parent, add a meeting link; the mentor and
+   parent see it under **Check-ins** in their portals.
+
+---
+
 ## This release (6 Nov 2026) — Issue to chosen learners, checkbox reissue / revoke, attendance unlocked, no blank written answers
 
 **Portal and backend** from `curriculum` (branch `modules`) at `1ee1861`. The website is unchanged since

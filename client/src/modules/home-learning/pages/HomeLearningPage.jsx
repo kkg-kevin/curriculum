@@ -12,7 +12,7 @@ import { HouseholdFields } from "../components/HouseholdFields";
 import { errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, statusFilterOptions } from "../components/ui";
 import { Segmented } from "../../../components/ui/TabBar";
 
-const EMPTY_HOUSEHOLD = { guardianName: "", guardianEmail: "", guardianPhone: "", county: "", subCounty: "", town: "", addressLine: "", landmark: "", mapUrl: "", locationPhotos: [], packageId: "", childCount: "", status: "pending", startDate: "", notes: "", portalPassword: "", fromLearnerId: "" };
+const EMPTY_HOUSEHOLD = { guardianName: "", guardianEmail: "", guardianPhone: "", county: "", subCounty: "", town: "", addressLine: "", landmark: "", mapUrl: "", locationPhotos: [], packageId: "", childCount: "", billingPeriod: "", status: "pending", startDate: "", notes: "", portalPassword: "", fromLearnerId: "" };
 const STATUS_FILTERS = ["all", "active", "pending", "paused", "cancelled"];
 
 // Everything a household can be found by: guardian, contact, area and children's names.
@@ -148,7 +148,8 @@ export default function HomeLearningPage() {
 
   const submitHousehold = (event) => {
     event.preventDefault();
-    createMutation.mutate({ ...form, childCount: form.childCount === "" ? undefined : Number(form.childCount) });
+    const { billingPeriod, ...rest } = form;
+    createMutation.mutate({ ...rest, childCount: form.childCount === "" ? undefined : Number(form.childCount), ...(billingPeriod ? { billingPeriod } : {}) });
   };
   // Picking a learner who's already in the system fills in the parent from their profile.
   const startFromLearner = (learnerId) => {

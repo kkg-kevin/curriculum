@@ -6,9 +6,16 @@ import { FiChevronLeft, FiChevronRight, FiX } from "react-icons/fi";
 // Hub check-ins — labels, status looks and the small building blocks every check-ins screen
 // shares. Keys match server/src/modules/checkins/checkin.constants.js.
 
-// Where the check-ins pages live: the admin app (/checkins), or the hub portal for a hub's
-// Account Manager / Training Lead (/school-portal/checkins).
-export const checkinsBaseFor = (pathname) => (pathname.startsWith("/school-portal") ? "/school-portal/checkins" : "/checkins");
+// Where the check-ins pages live: the admin app (/checkins); the hub portal for a hub's Account
+// Manager / Training Lead and the hub's own login (/school-portal/checkins); and, for people taking
+// part (6 Nov 2026), the teacher portal (/teacher-portal/checkins) and the parent portal
+// (/parent/checkins).
+export function checkinsBaseFor(pathname) {
+  if (pathname.startsWith("/school-portal")) return "/school-portal/checkins";
+  if (pathname.startsWith("/teacher-portal")) return "/teacher-portal/checkins";
+  if (pathname.startsWith("/parent")) return "/parent/checkins";
+  return "/checkins";
+}
 export function useCheckinsBase() {
   return checkinsBaseFor(useLocation().pathname);
 }
@@ -94,6 +101,14 @@ export const TASK_STATE = {
 // The hub's own login in the hub portal (not as its Account Manager / Training Lead): it reads its
 // own check-ins and their reports, and writes nothing.
 export const isHubViewer = (user) => user?.role === "school" && !user?.hubLead;
+// An educator (teacher portal) or a parent: they see the check-ins they take part in, nothing else.
+export const isParticipantViewer = (user) => (user?.role === "teacher" && !user?.hubLead) || (user?.role === "learner" && !user?.username);
+
+// Who takes part, by group (server: checkin.service.js's KINDS).
+export const PARTICIPANT_KIND = { team: "Our team", hub: "The hub", mentor: "Mentors", parent: "Parents" };
+
+// The link to join an online check-in — any meeting link that starts with http(s).
+export const safeMeetingLink = (link) => (/^https?:\/\//i.test(String(link || "")) ? link : null);
 
 // A report part as HTML. Parts are rich text since 27 Oct 2026; earlier ones are plain text, whose
 // line breaks become paragraphs here (for showing, and for opening in the editor).
