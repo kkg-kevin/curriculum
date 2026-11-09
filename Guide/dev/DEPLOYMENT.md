@@ -102,6 +102,75 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Nov 2026) — Affiliates: referral links and codes, commissions, payouts, and their own sign-in
+
+**Portal and backend** from `curriculum` (branch `modules`) at `1245213`; **website** from `curriculum-web`
+(branch `new`) at `24b881d`. Includes the affiliate work of 6 Nov (never bundled before) — this is the first
+release with affiliates. If the "6 Nov 2026, afternoon" release below isn't up yet, this replaces it (follow
+its Verify steps too).
+
+### Upload in this order
+
+0. **Take a database backup** — three new migrations.
+1. **Backend** — `backend-deploy.zip` (684 files, 173 migrations), then Restart. Three new migrations, applied on
+   Restart:
+   - `20261106210000` — the affiliate tables: `affiliates`, `affiliate_referrals`, `affiliate_commissions`,
+     `affiliate_payouts`, `affiliate_settings`.
+   - `20261106230000` — on `affiliates`: where they came from, how they'd promote us, when they agreed to the
+     terms.
+   - `20261109090000` — adds `affiliate` to the `users.role` list (affiliates' own logins).
+
+   Check: `SHOW TABLES LIKE 'affiliate%';` (5 rows) and `SHOW COLUMNS FROM users LIKE 'role';` (the Type ends
+   in `'supervisor','affiliate')`). If either is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-DcnnXgZy.js`). After the backend.
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-CYgCqgEj.js`, 33 pages). After the backend: the website's
+   referral code check and "Become an affiliate" page call the new API.
+
+No new cron, environment variable or npm package.
+
+**Before you announce it:** the programme is ON with these defaults (Affiliates → Settings): 10% of what a
+referred family pays, on their first 3 paid periods (one-off purchases once), 14 days before a commission can
+be paid out, KSh 500 smallest payout, links count for 30 days, every new affiliate approved by an admin first,
+parents / educators may join from their portal, anyone may apply on the website. Change any of it there, or
+untick "Referrals earn commission" until you're ready. The **Affiliate Terms** page (`/affiliate-terms`) is
+DRAFT wording — replace it before promoting the programme.
+
+### What changed
+
+**Affiliates (Finance → Affiliates).** People who send families to the website earn a share of what those
+families pay. A family is credited to an affiliate when they open the affiliate's link (`?ref=CODE` on any
+website address) or type the affiliate's code when signing up — Home Learning, Tech Club, bootcamp, pathway
+plan and shop sign-ups. Only money earns: a commission is made when a referred family's invoice is paid in
+full. Tabs: Affiliates (add, approve, suspend, pay out), Referrals, Commissions, Payouts (mark paid by M-Pesa,
+bank or cash with a reference, or as credit on one of the affiliate's own invoices; or reject), Settings.
+
+**Every affiliate signs in.**
+- A parent or educator uses the login they already have — **Refer & earn** is in their portal (link, QR code,
+  code, WhatsApp share, families referred by first name only, earnings, asking for a payout). They can join
+  from there.
+- Anyone else gets their own login and signs in as **Affiliate** (Refer & earn + My account). It's made when
+  they become active — added by staff, or approved after applying on the website — and their welcome email has
+  a **Set your password** link (7 days, sent only to them; staff never see it). A login of another kind under
+  that email (a hub's, staff's) gets "Affiliate" added; they choose it at sign-in.
+- Staff's **Email sign-in details** on an affiliate's row sends the link again.
+- Staff must give an email when adding an affiliate (it's their sign-in); an admin's email is refused.
+
+**Website.** A referral code field on every sign-up form (filled in from the link), a **Become an affiliate**
+page (footer link) and the **Affiliate Terms** page. Package cards: the short summary is plain text, no longer
+bold.
+
+### Verify
+
+1. Affiliates → **Add affiliate** with an email that has no login → the row says "Signs in as Affiliate ·
+   hasn't signed in yet"; the welcome email arrives with **Set your password** → set it → sign in → Refer & earn
+   shows the link and code.
+2. Website: open `https://africa.digifunzi.com/?ref=THATCODE`, then start any sign-up — the referral code field is filled in. Finish a
+   sign-up → Affiliates → Referrals lists it.
+3. Website → Become an affiliate → apply → Affiliates shows "To approve" → Approve → the applicant gets the
+   welcome email with the set-password link.
+
+---
+
 ## This release (6 Nov 2026, afternoon) — Check-in templates and participants, packages with several periods, plan carried to payment
 
 **Portal and backend** from `curriculum` (branch `modules`) at `f1c4e93`; **website** from `curriculum-web`
