@@ -102,6 +102,36 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (9 Nov 2026, afternoon) — Affiliate pages and forms use the full width of the screen
+
+**Portal** from `curriculum` (branch `modules`) at `a335622`; backend and website rebuilt from the same code as
+the "9 Nov 2026" release below (backend unchanged since `1245213`, website at `24b881d`).
+
+### Upload
+
+- **If the "9 Nov 2026" release below is NOT up yet:** follow it in full (database backup, backend with its three
+  migrations, portal, website) but use this release's files — they include it.
+- **If it is up:** only the **portal** changed — `index.html` + `assets.zip` (entry `index-Cxo7-MH9.js`). The backend
+  (`backend-deploy.zip`, 684 files, 173 migrations) and the website (`africa-digifunzi-com-dist.zip`, entry `index-CYgCqgEj.js`, 33
+  pages) are the same code; uploading them again is harmless but not needed.
+
+No migration, cron, environment variable or npm package.
+
+### What changed
+
+Refer & earn (affiliate, parent and educator portals), the affiliate's My account and the admin Affiliates page
+no longer stop at a fixed width: they fill the screen. Admin → Affiliates → Settings is full width, each
+programme's commission rate in its own box; the Add / Edit affiliate and Pay dialogs take the screen's width;
+the payout fields grow with the page; the Settings checkboxes keep their size on phones.
+
+### Verify
+
+1. Admin → Affiliates → Settings on a wide screen: the sections and the five programme boxes reach the right edge.
+2. Add affiliate: the form opens across the screen, fields side by side.
+3. An affiliate / parent → Refer & earn: the cards fill the width.
+
+---
+
 ## This release (9 Nov 2026) — Affiliates: referral links and codes, commissions, payouts, and their own sign-in
 
 **Portal and backend** from `curriculum` (branch `modules`) at `1245213`; **website** from `curriculum-web`
