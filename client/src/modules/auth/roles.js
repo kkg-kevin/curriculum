@@ -1,4 +1,4 @@
-import { FiBriefcase, FiBookOpen, FiHome, FiUsers, FiShield, FiLayers, FiUserCheck, FiClipboard } from "react-icons/fi";
+import { FiBriefcase, FiBookOpen, FiHome, FiUsers, FiShield, FiLayers, FiUserCheck, FiClipboard, FiGift } from "react-icons/fi";
 
 // How each role is shown when one login holds several (an admin who also teaches — see the
 // server's modules/auth/account-roles.js): the sign-in "How do you want to sign in?" step and the
@@ -15,6 +15,8 @@ export const ROLE_META = {
   totLearner: { label: "TOT learner", hint: "Your own training: courses, assessments and reports", icon: FiBookOpen },
   supervisor: { label: "Supervisor", hint: "Your educators' claims", icon: FiShield },
   curriculumAdmin: { label: "Curriculum admin", hint: "Curriculum content", icon: FiLayers },
+  // Refers families (modules/affiliates) — their link, the families they referred, their earnings.
+  affiliate: { label: "Affiliate", hint: "Your referral link, families and earnings", icon: FiGift },
 };
 
 export const roleMeta = (role) => ROLE_META[role] || { label: role, hint: "", icon: FiUserCheck };

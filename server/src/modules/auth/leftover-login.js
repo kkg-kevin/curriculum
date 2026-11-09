@@ -26,6 +26,9 @@ async function isLeftoverLogin(user) {
     // An Account Manager / Training Lead (account-roles.js): still named on some hub.
     case "hubLead":
       return !(await db("learning_hubs").where({ accountManagerId: user.id }).orWhere({ trainingLeadId: user.id }).first("id"));
+    // An affiliate's login (account-roles.js's AFFILIATE_ROLE): still some affiliate's.
+    case "affiliate":
+      return !(await db("affiliates").where({ userId: user.id }).first("id"));
     case "collaborator":
     case "supervisor": {
       // The workspace that invited them — an admin's own id, or an organisation's key.

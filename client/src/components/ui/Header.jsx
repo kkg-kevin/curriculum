@@ -183,6 +183,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/parent/mentors": "Find a Mentor",
     "/parent/refer": "Refer & Earn",
     "/teacher-portal/refer": "Refer & Earn",
+    "/affiliate-portal": "Refer & Earn",
+    "/affiliate-portal/account": "My Account",
     "/parent/invoices": "Payments",
     "/parent/receipts": "Receipts",
     "/parent/statement": "Statement",

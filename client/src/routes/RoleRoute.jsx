@@ -7,7 +7,7 @@ import TotLearnerHandoff, { learnerPortalPathFor } from "../modules/tot/componen
 // inside the SAME admin shell as the admin who invited them — the server aliases their role to
 // "admin" for every non-delete request (scope.middleware.js's attachOwnRecords), scoped to that
 // admin's own tenant, so they land on the same home and see the same routes.
-export const ROLE_HOME = { admin: "/", collaborator: "/", school: "/school-portal", hubLead: "/school-portal/checkins", totLearner: "/learner-portal", teacher: "/teacher-portal", learner: "/learner-portal", curriculumAdmin: "/curriculum", supervisor: "/supervisor-portal" };
+export const ROLE_HOME = { admin: "/", collaborator: "/", school: "/school-portal", hubLead: "/school-portal/checkins", totLearner: "/learner-portal", teacher: "/teacher-portal", learner: "/learner-portal", curriculumAdmin: "/curriculum", supervisor: "/supervisor-portal", affiliate: "/affiliate-portal" };
 
 // Nests inside ProtectedRoute — runs only once a user is known, and bounces
 // a role that doesn't belong on this branch back to its own portal home.

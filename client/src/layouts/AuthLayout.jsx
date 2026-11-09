@@ -47,11 +47,25 @@ const HERO_CONTENT = {
       "Reset links work once and expire after a short while.",
     ],
   },
+  // A "set your password" link for a login made for someone (reset-password?welcome=1 — an
+  // affiliate's new account).
+  "/reset-password?welcome": {
+    badge: "Welcome",
+    badgeIcon: FiLogIn,
+    title: "Set up your account.",
+    subtitle: "Choose a password, then sign in with your email.",
+    points: [
+      "Use at least 8 characters.",
+      "This link works once and expires after 7 days.",
+      "Expired? Use “Forgot password?” on the sign-in page.",
+    ],
+  },
 };
 
 function AuthLayout() {
   const location = useLocation();
-  const hero = HERO_CONTENT[location.pathname] || HERO_CONTENT["/login"];
+  const welcome = location.pathname === "/reset-password" && new URLSearchParams(location.search).get("welcome") === "1";
+  const hero = HERO_CONTENT[welcome ? "/reset-password?welcome" : location.pathname] || HERO_CONTENT["/login"];
   const BadgeIcon = hero.badgeIcon;
 
   return (

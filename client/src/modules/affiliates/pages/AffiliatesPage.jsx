@@ -3,13 +3,16 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiCopy, FiDollarSign, FiExternalLink, FiGift, FiLink, FiMail, FiPlus, FiRefreshCw, FiSettings, FiUsers, FiX } from "react-icons/fi";
+import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiUsers, FiX } from "react-icons/fi";
 import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
-// of what those families pay. Tabs: Affiliates (add, approve, suspend, codes and links) ·
+// of what those families pay. Every active affiliate signs in: a parent or educator with their own
+// login (Refer & earn in their portal), anyone else as Affiliate (the affiliate portal — a login made
+// for them, its password set from the welcome email). Tabs: Affiliates (add, approve, suspend, codes
+// and links, how they sign in) ·
 // Referrals (each sign-up an affiliate brought in) · Commissions (one per paid invoice; waiting →
 // available → paid) · Payouts (requests to pay: M-Pesa / bank / cash with a reference, or credit on
 // one of the affiliate's invoices) · Settings (programmes, rates, periods, hold, minimum).
@@ -27,7 +30,7 @@ const input = { width: "100%", boxSizing: "border-box", padding: "9px 11px", bor
 const label = { display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft };
 const th = { textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${BRAND.border}`, whiteSpace: "nowrap" };
 const td = { padding: "11px 12px", fontSize: 13, color: BRAND.inkSoft, borderBottom: `1px solid ${BRAND.line}`, verticalAlign: "top" };
-const KIND = { parent: "Parent", educator: "Educator", other: "Not a user" };
+const KIND = { parent: "Parent", educator: "Educator", other: "Affiliate" };
 const SOURCE = { admin: "Added by staff", portal: "Joined from their portal", website: "Applied on the website" };
 const STATUS_TONE = { active: "good", pending: "waiting", suspended: "neutral" };
 const STATE = {
@@ -71,7 +74,7 @@ const copy = (text, what = "Copied") => {
 function AffiliateDialog({ affiliate, onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(() => ({
-    name: affiliate?.name || "", email: affiliate?.email || "", phone: affiliate?.phone || "", kind: affiliate?.kind || "parent",
+    name: affiliate?.name || "", email: affiliate?.email || "", phone: affiliate?.phone || "",
     code: affiliate?.code || "", status: affiliate?.status || "active", payoutMethod: affiliate?.payoutMethod || "credit",
     payoutPhone: affiliate?.payoutPhone || "", payoutDetails: affiliate?.payoutDetails || "", notes: affiliate?.notes || "",
   }));
@@ -86,15 +89,10 @@ function AffiliateDialog({ affiliate, onClose }) {
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 12 }}>
         <label style={label}>Name<input style={input} value={form.name} onChange={set("name")} required /></label>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-          <label style={label}>Email<input style={input} type="email" value={form.email} onChange={set("email")} placeholder="Links their login, if they have one" /></label>
+          <label style={label}>Email (they sign in with it)<input style={input} type="email" value={form.email} onChange={set("email")} required placeholder="name@example.com" /></label>
           <label style={label}>Phone<input style={input} value={form.phone} onChange={set("phone")} /></label>
         </div>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-          <label style={label}>Who they are
-            <select style={input} value={form.kind} onChange={set("kind")}>
-              <option value="parent">Parent</option><option value="educator">Educator</option><option value="other">Not a user (dashboard link instead)</option>
-            </select>
-          </label>
           <label style={label}>Code<input style={{ ...input, textTransform: "uppercase" }} value={form.code} onChange={set("code")} placeholder={affiliate ? "" : "Made from their name"} /></label>
           <label style={label}>Status
             <select style={input} value={form.status} onChange={set("status")}>
@@ -111,6 +109,11 @@ function AffiliateDialog({ affiliate, onClose }) {
           {form.payoutMethod === "mpesa" && <label style={label}>M-Pesa number<input style={input} value={form.payoutPhone} onChange={set("payoutPhone")} /></label>}
           {form.payoutMethod === "bank" && <label style={label}>Bank details<input style={input} value={form.payoutDetails} onChange={set("payoutDetails")} placeholder="Bank, account name and number" /></label>}
         </div>
+        {!affiliate && (
+          <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted, lineHeight: 1.5 }}>
+            A parent or educator signs in with the login they already have and finds Refer &amp; earn in their portal. Anyone else gets their own login: once they&rsquo;re active we email them a link to set their password, and they sign in as Affiliate.
+          </p>
+        )}
         {affiliate?.promotion && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>How they said they&rsquo;d share us: &ldquo;{affiliate.promotion}&rdquo;</p>}
         <label style={label}>Notes (only staff see these)<textarea style={{ ...input, minHeight: 64, resize: "vertical" }} value={form.notes} onChange={set("notes")} /></label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -122,48 +125,28 @@ function AffiliateDialog({ affiliate, onClose }) {
   );
 }
 
-// An affiliate who isn't a user has no login: their private dashboard link (no password) shows
-// their referrals, earnings and payouts. Copy it, email it, or make a new one (the old stops).
-function DashboardLinkDialog({ affiliate, onClose }) {
-  const qc = useQueryClient();
-  const [url, setUrl] = useState(affiliate.dashboardUrl);
-  const act = useMutation({
-    mutationFn: (body) => affiliatesApi.dashboardLink(affiliate.id, body),
-    onSuccess: (res, body) => {
-      setUrl(res.url);
-      qc.invalidateQueries({ queryKey: ["affiliates", "list"] });
-      toast.success(body.send ? `Emailed to ${affiliate.email}` : "New link made — the old one no longer works");
-    },
-    onError: (err) => toast.error(errorOf(err)),
-  });
-  return (
-    <Modal title={`${affiliate.name}'s dashboard`} onClose={onClose} width={560}>
-      <div style={{ display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, fontSize: 13.5, color: BRAND.inkSoft, lineHeight: 1.55 }}>
-          {affiliate.name} isn&rsquo;t a user of the system, so this private link is how they see their referrals, earnings and payouts, and ask for a payout. It needs no password &mdash; anyone with it can open their dashboard (never their payout details in full).
-        </p>
-        {url ? (
-          <code style={{ fontSize: 12.5, color: BRAND.navy, background: BRAND.skyTint, padding: "9px 11px", borderRadius: 8, overflowWrap: "anywhere" }}>{url}</code>
-        ) : <p style={{ margin: 0, color: BRAND.danger, fontSize: 13 }}>The website address isn&rsquo;t set (PUBLIC_SITE_URL), so there&rsquo;s no link to give.</p>}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {url && <button type="button" style={btn} onClick={() => copy(url, "Dashboard link copied")}><FiCopy size={13} /> Copy</button>}
-          {url && <a href={url} target="_blank" rel="noopener noreferrer" style={{ ...btn, textDecoration: "none" }}><FiExternalLink size={13} /> Open</a>}
-          <button type="button" style={primary} disabled={!affiliate.email || act.isPending} title={affiliate.email ? "" : "Add their email first"} onClick={() => act.mutate({ send: true })}><FiMail size={13} /> Email it to them</button>
-          <button type="button" style={btn} disabled={act.isPending} onClick={() => window.confirm("Make a new link? The old one stops working at once.") && act.mutate({ reset: true })}><FiRefreshCw size={13} /> New link</button>
-        </div>
-        <p style={{ margin: 0, fontSize: 12, color: BRAND.muted }}>Their emails (a family signed up, they earned, a payout) carry this link too. Make a new one if it was shared by mistake.</p>
-      </div>
-    </Modal>
-  );
+// How they sign in, under their name.
+function AccountLine({ a }) {
+  if (!a.account) {
+    return <div style={{ fontSize: 12, color: BRAND.faint }}>{a.status === "pending" ? "Their login is set up once they're approved" : "No login yet — Email sign-in details sets it up"}</div>;
+  }
+  const where = a.account.asAffiliate ? "Signs in as Affiliate" : `Signs in as ${KIND[a.kind]} — Refer & earn in their portal`;
+  const when = a.account.lastSignInAt ? `last signed in ${formatDay(a.account.lastSignInAt)}` : "hasn't signed in yet";
+  return <div style={{ fontSize: 12, color: BRAND.faint }}>{where} · {when}</div>;
 }
 
 function AffiliatesTab({ onEdit }) {
   const qc = useQueryClient();
   const { data: affiliates = [], isLoading } = useQuery({ queryKey: ["affiliates", "list"], queryFn: affiliatesApi.list });
-  const [linkFor, setLinkFor] = useState(null);
   const act = useMutation({
-    mutationFn: ({ kind, a }) => (kind === "payout" ? affiliatesApi.createPayout(a.id) : kind === "delete" ? affiliatesApi.remove(a.id) : affiliatesApi.update(a.id, { status: kind })),
-    onSuccess: (_, { kind }) => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success(kind === "payout" ? "Payout created — see Payouts" : kind === "delete" ? "Deleted" : "Saved"); },
+    mutationFn: ({ kind, a }) => (kind === "payout" ? affiliatesApi.createPayout(a.id)
+      : kind === "delete" ? affiliatesApi.remove(a.id)
+        : kind === "sign-in" ? affiliatesApi.sendSignInDetails(a.id)
+          : affiliatesApi.update(a.id, { status: kind })),
+    onSuccess: (res, { kind }) => {
+      qc.invalidateQueries({ queryKey: ["affiliates"] });
+      toast.success(kind === "payout" ? "Payout created — see Payouts" : kind === "delete" ? "Deleted" : kind === "sign-in" ? `Sign-in details emailed to ${res.email}` : "Saved");
+    },
     onError: (err) => toast.error(errorOf(err)),
   });
   if (isLoading) return <p style={{ color: BRAND.muted }}>Loading…</p>;
@@ -174,7 +157,8 @@ function AffiliatesTab({ onEdit }) {
         <tr key={a.id}>
           <td style={td}>
             <strong style={{ color: BRAND.ink }}>{a.name}</strong>
-            <div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{a.outsider ? "Not a user" : KIND[a.kind]}{a.email ? ` · ${a.email}` : ""}{a.phone ? ` · ${a.phone}` : ""}</div>
+            <div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{KIND[a.kind]}{a.email ? ` · ${a.email}` : ""}{a.phone ? ` · ${a.phone}` : ""}</div>
+            <AccountLine a={a} />
             <div style={{ fontSize: 12, color: BRAND.faint }}>{SOURCE[a.source] || ""}{a.termsAcceptedAt ? ` · agreed to the terms ${formatDay(a.termsAcceptedAt)}` : ""}</div>
             {a.promotion && <div style={{ fontSize: 12, color: BRAND.inkSoft, marginTop: 4, maxWidth: 320 }} title={a.promotion}>&ldquo;{a.promotion.length > 140 ? `${a.promotion.slice(0, 140)}…` : a.promotion}&rdquo;</div>}
           </td>
@@ -193,7 +177,13 @@ function AffiliatesTab({ onEdit }) {
             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
               {a.status === "pending" && <button type="button" style={primary} onClick={() => act.mutate({ kind: "active", a })}>Approve</button>}
               {a.status === "active" && a.totals.available > 0 && <button type="button" style={btn} onClick={() => act.mutate({ kind: "payout", a })}>Pay out {formatKsh(a.totals.available)}</button>}
-              {a.outsider && <button type="button" style={btn} onClick={() => setLinkFor(a)} title="Their private dashboard (no login)"><FiExternalLink size={12} /> Dashboard link</button>}
+              {a.status !== "pending" && (!a.account || a.account.asAffiliate) && (
+                <button type="button" style={btn} disabled={act.isPending}
+                  title="Emails them how to sign in, with a link to set (or reset) their password — the link goes only to their email"
+                  onClick={() => window.confirm(`Email ${a.name} how to sign in, with a link to set their password?`) && act.mutate({ kind: "sign-in", a })}>
+                  <FiMail size={12} /> Email sign-in details
+                </button>
+              )}
               <button type="button" style={btn} onClick={() => onEdit(a)}>Edit</button>
               {a.status === "active" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "suspended", a })}>Suspend</button>}
               {a.status === "suspended" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "active", a })}>Reactivate</button>}
@@ -203,7 +193,6 @@ function AffiliatesTab({ onEdit }) {
         </tr>
       ))}
     </Table>
-    {linkFor && <DashboardLinkDialog affiliate={affiliates.find((x) => x.id === linkFor.id) || linkFor} onClose={() => setLinkFor(null)} />}
     </>
   );
 }
@@ -381,9 +370,9 @@ function SettingsTab() {
         <h3 style={cardHeading}>The programme</h3>
         {check("enabled", "Referrals earn commission")}
         {check("selfJoin", "Parents and educators can join from their portal (Refer & earn)")}
-        {check("publicApplications", "People who aren\u2019t users can apply on the website (Become an affiliate)")}
+        {check("publicApplications", "Anyone can apply on the website (Become an affiliate) — they get their own login once active")}
         {(form.selfJoin || form.publicApplications) && check("requireApproval", "An admin approves each one first")}
-        {check("emailOutsiders", "Email affiliates who aren\u2019t users (a family signed up, they earned, a payout) with their dashboard link")}
+        {check("emailOutsiders", "Email affiliates who sign in as Affiliate when a family signs up, they earn or a payout is decided (they also get the bell; parents and educators get the bell only)")}
       </section>
       <section style={{ ...card, padding: 18, display: "grid", gap: 10 }}>
         <h3 style={cardHeading}>What earns, and how much</h3>

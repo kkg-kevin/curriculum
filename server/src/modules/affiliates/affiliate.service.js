@@ -5,6 +5,11 @@ const env = require("../../config/env");
 const NotificationService = require("../notifications/notification.service");
 const Emails = require("./affiliate.emails");
 const { isParent } = require("../parent/parent.access");
+const UserModel = require("../auth/user.model");
+const passwords = require("../../shared/utils/password");
+const { appUrl } = require("../../shared/mail/mail.layout");
+const { AFFILIATE_ROLE, OWN_ONLY_ROLES, rolesOf, extraRolesOf } = require("../auth/account-roles");
+const { isLeftoverLogin } = require("../auth/leftover-login");
 const {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, normaliseSettings, normaliseCode, suggestCode,
   emailKey, pickAttribution, isSelfReferral, commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
@@ -42,48 +47,109 @@ function websiteUrl() {
   return (sites.find((o) => /^https:\/\//i.test(o)) || sites[0] || "").replace(/\/+$/, "");
 }
 const linkFor = (code) => (websiteUrl() ? `${websiteUrl()}/?ref=${encodeURIComponent(code)}` : null);
-// Where an affiliate's own notifications open.
-const portalRoute = (affiliate) => (affiliate.kind === "educator" ? "/teacher-portal/refer" : "/parent/refer");
 
-// ---- Affiliates who aren't users (no login) ---------------------------------------------------
-// Their private dashboard on the website (/affiliate?token=...), no sign-in: the token is an HMAC
-// of their id and dashboardVersion — read-only, for that one page; "Make a new link" raises the
-// version, so every older link stops working. Never a portal session.
-const isOutsider = (affiliate) => !affiliate.userId;
-const dashboardKey = () => crypto.createHash("sha256").update(`affiliate-dashboard:${env.JWT_SECRET}`).digest();
-const signDashboard = (affiliate) => crypto.createHmac("sha256", dashboardKey()).update(`${affiliate.id}:${affiliate.dashboardVersion || 1}`).digest("base64url");
-const dashboardToken = (affiliate) => `${affiliate.id}.${signDashboard(affiliate)}`;
-const dashboardUrl = (affiliate) => (websiteUrl() && isOutsider(affiliate) ? `${websiteUrl()}/affiliate?token=${dashboardToken(affiliate)}` : null);
+// ---- Their login (9 Nov 2026) -----------------------------------------------------------------
+// Every active affiliate signs in with a real login. A parent or an educator uses the login they
+// already have, and Refer & earn in their own portal (`kind` parent / educator). Anyone else
+// (`kind` other) signs in as Affiliate (account-roles.js's AFFILIATE_ROLE) to the affiliate portal
+// (/affiliate-portal): a login made for them — they set its password from the welcome email — or,
+// when their email already has a login (a hub's, a staff member's…), the Affiliate role added to it.
+// `kind` follows the login (kindOfLogin), never typed by staff. There's no other way in: the
+// private dashboard links of 6 Nov 2026 are gone.
+const portalRoute = (affiliate) => (affiliate.kind === "educator" ? "/teacher-portal/refer" : affiliate.kind === "parent" ? "/parent/refer" : "/affiliate-portal");
+const signsInAsAffiliate = (affiliate) => affiliate.kind === "other";
+const signInUrl = () => appUrl("/login");
+const accountUrl = () => appUrl("/affiliate-portal");
 
-async function affiliateForToken(token) {
-  const [id, signature] = String(token || "").split(".");
-  if (!id || !signature) return null;
-  const affiliate = await db(A).where({ id }).first();
-  if (!affiliate || !isOutsider(affiliate)) return null;
-  const expected = Buffer.from(signDashboard(affiliate));
-  const given = Buffer.from(signature);
-  if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return null;
-  return affiliate;
+async function liveRole(user, role) {
+  return rolesOf(user).includes(role) && !(await isLeftoverLogin({ ...user, role }));
 }
 
-// An email to an affiliate without a login (they have no bell), when the workspace sends them.
-async function emailOutsider(affiliate, kind, payload = {}) {
+// What a login makes its affiliate: an educator's or a parent's (Refer & earn in that portal), else
+// an affiliate signing in as one.
+async function kindOfLogin(user) {
+  if (!user) return "other";
+  if (await liveRole(user, "teacher")) return "educator";
+  if (user.email && !user.username && (await liveRole(user, "learner"))) return "parent";
+  return "other";
+}
+
+// Links the affiliate to their login — the one already linked, else the one their email has, else
+// a new one (role Affiliate, an unguessable password until they set theirs from the email) — and
+// gives it the Affiliate role when they aren't a parent or educator. Called when they become active
+// (and by staff's "Email sign-in details"). `created` is true for a brand-new login.
+async function ensureLogin(affiliate) {
+  let user = affiliate.userId ? await UserModel.findById(affiliate.userId) : null;
+  if (!user && affiliate.email) user = await UserModel.findByEmail(affiliate.email);
+  if (user && OWN_ONLY_ROLES.includes(user.role)) fail("That email is an admin's login — an admin can't also be an affiliate. Use another email.", 409);
+  let created = false;
+  if (!user) {
+    if (!affiliate.email) fail("Add their email first — it's what they sign in with.");
+    const passwordHash = await passwords.hash(crypto.randomBytes(24).toString("hex"), 10);
+    user = await UserModel.create({ name: affiliate.name, email: affiliate.email, phone: affiliate.phone || null, passwordHash, role: AFFILIATE_ROLE });
+    created = true;
+  }
+  const kind = await kindOfLogin(user);
+  if (kind === "other" && !rolesOf(user).includes(AFFILIATE_ROLE)) {
+    user = await UserModel.update(user.id, { extraRoles: [...extraRolesOf(user), AFFILIATE_ROLE] });
+  }
+  if (affiliate.userId !== user.id || affiliate.kind !== kind) {
+    await db(A).where({ id: affiliate.id }).update({ userId: user.id, kind, updatedAt: now() });
+  }
+  return { affiliate: { ...affiliate, userId: user.id, kind }, user, created };
+}
+
+// The login no longer used by this affiliate: it loses the Affiliate role — and goes, when that was
+// all it was — unless another affiliate record still uses it.
+async function releaseLogin(userId, exceptAffiliateId = null) {
+  if (!userId) return;
+  const q = db(A).where({ userId });
+  if (exceptAffiliateId) q.whereNot({ id: exceptAffiliateId });
+  if (await q.first("id")) return;
+  const user = await UserModel.findById(userId);
+  if (!user || !rolesOf(user).includes(AFFILIATE_ROLE)) return;
+  await require("../auth/auth.service").dropRole(user, AFFILIATE_ROLE);
+}
+
+// What signing in looks like for them, for the welcome and "sign-in details" emails: a new login
+// gets a one-time "set your password" link (7 days, only ever emailed to them).
+async function signInFor(user, { created }) {
+  const setPassword = created ? await require("../auth/auth.service").passwordSetLink(user) : null;
+  return { email: user.email, signInUrl: signInUrl(), setPasswordUrl: setPassword?.url || null, setPasswordExpiresAt: setPassword?.expiresAt || null };
+}
+
+// An affiliate became active (added active, approved, applied with no approval needed): their login,
+// then a welcome — an email with how to sign in for someone signing in as Affiliate, the bell for a
+// parent or educator (Refer & earn is already in their portal). Sent once per affiliate.
+async function welcome(affiliate) {
+  const { affiliate: a, user, created } = await ensureLogin(affiliate);
+  if (signsInAsAffiliate(a)) {
+    const settings = await getSettings(a.ownerAdminId);
+    await Emails.welcome({ ...a, email: user.email }, { link: linkFor(a.code), offer: offerLine(settings), account: await signInFor(user, { created }) });
+  }
+  await NotificationService.notifyPerson(user.id, {
+    type: "affiliate_approved",
+    title: "You're in the referral programme",
+    message: `Share your link or code ${a.code} — you earn when the families you refer pay.`,
+    payload: { route: portalRoute(a) },
+    dedupeKey: `affiliate_approved:${a.id}`,
+  }).catch(() => {});
+  return a;
+}
+
+// News for an affiliate who signs in as Affiliate (a family signed up, they earned, a payout), by
+// email as well as the bell, when the workspace sends them (Settings). Parents and educators get the
+// bell only.
+async function emailAffiliate(affiliate, kind, payload = {}) {
   try {
-    if (!affiliate?.email || !isOutsider(affiliate)) return;
+    if (!affiliate?.email || !signsInAsAffiliate(affiliate)) return;
     const settings = await getSettings(affiliate.ownerAdminId);
     if (!settings.emailOutsiders) return;
-    await Emails[kind](affiliate, { ...payload, dashboardUrl: dashboardUrl(affiliate), link: linkFor(affiliate.code), offer: offerLine(settings) });
+    await Emails[kind](affiliate, { ...payload, accountUrl: accountUrl(), link: linkFor(affiliate.code), offer: offerLine(settings) });
   } catch (err) {
     console.error("[affiliates] could not email an affiliate:", err.message);
   }
 }
-
-// "07•• ••• 111" — enough for the affiliate to recognise their number on a page anyone with the
-// link could open.
-const maskPhone = (phone) => {
-  const digits = String(phone || "").replace(/\D/g, "");
-  return digits.length >= 6 ? `${digits.slice(0, 2)}•• ••• ${digits.slice(-3)}` : null;
-};
 
 // ---- Settings ---------------------------------------------------------------------------------
 async function getSettings(ownerAdminId) {
@@ -128,7 +194,27 @@ async function withStates(commissions) {
   return commissions.map((c) => ({ ...c, amount: money(c.amount), baseAmount: money(c.baseAmount), ratePercent: Number(c.ratePercent), state: commissionState(c, byId.get(c.payoutId), at) }));
 }
 
-const shapeAffiliate = (a) => ({ ...a, link: linkFor(a.code), outsider: isOutsider(a), dashboardUrl: dashboardUrl(a) });
+// `account`: how they sign in — the login's email, whether they sign in as Affiliate (else in their
+// parent / educator portal), and when they last signed in (null: never yet).
+const shapeAffiliate = (a, login = null) => ({
+  ...a,
+  link: linkFor(a.code),
+  account: a.userId
+    ? { email: login?.email || a.email, asAffiliate: signsInAsAffiliate(a), lastSignInAt: login?.lastSignInAt || null }
+    : null,
+});
+
+// Logins (looked up separately — newer collation, no joins) with their last sign-in from the
+// Activity log, by user id.
+async function loginsById(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!ids.length) return new Map();
+  const users = await db("users").whereIn("id", ids).select("id", "email");
+  const last = await db("audit_log").whereIn("actorUserId", ids).where({ action: "login" })
+    .groupBy("actorUserId").select("actorUserId").max({ at: "createdAt" });
+  const lastBy = new Map(last.map((r) => [r.actorUserId, r.at]));
+  return new Map(users.map((u) => [u.id, { email: u.email, lastSignInAt: lastBy.get(u.id) || null }]));
+}
 
 async function uniqueCode(wanted, name) {
   if (wanted) {
@@ -160,10 +246,7 @@ function cleanAffiliateInput(input, { partial = false } = {}) {
     if (out.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out.email)) fail("Enter a valid email address");
   }
   if (input.phone !== undefined) out.phone = text(input.phone, 40);
-  if (input.kind !== undefined) {
-    if (!["parent", "educator", "other"].includes(input.kind)) fail("Choose who the affiliate is");
-    out.kind = input.kind;
-  }
+  // `kind` isn't typed in — it follows their login (kindOfLogin).
   if (input.status !== undefined) {
     if (!["pending", "active", "suspended"].includes(input.status)) fail("Unknown status");
     out.status = input.status;
@@ -178,10 +261,12 @@ function cleanAffiliateInput(input, { partial = false } = {}) {
   return out;
 }
 
-// The login an email belongs to (a parent's or educator's), linked so they see Refer & earn.
+// The login an email already belongs to, linked while an affiliate waits for approval (so a parent
+// or educator sees "waiting" in their Refer & earn). Never an admin's.
 async function loginFor(email) {
   if (!email) return null;
-  return db("users").whereRaw("LOWER(email) = ?", [email.toLowerCase()]).first("id", "role", "username");
+  const user = await UserModel.findByEmail(email);
+  return user && !OWN_ONLY_ROLES.includes(user.role) ? user : null;
 }
 
 const AffiliateService = {
@@ -224,7 +309,7 @@ const AffiliateService = {
           dedupeKey: `affiliate_referral:${referral.id}`,
         }).catch(() => {});
       }
-      await emailOutsider(affiliate, "referral", { referral, programme: PROGRAMME_LABEL[programme] });
+      await emailAffiliate(affiliate, "referral", { referral, programme: PROGRAMME_LABEL[programme] });
       return referral;
     } catch (err) {
       console.error("[affiliates] could not record a referral:", err.message);
@@ -287,7 +372,7 @@ const AffiliateService = {
         dedupeKey: `affiliate_commission:${row.id}`,
       }).catch(() => {});
     }
-    await emailOutsider(affiliate, "commission", { commission: row, referral, programme: PROGRAMME_LABEL[referral.programme] });
+    await emailAffiliate(affiliate, "commission", { commission: row, referral, programme: PROGRAMME_LABEL[referral.programme] });
     return row;
   },
 
@@ -296,10 +381,11 @@ const AffiliateService = {
     const affiliates = await db(A).where({ ownerAdminId: req.ownerAdminId }).orderBy("createdAt", "desc");
     const commissions = await withStates(await db(C).where({ ownerAdminId: req.ownerAdminId }));
     const referrals = await db(R).where({ ownerAdminId: req.ownerAdminId }).select("affiliateId", "status");
+    const logins = await loginsById(affiliates.map((a) => a.userId));
     return affiliates.map((a) => {
       const own = referrals.filter((r) => r.affiliateId === a.id);
       return {
-        ...shapeAffiliate(a),
+        ...shapeAffiliate(a, logins.get(a.userId)),
         referrals: own.length,
         paidReferrals: own.filter((r) => r.status === "paid").length,
         totals: totals(commissions.filter((c) => c.affiliateId === a.id)),
@@ -307,28 +393,47 @@ const AffiliateService = {
     });
   },
 
+  // Added by staff. Their email is required — it's their sign-in. Active (the default): their login
+  // is linked or made and they're welcomed (welcome()); waiting for approval: an existing login is
+  // only linked.
   async createAffiliate(req, input) {
     const data = cleanAffiliateInput(input);
+    if (!data.email) fail("Enter their email — it's what they sign in with.");
     const code = await uniqueCode(input.code, data.name);
     await assertCodeFree(code);
-    const login = await loginFor(data.email);
-    if (login?.id && (await db(A).where({ ownerAdminId: req.ownerAdminId, userId: login.id }).first())) {
-      fail("That person is already an affiliate.", 409);
-    }
-    const kind = data.kind || (login?.role === "teacher" ? "educator" : login?.role === "learner" && !login.username ? "parent" : "other");
+    const existing = await UserModel.findByEmail(data.email);
+    if (existing && OWN_ONLY_ROLES.includes(existing.role)) fail("That email is an admin's login — an admin can't also be an affiliate. Use another email.", 409);
+    const duplicate = await db(A).where({ ownerAdminId: req.ownerAdminId })
+      .andWhere((q) => { q.whereRaw("LOWER(email) = ?", [data.email.toLowerCase()]); if (existing) q.orWhere({ userId: existing.id }); })
+      .first("id");
+    if (duplicate) fail("That person is already an affiliate.", 409);
+    const kind = await kindOfLogin(existing);
     const row = {
-      id: generateId(), ownerAdminId: req.ownerAdminId, userId: login?.id || null,
-      name: data.name, email: data.email || null, phone: data.phone || null, kind, code,
+      id: generateId(), ownerAdminId: req.ownerAdminId, userId: existing?.id || null,
+      name: data.name, email: data.email, phone: data.phone || null, kind, code,
       status: data.status || "active",
       payoutMethod: data.payoutMethod || (kind === "parent" ? "credit" : "mpesa"),
       payoutPhone: data.payoutPhone || data.phone || null, payoutDetails: data.payoutDetails || null,
-      notes: data.notes || null, createdBy: req.user.id, createdAt: now(), updatedAt: now(),
+      notes: data.notes || null, source: "admin", createdBy: req.user.id, createdAt: now(), updatedAt: now(),
     };
     await db(A).insert(row);
-    if (row.status === "active") await emailOutsider(row, "welcome");
-    return shapeAffiliate(row);
+    let saved = row;
+    if (row.status === "active") {
+      try {
+        saved = await welcome(row);
+      } catch (err) {
+        // No login could be set up: nothing is kept, so adding them again works.
+        await db(A).where({ id: row.id }).del();
+        throw err;
+      }
+    }
+    return shapeAffiliate(saved, (await loginsById([saved.userId])).get(saved.userId));
   },
 
+  // A changed email: an affiliate's own Affiliate login (nothing else) changes its email with it;
+  // a login that's also someone's parent / educator / hub login stays theirs, and the affiliate
+  // moves to the new email's login (or a new one). Becoming active — approved, reactivated, or an
+  // affiliate still without a login — links / makes the login and welcomes them (once per login).
   async updateAffiliate(req, id, input) {
     const affiliate = await affiliateInWorkspace(req, id);
     const data = cleanAffiliateInput(input, { partial: true });
@@ -337,33 +442,59 @@ const AffiliateService = {
       if (!data.code) fail("A code is 4–20 letters and numbers, e.g. AMINA24");
       await assertCodeFree(data.code, id);
     }
-    if (data.email !== undefined && emailKey(data.email) !== emailKey(affiliate.email)) {
-      const login = await loginFor(data.email);
-      data.userId = login?.id || null;
+    if (data.email !== undefined && !data.email) fail("Enter their email — it's what they sign in with.");
+    const emailChanged = data.email !== undefined && emailKey(data.email) !== emailKey(affiliate.email);
+    const login = affiliate.userId ? await UserModel.findById(affiliate.userId) : null;
+    const ownLogin = Boolean(login && login.role === AFFILIATE_ROLE && rolesOf(login).length === 1);
+    let releaseOld = null;
+    if (emailChanged) {
+      const taken = await UserModel.findByEmail(data.email);
+      if (taken && OWN_ONLY_ROLES.includes(taken.role)) fail("That email is an admin's login — an admin can't also be an affiliate. Use another email.", 409);
+      if (ownLogin) {
+        if (taken && taken.id !== login.id) fail("That email already has a Digifunzi login of its own — use another, or delete this affiliate and add them again with it.", 409);
+        await UserModel.update(login.id, { email: data.email });
+      } else if (login) {
+        data.userId = (await loginFor(data.email))?.id || null;
+        releaseOld = login.id;
+      } else {
+        data.userId = (await loginFor(data.email))?.id || null;
+      }
+    }
+    // Their own login carries their name and phone too.
+    if (ownLogin && (data.name !== undefined || data.phone !== undefined)) {
+      await UserModel.update(login.id, { ...(data.name ? { name: data.name } : {}), ...(data.phone !== undefined ? { phone: data.phone } : {}) });
     }
     await db(A).where({ id }).update({ ...data, updatedAt: now() });
-    const updated = await db(A).where({ id }).first();
-    // Approved after asking to join: tell them.
-    if (affiliate.status === "pending" && updated.status === "active" && updated.userId) {
-      await NotificationService.notifyPerson(updated.userId, {
-        type: "affiliate_approved",
-        title: "You're in the referral programme",
-        message: `Share your link or code ${updated.code} — you earn when the families you refer pay.`,
-        payload: { route: portalRoute(updated) },
-        dedupeKey: `affiliate_approved:${updated.id}`,
-      }).catch(() => {});
-    }
-    if (affiliate.status !== "active" && updated.status === "active") await emailOutsider(updated, "welcome");
-    return shapeAffiliate(updated);
+    if (releaseOld) await releaseLogin(releaseOld, id);
+    let updated = await db(A).where({ id }).first();
+    if (updated.status === "active" && (affiliate.status !== "active" || !updated.userId || emailChanged)) updated = await welcome(updated);
+    return shapeAffiliate(updated, (await loginsById([updated.userId])).get(updated.userId));
   },
 
   // Only an affiliate with no referrals can be deleted; otherwise suspend them (their history stays).
+  // Their Affiliate sign-in goes with them (the login too, when that's all it was).
   async deleteAffiliate(req, id) {
-    await affiliateInWorkspace(req, id);
+    const affiliate = await affiliateInWorkspace(req, id);
     if (await db(R).where({ affiliateId: id }).first()) {
       fail("This affiliate has referrals, so their history is kept — suspend them instead.", 409);
     }
     await db(A).where({ id }).del();
+    await releaseLogin(affiliate.userId);
+  },
+
+  // Staff's "Email sign-in details": emails an affiliate who signs in as Affiliate how to sign in,
+  // with a one-time link to set (or reset) their password — only ever to the login's own address,
+  // never shown to staff. Makes their login first if they have none. A parent or educator signs in
+  // with their own login; for them it explains rather than emails.
+  async sendSignInDetails(req, id) {
+    const found = await affiliateInWorkspace(req, id);
+    if (found.status === "pending") fail("Approve them first — their account is made when they're approved.");
+    const { affiliate, user } = await ensureLogin(found);
+    if (!signsInAsAffiliate(affiliate)) {
+      fail(`They sign in with their own ${affiliate.kind} login (${user.email}) — Refer & earn is in their portal. If they've forgotten the password, "Forgot password?" on the sign-in page emails them a link.`);
+    }
+    await Emails.signInDetails({ ...affiliate, email: user.email }, { account: await signInFor(user, { created: true }) });
+    return { sent: true, email: user.email };
   },
 
   // ---- Admin: referrals, commissions --------------------------------------------------------
@@ -519,7 +650,7 @@ const AffiliateService = {
       }).catch(() => {});
     }
     const how = method === "credit" ? `Taken off invoice ${reference}` : `${method === "mpesa" ? "M-Pesa" : method === "bank" ? "Bank transfer" : "Cash"}${reference ? ` · ${reference}` : ""}`;
-    await emailOutsider(affiliate, "payoutPaid", { payout, how });
+    await emailAffiliate(affiliate, "payoutPaid", { payout, how });
     return db(P).where({ id }).first();
   },
 
@@ -542,41 +673,27 @@ const AffiliateService = {
         dedupeKey: `affiliate_payout_rejected:${id}`,
       }).catch(() => {});
     }
-    await emailOutsider(affiliate, "payoutRejected", { payout, note });
+    await emailAffiliate(affiliate, "payoutRejected", { payout, note });
   },
 
-  // An outside affiliate's dashboard link: the current one (staff can copy it), emailed to them
-  // with `send`, or a new one with `reset` (every older link stops working).
-  async dashboardLink(req, id, { reset = false, send = false } = {}) {
-    let affiliate = await affiliateInWorkspace(req, id);
-    if (!isOutsider(affiliate)) fail("They have a login — they see their referrals in their portal (Refer & earn).");
-    if (reset) {
-      await db(A).where({ id }).update({ dashboardVersion: (affiliate.dashboardVersion || 1) + 1, updatedAt: now() });
-      affiliate = await db(A).where({ id }).first();
-    }
-    if (send) {
-      if (!affiliate.email) fail("Add their email first.");
-      await Emails.dashboardLink(affiliate, { dashboardUrl: dashboardUrl(affiliate) });
-    }
-    return { url: dashboardUrl(affiliate), sent: Boolean(send) };
-  },
-
-  // ---- The affiliate's own view ("Refer & earn" in the parent and educator portals) -----------
+  // ---- The affiliate's own view: "Refer & earn" in the parent and educator portals, and the ------
+  // affiliate portal for everyone else (signed in as Affiliate).
   eligible(req) {
     if (req.user.role === "teacher") return "educator";
     if (isParent(req.user) && !req.user.totLearner) return "parent";
+    if (req.user.role === AFFILIATE_ROLE) return "other";
     return null;
   },
 
   async mine(req) {
     const kind = AffiliateService.eligible(req);
-    if (!kind) fail("Refer & earn is for parents and educators.", 403);
+    if (!kind) fail("Refer & earn is for parents, educators and affiliates.", 403);
     const affiliate = await db(A).where({ userId: req.user.id }).orderByRaw("FIELD(status, 'active', 'pending', 'suspended')").first();
     return AffiliateService._view(affiliate, kind);
   },
 
   // What an affiliate sees of their own: the programme, their link and code, totals, families
-  // (first names only — never contact details), commissions and payouts.
+  // (first names only — never contact details), commissions and payouts, and their own details.
   async _view(affiliate, kind) {
     const settings = await getSettings(affiliate?.ownerAdminId || env.PUBLIC_CONTENT_ADMIN_ID);
     const programme = {
@@ -589,16 +706,13 @@ const AffiliateService = {
     const commissions = await withStates(await db(C).where({ affiliateId: affiliate.id }).orderBy("createdAt", "desc"));
     const payouts = await db(P).where({ affiliateId: affiliate.id }).orderBy("createdAt", "desc").limit(100);
     const refById = new Map(referrals.map((r) => [r.id, r]));
-    const outsider = isOutsider(affiliate);
     return {
       kind,
       programme,
       affiliate: {
-        id: affiliate.id, name: affiliate.name, code: affiliate.code, status: affiliate.status, link: linkFor(affiliate.code), payoutMethod: affiliate.payoutMethod,
-        // On the no-sign-in dashboard only a hint of the number (anyone with the link could open it).
-        payoutPhone: outsider ? maskPhone(affiliate.payoutPhone) : affiliate.payoutPhone,
-        payoutDetails: outsider ? (affiliate.payoutDetails ? "On file" : null) : affiliate.payoutDetails,
-        outsider,
+        id: affiliate.id, name: affiliate.name, email: affiliate.email, phone: affiliate.phone, code: affiliate.code, status: affiliate.status,
+        link: linkFor(affiliate.code), payoutMethod: affiliate.payoutMethod, payoutPhone: affiliate.payoutPhone, payoutDetails: affiliate.payoutDetails,
+        termsAcceptedAt: affiliate.termsAcceptedAt || null, createdAt: affiliate.createdAt,
       },
       totals: totals(commissions),
       referrals: referrals.map((r) => ({
@@ -613,22 +727,7 @@ const AffiliateService = {
     };
   },
 
-  // ---- The website: an outside affiliate's dashboard, and applying ---------------------------
-  async dashboard(token) {
-    const affiliate = await affiliateForToken(token);
-    if (!affiliate) fail("This link doesn't work any more — ask us for a new one.", 404);
-    return AffiliateService._view(affiliate, affiliate.kind);
-  },
-
-  async requestDashboardPayout(token) {
-    const affiliate = await affiliateForToken(token);
-    if (!affiliate) fail("This link doesn't work any more — ask us for a new one.", 404);
-    if (affiliate.payoutMethod === "mpesa" && !affiliate.payoutPhone) fail("We don't have an M-Pesa number for you yet — reply to any of our emails with it.");
-    if (affiliate.payoutMethod === "bank" && !affiliate.payoutDetails) fail("We don't have your bank details yet — reply to any of our emails with them.");
-    await AffiliateService._requestPayout(affiliate, { requestedBy: null, enforceMinimum: true });
-    return AffiliateService._view(affiliate, affiliate.kind);
-  },
-
+  // ---- The website: applying ---------------------------------------------------------------------
   // The "Become an affiliate" page: the offer, and whether it's taking applications.
   async publicProgramme() {
     const ownerAdminId = env.PUBLIC_CONTENT_ADMIN_ID;
@@ -652,14 +751,13 @@ const AffiliateService = {
     const existing = await db(A).where({ ownerAdminId }).whereRaw("LOWER(email) = ?", [email.toLowerCase()]).first();
     if (existing) return { status: "received" };
     const login = await loginFor(email);
-    const kind = login?.role === "teacher" ? "educator" : login?.role === "learner" && !login.username ? "parent" : "other";
     const row = {
       id: generateId(), ownerAdminId, userId: login?.id || null, name: data.name.trim().slice(0, 150), email, phone: data.phone.trim().slice(0, 40),
-      kind, code: await uniqueCode(null, data.name), status: settings.requireApproval ? "pending" : "active",
+      kind: await kindOfLogin(login), code: await uniqueCode(null, data.name), status: settings.requireApproval ? "pending" : "active",
       payoutMethod: data.payoutMethod, payoutPhone: data.payoutMethod === "mpesa" ? (data.payoutPhone || data.phone).trim().slice(0, 40) : null,
       payoutDetails: data.payoutMethod === "bank" ? String(data.payoutDetails || "").trim().slice(0, 500) || null : null,
       promotion: data.promotion ? String(data.promotion).slice(0, 2000) : null, source: "website", termsAcceptedAt: now(),
-      dashboardVersion: 1, createdBy: null, createdAt: now(), updatedAt: now(),
+      createdBy: null, createdAt: now(), updatedAt: now(),
     };
     await db(A).insert(row);
     if (row.status === "pending") {
@@ -671,16 +769,19 @@ const AffiliateService = {
         dedupeKey: `affiliate_joined:${row.id}`,
         ownerAdminId,
       }).catch(() => {});
-      await emailOutsider(row, "applicationReceived");
+      await Emails.applicationReceived(row);
     } else {
-      await emailOutsider(row, "welcome");
+      // No approval needed: their account straight away (an admin's email can't be one — staff
+      // see them without a login and can change the email).
+      await welcome(row).catch((err) => console.error("[affiliates] could not set up an applicant's login:", err.message));
     }
     return { status: "received" };
   },
 
+  // A parent or educator joining from their own portal. (Signed in as Affiliate, they already are one.)
   async join(req, input = {}) {
     const kind = AffiliateService.eligible(req);
-    if (!kind) fail("Refer & earn is for parents and educators.", 403);
+    if (!kind || kind === "other") fail("Refer & earn is for parents and educators.", 403);
     if (await db(A).where({ userId: req.user.id }).first()) fail("You've already joined.", 409);
     const ownerAdminId = env.PUBLIC_CONTENT_ADMIN_ID;
     if (!ownerAdminId) fail("The referral programme isn't set up yet.", 503);
@@ -708,24 +809,41 @@ const AffiliateService = {
     return AffiliateService.mine(req);
   },
 
+  // Their own details: how they're paid (parents may take it off their invoices; anyone by M-Pesa or
+  // bank), and — signed in as Affiliate, where the affiliate record is all there is — their name and
+  // phone, kept on their login too.
   async updateMine(req, input = {}) {
-    const affiliate = await db(A).where({ userId: req.user.id }).first();
+    const affiliate = await db(A).where({ userId: req.user.id }).orderByRaw("FIELD(status, 'active', 'pending', 'suspended')").first();
     if (!affiliate) fail("Join the referral programme first.", 404);
+    const text = (v, max) => String(v || "").trim().slice(0, max) || null;
     const patch = {};
     if (input.payoutMethod !== undefined) {
-      if (!["credit", "mpesa"].includes(input.payoutMethod) || (input.payoutMethod === "credit" && affiliate.kind !== "parent")) fail("Choose how you'd like to be paid");
+      if (!["credit", "mpesa", "bank"].includes(input.payoutMethod) || (input.payoutMethod === "credit" && affiliate.kind !== "parent")) fail("Choose how you'd like to be paid");
       patch.payoutMethod = input.payoutMethod;
     }
-    if (input.payoutPhone !== undefined) patch.payoutPhone = String(input.payoutPhone || "").trim().slice(0, 40) || null;
-    if ((patch.payoutMethod || affiliate.payoutMethod) === "mpesa" && !(patch.payoutPhone ?? affiliate.payoutPhone)) fail("Enter the M-Pesa number to pay");
+    if (input.payoutPhone !== undefined) patch.payoutPhone = text(input.payoutPhone, 40);
+    if (input.payoutDetails !== undefined) patch.payoutDetails = text(input.payoutDetails, 500);
+    const method = patch.payoutMethod || affiliate.payoutMethod;
+    if (method === "mpesa" && !(patch.payoutPhone !== undefined ? patch.payoutPhone : affiliate.payoutPhone)) fail("Enter the M-Pesa number to pay");
+    if (method === "bank" && !(patch.payoutDetails !== undefined ? patch.payoutDetails : affiliate.payoutDetails)) fail("Enter your bank, account name and number");
+    const asAffiliate = req.user.role === AFFILIATE_ROLE;
+    if (asAffiliate && input.name !== undefined) {
+      patch.name = text(input.name, 150);
+      if (!patch.name || patch.name.length < 2) fail("Enter your name");
+    }
+    if (asAffiliate && input.phone !== undefined) patch.phone = text(input.phone, 40);
     if (Object.keys(patch).length) await db(A).where({ id: affiliate.id }).update({ ...patch, updatedAt: now() });
+    if (asAffiliate && (patch.name || patch.phone !== undefined)) {
+      await UserModel.update(req.user.id, { ...(patch.name ? { name: patch.name } : {}), ...(patch.phone !== undefined ? { phone: patch.phone } : {}) });
+    }
     return AffiliateService.mine(req);
   },
 
   async requestMyPayout(req) {
-    const affiliate = await db(A).where({ userId: req.user.id }).first();
+    const affiliate = await db(A).where({ userId: req.user.id }).orderByRaw("FIELD(status, 'active', 'pending', 'suspended')").first();
     if (!affiliate) fail("Join the referral programme first.", 404);
     if (affiliate.payoutMethod === "mpesa" && !affiliate.payoutPhone) fail("Add the M-Pesa number to pay first.");
+    if (affiliate.payoutMethod === "bank" && !affiliate.payoutDetails) fail("Add your bank details first.");
     await AffiliateService._requestPayout(affiliate, { requestedBy: req.user.id, enforceMinimum: true });
     return AffiliateService.mine(req);
   },

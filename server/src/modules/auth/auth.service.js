@@ -511,6 +511,18 @@ const AuthService = {
     return { valid: true };
   },
 
+  // A one-time "set your password" link for a login made for someone (an affiliate's new account —
+  // affiliates/affiliate.service.js): the same token as a reset link, valid for `days`, opening the
+  // reset page in its welcome wording. Only ever emailed to the login's own address, never shown
+  // to staff.
+  async passwordSetLink(user, { days = 7 } = {}) {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    await PasswordResetTokenModel.create({ userId: user.id, tokenHash: hashResetToken(token), expiresAt });
+    const { appUrl } = require("../../shared/mail/mail.layout");
+    return { url: appUrl(`/reset-password?token=${token}&welcome=1`), expiresAt };
+  },
+
   // Sets a new password from an emailed link. The link (and any other outstanding one for the
   // account) stops working, and the account is signed out everywhere — whoever knew the old
   // password, or was already signed in with it, is out.
@@ -696,7 +708,8 @@ const AuthService = {
     // A parent (a learner-role login with an email, no username) may keep their own name and
     // phone up to date; job title stays admin-only.
     const parent = role === "learner" && !!current.email && !current.username;
-    const editable = role === "admin" ? ["name", "phone", "jobTitle"] : parent ? ["name", "phone"] : [];
+    // An affiliate's login has no record of its own to edit — its name and phone are on the login.
+    const editable = role === "admin" ? ["name", "phone", "jobTitle"] : parent || role === "affiliate" ? ["name", "phone"] : [];
     if (["name", "phone", "jobTitle"].some((field) => field in data && !editable.includes(field))) {
       const err = new Error("Only an admin can change these details here.");
       err.statusCode = 403;
