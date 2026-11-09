@@ -4,6 +4,7 @@ import TeacherPortalLayout from "../layouts/TeacherPortalLayout";
 import SchoolPortalLayout from "../layouts/SchoolPortalLayout";
 import LearnerPortalLayout from "../layouts/LearnerPortalLayout";
 import SupervisorPortalLayout from "../layouts/SupervisorPortalLayout";
+import AffiliatePortalLayout from "../layouts/AffiliatePortalLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import LoginPage from "../modules/auth/pages/LoginPage";
 import SignupPage from "../modules/auth/pages/SignupPage";
@@ -133,6 +134,7 @@ import TechClubsPage from "../modules/tech-clubs/pages/TechClubsPage";
 import PathwaySubscriptionsPage from "../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage";
 import AffiliatesPage from "../modules/affiliates/pages/AffiliatesPage";
 import ReferEarnPage from "../modules/affiliates/pages/ReferEarnPage";
+import AffiliateAccountPage from "../modules/affiliates/pages/AffiliateAccountPage";
 
 // Educator claims sit inside Billing. Links to the old /claims address — notifications and
 // emails carry /claims?claim=<id> — land on that tab, with the claim still opened.
@@ -350,6 +352,15 @@ export default function AppRoutes() {
           {/* Their performance profile, and their public one (modules/educator-profiles). */}
           <Route path="my-profile" element={<Navigate to="/teacher-portal/profile?tab=public" replace />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
+        </Route>
+      </Route>
+
+      {/* An affiliate who isn't a parent or educator here signs in as Affiliate (modules/affiliates,
+          server account-roles.js's AFFILIATE_ROLE): their Refer & earn and their account. */}
+      <Route element={<RoleRoute allow={["affiliate"]} />}>
+        <Route path="/affiliate-portal" element={<AffiliatePortalLayout />}>
+          <Route index element={<ReferEarnPage />} />
+          <Route path="account" element={<AffiliateAccountPage />} />
         </Route>
       </Route>
 

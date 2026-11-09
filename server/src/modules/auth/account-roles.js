@@ -38,6 +38,14 @@ const canBeHubLead = (user) => Boolean(user) && !NO_HUB_LEAD.includes(user.role)
 // the header. The session runs as "learner" with `totLearner` (auth.service.js's sessionUser).
 const TOT_LEARNER_ROLE = "totLearner";
 
+// An affiliate (9 Nov 2026, modules/affiliates/): someone who refers families and isn't a parent or
+// an educator here — their own login, signing in to the affiliate portal (/affiliate-portal: Refer
+// & earn and their account). Made for them by AffiliateService's ensureLogin when they become an
+// active affiliate: a new login of this role, or this role added to a login their email already has
+// (a hub's, a staff member's…). Parents and educators never get it — their Refer & earn is in their
+// own portal. Admins and curriculum admins never take it.
+const AFFILIATE_ROLE = "affiliate";
+
 function parseRoles(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -59,6 +67,7 @@ const extraRolesOf = (user) =>
       LINKABLE_ROLES.includes(r)
       || (WORKSPACE_ROLES.includes(r) && !OWN_ONLY_ROLES.includes(user.role))
       || (r === HUB_LEAD_ROLE && canBeHubLead(user))
+      || (r === AFFILIATE_ROLE && !OWN_ONLY_ROLES.includes(user.role))
     ))
     : [];
 
@@ -116,4 +125,4 @@ function withoutRole(user, role) {
   return patch;
 }
 
-module.exports = { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, TOT_LEARNER_ROLE, canBeHubLead, extraRolesOf, rolesOf, sessionRolesOf, availableRoles, totTraineeOf, withoutRole };
+module.exports = { LINKABLE_ROLES, WORKSPACE_ROLES, OWN_ONLY_ROLES, HUB_LEAD_ROLE, TOT_LEARNER_ROLE, AFFILIATE_ROLE, canBeHubLead, extraRolesOf, rolesOf, sessionRolesOf, availableRoles, totTraineeOf, withoutRole };

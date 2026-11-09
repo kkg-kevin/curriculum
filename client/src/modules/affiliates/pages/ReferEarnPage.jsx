@@ -6,10 +6,11 @@ import { FiCheckCircle, FiCopy, FiDownload, FiGift, FiLink, FiShare2 } from "rea
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL } from "../services/affiliatesApi";
 
-// "Refer & earn" (/parent/refer, /teacher-portal/refer): a parent's or educator's own place in the
-// referral programme (server: modules/affiliates/, GET /api/affiliates/me). Join (an admin may
-// approve first); then their link, QR and code to share, what they've earned (waiting → available
-// → paid), the families they referred (first names only), and asking for a payout.
+// "Refer & earn" (/parent/refer, /teacher-portal/refer, and /affiliate-portal for someone signed in
+// as Affiliate): an affiliate's own place in the referral programme (server: modules/affiliates/,
+// GET /api/affiliates/me). A parent or educator joins here (an admin may approve first); then their
+// link, QR and code to share, what they've earned (waiting → available → paid), the families they
+// referred (first names only), how they're paid and asking for a payout.
 
 const btn = { display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 10, border: `1px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" };
 const primary = { ...btn, background: BRAND.navy, borderColor: BRAND.navy, color: "#fff" };
@@ -27,10 +28,12 @@ function Stat({ label, value, note }) {
   );
 }
 
-function Share({ affiliate }) {
+function Share({ affiliate, kind }) {
   const qrRef = useRef(null);
   const copy = (text, what) => navigator.clipboard?.writeText(text).then(() => toast.success(what)).catch(() => toast.error("Couldn't copy"));
-  const message = `I use Digifunzi for my children's digital skills — have a look: ${affiliate.link}  (or use my code ${affiliate.code} when you sign up)`;
+  const message = kind === "parent"
+    ? `I use Digifunzi for my children's digital skills — have a look: ${affiliate.link}  (or use my code ${affiliate.code} when you sign up)`
+    : `Digifunzi teaches children digital skills — coding, robotics and more. Have a look: ${affiliate.link}  (or use my code ${affiliate.code} when you sign up)`;
   const downloadQr = () => {
     const canvas = qrRef.current?.querySelector("canvas");
     if (!canvas) return;
@@ -68,8 +71,9 @@ function PayoutCard({ data }) {
   const { affiliate, totals, programme, kind } = data;
   const [method, setMethod] = useState(affiliate.payoutMethod);
   const [phone, setPhone] = useState(affiliate.payoutPhone || "");
+  const [bank, setBank] = useState(affiliate.payoutDetails || "");
   const save = useMutation({
-    mutationFn: () => affiliatesApi.updateMine({ payoutMethod: method, payoutPhone: phone || null }),
+    mutationFn: () => affiliatesApi.updateMine({ payoutMethod: method, payoutPhone: phone || null, payoutDetails: bank || null }),
     onSuccess: (d) => { qc.setQueryData(["affiliates", "me"], d); toast.success("Saved"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -78,7 +82,7 @@ function PayoutCard({ data }) {
     onSuccess: (d) => { qc.setQueryData(["affiliates", "me"], d); toast.success("Payout asked for — our team will pay it"); },
     onError: (err) => toast.error(errorOf(err)),
   });
-  const changed = method !== affiliate.payoutMethod || (phone || "") !== (affiliate.payoutPhone || "");
+  const changed = method !== affiliate.payoutMethod || (phone || "") !== (affiliate.payoutPhone || "") || (bank || "") !== (affiliate.payoutDetails || "");
   const canAsk = totals.available >= programme.minimumPayout && totals.available > 0 && totals.requested === 0;
   return (
     <section style={{ ...card, padding: 18, display: "grid", gap: 12 }}>
@@ -88,11 +92,17 @@ function PayoutCard({ data }) {
           <select style={input} value={method} onChange={(e) => setMethod(e.target.value)}>
             {kind === "parent" && <option value="credit">Taken off my invoices</option>}
             <option value="mpesa">M-Pesa</option>
+            <option value="bank">Bank transfer</option>
           </select>
         </label>
         {method === "mpesa" && (
           <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft }}>M-Pesa number
             <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" />
+          </label>
+        )}
+        {method === "bank" && (
+          <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft, flex: "1 1 260px" }}>Bank, account name and number
+            <input style={{ ...input, width: "100%" }} value={bank} onChange={(e) => setBank(e.target.value)} placeholder="E.g. KCB, Jane Wanjiru, 1234567890" />
           </label>
         )}
         {changed && <button type="button" style={btn} onClick={() => save.mutate()} disabled={save.isPending}>Save</button>}
@@ -143,7 +153,7 @@ export default function ReferEarnPage() {
             <li>Share them with families — on WhatsApp, at school, anywhere.</li>
             <li>When a family signs up through you and pays, you earn. {programme.holdDays ? `Each amount can be paid out ${programme.holdDays} days later.` : ""}</li>
           </ol>
-          {programme.enabled && programme.selfJoin ? (
+          {programme.enabled && programme.selfJoin && data.kind !== "other" ? (
             <div><button type="button" style={primary} onClick={() => join.mutate()} disabled={join.isPending}>{join.isPending ? "Joining…" : "Join the referral programme"}</button></div>
           ) : (
             <p style={{ margin: 0, fontSize: 13.5, color: BRAND.muted }}>Joining is by invitation for now — ask our team to add you.</p>
@@ -161,7 +171,7 @@ export default function ReferEarnPage() {
         <section style={{ ...card, padding: 18, fontSize: 13.5, color: BRAND.inkSoft }}>Your referral link is paused. Talk to our team if you think this is a mistake.</section>
       )}
 
-      {affiliate?.status === "active" && <Share affiliate={affiliate} />}
+      {affiliate?.status === "active" && <Share affiliate={affiliate} kind={data.kind} />}
 
       {affiliate && data.totals && (
         <>

@@ -33,8 +33,8 @@ const DEFAULT_SETTINGS = {
   requireApproval: true,
   // People who aren't users can apply on the website ("Become an affiliate"); an admin approves.
   publicApplications: true,
-  // Affiliates without a login are emailed (a family signed up, they earned, they were paid),
-  // each email carrying their private dashboard link.
+  // Affiliates who sign in as Affiliate (not a parent or educator here) are also emailed when a
+  // family signs up, they earn or a payout is decided, each email with a button to their account.
   emailOutsiders: true,
 };
 

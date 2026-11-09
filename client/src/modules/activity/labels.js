@@ -76,7 +76,7 @@ export function tone(entry) {
   return { color: "#1D4ED8", background: "#DBEAFE", label: null };
 }
 
-const ACCOUNT_LABELS = { admin: "Owner", collaborator: "Staff", teacher: "Educator", school: "Hub", learner: "Learner / parent", curriculumAdmin: "Curriculum admin", visitor: "Website visitor" };
+const ACCOUNT_LABELS = { admin: "Owner", collaborator: "Staff", teacher: "Educator", school: "Hub", learner: "Learner / parent", curriculumAdmin: "Curriculum admin", affiliate: "Affiliate", visitor: "Website visitor" };
 // "Staff · Finance", "Educator", "Owner"
 export const accountLabel = (entry) => [ACCOUNT_LABELS[entry.actorRole] || entry.actorRole, entry.actorAccessRole].filter(Boolean).join(" · ");
 

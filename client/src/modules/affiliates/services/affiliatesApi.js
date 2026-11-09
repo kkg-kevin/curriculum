@@ -4,7 +4,8 @@ const BASE = "/api/affiliates";
 const data = (r) => r.data.data;
 
 // Affiliate marketing (server: modules/affiliates/). Admins: Affiliates page (Finance). Parents and
-// educators: "Refer & earn" in their portal (/me).
+// educators: "Refer & earn" in their portal (/me); everyone else signs in as Affiliate
+// (/affiliate-portal).
 export const affiliatesApi = {
   // Admin
   list: () => api.get(BASE).then(data),
@@ -13,8 +14,9 @@ export const affiliatesApi = {
   remove: (id) => api.delete(`${BASE}/${id}`).then(data),
   openInvoices: (id) => api.get(`${BASE}/${id}/open-invoices`).then(data),
   createPayout: (id) => api.post(`${BASE}/${id}/payouts`).then(data),
-  // An outside affiliate's private dashboard link: { reset?, send? } → { url, sent }.
-  dashboardLink: (id, body = {}) => api.post(`${BASE}/${id}/dashboard-link`, body).then(data),
+  // Emails an affiliate who signs in as Affiliate how to sign in (a set-password link, only ever to
+  // them) → { sent, email }.
+  sendSignInDetails: (id) => api.post(`${BASE}/${id}/sign-in-details`).then(data),
   referrals: (params = {}) => api.get(`${BASE}/referrals`, { params }).then(data),
   cancelReferral: (id, note) => api.post(`${BASE}/referrals/${id}/cancel`, { note }).then(data),
   commissions: (params = {}) => api.get(`${BASE}/commissions`, { params }).then(data),

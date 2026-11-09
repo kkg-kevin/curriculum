@@ -4,24 +4,34 @@ const asyncHandler = require("express-async-handler");
 const { z } = require("zod");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 const AffiliateService = require("./affiliate.service");
+const { appUrl } = require("../../shared/mail/mail.layout");
 
 // Affiliate marketing (affiliate.service.js), mounted at /api/affiliates with protect +
 // attachOwnRecords (app.js). Staff reach the admin side through the Affiliates permission
-// (access.registry.js); /me is the parent's or educator's own "Refer & earn".
+// (access.registry.js); /me is the affiliate's own "Refer & earn" — a parent's or educator's in
+// their portal, everyone else's signed in as Affiliate (the affiliate portal).
 const router = express.Router();
 const ok = (res, data) => res.json({ success: true, data });
 
-// ---- The affiliate's own (parents and educators) ----------------------------------------------
-router.get("/me", authorize("learner", "teacher"), asyncHandler(async (req, res) => ok(res, await AffiliateService.mine(req))));
-router.post("/me/join", authorize("learner", "teacher"), asyncHandler(async (req, res) => {
+// ---- The affiliate's own (parents, educators, and affiliates signed in as Affiliate) ------------
+const own = authorize("learner", "teacher", "affiliate");
+router.get("/me", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.mine(req))));
+router.post("/me/join", own, asyncHandler(async (req, res) => {
   const body = z.object({ payoutPhone: z.string().trim().max(40).optional() }).parse(req.body || {});
   ok(res, await AffiliateService.join(req, body));
 }));
-router.put("/me", authorize("learner", "teacher"), asyncHandler(async (req, res) => {
-  const body = z.object({ payoutMethod: z.enum(["credit", "mpesa"]).optional(), payoutPhone: z.string().trim().max(40).optional().nullable() }).parse(req.body || {});
+router.put("/me", own, asyncHandler(async (req, res) => {
+  const body = z.object({
+    payoutMethod: z.enum(["credit", "mpesa", "bank"]).optional(),
+    payoutPhone: z.string().trim().max(40).optional().nullable(),
+    payoutDetails: z.string().trim().max(500).optional().nullable(),
+    // Signed in as Affiliate only (their details are the affiliate record's).
+    name: z.string().trim().max(150).optional(),
+    phone: z.string().trim().max(40).optional().nullable(),
+  }).parse(req.body || {});
   ok(res, await AffiliateService.updateMine(req, body));
 }));
-router.post("/me/payouts", authorize("learner", "teacher"), asyncHandler(async (req, res) => ok(res, await AffiliateService.requestMyPayout(req))));
+router.post("/me/payouts", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.requestMyPayout(req))));
 
 // ---- Admin -------------------------------------------------------------------------------------
 const admin = authorize("admin");
@@ -57,7 +67,6 @@ const affiliateSchema = z.object({
   name: z.string().trim().max(150).optional(),
   email: z.string().trim().max(255).optional().nullable(),
   phone: z.string().trim().max(40).optional().nullable(),
-  kind: z.enum(["parent", "educator", "other"]).optional(),
   code: z.string().trim().max(40).optional().nullable(),
   status: z.enum(["pending", "active", "suspended"]).optional(),
   payoutMethod: z.enum(["credit", "mpesa", "bank"]).optional(),
@@ -73,11 +82,9 @@ router.put("/:id", admin, asyncHandler(async (req, res) => ok(res, await Affilia
 router.delete("/:id", admin, asyncHandler(async (req, res) => { await AffiliateService.deleteAffiliate(req, req.params.id); ok(res, null); }));
 router.get("/:id/open-invoices", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.openInvoicesFor(req, req.params.id))));
 router.post("/:id/payouts", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.createPayout(req, req.params.id))));
-// An outside affiliate's private dashboard link: get it, email it (`send`), make a new one (`reset`).
-router.post("/:id/dashboard-link", admin, asyncHandler(async (req, res) => {
-  const body = z.object({ reset: z.boolean().optional(), send: z.boolean().optional() }).parse(req.body || {});
-  ok(res, await AffiliateService.dashboardLink(req, req.params.id, body));
-}));
+// Emails an affiliate who signs in as Affiliate how to sign in (a one-time set-password link,
+// only ever to their own address — never shown here). Makes their login first if they have none.
+router.post("/:id/sign-in-details", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.sendSignInDetails(req, req.params.id))));
 
 // ---- The website (no sign-in) ------------------------------------------------------------------
 const publicRouter = express.Router();
@@ -88,8 +95,6 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: "Too many tries. Please try again later." },
 });
-// Reading a dashboard is looser (a page reloads), but still limited — the token is the only key.
-const readLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 120, standardHeaders: true, legacyHeaders: false, message: { success: false, message: "Too many tries. Please try again later." } });
 // Is a typed code real? Only yes / no, never whose it is.
 publicRouter.get("/referral-codes/:code", asyncHandler(async (req, res) => ok(res, await AffiliateService.checkCode(req.params.code))));
 // The "Become an affiliate" page: the offer and whether applications are open.
@@ -114,10 +119,15 @@ publicRouter.post("/affiliate-applications", limiter, asyncHandler(async (req, r
   if (data.hp_field) return res.status(201).json({ success: true, data: { status: "received" } });
   res.status(201).json({ success: true, data: await AffiliateService.apply(data) });
 }));
-// An outside affiliate's dashboard (their private link), and asking for a payout from it.
-publicRouter.get("/affiliate-dashboard", readLimiter, asyncHandler(async (req, res) => ok(res, await AffiliateService.dashboard(req.query.token))));
-publicRouter.post("/affiliate-dashboard/payouts", limiter, asyncHandler(async (req, res) => {
-  ok(res, await AffiliateService.requestDashboardPayout(z.object({ token: z.string().max(200) }).parse(req.body || {}).token));
-}));
+// The private dashboard links (6 Nov 2026) are gone — affiliates sign in to their account. An old
+// link (or an older website) is told where to go.
+const dashboardMoved = (req, res) => res.status(410).json({
+  success: false,
+  code: "AFFILIATE_DASHBOARD_MOVED",
+  message: "Your affiliate dashboard is now your Digifunzi account — sign in with your email. First time? Use \"Forgot password?\" to set your password.",
+  data: { signInUrl: appUrl("/login"), setPasswordUrl: appUrl("/forgot-password") },
+});
+publicRouter.get("/affiliate-dashboard", dashboardMoved);
+publicRouter.post("/affiliate-dashboard/payouts", dashboardMoved);
 
 module.exports = { router, publicRouter };

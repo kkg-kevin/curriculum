@@ -10,10 +10,14 @@ import { FieldWrap, PasswordInput } from "../components/AuthFields";
 
 // Where an emailed reset link lands (/reset-password?token=…). The token is checked as soon as
 // the page opens, so an expired or already-used link says so before anyone types a new password.
+// `welcome=1`: a "set your password" link for a login made for someone (an affiliate's new account —
+// server auth.service.js's passwordSetLink) — the same page, worded as setting a first password.
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
+  const welcome = searchParams.get("welcome") === "1";
   // "checking" | "ready" | "invalid"
   const [linkState, setLinkState] = useState(token ? "checking" : "invalid");
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +45,7 @@ export default function ResetPasswordPage() {
     setSubmitting(true);
     try {
       await authApi.resetPassword(token, newPassword);
-      toast.success("Password reset. Sign in with your new password.");
+      toast.success(welcome ? "Password set. Sign in with your email and your new password." : "Password reset. Sign in with your new password.");
       navigate("/login", { replace: true });
     } catch (err) {
       if (err.code === "RESET_LINK_INVALID") setLinkState("invalid");
@@ -52,7 +56,7 @@ export default function ResetPasswordPage() {
   };
 
   if (linkState === "checking") {
-    return <p style={{ textAlign: "center", fontSize: "13.5px", color: "#6B7280" }}>Checking your reset link…</p>;
+    return <p style={{ textAlign: "center", fontSize: "13.5px", color: "#6B7280" }}>Checking your link…</p>;
   }
 
   if (linkState === "invalid") {
@@ -64,7 +68,9 @@ export default function ResetPasswordPage() {
           </div>
           <h2 style={{ margin: "0 0 8px", fontSize: "20px", fontWeight: "700", color: "#111827" }}>This link can't be used</h2>
           <p style={{ margin: 0, fontSize: "13.5px", color: "#6B7280", lineHeight: 1.6 }}>
-            Password reset links expire after a short while and work only once. Request a new one to continue.
+            {welcome
+              ? "This link has expired or was already used. Enter your email on the next page and we'll send you a new one."
+              : "Password reset links expire after a short while and work only once. Request a new one to continue."}
           </p>
         </div>
         <Link to="/forgot-password" className="df-btn-primary" style={{ display: "block", textAlign: "center", textDecoration: "none", boxSizing: "border-box" }}>
@@ -80,9 +86,11 @@ export default function ResetPasswordPage() {
   return (
     <>
       <div style={{ textAlign: "center", marginBottom: "24px" }}>
-        <h2 style={{ margin: "0 0 8px", fontSize: "20px", fontWeight: "700", color: "#111827" }}>Choose a new password</h2>
+        <h2 style={{ margin: "0 0 8px", fontSize: "20px", fontWeight: "700", color: "#111827" }}>{welcome ? "Set your password" : "Choose a new password"}</h2>
         <p style={{ margin: 0, fontSize: "13.5px", color: "#6B7280", lineHeight: 1.6 }}>
-          Once it's saved, the account is signed out everywhere and you can sign in with the new password.
+          {welcome
+            ? "Choose the password for your Digifunzi account. You'll sign in with your email address and this password."
+            : "Once it's saved, the account is signed out everywhere and you can sign in with the new password."}
         </p>
       </div>
 
@@ -110,7 +118,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <button type="submit" className="df-btn-primary" disabled={submitting} style={{ marginTop: "22px" }}>
-          {submitting ? "Saving..." : "Reset password"}
+          {submitting ? "Saving..." : welcome ? "Set password" : "Reset password"}
         </button>
       </form>
 
