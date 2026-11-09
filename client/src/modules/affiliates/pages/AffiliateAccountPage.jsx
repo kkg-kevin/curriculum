@@ -96,7 +96,7 @@ export default function AffiliateAccountPage() {
   if (isLoading) return <p style={{ fontFamily: FONT, color: BRAND.muted }}>Loading…</p>;
   if (error) return <p style={{ fontFamily: FONT, color: BRAND.danger }}>{errorOf(error)}</p>;
   return (
-    <div style={{ fontFamily: FONT, display: "grid", gap: 16, maxWidth: 980 }}>
+    <div style={{ fontFamily: FONT, display: "grid", gap: 16, width: "100%" }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: BRAND.ink, letterSpacing: "-0.5px" }}>My Account</h1>
         <p style={{ margin: "4px 0 0", fontSize: 13.5, color: BRAND.muted }}>Your details and your password. How you&rsquo;re paid is on Refer &amp; Earn.</p>

@@ -14,7 +14,7 @@ import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL } from "../s
 
 const btn = { display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 10, border: `1px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" };
 const primary = { ...btn, background: BRAND.navy, borderColor: BRAND.navy, color: "#fff" };
-const input = { boxSizing: "border-box", padding: "9px 11px", borderRadius: 9, border: `1.5px solid ${BRAND.border}`, fontSize: 13.5, fontFamily: FONT, color: BRAND.ink, background: "#fff" };
+const input = { width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: 9, border: `1.5px solid ${BRAND.border}`, fontSize: 13.5, fontFamily: FONT, color: BRAND.ink, background: "#fff" };
 const STATE = { waiting: ["Waiting", "neutral"], available: ["Available", "good"], requested: ["Payout asked", "waiting"], paid: ["Paid", "strong"], cancelled: ["Cancelled", "danger"] };
 const REF_STATUS = { signed_up: ["Signed up — not paid yet", "waiting"], paid: ["Paying", "good"], cancelled: ["Not counted", "neutral"] };
 
@@ -88,7 +88,7 @@ function PayoutCard({ data }) {
     <section style={{ ...card, padding: 18, display: "grid", gap: 12 }}>
       <h2 style={cardHeading}><FiGift size={13} /> Getting paid</h2>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft }}>How
+        <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft, flex: "1 1 200px" }}>How
           <select style={input} value={method} onChange={(e) => setMethod(e.target.value)}>
             {kind === "parent" && <option value="credit">Taken off my invoices</option>}
             <option value="mpesa">M-Pesa</option>
@@ -96,13 +96,13 @@ function PayoutCard({ data }) {
           </select>
         </label>
         {method === "mpesa" && (
-          <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft }}>M-Pesa number
+          <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft, flex: "1 1 200px" }}>M-Pesa number
             <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" />
           </label>
         )}
         {method === "bank" && (
-          <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft, flex: "1 1 260px" }}>Bank, account name and number
-            <input style={{ ...input, width: "100%" }} value={bank} onChange={(e) => setBank(e.target.value)} placeholder="E.g. KCB, Jane Wanjiru, 1234567890" />
+          <label style={{ display: "grid", gap: 5, fontSize: 12.5, fontWeight: 700, color: BRAND.inkSoft, flex: "2 1 260px" }}>Bank, account name and number
+            <input style={input} value={bank} onChange={(e) => setBank(e.target.value)} placeholder="E.g. KCB, Jane Wanjiru, 1234567890" />
           </label>
         )}
         {changed && <button type="button" style={btn} onClick={() => save.mutate()} disabled={save.isPending}>Save</button>}
@@ -136,10 +136,10 @@ export default function ReferEarnPage() {
   const { affiliate, programme } = data;
 
   return (
-    <div style={{ fontFamily: FONT, display: "grid", gap: 16, maxWidth: 980 }}>
+    <div style={{ fontFamily: FONT, display: "grid", gap: 16, width: "100%" }}>
       <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "26px 30px" }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff" }}>Refer &amp; earn</h1>
-        <p style={{ margin: 0, fontSize: 13.5, color: "rgba(255,255,255,0.8)", maxWidth: 640, lineHeight: 1.55 }}>
+        <p style={{ margin: 0, fontSize: 13.5, color: "rgba(255,255,255,0.8)", lineHeight: 1.55 }}>
           {programme.offer ? `Earn ${programme.offer}.` : "Invite other families to Digifunzi."}
           {programme.programmes?.length ? ` Counts for: ${programme.programmes.join(", ")}.` : ""}
         </p>
