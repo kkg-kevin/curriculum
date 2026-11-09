@@ -38,11 +38,11 @@ const STATE = {
 };
 const PAYOUT_TONE = { requested: "waiting", paid: "strong", rejected: "danger" };
 
-function Modal({ title, onClose, children, width = 520 }) {
+function Modal({ title, onClose, children }) {
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ ...card, width: "100%", maxWidth: width, maxHeight: "92vh", overflowY: "auto", padding: 22, fontFamily: FONT, boxShadow: "0 20px 50px rgba(15,23,42,0.25)" }}>
+      <div style={{ ...card, width: "100%", maxHeight: "92vh", overflowY: "auto", padding: 22, fontFamily: FONT, boxShadow: "0 20px 50px rgba(15,23,42,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: BRAND.ink }}>{title}</h2>
           <button type="button" onClick={onClose} aria-label="Close" style={{ ...btn, padding: 6 }}><FiX size={16} /></button>
@@ -160,7 +160,7 @@ function AffiliatesTab({ onEdit }) {
             <div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{KIND[a.kind]}{a.email ? ` · ${a.email}` : ""}{a.phone ? ` · ${a.phone}` : ""}</div>
             <AccountLine a={a} />
             <div style={{ fontSize: 12, color: BRAND.faint }}>{SOURCE[a.source] || ""}{a.termsAcceptedAt ? ` · agreed to the terms ${formatDay(a.termsAcceptedAt)}` : ""}</div>
-            {a.promotion && <div style={{ fontSize: 12, color: BRAND.inkSoft, marginTop: 4, maxWidth: 320 }} title={a.promotion}>&ldquo;{a.promotion.length > 140 ? `${a.promotion.slice(0, 140)}…` : a.promotion}&rdquo;</div>}
+            {a.promotion && <div style={{ fontSize: 12, color: BRAND.inkSoft, marginTop: 4 }} title={a.promotion}>&ldquo;{a.promotion.length > 140 ? `${a.promotion.slice(0, 140)}…` : a.promotion}&rdquo;</div>}
           </td>
           <td style={td}>
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -275,7 +275,7 @@ function PayDialog({ payout, onClose }) {
   });
   const a = payout.affiliate || {};
   return (
-    <Modal title={`Pay ${a.name || "the affiliate"} ${formatKsh(payout.amount)}`} onClose={onClose} width={480}>
+    <Modal title={`Pay ${a.name || "the affiliate"} ${formatKsh(payout.amount)}`} onClose={onClose}>
       <form onSubmit={(e) => { e.preventDefault(); pay.mutate(); }} style={{ display: "grid", gap: 12 }}>
         <label style={label}>How it's paid
           <select style={input} value={method} onChange={(e) => setMethod(e.target.value)}>
@@ -358,14 +358,14 @@ function SettingsTab() {
   });
   if (!form) return <p style={{ color: BRAND.muted }}>Loading…</p>;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const num = (k) => ({ type: "number", value: form[k], onChange: (e) => set(k, e.target.value === "" ? "" : Number(e.target.value)), style: { ...input, maxWidth: 140 } });
+  const num = (k) => ({ type: "number", value: form[k], onChange: (e) => set(k, e.target.value === "" ? "" : Number(e.target.value)), style: input });
   const check = (k, text) => (
     <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5, color: BRAND.inkSoft, cursor: "pointer" }}>
-      <input type="checkbox" checked={Boolean(form[k])} onChange={(e) => set(k, e.target.checked)} /> {text}
+      <input type="checkbox" checked={Boolean(form[k])} onChange={(e) => set(k, e.target.checked)} style={{ flexShrink: 0 }} /> {text}
     </label>
   );
   return (
-    <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 14, maxWidth: 760 }}>
+    <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 14, width: "100%" }}>
       <section style={{ ...card, padding: 18, display: "grid", gap: 12 }}>
         <h3 style={cardHeading}>The programme</h3>
         {check("enabled", "Referrals earn commission")}
@@ -377,18 +377,21 @@ function SettingsTab() {
       <section style={{ ...card, padding: 18, display: "grid", gap: 10 }}>
         <h3 style={cardHeading}>What earns, and how much</h3>
         <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>A share of what the referred family pays — only once an invoice is paid in full.</p>
-        {PROGRAMMES.map(([key, name]) => (
-          <div key={key} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", gap: 8, alignItems: "center", minWidth: 170, fontSize: 13.5, color: BRAND.inkSoft, cursor: "pointer" }}>
-              <input type="checkbox" checked={form.programmes[key]} onChange={(e) => set("programmes", { ...form.programmes, [key]: e.target.checked })} /> {name}
-            </label>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: BRAND.muted }}>
-              <input type="number" min={0} max={100} step="0.5" value={form.rates[key]} disabled={!form.programmes[key]}
-                onChange={(e) => set("rates", { ...form.rates, [key]: e.target.value === "" ? "" : Number(e.target.value) })} style={{ ...input, width: 90 }} /> %
-              {RECURRING.has(key) ? " of each paid period" : " of the payment"}
-            </span>
-          </div>
-        ))}
+        {/* One box per programme, the boxes sharing the full width. */}
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))" }}>
+          {PROGRAMMES.map(([key, name]) => (
+            <div key={key} style={{ display: "grid", gap: 8, padding: 12, borderRadius: 10, border: `1px solid ${BRAND.line}`, background: form.programmes[key] ? "#fff" : "#F8FAFC" }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5, fontWeight: 700, color: BRAND.inkSoft, cursor: "pointer" }}>
+                <input type="checkbox" checked={form.programmes[key]} onChange={(e) => set("programmes", { ...form.programmes, [key]: e.target.checked })} style={{ flexShrink: 0 }} /> {name}
+              </label>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: BRAND.muted }}>
+                <input type="number" min={0} max={100} step="0.5" value={form.rates[key]} disabled={!form.programmes[key]}
+                  onChange={(e) => set("rates", { ...form.rates, [key]: e.target.value === "" ? "" : Number(e.target.value) })} style={{ ...input, flex: 1, minWidth: 0 }} /> %
+              </span>
+              <span style={{ fontSize: 12, color: BRAND.muted }}>{RECURRING.has(key) ? "of each paid period" : "of the payment"}</span>
+            </div>
+          ))}
+        </div>
       </section>
       <section style={{ ...card, padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         <label style={label}>Paid periods that earn (subscriptions)<input min={1} max={60} {...num("periods")} /></label>
@@ -420,7 +423,7 @@ export default function AffiliatesPage() {
       <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "26px 30px", display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ minWidth: 0 }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff" }}>Affiliates</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)", maxWidth: 620, lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>
             People who send families to the website earn a share of what those families pay. A link (?ref=CODE) or a code typed at sign-up credits them; only paid invoices earn.
           </p>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 12, color: "#fff", fontSize: 13 }}>
