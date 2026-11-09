@@ -26,13 +26,13 @@ export const marks = (earned, possible) => `${round1(earned)} / ${round1(possibl
 
 // Who the report talks to: the learner ("You did well"), their parent ("Ama did well") or staff
 // (the learner's name, like a parent).
-function voice(audience, firstName) {
+export function voice(audience, firstName) {
   if (audience === "learner") return { name: "You", is: "You're", did: "You did", has: "You have", their: "your" };
   const n = firstName || "Your child";
   return { name: n, is: `${n} is`, did: `${n} did`, has: `${n} has`, their: "their" };
 }
 
-function summarySentence(level, v, scope) {
+export function summarySentence(level, v, scope) {
   switch (level.key) {
     case "strong": return `${v.did} really well in ${scope} — most of the work was right.`;
     case "track": return `${v.is} on track in ${scope}, with a few things still to firm up.`;

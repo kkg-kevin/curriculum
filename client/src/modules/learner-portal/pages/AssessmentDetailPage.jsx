@@ -1,47 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { usePortalNavigate } from "../utils/usePortalNavigate";
-import { FiCheckCircle, FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
+import { FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
-import { normalizeLegacyItem, entryMarks, canDoLevelFor } from "../../assessments/schemas/assessment.schema";
+import { normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker, { unansweredWrittenItems, questionList } from "../../assessments/components/AssessmentTaker";
-import RichContent from "../../assessments/components/RichContent";
 import GroupPanel from "../../assessments/components/GroupPanel";
+import AssessmentResultView from "../components/AssessmentResultView";
 import { useGroupForLearner } from "../../classes/hooks/useClassGroups";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
-// Marked automatically from the learner's answer — mirrors the server's grading.utils.js.
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
-
-function formatResponse(response) {
-  if (response == null || response === "") return <em style={{ color: T.inkFaint }}>No answer given</em>;
-  if (Array.isArray(response)) {
-    if (response.length && typeof response[0] === "object") return response.map((p) => `${p.left} → ${p.right}`).join(", ");
-    return response.join(", ");
-  }
-  // File-upload items and project deliverables store {url, filename, mimeType, size} — every
-  // other kind stores a string or string[] (see grading.utils.js's response contract).
-  if (typeof response === "object" && response.url) {
-    return <a href={response.url} target="_blank" rel="noopener noreferrer" style={{ color: T.accent, fontWeight: 600 }}>{response.filename || "View uploaded file"}</a>;
-  }
-  return String(response);
-}
-
-// The curriculum's own weighted Evidence/Assessment-Type band for a competency this indicator
-// belongs to — a different, cumulative-across-all-assessments number from the flat marks/percent
-// shown alongside it, same source as the Profile page's Competencies tab.
-function BandBadge({ band }) {
-  if (!band) return null;
-  return (
-    <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "1px 7px", whiteSpace: "nowrap" }}>
-      {band.name}
-    </span>
-  );
-}
-
 // A project's milestone checkpoints — visible regardless of the submission's own status, since
 // the teacher grades these directly and independently of the learner's deliverable-upload
 // progress (see gradeMilestone's comment server-side). Each one shows the moment it's graded;
@@ -88,55 +59,6 @@ function MilestonesCard({ milestones, progress }) {
           <span style={{ fontSize: 13, fontWeight: 800, color: T.accent }}>{earnedPoints}/{totalPoints}</span>
         </div>
       )}
-    </div>
-  );
-}
-
-function FeedbackRow({ index, item, response, autoResult, feedback, survey = false }) {
-  if (item.kind === "canDo") return <CanDoFeedbackRow index={index} item={item} response={response} autoResult={autoResult} />;
-  // A survey isn't marked: just what they answered.
-  if (survey) {
-    return (
-      <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
-          <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
-        </div>
-        <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted, whiteSpace: "pre-wrap" }}>Your answer: {formatResponse(response)}</p>
-      </div>
-    );
-  }
-  const isAuto = AUTO_GRADABLE_KINDS.includes(item.kind);
-  const marks = isAuto ? (autoResult?.marksAwarded ?? 0) : (feedback?.marks ?? 0);
-  const max = isAuto ? (autoResult?.maxMarks ?? entryMarks(item)) : entryMarks(item);
-  const good = isAuto ? !!autoResult?.correct : marks >= max * 0.6;
-
-  return (
-    <div style={{ padding: "14px 16px", backgroundColor: good ? "#F7FEFB" : "#FFFBFA", border: `1px solid ${good ? "#D1FAE5" : "#FEE2E2"}`, borderRadius: 10 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
-        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: good ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>{marks}/{max}</span>
-      </div>
-      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: T.inkMuted }}>Your answer: {formatResponse(response)}</p>
-    </div>
-  );
-}
-
-// A can-do check in the learner's results: the level they picked, and its marks (none in a survey).
-function CanDoFeedbackRow({ index, item, response, autoResult }) {
-  const level = canDoLevelFor(item, response);
-  const look = level || { color: T.inkMuted, bg: "#F9FAFB", border: T.border };
-  return (
-    <div style={{ padding: "14px 16px", backgroundColor: look.bg, border: `1px solid ${look.border}`, borderRadius: 10 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
-        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
-        {autoResult && <span style={{ fontSize: 11, fontWeight: 700, color: look.color, whiteSpace: "nowrap" }}>{autoResult.marksAwarded ?? 0}/{autoResult.maxMarks ?? entryMarks(item)}</span>}
-      </div>
-      <p style={{ margin: "0 0 0 20px", fontSize: 12.5, color: look.color, fontWeight: 600 }}>
-        {level ? level.label : <em style={{ color: T.inkFaint, fontWeight: 400 }}>No answer given</em>}
-      </p>
     </div>
   );
 }
@@ -271,7 +193,6 @@ export default function AssessmentDetailPage() {
 
   const submission = activeSubmission || row?.submission;
   const items = useMemo(() => (row?.assessment?.items || []).map(normalizeLegacyItem), [row?.assessment?.items]);
-  const rubric = row?.assessment?.rubric || [];
   const deliverables = row?.assessment?.deliverables || [];
   const autoByItem = useMemo(() => new Map((submission?.autoItemResults || []).map((r) => [r.itemId, r])), [submission?.autoItemResults]);
   const feedbackByKey = useMemo(() => new Map((submission?.itemFeedback || []).map((f) => [f.itemId, f])), [submission?.itemFeedback]);
@@ -343,7 +264,7 @@ export default function AssessmentDetailPage() {
 
       {row.issue.groupMode && <GroupPanel group={group} />}
 
-      <MilestonesCard milestones={assessment.milestones} progress={submission?.milestoneProgress} />
+      {submission?.status !== "graded" && <MilestonesCard milestones={assessment.milestones} progress={submission?.milestoneProgress} />}
 
       {viewOnly && (!submission || submission.status === "not_started" || submission.status === "in_progress") ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "48px 24px" }}>
@@ -397,126 +318,22 @@ export default function AssessmentDetailPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ ...cardStyle, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669", fontSize: 22, flexShrink: 0 }}><FiCheckCircle /></div>
-              {/* A survey is never scored — "0 / 0" would read as a failing grade rather than
-                  what it actually is (nothing to score). Shown as a plain completion instead. */}
-              {row?.assessment?.type === "survey" ? (
-                <div>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#059669" }}>Responses recorded</p>
-                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
-                    Submitted {new Date(submission.gradedAt || submission.submittedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })} · Not graded
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#059669" }}>{submission.totalScore} / {submission.maxScore}</p>
-                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
-                    {submission.maxScore ? `${Math.round((submission.totalScore / submission.maxScore) * 100)}%` : ""} · Graded {new Date(submission.gradedAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/learner-portal/reports")}
-              style={{ padding: "8px 16px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              View in Reports →
-            </button>
-          </div>
-
-          {submission.indicatorBreakdown?.length > 0 && (
-            <div style={{ ...cardStyle, padding: "16px 20px" }}>
-              <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Competency Breakdown</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {submission.indicatorBreakdown.map((entry) => {
-                  const resolved = indicatorNameById.get(entry.indicatorId);
-                  const percent = entry.marksPossible > 0 ? Math.round((entry.marksEarned / entry.marksPossible) * 100) : 0;
-                  const scoreEntry = scoreByCompetencyId.get(resolved?.competencyId);
-                  return (
-                    <div key={entry.indicatorId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: T.ink }}>{resolved?.name || "Indicator"}</p>
-                        {resolved?.competencyName && (
-                          <p style={{ margin: 0, fontSize: 11, color: T.inkFaint, display: "flex", alignItems: "center", gap: 6 }}>
-                            {resolved.competencyName}
-                            <BandBadge band={scoreEntry?.band} />
-                          </p>
-                        )}
-                      </div>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: percent >= 60 ? "#059669" : "#DC2626", whiteSpace: "nowrap" }}>
-                        {entry.marksEarned}/{entry.marksPossible} · {percent}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {submission.overallFeedback && (
-            <div style={{ ...cardStyle, padding: "16px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}` }}>
-              <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: "0.06em" }}>Educator Feedback</p>
-              <p style={{ margin: 0, fontSize: 13.5, color: T.ink }}>{submission.overallFeedback}</p>
-              {(submission.gradedByName || submission.gradedAt) && (
-                <p style={{ margin: "8px 0 0", fontSize: 11, color: T.accentMid }}>
-                  {submission.gradedByName ? `— ${submission.gradedByName}` : ""}
-                  {submission.gradedByName && submission.gradedAt ? " · " : ""}
-                  {submission.gradedAt ? new Date(submission.gradedAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : ""}
-                </p>
-              )}
-            </div>
-          )}
-
-          {items.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((item, i) => (
-                <FeedbackRow
-                  key={item.id}
-                  index={i}
-                  item={item}
-                  response={answersByItem.get(item.id)}
-                  autoResult={autoByItem.get(item.id)}
-                  feedback={feedbackByKey.get(item.id)}
-                  survey={row?.assessment?.type === "survey"}
-                />
-              ))}
-            </div>
-          )}
-
-          {deliverables.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Your Deliverables</p>
-              {deliverables.map((d) => (
-                <div key={d.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{d.name}</p>
-                  <p style={{ margin: "4px 0 0", fontSize: 12.5, color: T.inkMuted }}>{formatResponse(answersByItem.get(d.id))}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {rubric.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Rubric</p>
-              {rubric.map((c) => {
-                const fb = feedbackByKey.get(`rubric:${c.id}`);
-                const max = entryMarks(c);
-                return (
-                  <div key={c.id} style={{ padding: "12px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{c.criterion}</p>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: T.accent, whiteSpace: "nowrap" }}>{fb?.marks ?? 0}/{max}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        // Marked: laid out like the learner's reports (AssessmentResultView).
+        <AssessmentResultView
+          row={row}
+          submission={submission}
+          items={items}
+          answersByItem={answersByItem}
+          autoByItem={autoByItem}
+          feedbackByKey={feedbackByKey}
+          indicatorNameById={indicatorNameById}
+          scoreByCompetencyId={scoreByCompetencyId}
+          audience={viewOnly ? "parent" : "learner"}
+          firstName={learner?.firstName || ""}
+          onOpenReports={() => navigate("/learner-portal/reports")}
+          milestones={assessment.milestones || []}
+          milestoneProgress={submission?.milestoneProgress || []}
+        />
       )}
     </div>
   );

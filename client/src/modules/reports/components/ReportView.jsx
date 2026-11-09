@@ -29,7 +29,7 @@ const STYLES = `
 .rv-hero { display: flex; align-items: center; gap: 22px; }
 .rv button { font-family: inherit; }
 @media (max-width: 900px) {
-  .rv { display: flex; flex-direction: column; }
+  .rv { display: flex; flex-direction: column; align-items: stretch; }
   .rv-col { display: contents; }
   .rv-summary { order: 0; } .rv-o1 { order: 1; } .rv-o2 { order: 2; } .rv-o3 { order: 3; } .rv-o4 { order: 4; } .rv-o5 { order: 5; } .rv-o6 { order: 6; }
 }
@@ -39,7 +39,7 @@ const STYLES = `
 }
 `;
 
-function Ring({ percent, color, size = 116 }) {
+export function Ring({ percent, color, size = 116 }) {
   const stroke = 11;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -54,7 +54,7 @@ function Ring({ percent, color, size = 116 }) {
   );
 }
 
-function Bar({ percent, color, height = 10 }) {
+export function Bar({ percent, color, height = 10 }) {
   return (
     <div style={{ height, borderRadius: 999, backgroundColor: T.track, overflow: "hidden", flex: 1, minWidth: 60 }}>
       <div style={{ width: `${Math.max(2, Math.min(100, percent))}%`, height: "100%", backgroundColor: color, borderRadius: 999 }} />
@@ -70,7 +70,7 @@ export function LevelPill({ level, small }) {
   );
 }
 
-function CardTitle({ icon, children, color = T.navy, aside }) {
+export function CardTitle({ icon, children, color = T.navy, aside }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
       <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 9, fontSize: 16, fontWeight: 900, color: T.ink }}>
@@ -83,7 +83,7 @@ function CardTitle({ icon, children, color = T.navy, aside }) {
 }
 
 // The four level words, the current one marked — so "Getting started" reads as a step on a scale.
-function LevelScale({ current }) {
+export function LevelScale({ current }) {
   return (
     <div style={{ display: "flex", gap: 4, marginTop: 14 }}>
       {LEVELS.map((l) => {
@@ -162,7 +162,7 @@ function HomeNote({ view, audience, className }) {
   );
 }
 
-function GlanceList({ items, empty, color }) {
+export function GlanceList({ items, empty, color }) {
   if (!items.length) return <p style={{ margin: 0, fontSize: 13.5, color: T.muted }}>{empty}</p>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -197,7 +197,7 @@ function Glance({ view }) {
   );
 }
 
-function CompetencyCard({ c, showMarks, showBand }) {
+export function CompetencyCard({ c, showMarks, showBand }) {
   const [open, setOpen] = useState(false);
   const hasIndicators = c.indicators.length > 0;
   return (
@@ -350,6 +350,9 @@ function NotSubmitted({ view, audience }) {
  * firstName: the learner's first name (for "Ama did well"). showMarks: staff only.
  * onOpenAssessment(issueId), onOpenSessionReport(reportId), onOpenCourse(): optional links.
  */
+// The report's look, shared with the learner's marked-work page (learner-portal's AssessmentResultView).
+export { T as REPORT_T, card as reportCard, STYLES as REPORT_STYLES, KID_FONT, fmtDate };
+
 export default function ReportView({ report, audience = "learner", firstName = "", showMarks = false, onOpenAssessment, onOpenSessionReport, onOpenCourse }) {
   const view = useMemo(() => buildReportView(report, { audience, firstName }), [report, audience, firstName]);
   const font = audience === "staff" ? "Inter, sans-serif" : KID_FONT;
