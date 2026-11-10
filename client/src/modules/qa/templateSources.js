@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { qaApi } from "./services/qaApi";
 import { checkinsApi } from "../checkins/services/checkinsApi";
+import { mentorCheckinsApi } from "../mentor-checkins/services/mentorCheckinsApi";
 
 // Templates are one feature used in two places (6 Nov 2026): quality assurance visits, and hub
 // check-ins — the same sections, items (yes / no, rubric, comment), guidance and scoring
-// (server: qa.rules.js). The template list (TemplatesTab) and editor (TemplateEditorPage) take a
-// `source` — "qa" or "checkins" — for where they save and how they're worded.
+// (server: qa.rules.js) — and, since 10 Nov 2026, parent–mentor check-ins. The template list
+// (TemplatesTab) and editor (TemplateEditorPage) take a `source` — "qa", "checkins" or "mentor" —
+// for where they save and how they're worded.
 
 const errorText = (err) => err?.errors?.[0]?.message || err?.message || "Something went wrong";
 
@@ -97,6 +99,47 @@ export const TEMPLATE_SOURCES = {
       ],
     }),
   },
+};
+
+// Parent–mentor check-ins (modules/mentor-checkins): what the educators go through with a family.
+TEMPLATE_SOURCES.mentor = {
+  key: ["mentor-checkins"],
+  api: {
+    list: mentorCheckinsApi.templates, get: mentorCheckinsApi.template, create: mentorCheckinsApi.createTemplate, update: mentorCheckinsApi.updateTemplate,
+    setStatus: mentorCheckinsApi.setTemplateStatus, remove: mentorCheckinsApi.deleteTemplate, checkDelete: mentorCheckinsApi.checkDeleteTemplate,
+  },
+  alsoRefresh: [],
+  words: {
+    use: "round", uses: "rounds",
+    empty: "A template lists what the educators go through with each family — like the child's progress, attendance and what to work on at home. Pick one when you set up a class's check-ins.",
+    namePlaceholder: "e.g. Termly parent check-in",
+    itemPlaceholder: "What to cover — e.g. Talked through the latest report",
+    sectionPlaceholder: "e.g. Progress",
+    descriptionHelp: "What this template is for and how to use it — the educators see it at the top of every report.",
+    guidance: "Guidance for the educators — what to talk about, examples, what good looks like",
+    addGuidance: "Add guidance for the educators",
+    changes: "Changes apply to reports not written yet. Reports already sent keep the version they were written on.",
+  },
+  example: (item, section) => ({
+    name: "Termly parent check-in",
+    description: "<p>A one-to-one with each family about how their child is doing. Have the child's latest report and attendance to hand.</p>",
+    sections: [
+      section("Progress", [
+        item("Went through the child's latest report with the parent", "yes_no"),
+        item("How the child is getting on with the course", "rubric", "Their work, their skills, what they enjoy."),
+        item("Strengths the parent should know about", "comment"),
+      ]),
+      section("Attendance and engagement", [
+        item("Attendance is good (or a plan was agreed)", "yes_no"),
+        item("How engaged the child is in sessions", "rubric"),
+      ]),
+      section("Next steps", [
+        item("Agreed what the child will practise next", "yes_no"),
+        item("Gave the parent ideas to help at home", "yes_no"),
+        item("Anything the parent raised", "comment"),
+      ]),
+    ],
+  }),
 };
 
 export const templateSource = (name) => TEMPLATE_SOURCES[name] || TEMPLATE_SOURCES.qa;

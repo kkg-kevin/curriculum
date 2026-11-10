@@ -31,6 +31,12 @@ const CHECKIN_PARTICIPANT_ROLES = ["admin", "collaborator", "teacher", "school",
 const participantCheckinPath = (p) => (typeof p.route === "string" && /^\/([a-z-]+\/)?checkins(\/|$)/.test(p.route) ? p.route : "/checkins");
 // Quality assurance: whoever reviews — supervisors, admins and staff.
 const QA_REVIEWER_ROLES = ["admin", "collaborator", "supervisor"];
+// Parent–mentor check-ins (modules/mentor-checkins/): what parents get, and what the class's
+// educators get — their own arrays so Settings → Emails groups them under the feature.
+const MENTOR_CHECKIN_PARENT_ROLES = ["learner"];
+const MENTOR_CHECKIN_EDUCATOR_ROLES = ["teacher"];
+const MENTOR_CHECKIN_BOTH_ROLES = ["learner", "teacher"];
+const mentorCheckinPath = (fallback) => (p) => routeOr(p, fallback);
 const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
@@ -143,6 +149,15 @@ const EMAIL_TYPES = {
   checkin_report_ready: { label: "The report from a check-in you took part in is ready", roles: CHECKIN_PARTICIPANT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Check-in report" }, path: participantCheckinPath },
   // Quality assurance (modules/qa/qa.notifications.js) — the educator hears of an announced visit
   // and of each report; the reviewer (a supervisor, admin or staff) of a visit due and a reply.
+  // Parent–mentor check-ins (modules/mentor-checkins/mentor-checkin.notifications.js).
+  mentor_checkin_scheduled: { label: "A check-in with your child's mentor is set up", roles: MENTOR_CHECKIN_PARENT_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor check-in" }, path: mentorCheckinPath("/parent/mentor-checkins") },
+  mentor_checkin_report_ready: { label: "The report from your mentor check-in is ready to approve", roles: MENTOR_CHECKIN_PARENT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Mentor check-in" }, path: mentorCheckinPath("/parent/mentor-checkins") },
+  mentor_checkin_round_scheduled: { label: "Parent check-ins are set up for your class", roles: MENTOR_CHECKIN_EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Parent check-ins" }, path: mentorCheckinPath("/teacher-portal/mentor-checkins") },
+  mentor_checkin_approved: { label: "A parent approves a check-in report", roles: MENTOR_CHECKIN_EDUCATOR_ROLES, default: true, look: { tone: "success", icon: "check", eyebrow: "Parent check-ins" }, path: mentorCheckinPath("/teacher-portal/mentor-checkins") },
+  mentor_checkin_changed: { label: "A parent check-in moves to another time", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "info", icon: "refresh", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
+  mentor_checkin_cancelled: { label: "A parent check-in is cancelled", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
+  mentor_checkin_today: { label: "A parent check-in is today", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
+
   qa_visit_announced: { label: "A QA visit to you is coming up", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
   qa_review_submitted: { label: "A QA report on you is ready", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA report" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
   qa_visit_due: { label: "A QA visit of yours is due — fill in the review", roles: QA_REVIEWER_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/qa") },
@@ -340,6 +355,7 @@ const groupFor = (roles) => {
   if (roles === CLAIM_REVIEWER_ROLES) return "You and your supervisors";
   if (roles === CHECKIN_ROLES) return "Hub check-ins (Account Managers and Training Leads)";
   if (roles === CHECKIN_PARTICIPANT_ROLES) return "Hub check-ins (everyone taking part)";
+  if (roles === MENTOR_CHECKIN_PARENT_ROLES || roles === MENTOR_CHECKIN_EDUCATOR_ROLES || roles === MENTOR_CHECKIN_BOTH_ROLES) return "Parent–mentor check-ins";
   return "You (the admin)";
 };
 

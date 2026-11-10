@@ -44,6 +44,7 @@ const ROOTS = {
   claims: { table: "teacher_claims", noun: "claim", module: "claims" },
   checkins: { table: null, noun: "hub check-in", module: "checkins" },
   qa: { table: null, noun: "QA visit", module: "qa" },
+  "mentor-checkins": { table: null, noun: "parent check-in", module: "mentor-checkins" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },

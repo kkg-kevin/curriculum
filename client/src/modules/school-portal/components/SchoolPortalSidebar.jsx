@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   FiGrid, FiBookOpen, FiLayers, FiHome, FiUserCheck, FiUsers, FiCheckSquare,
-  FiCalendar, FiBarChart2, FiDollarSign, FiUser, FiClipboard, FiStar,
+  FiCalendar, FiBarChart2, FiDollarSign, FiUser, FiClipboard, FiStar, FiMessageCircle,
 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
@@ -41,6 +41,8 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     ...(hubLead ? [] : [{ name: "Check-ins", path: "/school-portal/checkins", end: false, enabled: true, icon: FiClipboard }]),
     // QA visits to the hub's educators: the announced ones coming up, and a summary of each report.
     ...(hubLead ? [] : [{ name: "QA Reviews", path: "/school-portal/qa", end: false, enabled: true, icon: FiStar }]),
+    // When the hub's classes' educators meet each family (parent–mentor check-ins), schedule only.
+    ...(hubLead ? [] : [{ name: "Parent Check-ins", path: "/school-portal/mentor-checkins", end: false, enabled: true, icon: FiMessageCircle }]),
     { name: "Billing",     path: "/school-portal/billing", end: false, enabled: true, icon: FiDollarSign },
     { name: "Profile",     path: "/school-portal/profile", end: false, enabled: true, icon: FiUser },
   ].filter((item) => !hubLead || !["Rooms", "Billing", "Profile"].includes(item.name));

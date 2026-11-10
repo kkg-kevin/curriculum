@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3 } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle } from "react-icons/fi";
 import { useTotMarking } from "../../tot/hooks/useTot";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
@@ -12,6 +12,7 @@ const menuItems = [
   // Training of trainers: their educators' TOT work waiting to be marked.
   { name: "Work to mark", path: "/supervisor-portal/marking", icon: FiEdit3, badge: "marking" },
   { name: "QA Visits",    path: "/supervisor-portal/qa", icon: FiStar },
+  { name: "Parent check-ins", path: "/supervisor-portal/mentor-checkins", icon: FiMessageCircle },
   { name: "My Profile",   path: "/supervisor-portal/profile", icon: FiUser },
 ];
 

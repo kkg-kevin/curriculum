@@ -32,6 +32,7 @@ const PATH_MODULES = [
   ["/checkins", "checkins-manage"],
   ["/affiliates", "affiliates"],
   ["/qa", "qa"],
+  ["/mentor-checkins", "mentor-checkins"],
   ["/activity", "activity"],
   ["/settings", "settings"],
   ["/enquiries", null],

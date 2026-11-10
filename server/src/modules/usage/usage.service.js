@@ -369,6 +369,16 @@ const CHECKS = {
       usage("schedules", ["active check-in schedule", "active check-in schedules"], db("checkin_schedules").where({ templateId: id, status: "active" }), { table: "checkin_schedules", labelFrom: null }),
     ],
   },
+  // A parent–mentor check-in template (modules/mentor-checkins/): rounds use it. Archive it instead —
+  // reports keep their own copy either way.
+  mentorCheckinTemplate: {
+    name: "mentor_checkin_templates",
+    alternative: { action: "archive", label: "Archive the template instead" },
+    uses: (id) => [
+      usage("rounds", ["round of parent check-ins", "rounds of parent check-ins"], db("mentor_checkin_rounds").where({ templateId: id }), { table: "mentor_checkin_rounds", labelFrom: null }),
+      usage("reports", ["parent check-in report", "parent check-in reports"], db("mentor_checkin_meetings").whereRaw("JSON_EXTRACT(template, '$.name') IS NOT NULL").whereIn("roundId", db("mentor_checkin_rounds").where({ templateId: id }).select("id")), { table: "mentor_checkin_meetings", labelFrom: null }),
+    ],
+  },
 };
 
 // The workspace a record belongs to — so a check (which stops before the route's own delete, where
@@ -395,6 +405,7 @@ const OWNER = {
   supervisor: (id) => db("users").where({ id }).first("invitedByAdminId as ownerAdminId"),
   qaTemplate: (id) => db("qa_templates").where({ id }).first("ownerAdminId"),
   checkinTemplate: (id) => db("checkin_templates").where({ id }).first("ownerAdminId"),
+  mentorCheckinTemplate: (id) => db("mentor_checkin_templates").where({ id }).first("ownerAdminId"),
 };
 
 const UsageService = {
