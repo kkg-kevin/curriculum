@@ -103,9 +103,9 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
 
   // What the teacher said: the report's own remarks, then each marked piece's comment.
   const comments = [];
-  if (report?.remarks?.trim()) comments.push({ key: "remarks", text: report.remarks.trim(), about: isSession ? "This session" : "This course" });
+  if (report?.remarks?.trim()) comments.push({ key: "remarks", text: report.remarks.trim(), about: isSession ? "This session" : "This course", by: report.publishedByName?.replace(/\s+/g, " ").trim() || null, photo: report.publishedByPhoto || null });
   for (const a of assessments) {
-    if (a.feedback?.trim()) comments.push({ key: a.assessmentId, text: a.feedback.trim(), about: a.name, by: a.gradedByName?.replace(/\s+/g, " ").trim() || null, at: a.gradedAt || null });
+    if (a.feedback?.trim()) comments.push({ key: a.assessmentId, text: a.feedback.trim(), about: a.name, by: a.gradedByName?.replace(/\s+/g, " ").trim() || null, photo: a.gradedByPhoto || null, at: a.gradedAt || null });
   }
 
   const marked = assessments.length;

@@ -186,8 +186,8 @@ async function issuedRowsAsLearnerSeesThem(learnerId) {
     const submission = redactUnpublishedReport(row.submission);
     // Redacted (unpublished) rows already have gradedBy nulled out above, so this naturally
     // resolves to null for them too — no separate gating needed.
-    const gradedByName = await AssessmentSubmissionService.resolveGraderName(submission.gradedBy);
-    return { ...row, submission: { ...submission, gradedByName } };
+    const grader = await AssessmentSubmissionService.resolveGrader(submission.gradedBy);
+    return { ...row, submission: { ...submission, gradedByName: grader.name, gradedByPhoto: grader.photo } };
   }));
 }
 

@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
-import { FiAlertTriangle, FiHome } from "react-icons/fi";
-import { useNavigate, useParams } from "react-router-dom";
+import { FiAlertTriangle, FiAward, FiBookOpen, FiCalendar, FiChevronDown, FiChevronUp, FiHome, FiMail, FiPhone, FiShield, FiTarget, FiTrendingUp } from "react-icons/fi";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery, useDeleteTeacher, useUpdateTeacherStatus, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
 import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
@@ -18,7 +18,12 @@ import { teacherApi } from "../services/teacherApi";
 import EducatorQaSection from "../../qa/components/EducatorQaSection";
 import TotTrainingCard from "../../tot/components/TotTrainingCard";
 import ParentFeedbackSection from "../../mentor-reviews/components/ParentFeedbackSection";
-import EducatorProfileSection from "../../educator-profiles/components/EducatorProfileSection";
+import { useEducatorProfile } from "../../educator-profiles/hooks/useEducatorProfile";
+import { OverviewPanel, ProfileKpis, QualityPanel, TeachingPanel } from "../../educator-profiles/components/PerformanceProfile";
+import PublishingCard from "../../educator-profiles/components/PublishingCard";
+import StandardsCard from "../../mentor-standards/StandardsCard";
+import { Tabs } from "../../../components/ui/TabBar";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const ACCENT = "#25476a";
 
@@ -105,7 +110,7 @@ function AssignCourseControl({ teacherId, hubs, qualifiedCourseIds }) {
           style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
         >
           <option value="">Pick a class…</option>
-          {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} — {c.academicYear}</option>)}
+          {classes.map((c) => <option key={c.id} value={c.id}>{c.gradeName} · {c.academicYear}</option>)}
         </select>
         <select
           value={selectedCourseId}
@@ -178,14 +183,35 @@ function Avatar({ firstName, lastName, photo, size = 64 }) {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, action, children }) {
   return (
     <div style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1.5px solid #E5E7EB", overflow: "hidden" }}>
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <h2 style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</h2>
+        {action}
       </div>
-      <div style={{ padding: "20px" }}>{children}</div>
+      <div style={{ padding: "18px 20px" }}>{children}</div>
     </div>
+  );
+}
+
+// The weekly availability calendar is tall — folded until asked for.
+function AvailabilitySection({ slots }) {
+  const [open, setOpen] = useState(false);
+  const days = new Set(slots.map((x) => x.dayOfWeek)).size;
+  return (
+    <Section
+      title="Availability"
+      action={slots.length > 0 && (
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "#2e7db5", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+          {open ? <FiChevronUp /> : <FiChevronDown />} {open ? "Hide the week" : "Show the week"}
+        </button>
+      )}
+    >
+      {slots.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>They haven&apos;t set their availability yet.</p>
+        : open ? <WeeklyAvailabilityGrid slots={slots} />
+          : <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Available on {days} day{days === 1 ? "" : "s"} a week, in {slots.length} time window{slots.length === 1 ? "" : "s"}.</p>}
+    </Section>
   );
 }
 
@@ -209,7 +235,13 @@ export default function TeacherViewPage() {
   const isAdmin = user?.role === "admin";
   const isSchool = user?.role === "school";
 
+  const { can } = usePermissions();
+  const [params, setParams] = useSearchParams();
   const { data: teacher, isLoading, isError } = useTeacherQuery(id);
+  // Their performance profile (figures, standards, publishing) — admins, staff with Educators, the hub.
+  const staff = user?.role === "admin" || user?.role === "collaborator";
+  const profileAllowed = isSchool || (staff && can("teachers", "view"));
+  const { data: profile } = useEducatorProfile(id, { enabled: profileAllowed });
   const { data: hubs = [] } = useTeacherHubsQuery(id);
   const { data: availabilitySlots = [] } = useTeacherAvailability(id);
   const { mutate: deleteTeacher } = useDeleteTeacher();
@@ -265,154 +297,153 @@ export default function TeacherViewPage() {
   const inTraining = teacher.status === "in_training";
   const willActivate = teacher.status === "inactive" || inTraining;
 
-  return (
-    <div style={{ fontFamily: "Inter, sans-serif" }}>
+  // The page's tabs (?tab=): what's there depends on what this viewer can see.
+  const hubView = profile?.view === "hub";
+  const TABS = [
+    profile && { key: "overview", label: "Overview", icon: FiTrendingUp },
+    profile?.standards && !hubView && { key: "standards", label: "Standards", icon: FiTarget },
+    { key: "quality", label: "Quality & feedback", icon: FiShield },
+    { key: "teaching", label: "Teaching", icon: FiBookOpen },
+    { key: "training", label: "Training", icon: FiAward },
+  ].filter(Boolean);
+  const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : TABS[0].key;
+  const setTab = (key) => {
+    const next = new URLSearchParams(params);
+    if (key === TABS[0].key) next.delete("tab"); else next.set("tab", key);
+    setParams(next, { replace: true });
+  };
+  const fmtDay = (d) => (d ? new Date(d).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" }) : "—");
+  const heroBtn = { padding: "9px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" };
 
-      {/* Hero header */}
-      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "20px", position: "relative", overflow: "hidden" }}>
+  return (
+    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Header: who they are, how to reach them, the actions */}
+      <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: "20px", padding: "24px 28px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "180px", height: "180px", borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
-          {/* Breadcrumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
-            <button type="button" onClick={() => navigate(teachersListPath(isSchool ? "school" : "admin", ownSchoolId))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.65)", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "14px" }}>
+            <button type="button" onClick={() => navigate(teachersListPath(isSchool ? "school" : "admin", ownSchoolId))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", fontSize: "13px", cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
               Educators
             </button>
-            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px" }}>/</span>
-            <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "13px", fontWeight: "500" }}>
-              {teacher.firstName} {teacher.lastName}
-            </span>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}>/</span>
+            <span style={{ color: "rgba(255,255,255,0.92)", fontSize: "13px", fontWeight: "500" }}>{teacher.firstName} {teacher.lastName}</span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Avatar firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} size={64} />
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                  <h1 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>
-                    {teacher.firstName} {teacher.lastName}
-                  </h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0, flex: "1 1 340px" }}>
+              <Avatar firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} size={68} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.3px" }}>{teacher.firstName} {teacher.lastName}</h1>
                   <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
                     {STATUS_LABELS[teacher.status] ?? teacher.status}
                   </span>
                 </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 7, fontSize: 13, color: "rgba(255,255,255,0.82)" }}>
+                  {teacher.email && <span style={{ display: "inline-flex", alignItems: "center", gap: 6, overflowWrap: "anywhere" }}><FiMail size={13} /> {teacher.email}</span>}
+                  {teacher.phone && <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><FiPhone size={13} /> {teacher.phone}</span>}
+                  {hubs.length > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><FiHome size={13} /> {hubs.map((h) => h.name).join(" · ")}</span>}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", flexShrink: 0, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => navigate(teacherPath(user?.role, id, "edit"))}
-                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 20px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer", boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Edit Educator
+            <div style={{ display: "flex", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
+              <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ ...heroBtn, backgroundColor: "#feb139", color: "#25476a", border: "none", boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}>
+                Edit educator
               </button>
               {(isAdmin || isSchool) && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmStatusToggle(true)}
-                  disabled={statusPending}
-                  style={{ padding: "10px 20px", backgroundColor: willActivate ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)", color: willActivate ? "#A7F3D0" : "#FCA5A5", border: `1.5px solid ${willActivate ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)"}`, borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: statusPending ? "not-allowed" : "pointer" }}
-                >
-                  {inTraining ? "Make Active" : willActivate ? "Activate Account" : "Deactivate Account"}
+                <button type="button" onClick={() => setConfirmStatusToggle(true)} disabled={statusPending} style={{ ...heroBtn, backgroundColor: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.35)", cursor: statusPending ? "not-allowed" : "pointer" }}>
+                  {inTraining ? "Make active" : willActivate ? "Activate" : "Deactivate"}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: "10px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: "pointer" }}
-              >
-                {isSchool ? "Remove from Hub" : "Remove"}
+              <button type="button" onClick={() => setConfirmDelete(true)} style={{ ...heroBtn, backgroundColor: "transparent", color: "#FECACA", border: "1.5px solid rgba(254,202,202,0.45)" }}>
+                {isSchool ? "Remove from hub" : "Remove"}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
+      {/* The figures that matter — each opens its tab */}
+      {profile && <ProfileKpis profile={profile} onOpen={(key) => (TABS.some((t) => t.key === key) ? setTab(key) : null)} />}
 
-        {/* Left */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Their performance — hours, sessions, learners, courses, parent ratings, QA, badges. */}
-          <EducatorProfileSection teacherId={id} part="performance" />
-          <Section title="Classes">
-            {myClassGroups.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned to any course in a class yet.</p>
-                {hubs.length === 1 && (
-                  <button type="button" onClick={() => navigate(classCreatePath(user?.role, hubs[0].id))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+        {/* Main column: one tab at a time */}
+        <div style={{ flex: "1 1 620px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* On a phone the tabs wrap onto a second line rather than scroll out of sight. */}
+          <div className="pp-tabs"><style>{"@media (max-width: 640px) { .pp-tabs .ui-tab-scroll { flex-wrap: wrap; overflow-x: visible !important; width: 100% !important; } }"}</style><Tabs label="Educator" tabs={TABS} value={tab} onChange={setTab} /></div>
+
+          {tab === "overview" && profile && <OverviewPanel profile={profile} teacherId={id} onOpen={setTab} />}
+
+          {tab === "standards" && profile?.standards && <StandardsCard standing={profile.standards} />}
+
+          {tab === "quality" && (
+            <>
+              {profile && <QualityPanel profile={profile} showVisits={false} />}
+              {/* Every visit — plan one, set up regular visits, open a report. */}
+              <EducatorQaSection teacherId={id} />
+              {/* Every review, named (admins and staff); averages for the hub. */}
+              <ParentFeedbackSection teacherId={id} />
+            </>
+          )}
+
+          {tab === "teaching" && (
+            <>
+              <Section title="Classes">
+                {myClassGroups.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "12px 0" }}>
+                    <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#9CA3AF" }}>Not assigned to any course in a class yet.</p>
+                    {hubs.length === 1 && (
+                      <button type="button" onClick={() => navigate(classCreatePath(user?.role, hubs[0].id))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>Create a class →</button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {myClassGroups.map((g) => (
+                      <MyClassGroup key={g.classId} classId={g.classId} courseIds={g.courseIds} teacherId={id} canManage={isAdmin || isSchool} />
+                    ))}
+                  </div>
                 )}
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {myClassGroups.map((g) => (
-                  <MyClassGroup key={g.classId} classId={g.classId} courseIds={g.courseIds} teacherId={id} canManage={isAdmin || isSchool} />
-                ))}
-              </div>
-            )}
-            {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
-          </Section>
+                {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
+              </Section>
+              {profile && <TeachingPanel profile={profile} />}
+              <AvailabilitySection slots={availabilitySlots} />
+            </>
+          )}
 
-          {/* QA visits and reports — the hub sees its announced visits and report summaries. */}
-          <EducatorQaSection teacherId={id} />
-
-          {/* What families say — named for admins and staff, averages for the hub. */}
-          <ParentFeedbackSection teacherId={id} />
-
-          <TotTrainingCard teacherId={id} teacher={teacher} />
-
-          <Section title="Availability">
-            <WeeklyAvailabilityGrid slots={availabilitySlots} />
-          </Section>
+          {tab === "training" && <TotTrainingCard teacherId={id} teacher={teacher} />}
         </div>
 
-        {/* Right */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Their public profile: publishing, the share link, families asking for them. */}
-          <EducatorProfileSection teacherId={id} part="publishing" />
+        {/* Side column: the same on every tab */}
+        <div style={{ flex: "1 1 300px", maxWidth: 400, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Their public profile: publishing, the share link, families asking for them (admins, supervisor). */}
+          {profile?.view === "manager" && <PublishingCard profile={profile} teacherId={id} canPublish={user?.role === "admin" || (user?.role === "collaborator" && can("teachers", "edit"))} />}
 
-          {/* Learning Hubs */}
-          <Section title="Learning Hubs">
+          <Section title="Learning hubs">
             {hubs.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "16px 0" }}>
-                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Not assigned to any learning hub yet.</p>
-              </div>
+              <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF" }}>Not assigned to any learning hub yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {hubs.map((hub) => (
-                  <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "10px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee" }}>
-                    <span onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ display: "flex", color: "#25476a", flexShrink: 0, cursor: "pointer" }}><FiHome size={22} /></span>
+                  <div key={hub.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", borderRadius: "10px", backgroundColor: "#e8f5fb", border: "1px solid #a8d5ee" }}>
+                    <span onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ display: "flex", color: "#25476a", flexShrink: 0, cursor: "pointer" }}><FiHome size={18} /></span>
                     <div onClick={() => navigate(schoolViewPath(user?.role, hub.id))} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
-                      <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: "700", color: "#25476a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
+                      <p style={{ margin: "0 0 1px", fontSize: "13.5px", fontWeight: "700", color: "#25476a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hub.name}</p>
                       <p style={{ margin: 0, fontSize: "12px", color: "#6B7280" }}>{HUB_TYPE_LABELS[hub.hubType] || hub.hubType}{hub.address?.county ? ` · ${hub.address.county}` : ""}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setUnlinkTarget(hub)}
-                      style={{ background: "none", border: "none", color: "#EF4444", fontSize: "12px", fontWeight: "700", cursor: "pointer", fontFamily: "Inter, sans-serif", flexShrink: 0 }}
-                    >
+                    <button type="button" onClick={() => setUnlinkTarget(hub)} style={{ background: "none", border: "none", color: "#B91C1C", fontSize: "12px", fontWeight: "700", cursor: "pointer", fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
                       Unlink
                     </button>
                   </div>
                 ))}
               </div>
             )}
-
             {isAdmin && (
-              <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #F3F4F6", display: "flex", gap: "8px" }}>
-                <select
-                  value={selectedHubToAdd}
-                  onChange={(e) => setSelectedHubToAdd(e.target.value)}
-                  style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#374151" }}
-                >
-                  <option value="">Assign to hub…</option>
-                  {availableHubs.map((h) => (
-                    <option key={h.id} value={h.id}>{h.name}</option>
-                  ))}
+              <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #F3F4F6", display: "flex", gap: "8px" }}>
+                <select value={selectedHubToAdd} onChange={(e) => setSelectedHubToAdd(e.target.value)} aria-label="Hub to add" style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1.5px solid #E5E7EB", fontSize: "13px", fontFamily: "Inter, sans-serif", color: "#374151" }}>
+                  <option value="">Add to a hub…</option>
+                  {availableHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
                 </select>
                 <button
                   type="button"
@@ -420,61 +451,27 @@ export default function TeacherViewPage() {
                   onClick={() => { linkHub({ teacherId: id, hubId: selectedHubToAdd }); setSelectedHubToAdd(""); }}
                   style={{ padding: "8px 16px", backgroundColor: !selectedHubToAdd || isLinking ? "#b8d9ee" : "#25476a", color: "#ffffff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: "700", fontFamily: "Inter, sans-serif", cursor: !selectedHubToAdd || isLinking ? "not-allowed" : "pointer", flexShrink: 0 }}
                 >
-                  Assign
+                  Add
                 </button>
               </div>
             )}
           </Section>
 
-          {/* Contact */}
-          <Section title="Contact Details">
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {/* Contact, employment and the record — one card */}
+          <Section title="Details" action={<button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ background: "none", border: "none", color: "#2e7db5", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>Edit</button>}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "13px" }}>
+              <DetailRow icon={<FiMail size={14} />} label="Email" value={teacher.email || "—"} />
+              <DetailRow icon={<FiPhone size={14} />} label="Phone" value={teacher.phone || "—"} />
+              <DetailRow label="Employment" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType || "part_time"]} />
               <DetailRow
-                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" strokeWidth="2"/><polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2"/></svg>}
-                label="Email" value={teacher.email}
+                label="Paid"
+                value={teacher.employmentType === "full_time" ? "Outside the portal, no claims" : (teacher.payRateTypes?.length ? teacher.payRateTypes : ["session"]).map((t) => PAY_RATE_LABELS[t] || t).join(", ")}
               />
-              <DetailRow
-                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.84a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.03z" stroke="currentColor" strokeWidth="2"/></svg>}
-                label="Phone" value={teacher.phone}
-              />
-              {!teacher.email && !teacher.phone && (
-                <p style={{ margin: 0, fontSize: "13px", color: "#9CA3AF", textAlign: "center" }}>
-                  No contact details.{" "}
-                  <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ background: "none", border: "none", color: "#25476a", fontWeight: "600", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: "13px", padding: 0 }}>
-                    Add →
-                  </button>
-                </p>
-              )}
-            </div>
-          </Section>
-
-          {/* Employment — full time (doesn't claim) or part time, and the ways a part-timer is paid
-              (see Settings → Educator pay). An educator from before this was part time, per session. */}
-          <Section title="Employment">
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <DetailRow label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[teacher.employmentType || "part_time"]} />
-              {teacher.employmentType === "full_time" ? (
-                <DetailRow label="Payment" value="Paid outside the portal — no claims" />
-              ) : (
-                <DetailRow label="Paid on" value={(teacher.payRateTypes?.length ? teacher.payRateTypes : ["session"]).map((t) => PAY_RATE_LABELS[t] || t).join(", ")} />
-              )}
-              {teacher.teacherLevel && <DetailRow label="Educator Level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />}
-            </div>
-          </Section>
-
-          {/* Record info */}
-          <Section title="Record Info">
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <DetailRow
-                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/></svg>}
-                label="Added"
-                value={new Date(teacher.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
-              />
-              <DetailRow
-                icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><polyline points="12 6 12 12 16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
-                label="Last Updated"
-                value={new Date(teacher.updatedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
-              />
+              {teacher.teacherLevel && <DetailRow label="Educator level" value={TEACHER_LEVEL_LABELS[teacher.teacherLevel]} />}
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
+                <DetailRow icon={<FiCalendar size={14} />} label="Added" value={fmtDay(teacher.createdAt)} />
+                <DetailRow label="Last updated" value={fmtDay(teacher.updatedAt)} />
+              </div>
             </div>
           </Section>
         </div>

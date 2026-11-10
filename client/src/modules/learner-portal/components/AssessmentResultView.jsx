@@ -4,7 +4,7 @@ import RichContent from "../../assessments/components/RichContent";
 import { entryMarks, canDoLevelFor } from "../../assessments/schemas/assessment.schema";
 import {
   REPORT_T as T, reportCard as card, REPORT_STYLES, KID_FONT, fmtDate,
-  Ring, Bar, LevelPill, CardTitle, LevelScale, GlanceList, CompetencyCard,
+  Ring, Bar, LevelPill, CardTitle, LevelScale, GlanceList, CompetencyCard, TeacherNote as TeacherCard,
 } from "../../reports/components/ReportView";
 import { LEVELS, levelFor, voice, summarySentence } from "../../reports/utils/reportView";
 
@@ -337,8 +337,7 @@ export default function AssessmentResultView({
         {hasTeacher && (
           <div className="rv-o1" style={{ ...card, backgroundColor: "#F7FAFD", borderColor: T.tintBorder }}>
             <CardTitle icon={<FiMessageCircle size={16} />}>From the teacher</CardTitle>
-            <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: T.ink, whiteSpace: "pre-line" }}>“{submission.overallFeedback.trim()}”</p>
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: T.faint }}>{[by, markedOn].filter(Boolean).join(" · ")}</p>
+            <TeacherCard name={by} photo={submission.gradedByPhoto || null} text={submission.overallFeedback.trim()} audience={audience} meta={markedOn ? `Marked ${markedOn}` : null} />
           </div>
         )}
         <div className="rv-o6" style={card}>

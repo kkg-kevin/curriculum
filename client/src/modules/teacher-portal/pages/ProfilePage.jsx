@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiAward, FiBookOpen, FiCalendar, FiClock, FiExternalLink, FiEye, FiEyeOff, FiGlobe, FiHome, FiMail, FiPhone, FiSettings, FiShield, FiStar, FiTrendingUp, FiUser, FiUserCheck, FiUsers } from "react-icons/fi";
+import { FiArrowRight, FiBookOpen, FiCalendar, FiExternalLink, FiEye, FiEyeOff, FiGlobe, FiHome, FiMail, FiPhone, FiSettings, FiShield, FiTarget, FiTrendingUp, FiUser, FiUserCheck, FiUsers } from "react-icons/fi";
 import { useUpdateTeacher } from "../../teachers/hooks/useTeacher";
 import { classApi } from "../../classes/services/classApi";
 import AvatarPhotoEditor from "../../../components/ui/AvatarPhotoEditor";
@@ -10,24 +10,31 @@ import { Tabs } from "../../../components/ui/TabBar";
 import { QaStyles as CheckinStyles, btn, input, label } from "../../qa/shared";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { useMyEducatorProfile } from "../../educator-profiles/hooks/useEducatorProfile";
-import PerformanceProfile, { CoursesTaught } from "../../educator-profiles/components/PerformanceProfile";
+import { CoursesTaught, OverviewPanel, ProfileKpis, QualityPanel, TeachingPanel } from "../../educator-profiles/components/PerformanceProfile";
+import StandardsCard from "../../mentor-standards/StandardsCard";
 import PublicProfileEditor, { OWN_STATE } from "../../educator-profiles/components/PublicProfileEditor";
 
 // The teacher portal's My profile (/teacher-portal/profile) — one place for everything about the
-// educator: their header (photo, status, headline, hubs, the figures that matter, their public
-// profile's state) and four tabs —
-//   Overview        their performance from the records: rating, QA, hours, reliability, badges, tips.
-//   Public profile  what they write about themself, sharing it (an admin approves), preview, link.
-//   Teaching        their classes, the courses they've taught, their learning hubs.
-//   Account         contact details, password, email notifications.
+// educator: their header (photo, status, headline, hubs, their public profile's state), the figures
+// that matter (each opens its tab), and six tabs —
+//   Overview            in short, what to work on (standards not met, with what helps), badges.
+//   Standards           where they stand against the workspace's mentor standards.
+//   Quality & feedback  their QA visits compounded, what parents say.
+//   Teaching            their classes and hubs, teaching figures, hours, courses taught.
+//   Public profile      what they write about themself, sharing it (an admin approves), preview, link.
+//   Account             contact details, password, email notifications.
 // The old /teacher-portal/my-profile opens the Public profile tab. System colours (theme/brand.js).
 
 const TABS = [
   { key: "overview", label: "Overview", icon: FiTrendingUp },
-  { key: "public", label: "Public profile", icon: FiGlobe },
+  { key: "standards", label: "Standards", icon: FiTarget },
+  { key: "quality", label: "Quality & feedback", icon: FiShield },
   { key: "teaching", label: "Teaching", icon: FiBookOpen },
+  { key: "public", label: "Public profile", icon: FiGlobe },
   { key: "account", label: "Account", icon: FiSettings },
 ];
+// Tabs that read the profile's figures (the key figures show above them).
+const FIGURE_TABS = ["overview", "standards", "quality", "teaching"];
 const STATUS = { active: ["Active", "good"], inactive: ["Inactive", "neutral"], on_leave: ["On leave", "waiting"], in_training: ["In training", "info"] };
 const box = { ...card, overflow: "hidden" };
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" }) : "—");
@@ -51,18 +58,6 @@ function Detail({ icon: Icon, label: text, value }) {
       <div style={{ minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: BRAND.faint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{text}</p>
         <p style={{ margin: "2px 0 0", fontSize: 14, color: BRAND.ink, overflowWrap: "anywhere" }}>{value || "—"}</p>
-      </div>
-    </div>
-  );
-}
-
-function HeroStat({ icon: Icon, value, label: text }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderRadius: 14, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", minWidth: 0 }}>
-      <Icon size={17} color={BRAND.gold} style={{ flexShrink: 0 }} />
-      <div style={{ minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#fff", lineHeight: 1.1 }}>{value}</p>
-        <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.78)" }}>{text}</p>
       </div>
     </div>
   );
@@ -112,6 +107,7 @@ function AccountTab({ teacher }) {
             <>
               <Detail icon={FiUser} label="Name" value={`${teacher.firstName} ${teacher.lastName}`} />
               <Detail icon={FiPhone} label="Phone" value={teacher.phone} />
+              <Detail icon={FiCalendar} label="With us since" value={fmtDate(teacher.createdAt)} />
             </>
           )}
           <p style={{ margin: 0, fontSize: 11.5, color: BRAND.faint }}>Your email and hubs are managed by your administrator.</p>
@@ -151,7 +147,9 @@ function AccountTab({ teacher }) {
   );
 }
 
-function TeachingTab({ teacher, hubs, courses }) {
+// Where they teach — their hubs as chips and their classes as one compact list — then the teaching
+// figures, hours and courses (from the profile).
+function TeachingTab({ teacher, hubs, courses, profile }) {
   const navigate = useNavigate();
   const { data: classesData } = useQuery({
     queryKey: ["classes", "byClassTeacher", teacher.id],
@@ -160,43 +158,36 @@ function TeachingTab({ teacher, hubs, courses }) {
   });
   const classes = classesData?.data || [];
   return (
-    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))", alignItems: "start" }}>
-      <Section title="My classes" icon={FiUsers}>
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "100%" }}>
+      <Section title="Where you teach" icon={FiHome}>
+        {hubs?.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {hubs.map((h) => (
+              <span key={h.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", borderRadius: 999, background: BRAND.skyTint, border: `1px solid ${BRAND.skyBorder}`, fontSize: 13, fontWeight: 700, color: BRAND.navy }}>
+                <FiHome size={13} /> {h.name}{h.address?.county ? <span style={{ fontWeight: 500, color: BRAND.muted }}> · {h.address.county}</span> : null}
+              </span>
+            ))}
+          </div>
+        )}
         {classes.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: BRAND.muted }}>Not teaching a class yet.</p> : (
-          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "100%" }}>
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))" }}>
             {classes.map((c) => (
-              <button key={c.id} type="button" onClick={() => navigate(`/teacher-portal/classes/${c.id}`)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 13px", borderRadius: 12, border: `1px solid ${BRAND.line}`, background: BRAND.canvas, cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: BRAND.ink }}>{c.gradeName}{c.streamName ? ` ${c.streamName}` : ""}</span>
-                  <span style={{ display: "block", fontSize: 11.5, color: BRAND.muted }}>{c.academicYear ? `${c.academicYear} · ` : ""}{c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}</span>
+              <button key={c.id} type="button" onClick={() => navigate(`/teacher-portal/classes/${c.id}`)} className="pp-class"
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 13px", borderRadius: 12, border: `1px solid ${BRAND.line}`, background: BRAND.surface, cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
+                <span aria-hidden style={{ width: 36, height: 36, borderRadius: 10, background: BRAND.canvas, color: BRAND.mid, display: "grid", placeItems: "center", flexShrink: 0 }}><FiUsers size={16} /></span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: BRAND.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.gradeName}{c.streamName ? ` ${c.streamName}` : ""}</span>
+                  <span style={{ display: "block", fontSize: 12, color: BRAND.muted }}>{c.learnerCount ?? 0} learner{(c.learnerCount ?? 0) !== 1 ? "s" : ""}{c.academicYear ? ` · ${c.academicYear}` : ""}</span>
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: BRAND.mid, flexShrink: 0 }}>Open →</span>
+                <FiArrowRight size={15} color={BRAND.mid} style={{ flexShrink: 0 }} />
               </button>
             ))}
           </div>
         )}
+        <style>{`.pp-class { transition: border-color 150ms ease, box-shadow 150ms ease; } .pp-class:hover { border-color: ${BRAND.skyBorder}; box-shadow: 0 4px 12px rgba(37,71,106,0.07); }`}</style>
       </Section>
-      <Section title="My learning hubs" icon={FiHome}>
-        {hubs?.length ? (
-          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "100%" }}>
-            {hubs.map((h) => (
-              <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 13px", borderRadius: 12, background: BRAND.skyTint, border: `1px solid ${BRAND.skyBorder}` }}>
-                <FiHome size={18} color={BRAND.navy} style={{ flexShrink: 0 }} />
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: BRAND.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</p>
-                  <p style={{ margin: 0, fontSize: 11.5, color: BRAND.muted }}>{[h.code, h.address?.county].filter(Boolean).join(" · ") || "Learning hub"}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : <p style={{ margin: 0, fontSize: 13, color: BRAND.muted }}>Not assigned to a learning hub.</p>}
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", marginTop: 16, paddingTop: 14, borderTop: `1px solid ${BRAND.line}` }}>
-          <Detail icon={FiCalendar} label="With us since" value={fmtDate(teacher.createdAt)} />
-          <Detail icon={FiClock} label="Record updated" value={fmtDate(teacher.updatedAt)} />
-        </div>
-      </Section>
-      <div style={{ gridColumn: "1 / -1" }}><CoursesTaught courses={courses} /></div>
+      {/* Teaching figures, hours over 12 months, courses taught (from the profile); else just the courses. */}
+      {profile ? <TeachingPanel profile={profile} /> : <CoursesTaught courses={courses} />}
     </div>
   );
 }
@@ -226,7 +217,6 @@ export default function ProfilePage() {
   }
 
   const [statusText, statusTone] = STATUS[teacher.status] || STATUS.inactive;
-  const s = profile?.stats;
   const publish = profile?.publish;
   const state = publish ? OWN_STATE[publish.state] : null;
   const headline = profile?.about?.headline || profile?.aboutDraft?.headline || "";
@@ -256,22 +246,21 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
-        {tab !== "overview" && <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", position: "relative" }}>
-          <HeroStat icon={FiStar} value={!s?.rating?.hidden && s?.rating?.average != null ? `${s.rating.average.toFixed(1)} ★` : "—"} label={s?.rating?.hidden ? "rating shows from 3 reviews" : `${s?.rating?.count || 0} parent review${s?.rating?.count === 1 ? "" : "s"}`} />
-          <HeroStat icon={FiShield} value={s?.qa?.average != null ? `${s.qa.average}%` : "—"} label={s?.qa?.count ? `Quality · ${s.qa.band} · ${s.qa.count} visit${s.qa.count === 1 ? "" : "s"}` : "Quality review"} />
-          <HeroStat icon={FiClock} value={s ? Math.round(s.hours.total).toLocaleString("en-KE") : "—"} label="verified hours" />
-          <HeroStat icon={FiUsers} value={s ? s.learnersTaught : "—"} label="learners taught" />
-          <HeroStat icon={FiAward} value={s ? s.badges.filter((b) => b.earned).length : "—"} label="badges earned" />
-        </div>}
       </div>
 
-      <Tabs label="My profile" tabs={TABS.map((t) => (t.key === "public" && publish?.reviewNote && publish.state !== "published" ? { ...t, count: 1, alert: true } : t))} value={tab} onChange={setTab} />
+      {/* The figures that matter — each opens the tab with its detail. */}
+      {profile && FIGURE_TABS.includes(tab) && <ProfileKpis profile={profile} onOpen={setTab} />}
+
+      {/* On a phone the tabs wrap onto a second line rather than scroll out of sight. */}
+      <div className="pp-tabs"><style>{"@media (max-width: 640px) { .pp-tabs .ui-tab-scroll { flex-wrap: wrap; overflow-x: visible !important; width: 100% !important; } }"}</style><Tabs label="My profile" tabs={TABS.map((t) => (t.key === "public" && publish?.reviewNote && publish.state !== "published" ? { ...t, count: 1, alert: true } : t))} value={tab} onChange={setTab} /></div>
 
       {tab === "account" ? <AccountTab teacher={teacher} />
-        : tab === "teaching" ? <TeachingTab teacher={teacher} hubs={hubs} courses={s?.courses || []} />
+        : tab === "teaching" ? <TeachingTab teacher={teacher} hubs={hubs} courses={profile?.stats?.courses || []} profile={profile} />
           : profileLoading || !profile ? <div style={{ padding: "50px 20px", textAlign: "center", color: BRAND.faint, fontSize: 14 }}>Working out your figures…</div>
             : tab === "public" ? <PublicProfileEditor profile={profile} />
-              : <PerformanceProfile profile={profile} showHeading={false} showCourses={false} />}
+              : tab === "standards" ? (profile.standards ? <StandardsCard standing={profile.standards} own /> : <div style={{ ...card, padding: 24, color: BRAND.muted, fontSize: 13.5 }}>No mentor standards are set for your workspace yet.</div>)
+                : tab === "quality" ? <QualityPanel profile={profile} />
+                  : <OverviewPanel profile={profile} onOpen={setTab} />}
     </div>
   );
 }

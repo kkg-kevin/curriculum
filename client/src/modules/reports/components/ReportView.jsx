@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { FiArrowRight, FiChevronDown, FiChevronUp, FiHome, FiMessageCircle, FiStar, FiTarget, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiArrowRight, FiChevronDown, FiChevronUp, FiHome, FiMessageCircle, FiStar, FiTarget, FiClock, FiCheckCircle, FiUser } from "react-icons/fi";
+import Avatar from "../../../components/ui/Avatar";
 import { LEVELS, buildReportView, marks } from "../utils/reportView";
 
 /*
@@ -133,19 +134,60 @@ function Summary({ view, showMarks, title }) {
   );
 }
 
-function Comments({ view, className }) {
+// One note from the teacher, with the teacher themself on it: their photo (else their initials),
+// their name and "Your teacher", then what they said in a speech bubble. A face the child knows
+// makes the note theirs to read (10 Nov 2026). Shared with the marked-assessment page.
+export function TeacherNote({ name, photo, text, meta, audience = "learner", continued = false }) {
+  const parts = String(name || "").split(" ").filter(Boolean);
+  const role = audience === "learner" ? "Your teacher" : "Teacher";
+  if (continued) {
+    return (
+      <div style={{ paddingLeft: 64, minWidth: 0 }}>
+        <div style={{ padding: "11px 14px", backgroundColor: "#fff", border: `1px solid ${T.tintBorder}`, borderRadius: 14, boxShadow: "0 1px 3px rgba(37,71,106,0.06)" }}>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: T.ink, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{text}</p>
+        </div>
+        {meta && <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: T.faint }}>{meta}</p>}
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "flex-start", minWidth: 0 }}>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        {name ? (
+          <Avatar firstName={parts[0]} lastName={parts.length > 1 ? parts[parts.length - 1] : ""} photo={photo} size={52} />
+        ) : (
+          <div aria-hidden style={{ width: 52, height: 52, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg, #25476a, #2e7db5)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", border: "2px solid #fff" }}>
+            <FiUser size={22} />
+          </div>
+        )}
+        <span aria-hidden style={{ position: "absolute", right: -2, bottom: -2, width: 22, height: 22, borderRadius: "50%", backgroundColor: "#F5A623", color: "#fff", display: "grid", placeItems: "center", border: "2px solid #fff" }}>
+          <FiMessageCircle size={11} />
+        </span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 8px" }}>
+          <span style={{ fontSize: 15, fontWeight: 900, color: T.ink }}>{name || role}</span>
+          {name && <span style={{ fontSize: 12, fontWeight: 700, color: T.navy, backgroundColor: T.tint, border: `1px solid ${T.tintBorder}`, borderRadius: 999, padding: "1px 9px" }}>{role}</span>}
+        </p>
+        <div style={{ position: "relative", marginTop: 8, padding: "11px 14px", backgroundColor: "#fff", border: `1px solid ${T.tintBorder}`, borderRadius: "4px 14px 14px 14px", boxShadow: "0 1px 3px rgba(37,71,106,0.06)" }}>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: T.ink, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{text}</p>
+        </div>
+        {meta && <p style={{ margin: "6px 0 0 2px", fontSize: 12, color: T.faint }}>{meta}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Comments({ view, audience, className }) {
   if (!view.comments.length) return null;
   return (
     <div className={className} style={{ ...card, backgroundColor: "#F7FAFD", borderColor: T.tintBorder }}>
       <CardTitle icon={<FiMessageCircle size={16} />}>From the teacher</CardTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {view.comments.map((c) => (
-          <div key={c.key} style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: T.ink, whiteSpace: "pre-line" }}>“{c.text}”</p>
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: T.faint }}>
-              {[c.by, c.about, fmtDate(c.at)].filter(Boolean).join(" · ")}
-            </p>
-          </div>
+        {view.comments.map((c, i) => (
+          <TeacherNote key={c.key} name={c.by} photo={c.photo} text={c.text} audience={audience}
+            continued={i > 0 && Boolean(c.by) && c.by === view.comments[i - 1].by}
+            meta={[c.about, fmtDate(c.at)].filter(Boolean).join(" · ")} />
         ))}
       </div>
     </div>
@@ -362,7 +404,7 @@ export default function ReportView({ report, audience = "learner", firstName = "
     return (
       <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16 }}>
         <NotSubmitted view={view} audience={audience} />
-        <Comments view={view} />
+        <Comments view={view} audience={audience} />
         <HomeNote view={view} audience={audience} />
       </div>
     );
@@ -379,7 +421,7 @@ export default function ReportView({ report, audience = "learner", firstName = "
         <Work view={view} showMarks={showMarks} onOpenAssessment={onOpenAssessment} onOpenSessionReport={onOpenSessionReport} />
       </div>
       {hasSide && <div className="rv-col">
-        <Comments view={view} className="rv-o1" />
+        <Comments view={view} audience={audience} className="rv-o1" />
         <HomeNote view={view} audience={audience} className="rv-o2" />
         <Next view={view} audience={audience} onOpenCourse={onOpenCourse} />
       </div>}

@@ -151,7 +151,10 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
       // Who graded it — see AssessmentSubmissionService.resolveGraderName for the Teacher-id-or-
       // Users-id resolution. Surfaced alongside gradedAt so feedback in a report always reads
       // with "who said this, and when" rather than just the comment on its own.
-      gradedByName: await AssessmentSubmissionService.resolveGraderName(s.gradedBy),
+      ...(await (async () => {
+        const grader = await AssessmentSubmissionService.resolveGrader(s.gradedBy);
+        return { gradedByName: grader.name, gradedByPhoto: grader.photo };
+      })()),
       // The teacher's written comment from grading (GradingPanel.jsx) — never surfaced anywhere
       // in the report before; without it a report showed only a number, not what the teacher
       // actually said about the work.
@@ -782,7 +785,49 @@ const ReportService = {
   // Omitted, returns every published report across all hubs.
   async listForLearner(learnerId, hubId = null) {
     const reports = await ReportModel.findAll({ learnerId, status: "published" });
-    return hubId ? reports.filter((r) => r.hubId === hubId) : reports;
+    return this.withAuthor(hubId ? reports.filter((r) => r.hubId === hubId) : reports);
+  },
+
+  // The teachers behind a report's comments, looked up as it's served so "From the teacher" shows
+  // their face and name as they are today (10 Nov 2026) — reports saved before then never stored a
+  // photo, and a teacher may change theirs. The report's own remarks come from whoever published
+  // it (publishedBy: a teacher id or a user id; "system" for automatic ones — no name); each
+  // marked piece's comment from whoever marked it (the learner's submission on that issue).
+  async withAuthor(reports) {
+    const list = (Array.isArray(reports) ? reports : [reports]).filter(Boolean);
+    const cache = new Map();
+    const who = async (id) => {
+      if (!id || id === "system") return { name: null, photo: null };
+      if (!cache.has(id)) cache.set(id, await AssessmentSubmissionService.resolveGrader(id).catch(() => ({ name: null, photo: null })));
+      return cache.get(id);
+    };
+    // Matched on the issue the learner answered; older reports have no issueId, so then on the
+    // assessment (their latest marked attempt).
+    const withFeedback = list.flatMap((r) => (r.content?.assessments || []).filter((a) => a?.assessmentId && String(a.feedback || "").trim()).map((a) => ({ r, a })));
+    const graders = new Map();
+    if (withFeedback.length) {
+      const rows = await db("assessment_submissions")
+        .whereIn("assessmentId", [...new Set(withFeedback.map((x) => x.a.assessmentId))])
+        .whereIn("learnerId", [...new Set(withFeedback.map((x) => x.r.learnerId))])
+        .whereNotNull("gradedBy")
+        .orderBy("gradedAt", "asc")
+        .select("issueId", "assessmentId", "learnerId", "gradedBy");
+      for (const row of rows) {
+        graders.set(`${row.issueId}:${row.learnerId}`, row.gradedBy);
+        graders.set(`a:${row.assessmentId}:${row.learnerId}`, row.gradedBy);
+      }
+    }
+    for (const { r, a } of withFeedback) {
+      const g = await who(graders.get(`${a.issueId}:${r.learnerId}`) || graders.get(`a:${a.assessmentId}:${r.learnerId}`));
+      if (g.name) a.gradedByName = g.name;
+      a.gradedByPhoto = g.photo || null;
+    }
+    for (const r of list) {
+      const g = await who(r.publishedBy);
+      r.publishedByName = g.name;
+      r.publishedByPhoto = g.photo;
+    }
+    return reports;
   },
 
   // Academic-performance rollup for a hub's Reports page — deliberately built from data that
