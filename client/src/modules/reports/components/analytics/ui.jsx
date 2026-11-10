@@ -36,7 +36,7 @@ export const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString("en-KE",
 
 export const STYLES = `
 .an { font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.an-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.an-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .an-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .an-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .an-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -85,14 +85,61 @@ export function Delta({ now, before, suffix = "", betterWhenLower = false, label
   );
 }
 
-export function Stat({ label, value, sub, delta }) {
+// A key figure (10 Nov 2026 — every tab): an icon in a soft tile, the number large, a short label
+// under it, then an optional short note and the change since the previous period. `tone` colours
+// the icon (navy by default; "danger" / "gold" / "mid" / "sky" / "good" for meaning).
+const TILE_TONES = { navy: T.navy, mid: T.mid, sky: T.sky, gold: "#B87708", danger: "#B91C1C", good: T.mid };
+export function Stat({ label, value, sub, delta, icon: Icon, tone = "navy" }) {
+  const color = TILE_TONES[tone] || T.navy;
   return (
-    <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border}`, padding: "14px 16px", minWidth: 0 }}>
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.muted }}>{label}</p>
-      <p style={{ margin: "4px 0 2px", fontSize: 24, fontWeight: 900, color: T.ink, lineHeight: 1.15 }}>{value}</p>
-      {sub && <p style={{ margin: 0, fontSize: 11.5, color: T.faint }}>{sub}</p>}
-      {delta && <div style={{ marginTop: 4 }}>{delta}</div>}
+    <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border}`, padding: "14px 16px", minWidth: 0, height: "100%", boxSizing: "border-box", display: "flex", gap: 12, alignItems: "flex-start" }}>
+      {Icon && <span aria-hidden style={{ width: 38, height: 38, borderRadius: 11, background: `${color}14`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={18} /></span>}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 22, fontWeight: 900, color: T.ink, lineHeight: 1.15 }}>{value}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 700, color: T.muted }}>{label}</p>
+        {sub && <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.faint, lineHeight: 1.4 }}>{sub}</p>}
+        {delta && <div style={{ marginTop: 4 }}>{delta}</div>}
+      </div>
     </div>
+  );
+}
+
+// Twelve months of one figure as a line (Trends, Hubs): the latest value large with its change on
+// last month, the line underneath, months on hover. Gaps where a month has no data.
+export function TrendLine({ points, valueKey, label, icon: Icon, format = (v) => `${v}%`, suffix = " pts", color = T.navy, betterWhenLower = false, max = 100 }) {
+  const values = points.map((p) => p[valueKey]);
+  const known = values.map((v, i) => [v, i]).filter(([v]) => v != null);
+  const last = known.length ? known[known.length - 1] : null;
+  const prev = known.length > 1 ? known[known.length - 2] : null;
+  const top = max ?? Math.max(1, ...known.map(([v]) => v));
+  const W = 300; const H = 70; const step = points.length > 1 ? W / (points.length - 1) : W;
+  const y = (v) => H - (Math.min(top, v) / top) * (H - 6) - 3;
+  let path = "";
+  values.forEach((v, i) => { if (v == null) return; path += `${path && values[i - 1] != null ? "L" : "M"}${(i * step).toFixed(1)},${y(v).toFixed(1)} `; });
+  return (
+    <Card>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        {Icon && <span aria-hidden style={{ width: 32, height: 32, borderRadius: 10, background: `${color}14`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={16} /></span>}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.muted }}>{label}</p>
+          <p style={{ margin: 0, fontSize: 21, fontWeight: 900, color: T.ink, lineHeight: 1.15 }}>{last ? format(last[0]) : "—"}</p>
+        </div>
+        {last && prev && <Delta now={last[0]} before={prev[0]} suffix={suffix} betterWhenLower={betterWhenLower} label="on last month" />}
+      </div>
+      {known.length ? (
+        <svg viewBox={`0 -2 ${W} ${H + 4}`} preserveAspectRatio="none" style={{ width: "100%", height: 72, display: "block", overflow: "visible" }} role="img" aria-label={`${label} by month`}>
+          <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          {values.map((v, i) => (v == null ? null : (
+            <circle key={i} cx={i * step} cy={y(v)} r="3.2" fill="#fff" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke">
+              <title>{`${points[i].label}: ${format(v)}`}</title>
+            </circle>
+          )))}
+        </svg>
+      ) : <Empty>No data in these months yet.</Empty>}
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.faint, marginTop: 4 }}>
+        <span>{points[0]?.label}</span><span>{points[points.length - 1]?.label}</span>
+      </div>
+    </Card>
   );
 }
 

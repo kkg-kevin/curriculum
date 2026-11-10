@@ -49,7 +49,7 @@ async function resolveScope(req) {
   if (q.stageId) links = links.filter((l) => l.currentStageId === q.stageId);
 
   let learners = await inChunks(links.map((l) => l.learnerId), (ids) => db("learners").whereIn("id", ids)
-    .select("id", "firstName", "lastName", "gender", "dateOfBirth", "statedAge", "username", "guardianEmail", "guardianName", "accountStatus", "teacherId"));
+    .select("id", "firstName", "lastName", "gender", "dateOfBirth", "statedAge", "username", "guardianEmail", "guardianName", "guardianPhone", "accountStatus", "teacherId"));
   // Educators' own learner records (training of trainers) stay out unless a class is chosen —
   // the same rule as the learner lists.
   if (!q.classId) learners = learners.filter((l) => !l.teacherId);

@@ -1,3 +1,4 @@
+import { FiX } from "react-icons/fi";
 import { T } from "./ui";
 
 /*
@@ -51,6 +52,16 @@ export default function FilterBar({ filters, value, onChange, isHub }) {
   const curriculumName = new Map((f.curricula || []).map((c) => [c.id, c.name]));
   const hubName = new Map((f.hubs || []).map((h) => [h.id, h.name]));
   const active = ["hubId", "curriculumId", "classId", "courseId", "stageId", "pathway", "gender"].some((k) => value[k]);
+  const className = (id) => (f.classes || []).find((c) => c.id === id)?.label || "Class";
+  const chips = [
+    value.hubId && { key: "hub", label: "Hub", value: hubName.get(value.hubId) || "Hub", clear: { hubId: "", classId: "", courseId: "" } },
+    value.curriculumId && { key: "curriculum", label: "Curriculum", value: curriculumName.get(value.curriculumId) || "Curriculum", clear: { curriculumId: "", classId: "", courseId: "", stageId: "", pathway: "" } },
+    value.classId && { key: "class", label: "Class", value: className(value.classId), clear: { classId: "", courseId: "" } },
+    value.courseId && { key: "course", label: "Course", value: (f.courses || []).find((c) => c.id === value.courseId)?.name || "Course", clear: { courseId: "" } },
+    value.stageId && { key: "stage", label: "Stage", value: (f.stages || []).find((x) => x.id === value.stageId)?.name || "Stage", clear: { stageId: "" } },
+    value.pathway && { key: "pathway", label: "Pathway", value: value.pathway, clear: { pathway: "" } },
+    value.gender && { key: "gender", label: "Gender", value: { female: "Girls", male: "Boys", other: "Other" }[value.gender] || value.gender, clear: { gender: "" } },
+  ].filter(Boolean);
 
   return (
     <section style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -90,9 +101,20 @@ export default function FilterBar({ filters, value, onChange, isHub }) {
         <Select label="Gender" value={value.gender} allLabel="Everyone" options={[{ value: "female", label: "Girls" }, { value: "male", label: "Boys" }, { value: "other", label: "Other" }]} onChange={(gender) => set({ gender })} />
       </div>
       {active && (
-        <div>
-          <button type="button" className="an-link" onClick={() => set({ hubId: "", curriculumId: "", classId: "", courseId: "", stageId: "", pathway: "", gender: "" })}>Clear filters</button>
-          <span style={{ marginLeft: 10, fontSize: 12, color: T.faint }}>Stage, pathway and gender narrow the learners; educators and hub logins are then left out.</span>
+        // What's narrowing the figures, as chips (10 Nov 2026) — × takes one off. Remembered in this
+        // browser with the period (AnalyticsPage).
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          {chips.map((c) => (
+            <span key={c.key} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 6px 4px 10px", borderRadius: 999, background: "#EAF6FD", border: "1px solid #BFE3F7", fontSize: 12, color: T.navy, maxWidth: "100%" }}>
+              <span style={{ color: T.muted, fontWeight: 600 }}>{c.label}</span>
+              <strong style={{ fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{c.value}</strong>
+              <button type="button" onClick={() => set(c.clear)} aria-label={`Remove ${c.label}`}
+                style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "#fff", color: T.navy, cursor: "pointer", display: "grid", placeItems: "center", padding: 0 }}>
+                <FiX size={12} />
+              </button>
+            </span>
+          ))}
+          <button type="button" className="an-link" style={{ fontSize: 12.5, marginLeft: 4 }} onClick={() => set({ hubId: "", curriculumId: "", classId: "", courseId: "", stageId: "", pathway: "", gender: "" })}>Clear all</button>
         </div>
       )}
     </section>

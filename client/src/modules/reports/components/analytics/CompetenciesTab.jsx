@@ -1,3 +1,4 @@
+import { FiAlertCircle, FiTarget, FiThumbsUp, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { useState } from "react";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { BarList, Card, DataTable, Empty, LEVELS, LevelLegend, LevelStack, Note, Stat, T, fmtNum, fmtPct } from "./ui";
@@ -87,14 +88,14 @@ export default function CompetenciesTab({ data, links }) {
   return (
     <>
       <div className="an-stats">
-        <Stat label="Learners assessed" value={fmtNum(h.learnersAssessed)} sub={`${fmtPct(h.assessedPercent)} of ${fmtNum(h.learnerCount)} learners`} />
-        <Stat label="Average across competencies" value={fmtPct(h.average)} sub={`From ${fmtNum(h.markedPieces)} marked pieces`} />
-        <Stat label="On track or better" value={`${share("track") + share("strong")}%`} sub="Of learner × competency results" />
-        <Stat label="Strongest" value={<span style={{ fontSize: 16 }}>{h.strongest || "—"}</span>} />
-        <Stat label="Needs most work" value={<span style={{ fontSize: 16 }}>{h.weakest || "—"}</span>} />
+        <Stat icon={FiUsers} label="Learners assessed" value={fmtNum(h.learnersAssessed)} sub={`${fmtPct(h.assessedPercent)} of ${fmtNum(h.learnerCount)}`} />
+        <Stat icon={FiTarget} label="Average" value={fmtPct(h.average)} sub={`${fmtNum(h.markedPieces)} marked pieces`} tone="mid" />
+        <Stat icon={FiTrendingUp} label="On track or better" value={`${share("track") + share("strong")}%`} tone="sky" />
+        <Stat icon={FiThumbsUp} label="Strongest" value={<span style={{ fontSize: 16 }}>{h.strongest || "–"}</span>} tone="mid" />
+        <Stat icon={FiAlertCircle} label="Needs most work" value={<span style={{ fontSize: 16 }}>{h.weakest || "–"}</span>} tone="gold" />
       </div>
 
-      <Card title="Every competency at a glance" subtitle="How many learners sit at each level — open one for its indicators, comparisons and learners">
+      <Card title="Every competency at a glance" subtitle="Open one for its indicators and learners.">
         <LevelLegend />
       </Card>
       {data.competencies.map((c) => <CompetencyCard key={c.competencyId} c={c} groupLabel={data.groupLabel} links={links} filenameBase="competency" />)}
@@ -102,7 +103,6 @@ export default function CompetenciesTab({ data, links }) {
       {data.months.length > 1 && (
         <DataTable
           title="Month by month"
-          subtitle="Average per competency, from the work marked that month"
           columns={[
             { key: "name", label: "Competency" },
             ...data.months.map((m) => ({ key: m, label: monthLabel(m), align: "num", render: (r) => fmtPct(r[m]), sort: (r) => r[m] })),
@@ -124,7 +124,7 @@ export default function CompetenciesTab({ data, links }) {
         filename="competencies.csv"
         limit={50}
       />
-      <Note>Each learner's result per competency puts together their marks on its indicators from the work marked in the period (at most 100%). The curriculum's evidence weights aren't applied, so a learner's own profile can differ a little.</Note>
+      <Note>A learner&apos;s result puts together their indicator marks from work marked in the period (at most 100%).</Note>
     </>
   );
 }

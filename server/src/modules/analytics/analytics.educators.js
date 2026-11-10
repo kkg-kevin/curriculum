@@ -18,7 +18,7 @@ async function getEducators(scope) {
   const linked = !scope.filters.classId && scope.hubIds.length ? await db("teacher_hub_links").whereIn("hubId", scope.hubIds).distinct("teacherId").pluck("teacherId") : [];
   const ids = [...new Set([...teaching, ...linked])];
   // TOT learners only (in training, not teaching yet) are learners here, not educators (tot/tot.people.js).
-  const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "status", "profilePublic", "createdAt")) : [];
+  const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "photo", "status", "profilePublic", "createdAt")) : [];
   // The workspace's mentor standards (Settings → Mentor standards) — every educator measured against them.
   const settings = await MentorStandards.getSettings(scope.ownerAdminId);
   const educators = [];
@@ -27,6 +27,7 @@ async function getEducators(scope) {
     const st = standingOf(s.standards || {}, settings, { since: t.createdAt });
     educators.push({
       teacherId: t.id,
+      photo: t.photo || null,
       name: fullName(t) || "Educator",
       status: t.status,
       published: !!t.profilePublic,
@@ -47,7 +48,7 @@ async function getEducators(scope) {
       badges: s.badges.filter((b) => b.earned).map((b) => b.label),
       standards: {
         met: st.met, counted: st.counted, total: st.total, overall: st.overall, inGrace: st.inGrace,
-        items: st.items.map((i) => ({ key: i.key, label: i.label, unit: i.unit, value: i.value, target: i.target, minimum: i.minimum, status: i.status, evidence: i.evidence })),
+        items: st.items.map((i) => ({ key: i.key, label: i.label, unit: i.unit, higherIsBetter: i.higherIsBetter, value: i.value, target: i.target, minimum: i.minimum, status: i.status, evidence: i.evidence, minEvidence: i.minEvidence, evidenceLabel: i.evidenceLabel })),
       },
     });
   }

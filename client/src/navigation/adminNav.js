@@ -115,7 +115,21 @@ export const ADMIN_SECTIONS = [
     key: "insights",
     label: "Quality & insights",
     items: [
-      { name: "Reports & Analytics", path: "/reports", icon: FiBarChart2, module: "reports", ownerOnly: true, match: (l) => l.pathname.startsWith("/reports") && !["parent-feedback", "educators"].includes(tabOf(l)) },
+      {
+        name: "Reports & Analytics", path: "/reports", icon: FiBarChart2, module: "reports", ownerOnly: true,
+        match: (l) => l.pathname.startsWith("/reports") && !["parent-feedback", "educators"].includes(tabOf(l)),
+        // The page's tabs most opened on their own (10 Nov 2026); the rest are one click inside.
+        children: [
+          { name: "Overview", path: "/reports", isDefault: true },
+          { name: "Trends", path: "/reports?tab=trends" },
+          { name: "Hubs side by side", path: "/reports?tab=hubs" },
+          { name: "Learner growth", path: "/reports?tab=growth" },
+          { name: "Attendance", path: "/reports?tab=attendance" },
+          { name: "Learners at risk", path: "/reports?tab=at-risk" },
+          { name: "Parent engagement", path: "/reports?tab=parents" },
+          { name: "Enrolment & income", path: "/reports?tab=enrolment" },
+        ],
+      },
       { name: "Quality Assurance", path: "/qa", icon: FiStar, module: "qa" },
       // A class's educators meeting each family about their child (modules/mentor-checkins).
       { name: "Parent–Mentor Check-ins", path: "/mentor-checkins", icon: FiMessageCircle, module: "mentor-checkins" },

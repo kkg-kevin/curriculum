@@ -1,3 +1,4 @@
+import { FiFlag, FiMessageSquare, FiStar, FiUsers } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { BarList, Card, DataTable, Note, Stat, T, fmtDate, fmtNum } from "./ui";
 
@@ -20,21 +21,21 @@ export default function ParentFeedbackTab({ data, isHub }) {
   return (
     <>
       <div className="an-stats">
-        <Stat label="Reviews" value={fmtNum(data.summary?.count)} sub="from parents and TOT learners" />
-        <Stat label="Average rating" value={stars(data.summary?.average)} sub="out of 5" />
-        <Stat label="Educators reviewed" value={fmtNum(data.educators.length)} sub={isHub && data.tooFew ? `${data.tooFew} more with fewer than ${data.minReviews} reviews` : "in this period"} />
-        {!isHub && <Stat label="Open concerns" value={fmtNum(data.concerns.length)} sub="about conduct — to follow up" />}
+        <Stat icon={FiMessageSquare} label="Reviews" value={fmtNum(data.summary?.count)} />
+        <Stat icon={FiStar} label="Average rating" value={stars(data.summary?.average)} tone="gold" />
+        <Stat icon={FiUsers} label="Educators reviewed" value={fmtNum(data.educators.length)} sub={isHub && data.tooFew ? `${data.tooFew} more with under ${data.minReviews} reviews` : null} tone="mid" />
+        {!isHub && <Stat icon={FiFlag} label="Open concerns" value={fmtNum(data.concerns.length)} tone={data.concerns.length ? "danger" : "navy"} />}
       </div>
 
       {data.summary?.aspects?.length > 0 && (
-        <Card title="By aspect" subtitle="Average stars for each thing parents rate">
+        <Card title="By aspect">
           <BarList rows={data.summary.aspects.map((a) => ({ label: a.label, value: a.average || 0 }))} max={5} color={T.mid} format={(v) => (v ? v.toFixed(1) : "—")} empty="No ratings in this period." />
         </Card>
       )}
 
       <DataTable
         title="Educators"
-        subtitle={isHub ? `Educators with at least ${data.minReviews} reviews — so no one family can be picked out` : "Lowest average first"}
+        subtitle={isHub ? `Educators with ${data.minReviews}+ reviews` : null}
         columns={[
           { key: "name", label: "Educator", render: (x) => <button type="button" className="an-link" onClick={() => navigate(educatorPath(x.teacherId))}>{x.name}</button>, csv: (x) => x.name },
           { key: "count", label: "Reviews", align: "num" },
@@ -52,7 +53,7 @@ export default function ParentFeedbackTab({ data, isHub }) {
       {!isHub && (
         <DataTable
           title="Open concerns"
-          subtitle="Raised by parents about an educator's conduct — open the educator to read and resolve"
+          subtitle="Open the educator to resolve one"
           columns={[
             { key: "createdAt", label: "Raised", render: (x) => fmtDate(x.createdAt), csv: (x) => x.createdAt, sort: (x) => new Date(x.createdAt).getTime() },
             { key: "educator", label: "Educator", render: (x) => <button type="button" className="an-link" onClick={() => navigate(educatorPath(x.teacherId))}>{x.educator}</button>, csv: (x) => x.educator },
