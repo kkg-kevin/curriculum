@@ -18,6 +18,8 @@ export const assessmentSubmissionApi = {
   getIssuedForLearner: ()                => api.get(`${BASE}/learner/issued`).then((r) => r.data),
   // Admin/school: the same list for one learner, as their profile shows it.
   getIssuedForLearnerAsStaff: (learnerId) => api.get(`${BASE}/learner/${learnerId}/issued`).then((r) => r.data),
+  // The profile's activity grid: { from, to, entries } — a year of their assessment work by day.
+  getLearnerActivity: (learnerId) => api.get(`${BASE}/learner/${learnerId}/activity`).then((r) => r.data.data),
   getDiagnosticForLearner: (learnerId, curriculumId) => api.get(`${BASE}/diagnostic/${learnerId}`, { params: curriculumId ? { curriculumId } : {} }).then((r) => r.data.data),
   getPathwayDiagnosticsForLearner: (learnerId) => api.get(`${BASE}/diagnostic/pathways/${learnerId}`).then((r) => r.data.data),
   // The profile's diagnostic report: every marked pathway diagnostic (website or portal), with its competency marks.

@@ -9,6 +9,7 @@ import { stagePendingReason } from "../../../utils/learnerAge";
 
 import { T, cardStyle, EmptyState, KID, KID_FONT, KidHeading } from "../components/profile/theme";
 import ProfileIdentityCard from "../components/profile/ProfileIdentityCard";
+import AssessmentActivity from "../components/profile/AssessmentActivity";
 import GuardianProfileCard from "../components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../components/profile/PortfolioSnapshot";
 import ShareProfileCard from "../components/profile/ShareProfileCard";
@@ -127,6 +128,7 @@ export default function ProfilePage() {
       <ProfileIdentityCard
         greeting={viewOnly ? `${learner.firstName}'s profile` : `Hi, ${learner.firstName}!`}
         learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={cls?.curriculumId} onEdit={() => setEditing("learner")}
+        activity={<AssessmentActivity learnerId={learner.id} firstName={learner.firstName} own={!viewOnly} />}
         stageHint={stage ? null : stagePendingReason({ learner, inClass: !!cls?.curriculumId, stages: ageCategories })}
       />
 

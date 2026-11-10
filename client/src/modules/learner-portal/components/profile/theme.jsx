@@ -131,3 +131,10 @@ export function EmptyState({ icon: Icon, children }) {
     </div>
   );
 }
+
+// The banner's two top cards (the learner's details, their assessment activity) share one look: a
+// darker glass panel on the gradient, so they read as a matching pair (10 Nov 2026).
+export const GLASS = {
+  borderRadius: 20, backgroundColor: "rgba(10, 30, 55, 0.28)", border: "1.5px solid rgba(255,255,255,0.22)",
+  backdropFilter: "blur(4px)", boxSizing: "border-box",
+};
