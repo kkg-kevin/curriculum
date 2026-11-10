@@ -375,11 +375,21 @@ const AssessmentSubmissionService = {
   // this module's own learner-facing reads and report.service.js's report snapshots, so the
   // grader's name is consistent wherever feedback is shown.
   async resolveGraderName(gradedBy) {
-    if (!gradedBy) return null;
+    return (await this.resolveGrader(gradedBy)).name;
+  },
+
+  // Who marked a piece of work, with their photo — shown beside "From the teacher" so a learner
+  // sees who is talking to them (11 Nov 2026). `gradedBy` is an educator's id or a login's; a login
+  // that is also an educator shows that educator's photo when the login has none.
+  async resolveGrader(gradedBy) {
+    if (!gradedBy) return { name: null, photo: null };
     const teacher = await TeacherModel.findById(gradedBy);
-    if (teacher) return `${teacher.firstName} ${teacher.lastName}`;
+    if (teacher) return { name: `${teacher.firstName} ${teacher.lastName}`.replace(/\s+/g, " ").trim(), photo: teacher.photo || null };
     const user = await UserModel.findById(gradedBy);
-    return user?.name || null;
+    if (!user) return { name: null, photo: null };
+    let photo = user.photo || null;
+    if (!photo && user.email) photo = (await db("teachers").whereRaw("LOWER(email) = ?", [String(user.email).toLowerCase()]).whereNotNull("photo").first("photo"))?.photo || null;
+    return { name: user.name || null, photo };
   },
 
   // Issuing is idempotent per (assessment, session, class) — re-issuing (e.g. after editing the

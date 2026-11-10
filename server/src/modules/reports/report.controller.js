@@ -150,6 +150,7 @@ const getReport = asyncHandler(async (req, res) => {
     const cls = await ClassModel.findById(report.classId);
     await assertClassAccess(req, cls);
   }
+  await ReportService.withAuthor(report);
   res.json({ success: true, data: report });
 });
 
