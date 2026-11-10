@@ -16,7 +16,7 @@ import { BRAND, pill } from "../../../theme/brand";
 export const PROFILE_STATE = {
   private: { label: "Private", tone: "neutral", text: "The educator hasn't chosen to share their profile." },
   pending: { label: "Waiting for approval", tone: "waiting", text: "They'd like to share their profile. Check the preview, then publish it or send it back." },
-  published: { label: "Published", tone: "good", text: "Live — anyone with the link can see it, and families find it in the parent portal." },
+  published: { label: "Published", tone: "good", text: "Live. Anyone with the link can see it, and families find it in the parent portal." },
   changes: { label: "Changes waiting", tone: "info", text: "Published; they changed their About since. Publish the change or send it back." },
 };
 const STATE = PROFILE_STATE;
@@ -87,7 +87,7 @@ export default function PublishingCard({ profile, teacherId, canPublish }) {
               {profile.requests.slice(0, 6).map((r) => (
                 <div key={r.id} style={{ padding: "9px 11px", borderRadius: 10, border: `1px solid ${r.status === "open" ? BRAND.goldBorder : BRAND.line}`, background: r.status === "open" ? BRAND.goldTint : BRAND.surface, fontSize: 12.5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                    <strong>{r.parent.name} — for {r.learner.name}</strong>
+                    <strong>{r.parent.name}, for {r.learner.name}</strong>
                     <span style={{ color: "#9CA3AF", fontSize: 11.5 }}>{new Date(r.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}</span>
                   </div>
                   {r.note && <p style={{ margin: "4px 0 0", color: "#374151" }}>&ldquo;{r.note}&rdquo;</p>}

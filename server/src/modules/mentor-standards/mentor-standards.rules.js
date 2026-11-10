@@ -34,7 +34,7 @@ const STANDARDS = [
     defaults: { enabled: true, target: 90, minimum: 80, minEvidence: 5 },
     evidence: ["timetabled session", "timetabled sessions"],
     describe: "Of the sessions on their timetable in the last 90 days, the share that were held (attendance taken).",
-    tip: "Take attendance at every session you teach — that's how a session counts as held.",
+    tip: "Take attendance at every session you teach. That's how a session counts as held.",
   },
   {
     key: "markedOnTime", label: "Work marked within 72 hours", unit: "%", higherIsBetter: true,
@@ -69,7 +69,7 @@ const STANDARDS = [
     defaults: { enabled: true, target: 90, minimum: 75, minEvidence: 3 },
     evidence: ["parent check-in", "parent check-ins"],
     describe: "Of their parent–mentor check-ins whose day has passed in the last 12 months, the share held and written up.",
-    tip: "Write each parent check-in up on the day — the parent is waiting to read and approve it.",
+    tip: "Write each parent check-in up on the day. The parent is waiting to read and approve it.",
   },
   {
     key: "openConcerns", label: "Open parent concerns", unit: "", higherIsBetter: false, step: 1,

@@ -45,9 +45,9 @@ export default function MentorStandardsPanel() {
   return (
     <SettingsPage
       title="Mentor standards"
-      description="One bar for every mentor. Each mentor's profile shows where they stand against it (they see their own), and Reports & Analytics → Educators shows everyone's — with who needs support. Pay is never part of it."
+      description="One bar for every mentor. Each mentor's profile shows where they stand against it (they see their own), and Reports & Analytics → Educators shows everyone's, with who needs support. Pay is never part of it."
     >
-      <SettingsSection title="How standards are applied" description="A standard counts once there's enough evidence for it — until then a mentor shows “Not enough data yet”, never a fail.">
+      <SettingsSection title="How standards are applied" description="A standard counts once there's enough evidence for it. Until then a mentor shows “Not enough data yet”, never a fail.">
         <FieldGrid min={240}>
           <div style={{ maxWidth: 320 }}>
           <Field label="Grace period for new mentors" htmlFor="ms-grace" note="Days from when they're added. Their figures show, but nothing is marked below.">
@@ -56,7 +56,7 @@ export default function MentorStandardsPanel() {
           </div>
         </FieldGrid>
         <Toggle id="ms-notify" checked={form.notifyBelow} onChange={(v) => setForm((f) => ({ ...f, notifyBelow: v }))}>
-          When a mentor falls below a standard, tell their supervisor (or the admins, if they have none) — once a month per standard, suggesting a quality-review visit
+          When a mentor falls below a standard, tell their supervisor (or the admins, if they have none), once a month per standard, suggesting a quality-review visit
         </Toggle>
       </SettingsSection>
 

@@ -1,19 +1,23 @@
 import { useState } from "react";
-import { FiAlertCircle, FiArrowDownRight, FiArrowUpRight, FiAward, FiBookOpen, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiMinus, FiRefreshCw, FiShield, FiStar, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiAlertCircle, FiArrowDownRight, FiArrowRight, FiArrowUpRight, FiAward, FiBookOpen, FiCalendar, FiCheck, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiInfo, FiMinus, FiRefreshCw, FiShield, FiStar, FiTarget, FiTrendingUp, FiUserCheck, FiUsers, FiZap } from "react-icons/fi";
 import FeedbackSummary from "../../mentor-reviews/components/FeedbackSummary";
 import StandardsCard from "../../mentor-standards/StandardsCard";
+import { OVERALL, formatValue, iconOf, targetText } from "../../mentor-standards/standards";
 import { useRefreshEducatorProfile } from "../hooks/useEducatorProfile";
 import { BRAND as C, FONT, card, cardHeading, pill } from "../../../theme/brand";
 
 // An educator's performance profile, inside the system — the educator page (admins, staff, the hub,
-// the supervisor) and the educator's own My profile. Read top to bottom:
-//   1. At a glance   a plain-language summary and the four core scores (quality, parents,
-//                    reliability, hours).
-//   2. Quality       every QA visit compounded — all-time average, running average after each visit,
-//                    each area across all visits, the latest strengths / to improve, every visit.
-//   3. Parents       ratings by aspect.
-//   4. Teaching      sessions, learners, feedback speed, outcomes, hours month by month.
-//   5. Badges and what to work on next; courses taught; hub leadership.
+// the supervisor) and the educator's own My profile. In panels, so each page puts them on its own
+// tabs (11 Nov 2026 — one long page was hard to read):
+//   ProfileKpis    the five figures that matter, as a strip under the page's header — each opens its tab.
+//   OverviewPanel  in short (a plain-language summary), what needs attention (standards not met, with
+//                  what helps; else growth tips) and badges.
+//   StandardsCard  (mentor-standards/) against the workspace's mentor standards.
+//   QualityPanel   every QA visit compounded (average, running average, by area, latest strengths /
+//                  to improve, every visit) and what parents say.
+//   TeachingPanel  sessions, learners, feedback speed, outcomes, hours month by month, courses taught,
+//                  hub leadership.
+// The default export stacks them all (the supervisor's educator page).
 // Every figure comes from the records (educator-profile.stats.js); the hub's version leaves out growth
 // tips, and parent ratings until 3 reviews. Pay is never shown. System colours only (theme/brand.js).
 
@@ -23,7 +27,6 @@ const monthShort = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString("en-KE
 const dayShort = (d) => new Date(`${d}T00:00:00`).toLocaleDateString("en-KE", { day: "numeric", month: "short" });
 const dayLong = (d) => (d ? new Date(`${String(d).slice(0, 10)}T00:00:00`).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—");
 export const QA_BAND_COLOR = { Excellent: C.navy, Strong: C.mid, Developing: C.goldText };
-const BAND_TONE = { Excellent: "strong", Strong: "good", Developing: "waiting" };
 const box = { ...card, padding: "18px 20px" };
 
 function SectionTitle({ icon: Icon, title, note, action }) {
@@ -47,21 +50,6 @@ function Delta({ value, suffix = "", size = 12 }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: size, fontWeight: 800, color, whiteSpace: "nowrap" }}>
       <Icon size={size + 1} /> {value > 0 ? "+" : ""}{value}{suffix}
     </span>
-  );
-}
-
-// One of the four core scores at the top.
-function CoreScore({ icon: Icon, label, value, unit, badge, detail, meaning }) {
-  return (
-    <div style={{ ...card, padding: "16px 16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 12, fontWeight: 800, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}><Icon size={14} color={C.mid} /> {label}</span>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 30, fontWeight: 900, color: C.ink, lineHeight: 1 }}>{value}{unit && value !== "—" && <span style={{ fontSize: 15, fontWeight: 700, color: C.muted }}>{unit}</span>}</span>
-        {badge}
-      </div>
-      {detail && <span style={{ fontSize: 12.5, color: C.inkSoft }}>{detail}</span>}
-      {meaning && <span style={{ fontSize: 11.5, color: C.faint, marginTop: "auto", paddingTop: 4 }}>{meaning}</span>}
-    </div>
   );
 }
 
@@ -128,17 +116,53 @@ function QaProgress({ history }) {
   );
 }
 
-function HourBars({ rows }) {
-  const top = Math.max(1, ...rows.map((r) => r.value || 0));
+// Verified hours over the last 12 months — every month shown, empty ones too, so one busy month
+// still reads in context.
+function HourBars({ byMonth = [] }) {
+  const have = new Map(byMonth.map((m) => [m.month, m.hours]));
+  const now = new Date(Date.now() + 3 * 3600 * 1000);
+  const rows = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + i, 1));
+    const key = d.toISOString().slice(0, 7);
+    return { key, label: monthShort(key), value: have.get(key) || 0 };
+  });
+  const top = Math.max(1, ...rows.map((r) => r.value));
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 112, overflowX: "auto" }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 128 }}>
       {rows.map((r) => (
-        <div key={r.label} title={`${r.label}: ${fmt(r.value, 1)} h`} style={{ flex: "1 0 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <span style={{ fontSize: 10.5, color: C.muted, fontWeight: 700 }}>{fmt(r.value, 1)}</span>
-          <div style={{ width: "100%", maxWidth: 32, height: Math.max(3, ((r.value || 0) / top) * 80), background: C.mid, borderRadius: "4px 4px 0 0" }} />
+        <div key={r.key} title={`${r.label}: ${fmt(r.value, 1)} h`} style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 10.5, color: r.value ? C.inkSoft : "transparent", fontWeight: 700 }}>{fmt(r.value, 1)}</span>
+          <div style={{ width: "100%", maxWidth: 28, height: r.value ? Math.max(6, (r.value / top) * 84) : 3, background: r.value ? C.mid : C.track, borderRadius: "5px 5px 2px 2px" }} />
           <span style={{ fontSize: 10.5, color: C.faint }}>{r.label}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// A soft, iconed "nothing yet" — one short line, never a paragraph.
+function EmptyState({ icon: Icon, title, line }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "6px 0" }}>
+      <span aria-hidden style={{ width: 46, height: 46, borderRadius: 14, background: C.skyTint, color: C.mid, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={21} /></span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: C.ink }}>{title}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12.5, color: C.muted, lineHeight: 1.45 }}>{line}</p>
+      </div>
+    </div>
+  );
+}
+
+// A small figure tile with its icon.
+function IconFigure({ icon: Icon, label, value, sub }) {
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 14, background: C.canvas, border: `1px solid ${C.line}`, minWidth: 0 }}>
+      <span aria-hidden style={{ width: 38, height: 38, borderRadius: 11, background: C.surface, border: `1px solid ${C.line}`, color: C.mid, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={17} /></span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: C.ink, lineHeight: 1.1 }}>{value}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 700, color: C.muted }}>{label}</p>
+        {sub && <p style={{ margin: "1px 0 0", fontSize: 11.5, color: C.faint }}>{sub}</p>}
+      </div>
     </div>
   );
 }
@@ -198,62 +222,217 @@ function summaryLines({ s, own, first }) {
   return lines;
 }
 
-export default function PerformanceProfile({ profile, teacherId = null, showCourses = true, showHeading = true }) {
-  const refresh = useRefreshEducatorProfile(teacherId);
-  const [allVisits, setAllVisits] = useState(false);
+// The five figures that matter, as a strip — each a button to the tab with its detail (`onOpen(tab)`).
+export function ProfileKpis({ profile, onOpen = null }) {
   const s = profile.stats;
   const hub = profile.view === "hub";
-  const own = profile.view === "own";
   const r = s.rating || {};
   const q = s.qa || {};
   const rel = s.reliability || {};
-  const fb = s.feedback || {};
-  const first = (profile.teacher?.name || "").split(" ")[0];
-  const earned = (s.badges || []).filter((b) => b.earned);
-  const toEarn = (s.badges || []).filter((b) => !b.earned);
+  const st = !hub ? profile.standards : null;
+  const overall = st ? OVERALL[st.overall] || OVERALL.not_enough : null;
+  const tiles = [
+    st && { key: "standards", tab: "standards", icon: FiTarget, label: "Mentor standards", value: `${st.met} / ${st.counted}`, sub: overall.label, tone: overall.tone },
+    { key: "rating", tab: "quality", icon: FiStar, label: "Parent rating", value: !r.hidden && r.average != null ? `${r.average.toFixed(1)} ★` : "—", sub: r.hidden ? `Shows from 3 reviews (${r.count || 0} so far)` : `${plural(r.count || 0, "review")} · 12 months` },
+    { key: "qa", tab: "quality", icon: FiShield, label: "Quality reviews", value: q.average != null ? `${q.average}%` : "—", sub: q.count ? `${q.band} · ${plural(q.count, "visit")}` : "Not reviewed yet" },
+    { key: "held", tab: "teaching", icon: FiCheckCircle, label: "Sessions held", value: rel.rate != null ? `${rel.rate}%` : "—", sub: rel.planned ? `${rel.given} of ${rel.planned} timetabled · 90 days` : "No timetabled sessions yet" },
+    { key: "hours", tab: "teaching", icon: FiClock, label: "Verified hours", value: fmt(s.hours?.total, 1), sub: `${fmt(s.hours?.last90Days, 1)} in the last 90 days` },
+  ].filter(Boolean);
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontFamily: FONT }}>
+      {tiles.map((t) => {
+        const Tag = onOpen ? "button" : "div";
+        return (
+          <Tag
+            key={t.key}
+            type={onOpen ? "button" : undefined}
+            onClick={onOpen ? () => onOpen(t.tab) : undefined}
+            aria-label={onOpen ? `${t.label}: ${t.value}. Open the details` : undefined}
+            className={onOpen ? "pp-kpi" : undefined}
+            style={{ ...card, flex: "1 1 170px", minWidth: 0, padding: "14px 16px", textAlign: "left", fontFamily: FONT, cursor: onOpen ? "pointer" : "default", display: "flex", flexDirection: "column", gap: 4 }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}><t.icon size={14} color={C.mid} /> {t.label}</span>
+            <span style={{ fontSize: 24, fontWeight: 900, color: C.ink, lineHeight: 1.1 }}>{t.value}</span>
+            {t.tone ? <span style={{ ...pill(t.tone), alignSelf: "flex-start" }}>{t.sub}</span> : <span style={{ fontSize: 12, color: C.faint }}>{t.sub}</span>}
+          </Tag>
+        );
+      })}
+      <style>{".pp-kpi { transition: border-color 150ms ease, box-shadow 150ms ease; } .pp-kpi:hover { border-color: #A9BCD2; box-shadow: 0 4px 14px rgba(37,71,106,0.08); } .pp-kpi:focus-visible { outline: 2px solid #38aae1; outline-offset: 2px; }"}</style>
+    </div>
+  );
+}
+
+// The standards met as a ring, with how many stand where.
+function StandardsRing({ standing }) {
+  const counted = standing.counted || 0;
+  const share = counted ? standing.met / counted : 0;
+  const r = 34;
+  const len = 2 * Math.PI * r;
+  const count = (st) => standing.items.filter((i) => i.status === st).length;
+  const legend = [
+    ["Meeting", count("meets"), C.mid],
+    ["Close", count("close"), C.gold],
+    ["Below", count("below"), C.danger],
+    ["Waiting for data", count("not_enough"), C.border],
+  ].filter(([, n]) => n > 0);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+      <svg width="88" height="88" viewBox="0 0 88 88" role="img" aria-label={`${standing.met} of ${counted} standards met`}>
+        <circle cx="44" cy="44" r={r} fill="none" stroke={C.track} strokeWidth="10" />
+        <circle cx="44" cy="44" r={r} fill="none" stroke={standing.overall === "below" ? C.danger : standing.overall === "close" ? C.gold : C.mid} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={`${share * len} ${len}`} transform="rotate(-90 44 44)" />
+        <text x="44" y="44" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 20, fontWeight: 900, fill: C.ink, fontFamily: FONT }}>{standing.met}/{counted}</text>
+      </svg>
+      <div style={{ display: "grid", gap: 5 }}>
+        {legend.map(([label, n, color]) => (
+          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, color: C.inkSoft }}>
+            <span aria-hidden style={{ width: 10, height: 10, borderRadius: 3, background: color }} /> <strong style={{ color: C.ink }}>{n}</strong> {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// One thing to work on: the standard, the figure against it on a small bar, and what helps.
+function WorkOnRow({ item }) {
+  const top = item.unit === "★" ? 5 : 100;
+  const bar = item.value != null && item.higherIsBetter !== false;
+  const color = item.status === "below" ? C.danger : item.status === "close" ? C.gold : C.sky;
+  const Icon = iconOf(item.key);
+  return (
+    <div style={{ padding: "12px 0", borderTop: `1px solid ${C.line}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ flex: "1 1 180px", fontSize: 14, fontWeight: 800, color: C.ink, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+          <span aria-hidden style={{ width: 30, height: 30, borderRadius: 9, background: C.canvas, border: `1.5px solid ${color}`, color: C.navy, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={15} /></span>
+          {item.label}
+        </span>
+        {bar && (
+          <div aria-hidden style={{ flex: "0 1 160px", minWidth: 100, position: "relative", height: 7, borderRadius: 999, background: C.track }}>
+            <div style={{ width: `${Math.min(100, (Number(item.value) / top) * 100)}%`, height: "100%", borderRadius: 999, background: color }} />
+            <div style={{ position: "absolute", top: -3, left: `calc(${Math.min(100, (Number(item.target) / top) * 100)}% - 1px)`, width: 2, height: 13, background: C.navy, borderRadius: 1 }} />
+          </div>
+        )}
+        <span style={{ fontSize: 13, color: C.muted, whiteSpace: "nowrap" }}><strong style={{ fontSize: 15, color: C.ink }}>{formatValue(item.value, item.unit)}</strong> / {formatValue(item.target, item.unit)}</span>
+      </div>
+      {item.tip && <p style={{ margin: "4px 0 0 40px", fontSize: 12.5, color: C.muted, lineHeight: 1.45, display: "flex", gap: 6 }}><FiZap size={13} color={C.gold} style={{ flexShrink: 0, marginTop: 2 }} /> {item.tip}</p>}
+    </div>
+  );
+}
+
+// Each badge's own icon.
+const BADGE_ICON = { top_rated: FiStar, qa_excellent: FiShield, reliable: FiCalendar, fast_feedback: FiZap, hours: FiClock, tot_certified: FiBookOpen };
+
+// A badge: earned ones in colour, the rest grey with how far along they are. The rule is on hover.
+function BadgeTile({ badge }) {
+  const earned = badge.earned;
+  const Icon = BADGE_ICON[badge.key] || FiAward;
+  return (
+    <div title={badge.rule} style={{ display: "flex", gap: 10, alignItems: "center", padding: "11px 12px", borderRadius: 14, background: earned ? C.goldTint : C.canvas, border: `1px solid ${earned ? C.goldBorder : C.line}`, minWidth: 0 }}>
+      <span aria-hidden style={{ width: 38, height: 38, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center", background: earned ? C.gold : C.track, color: earned ? "#3d2a00" : C.faint }}>
+        <Icon size={17} />
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: earned ? C.ink : C.inkSoft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge.label}</p>
+        <p style={{ margin: "1px 0 0", fontSize: 11.5, color: earned ? C.goldText : C.faint, display: "flex", alignItems: "center", gap: 4 }}>
+          {earned ? <><FiCheck size={12} /> Earned</> : badge.progress}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Overview: where they stand on the standards (a ring), what to work on, and badges.
+export function OverviewPanel({ profile, teacherId = null, onOpen = null }) {
+  const refresh = useRefreshEducatorProfile(teacherId);
+  const s = profile.stats;
+  const hub = profile.view === "hub";
+  const own = profile.view === "own";
+  const badges = s.badges || [];
+  const earned = badges.filter((b) => b.earned).length;
+  const standing = !hub ? profile.standards : null;
+  const attention = standing ? standing.items.filter((i) => ["below", "close", "grace"].includes(i.status)) : [];
+  const tips = !hub ? s.tips || [] : [];
+  const link = { display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: 0, padding: 0, color: C.mid, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+  const updated = s.computedAt ? new Date(s.computedAt).toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
+
+  return (
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "100%", fontFamily: FONT }}>
+      {/* A hub has no standards or tips — it gets the summary in words. */}
+      {hub && (
+        <section style={box}>
+          <SectionTitle icon={FiTrendingUp} title="In short" />
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 5, fontSize: 14, color: C.inkSoft, lineHeight: 1.55 }}>
+            {summaryLines({ s, own, first: (profile.teacher?.name || "").split(" ")[0] }).map((line) => <li key={line}>{line}</li>)}
+          </ul>
+        </section>
+      )}
+      {!hub && (
+        <section style={box}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+            {standing && (
+              <div style={{ flex: "0 0 auto", display: "grid", gap: 10 }}>
+                <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 800, color: C.ink, display: "flex", alignItems: "center", gap: 8 }}><FiTarget size={16} color={C.mid} /> Standards</h3>
+                <StandardsRing standing={standing} />
+                {onOpen && <button type="button" onClick={() => onOpen("standards")} style={link}>See all <FiArrowRight size={13} /></button>}
+              </div>
+            )}
+            <div style={{ flex: "1 1 340px", minWidth: 0 }}>
+              <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 800, color: C.ink, display: "flex", alignItems: "center", gap: 8 }}>
+                {attention.length ? <FiAlertCircle size={16} color={C.danger} /> : <FiCheckCircle size={16} color={C.mid} />} {own ? "What to work on" : "What needs attention"}
+              </h3>
+              <div style={{ marginTop: 8 }}>
+                {attention.length > 0 ? attention.map((i) => <WorkOnRow key={i.key} item={i} />)
+                  : tips.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "grid", gap: 8 }}>
+                      {tips.map((t, i) => <li key={i} style={{ display: "flex", gap: 8, fontSize: 13.5, color: C.inkSoft, lineHeight: 1.5 }}><FiZap size={14} color={C.gold} style={{ flexShrink: 0, marginTop: 3 }} /> {t}</li>)}
+                    </ul>
+                  ) : <p style={{ margin: 0, fontSize: 13.5, color: C.mid, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><FiCheckCircle /> All clear. Every standard with enough data is met.</p>}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section style={box}>
+        <SectionTitle
+          icon={FiAward}
+          title={`Badges · ${earned} of ${badges.length}`}
+          action={(
+            <button type="button" onClick={() => refresh.mutate()} disabled={refresh.isPending} title={updated ? `Figures updated ${updated}` : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.surface, color: C.navy, fontSize: 12, fontWeight: 700, cursor: refresh.isPending ? "wait" : "pointer", fontFamily: "inherit" }}>
+              <FiRefreshCw size={12} /> {refresh.isPending ? "Counting…" : "Refresh figures"}
+            </button>
+          )}
+        />
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 200px), 1fr))" }}>
+          {[...badges].sort((x, y) => Number(y.earned) - Number(x.earned)).map((b) => <BadgeTile key={b.key} badge={b} />)}
+        </div>
+        {updated && <p style={{ margin: "12px 0 0", fontSize: 11.5, color: C.faint }}>Figures updated {updated}</p>}
+      </section>
+    </div>
+  );
+}
+
+// Quality & feedback: QA visits compounded, and what parents say.
+export function QualityPanel({ profile, showVisits = true }) {
+  const [allVisits, setAllVisits] = useState(false);
+  const s = profile.stats;
+  const r = s.rating || {};
+  const q = s.qa || {};
   const history = q.history || [];
   const visits = [...history].reverse();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: FONT }}>
-      {/* 0. Against the workspace's mentor standards (Settings → Mentor standards) — never for a hub. */}
-      {!hub && profile.standards && <StandardsCard standing={profile.standards} own={own} />}
-
-      {/* 1. At a glance */}
-      <section style={{ ...box, background: `linear-gradient(180deg, ${C.canvas}, ${C.surface})` }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: showHeading ? 17 : 15.5, fontWeight: 900, color: C.ink, display: "flex", alignItems: "center", gap: 8 }}><FiTrendingUp color={C.mid} /> {showHeading ? (own ? "Your performance" : "Performance profile") : "At a glance"}</h2>
-            <p style={{ margin: "3px 0 0", fontSize: 11.5, color: C.faint }}>Worked out from the records{s.computedAt ? ` · updated ${new Date(s.computedAt).toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</p>
-          </div>
-          <button type="button" onClick={() => refresh.mutate()} disabled={refresh.isPending} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.surface, color: C.navy, fontSize: 12, fontWeight: 700, cursor: refresh.isPending ? "wait" : "pointer", fontFamily: "inherit" }}>
-            <FiRefreshCw size={12} /> {refresh.isPending ? "Counting…" : "Refresh"}
-          </button>
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "100%", fontFamily: FONT }}>
+      {!q.count && !r.count && !r.hidden ? (
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))" }}>
+          <section style={box}><EmptyState icon={FiShield} title="No quality review yet" line="Your score shows here after your first supervisor visit." /></section>
+          <section style={box}><EmptyState icon={FiStar} title="No parent reviews yet" line="Families' ratings from the last 12 months show here." /></section>
         </div>
-        <ul style={{ margin: "0 0 16px", paddingLeft: 18, display: "grid", gap: 4, fontSize: 13.5, color: C.inkSoft, lineHeight: 1.55 }}>
-          {summaryLines({ s, own, first }).map((line) => <li key={line}>{line}</li>)}
-        </ul>
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 180px), 1fr))" }}>
-          <CoreScore icon={FiShield} label="Quality reviews" value={q.average != null ? q.average : "—"} unit="%"
-            badge={q.band && <span style={pill(BAND_TONE[q.band])}>{q.band}</span>}
-            detail={q.count ? <>{plural(q.count, "visit")} {q.change != null && <> · <Delta value={q.change} suffix=" since first" /></>}</> : "Not reviewed yet"}
-            meaning="Average of every visit by a supervisor" />
-          <CoreScore icon={FiStar} label="Parent rating" value={!r.hidden && r.average != null ? r.average.toFixed(1) : "—"} unit=" / 5"
-            detail={r.hidden ? `Shows from 3 reviews (${r.count || 0} so far)` : plural(r.count || 0, "review")}
-            meaning="Last 12 months" />
-          <CoreScore icon={FiCheckCircle} label="Reliability" value={rel.rate != null ? rel.rate : "—"} unit="%"
-            detail={rel.planned ? `${rel.given} of ${rel.planned} timetabled sessions held` : "No timetabled sessions yet"}
-            meaning="Last 90 days · held = attendance taken" />
-          <CoreScore icon={FiClock} label="Verified hours" value={fmt(s.hours?.total, 1)}
-            detail={`${fmt(s.hours?.last90Days, 1)} in the last 90 days`}
-            meaning="Sessions with attendance, at the timetable's length" />
-        </div>
-      </section>
-
-      {/* 2. Quality reviews — compounded */}
+      ) : (<>
       <section style={box}>
-        <SectionTitle icon={FiShield} title="Quality reviews" note="Every visit counts — each new review moves the totals below." />
-        {!q.count ? <p style={{ margin: 0, fontSize: 13, color: C.muted }}>No quality review yet. Once a supervisor sends a review, its score appears here and adds to the totals with every visit after it.</p> : (
+        <SectionTitle icon={FiShield} title="Quality reviews" />
+        {!q.count ? <EmptyState icon={FiShield} title="No quality review yet" line="Your score shows here after your first supervisor visit." /> : (
           <div style={{ display: "grid", gap: 18, gridTemplateColumns: "100%" }}>
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 118px), 1fr))" }}>
               <Figure label="All-time average" value={`${q.average}%`} sub={q.band} />
@@ -295,7 +474,7 @@ export default function PerformanceProfile({ profile, teacherId = null, showCour
               </div>
             )}
 
-            {visits.length > 0 && (
+            {showVisits && visits.length > 0 && (
               <div>
                 <button type="button" onClick={() => setAllVisits((v) => !v)} aria-expanded={allVisits} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: 0, padding: 0, color: C.mid, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
                   {allVisits ? <FiChevronUp /> : <FiChevronDown />} {allVisits ? "Hide" : "Show"} every visit ({visits.length})
@@ -327,72 +506,64 @@ export default function PerformanceProfile({ profile, teacherId = null, showCour
         )}
       </section>
 
-      {/* 3. Parents */}
       <section style={box}>
-        <SectionTitle icon={FiStar} title="What parents say" note="Ratings from families of the learners taught · last 12 months" />
-        {r.hidden ? <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Averages show from 3 reviews, so no one family can be picked out ({r.count || 0} so far).</p>
-          : r.count ? <FeedbackSummary summary={r} /> : <p style={{ margin: 0, fontSize: 13, color: C.muted }}>No parent reviews in the last 12 months.</p>}
+        <SectionTitle icon={FiStar} title="What parents say" note="Last 12 months" />
+        {r.hidden ? <EmptyState icon={FiStar} title={`${r.count || 0} review${r.count === 1 ? "" : "s"} so far`} line="Averages show from 3 reviews, so no family can be picked out." />
+          : r.count ? <FeedbackSummary summary={r} /> : <EmptyState icon={FiStar} title="No parent reviews yet" line="Families' ratings from the last 12 months show here." />}
       </section>
+      </>)}
+    </div>
+  );
+}
 
-      {/* 4. Teaching activity */}
+// Teaching: the figures, hours over 12 months, courses taught, hub leadership.
+export function TeachingPanel({ profile, showCourses = true }) {
+  const s = profile.stats;
+  const fb = s.feedback || {};
+  return (
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "100%", fontFamily: FONT }}>
       <section style={box}>
-        <SectionTitle icon={FiUsers} title="Teaching" note="Sessions count when attendance is taken" />
-        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 160px), 1fr))", marginBottom: 18 }}>
-          <Figure label="Sessions held" value={fmt(s.sessions?.total)} sub={s.sessions?.untimed ? `${s.sessions.untimed} without a set time` : null} />
-          <Figure label="Learners taught" value={fmt(s.learnersTaught)} sub={plural(s.coursesCount || 0, "course")} />
-          <Figure label="Feedback speed" value={fb.medianHours != null ? (fb.medianHours < 1 ? "< 1 h" : `${Math.round(fb.medianHours)} h`) : "—"} sub={fb.count ? `typical · ${plural(fb.count, "piece")} marked` : "Nothing hand-marked yet"} />
-          <Figure label="Learners finished" value={fmt(s.outcomes?.learnersFinished)} sub={`${plural(s.outcomes?.certificatesEarned || 0, "certificate")}${s.outcomes?.averageScore != null ? ` · avg ${s.outcomes.averageScore}%` : ""}`} />
+        <SectionTitle
+          icon={FiUsers}
+          title="Teaching"
+          action={<span title="A session counts once its attendance is taken; hours use its timetable slot's length." style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: C.faint, cursor: "help" }}><FiInfo size={13} /> How it's counted</span>}
+        />
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 190px), 1fr))", marginBottom: 20 }}>
+          <IconFigure icon={FiCheckCircle} label="Sessions held" value={fmt(s.sessions?.total)} sub={s.sessions?.untimed ? `${s.sessions.untimed} untimed` : null} />
+          <IconFigure icon={FiUsers} label="Learners taught" value={fmt(s.learnersTaught)} sub={plural(s.coursesCount || 0, "course")} />
+          <IconFigure icon={FiClock} label="Marks work within" value={fb.medianHours != null ? (fb.medianHours < 1 ? "1 h" : `${Math.round(fb.medianHours)} h`) : "—"} sub={fb.count ? `typically · ${plural(fb.count, "piece")}` : "nothing marked yet"} />
+          <IconFigure icon={FiUserCheck} label="Learners finished" value={fmt(s.outcomes?.learnersFinished)} sub={`${plural(s.outcomes?.certificatesEarned || 0, "certificate")}${s.outcomes?.averageScore != null ? ` · avg ${s.outcomes.averageScore}%` : ""}`} />
         </div>
-        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 800, color: C.ink }}>Verified hours, month by month</p>
-        {s.hours?.byMonth?.length ? <HourBars rows={s.hours.byMonth.map((m) => ({ label: monthShort(m.month), value: m.hours }))} />
-          : <p style={{ margin: 0, fontSize: 13, color: C.muted }}>No timed sessions in the last 12 months. Hours count each session with attendance taken, at its timetable slot&apos;s length.</p>}
-        {rel.rate != null && rel.rate < 80 && !hub && (
-          <p style={{ margin: "12px 0 0", fontSize: 12, color: C.muted, display: "flex", gap: 6, alignItems: "flex-start" }}><FiAlertCircle style={{ flexShrink: 0, marginTop: 2 }} /> A timetabled session counts as held when its attendance was taken — sessions taught without attendance don&apos;t count.</p>
-        )}
+        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 800, color: C.ink }}>Verified hours · last 12 months</p>
+        <HourBars byMonth={s.hours?.byMonth || []} />
       </section>
-
-      {/* 5. Badges and next steps */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", alignItems: "start" }}>
-        <section style={box}>
-          <SectionTitle icon={FiAward} title="Badges" note={`${earned.length} of ${(s.badges || []).length} earned — each has a published rule`} />
-          {earned.length > 0 && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: toEarn.length ? 14 : 0 }}>
-              {earned.map((b) => <span key={b.key} title={b.rule} style={{ ...pill("waiting", { fontSize: 12.5, padding: "5px 12px" }) }}><FiAward size={13} /> {b.label}</span>)}
-            </div>
-          )}
-          {toEarn.length > 0 && (
-            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "100%" }}>
-              {toEarn.map((b) => (
-                <div key={b.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", fontSize: 12.5, padding: "8px 0", borderTop: `1px solid ${C.line}` }}>
-                  <span style={{ color: C.inkSoft, fontWeight: 700 }}>{b.label} <span style={{ fontWeight: 500, color: C.faint }}>— {b.rule}</span></span>
-                  <span style={{ color: C.muted }}>{b.progress}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-        {!hub && s.tips?.length > 0 && (
-          <section style={{ ...box, background: C.skyTint, borderColor: C.skyBorder }}>
-            <SectionTitle icon={FiTrendingUp} title={own ? "What to work on next" : "Growth areas"} />
-            <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8, fontSize: 13.5, color: C.ink, lineHeight: 1.55 }}>
-              {s.tips.map((t, i) => <li key={i}>{t}</li>)}
-            </ol>
-          </section>
-        )}
-      </div>
 
       {showCourses && <CoursesTaught courses={s.courses} />}
 
       {s.leadership && (
         <section style={box}>
           <SectionTitle icon={FiUsers} title="Hub leadership" note="As Account Manager / Training Lead" />
-          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(46%, 160px), 1fr))" }}>
-            <Figure label="Check-ins reported" value={`${s.leadership.checkinsReported} of ${s.leadership.checkinsDue}`} />
-            <Figure label="Reported on time" value={fmt(s.leadership.reportedOnTime)} sub="within 2 days" />
-            <Figure label="Tasks done" value={`${s.leadership.tasksDone} of ${s.leadership.tasks}`} />
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 190px), 1fr))" }}>
+            <IconFigure icon={FiCheckCircle} label="Check-ins reported" value={`${s.leadership.checkinsReported} / ${s.leadership.checkinsDue}`} />
+            <IconFigure icon={FiClock} label="On time" value={fmt(s.leadership.reportedOnTime)} sub="within 2 days" />
+            <IconFigure icon={FiCheck} label="Tasks done" value={`${s.leadership.tasksDone} / ${s.leadership.tasks}`} />
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+// Everything, stacked — for a page with no tabs of its own (the supervisor's educator page).
+export default function PerformanceProfile({ profile, teacherId = null, showCourses = true }) {
+  const hub = profile.view === "hub";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: FONT }}>
+      <ProfileKpis profile={profile} />
+      <OverviewPanel profile={profile} teacherId={teacherId} />
+      {!hub && profile.standards && <StandardsCard standing={profile.standards} own={profile.view === "own"} />}
+      <QualityPanel profile={profile} />
+      <TeachingPanel profile={profile} showCourses={showCourses} />
     </div>
   );
 }

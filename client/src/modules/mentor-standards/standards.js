@@ -1,6 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { FiAlertTriangle, FiCalendar, FiCheckSquare, FiEdit3, FiMessageCircle, FiShield, FiStar, FiTarget, FiTrendingUp, FiUserCheck, FiUsers } from "react-icons/fi";
 import api from "../../services/api";
+
+// Each standard's own icon, wherever it's listed.
+export const STANDARD_ICON = {
+  retention: FiUserCheck,
+  rating: FiStar,
+  qa: FiShield,
+  reliability: FiCalendar,
+  markedOnTime: FiEdit3,
+  attendanceOnDay: FiCheckSquare,
+  learnerAttendance: FiUsers,
+  onTrack: FiTrendingUp,
+  mentorCheckins: FiMessageCircle,
+  openConcerns: FiAlertTriangle,
+};
+export const iconOf = (key) => STANDARD_ICON[key] || FiTarget;
 
 // Mentor standards (server: modules/mentor-standards/) — the bar every mentor is measured against,
 // set in Settings → Mentor standards; each mentor's standing comes with their profile and with
@@ -10,7 +26,7 @@ export const STATUS = {
   meets: { label: "Meets", tone: "good" },
   close: { label: "Close", tone: "waiting" },
   below: { label: "Below", tone: "danger" },
-  grace: { label: "New — settling in", tone: "info" },
+  grace: { label: "New, settling in", tone: "info" },
   not_enough: { label: "Not enough data yet", tone: "neutral" },
 };
 

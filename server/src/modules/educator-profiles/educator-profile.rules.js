@@ -203,14 +203,14 @@ function badgesFor(s) {
 function growthTips(s, badges) {
   const tips = [];
   const low = (s.rating?.aspects || []).filter((a) => a.average != null && a.count >= 3).sort((a, b) => a.average - b.average)[0];
-  if (low && low.average < 4.2) tips.push(`Parents rate "${low.label}" lowest (${low.average.toFixed(1)}★) — a good place to focus.`);
+  if (low && low.average < 4.2) tips.push(`Parents rate "${low.label}" lowest (${low.average.toFixed(1)}★), a good place to focus.`);
   if (s.qa?.improvements) tips.push(`From the last quality review: ${s.qa.improvements}`);
   const weakest = (s.qa?.sections || []).filter((x) => x.visits >= 2 && x.score < 70).sort((a, b) => a.score - b.score)[0];
-  if (weakest) tips.push(`Across ${weakest.visits} quality reviews, "${weakest.title}" averages ${weakest.score}% — the area with most room to grow.`);
-  if (s.reliability?.rate != null && s.reliability.rate < 90) tips.push(`${s.reliability.rate}% of timetabled sessions were held in the last 90 days — attendance has to be taken at every session taught for it to count.`);
-  if (s.feedback?.medianHours != null && s.feedback.medianHours > 72) tips.push(`Work typically waits ${Math.round(s.feedback.medianHours)} hours to be marked — learners do better with feedback within two days.`);
+  if (weakest) tips.push(`Across ${weakest.visits} quality reviews, "${weakest.title}" averages ${weakest.score}%, the area with most room to grow.`);
+  if (s.reliability?.rate != null && s.reliability.rate < 90) tips.push(`${s.reliability.rate}% of timetabled sessions were held in the last 90 days. Take attendance at every session you teach so it counts.`);
+  if (s.feedback?.medianHours != null && s.feedback.medianHours > 72) tips.push(`Work typically waits ${Math.round(s.feedback.medianHours)} hours to be marked. Learners do better with feedback within two days.`);
   const next = badges.find((b) => !b.earned && b.key !== "tot_certified");
-  if (next) tips.push(`Next badge — ${next.label}: ${next.rule}. Now: ${next.progress}.`);
+  if (next) tips.push(`Next badge: ${next.label}, ${next.rule}. Now: ${next.progress}.`);
   return tips.slice(0, 5);
 }
 
