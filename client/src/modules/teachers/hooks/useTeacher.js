@@ -40,10 +40,11 @@ export function useUpdateTeacher() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => teacherApi.update(id, data),
-    onSuccess: (data) => {
+    // `successMessage` (optional, with the variables) — e.g. an educator's own "Your photo is saved".
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.all });
       if (data?.id) queryClient.invalidateQueries({ queryKey: TEACHER_KEYS.detail(data.id) });
-      toast.success("Educator updated successfully!");
+      toast.success(variables?.successMessage || "Educator updated successfully!");
     },
     onError: (err) => toast.error(err.message || "Failed to update tech educator"),
   });

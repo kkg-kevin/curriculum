@@ -23,9 +23,16 @@ export default function AvatarPhotoEditor({ firstName, lastName, photo, onChange
     setOpen(true);
   };
 
+  // A picked photo opens "Adjust your photo" (ImageCropDialog) — a modal of its own, drawn outside
+  // this popover. While it's open, clicks and scrolls in it must not close the popover: that would
+  // unmount the upload field, and the dialog with it, before "Save photo" ran — the photo was never
+  // uploaded or saved, and nothing was said (fixed 10 Nov 2026).
+  const dialogOnTop = () => Boolean(document.querySelector('[role="dialog"][aria-modal="true"]'));
+
   useEffect(() => {
     if (!open) return;
     const close = (e) => {
+      if (dialogOnTop()) return;
       if (!triggerRef.current?.contains(e.target) && !popoverRef.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", close);
@@ -34,7 +41,7 @@ export default function AvatarPhotoEditor({ firstName, lastName, photo, onChange
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
+    const close = () => { if (!dialogOnTop()) setOpen(false); };
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
