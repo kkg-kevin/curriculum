@@ -10,6 +10,9 @@ export const affiliatesApi = {
   // Admin
   list: () => api.get(BASE).then(data),
   create: (body) => api.post(BASE, body).then(data),
+  // This workspace's people who already have a login (parents, educators, hub logins, staff) →
+  // [{ userId, name, email, phone, kind, detail, alreadyAffiliate }].
+  people: (q) => api.get(`${BASE}/people`, { params: { q } }).then(data),
   update: (id, body) => api.put(`${BASE}/${id}`, body).then(data),
   remove: (id) => api.delete(`${BASE}/${id}`).then(data),
   openInvoices: (id) => api.get(`${BASE}/${id}/open-invoices`).then(data),

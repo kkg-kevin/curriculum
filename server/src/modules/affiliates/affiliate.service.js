@@ -10,6 +10,7 @@ const passwords = require("../../shared/utils/password");
 const { appUrl } = require("../../shared/mail/mail.layout");
 const { AFFILIATE_ROLE, OWN_ONLY_ROLES, rolesOf, extraRolesOf } = require("../auth/account-roles");
 const { isLeftoverLogin } = require("../auth/leftover-login");
+const { adminIdsOf } = require("../../shared/utils/organisation");
 const {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, normaliseSettings, normaliseCode, suggestCode,
   emailKey, pickAttribution, isSelfReferral, commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
@@ -269,8 +270,88 @@ async function loginFor(email) {
   return user && !OWN_ONLY_ROLES.includes(user.role) ? user : null;
 }
 
+// ---- People already on Digifunzi (10 Nov 2026) -----------------------------------------------------
+// Staff add an affiliate by picking someone who already has a login instead of typing them in: they
+// keep signing in with their own email and password. Only people tied to this workspace are found —
+// parents of its learners (by guardian email, never a child's username login), its educators, its
+// hubs' own logins and its staff — never an admin, never another workspace's people.
+const lowerKey = (v) => String(v || "").trim().toLowerCase();
+
+// What each of these logins is to the workspace: Map userId → { kind, detail }. Logins not tied to it
+// are left out.
+async function workspaceTiesOf(ownerAdminId, users) {
+  const ties = new Map();
+  if (!users.length) return ties;
+  const owners = [...new Set([ownerAdminId, ...(await adminIdsOf(ownerAdminId))])];
+  const hubs = await db("learning_hubs").where({ ownerAdminId }).select("id", "name", "email");
+  const hubIds = hubs.map((h) => h.id);
+  const emails = [...new Set(users.map((u) => lowerKey(u.email)).filter(Boolean))];
+  if (!emails.length) return ties;
+
+  const [teachers, children] = await Promise.all([
+    db("teachers").whereIn(db.raw("LOWER(email)"), emails)
+      .where((w) => {
+        w.whereIn("createdByAdminId", owners);
+        if (hubIds.length) w.orWhereIn("id", db("teacher_hub_links").whereIn("hubId", hubIds).select("teacherId"));
+      })
+      .select("email"),
+    hubIds.length
+      ? db("learners").whereIn(db.raw("LOWER(guardianEmail)"), emails).whereNull("teacherId")
+        .whereIn("id", db("learner_hub_links").whereIn("hubId", hubIds).select("learnerId"))
+        .select("guardianEmail", "firstName")
+      : [],
+  ]);
+  const educatorEmails = new Set(teachers.map((t) => lowerKey(t.email)));
+  const childrenOf = new Map();
+  for (const c of children) {
+    const key = lowerKey(c.guardianEmail);
+    childrenOf.set(key, [...(childrenOf.get(key) || []), c.firstName].filter(Boolean));
+  }
+  const hubOfEmail = new Map(hubs.filter((h) => h.email).map((h) => [lowerKey(h.email), h.name]));
+
+  for (const u of users) {
+    if (u.username || OWN_ONLY_ROLES.includes(u.role)) continue;
+    const key = lowerKey(u.email);
+    const roles = rolesOf(u);
+    const details = [];
+    if (roles.includes("teacher") && educatorEmails.has(key)) details.push("Educator");
+    if (roles.includes("learner") && childrenOf.has(key)) details.push(`Parent of ${[...new Set(childrenOf.get(key))].slice(0, 3).join(", ") || "a learner"}`);
+    if (roles.includes("school") && hubOfEmail.has(key)) details.push(`${hubOfEmail.get(key)} (hub login)`);
+    if (roles.includes("collaborator") && owners.includes(u.invitedByAdminId)) details.push("Staff");
+    if (roles.includes(AFFILIATE_ROLE) && !details.length) {
+      // Someone signing in only as Affiliate — tied to us when they're (or were) our affiliate.
+      if (await db(A).where({ ownerAdminId, userId: u.id }).first("id")) details.push("Affiliate");
+    }
+    if (details.length) ties.set(u.id, { kind: await kindOfLogin(u), detail: details.join(" · ") });
+  }
+  return ties;
+}
+
 const AffiliateService = {
   getSettings,
+
+  // Staff's search for someone already on Digifunzi to make an affiliate: by name, email or phone,
+  // only this workspace's people (workspaceTiesOf), each saying whether they're already one.
+  async searchPeople(req, q) {
+    const term = String(q || "").trim();
+    if (term.length < 2) return [];
+    const like = `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+    const users = await db("users")
+      .whereNull("deactivatedAt").whereNull("username").whereNotNull("email")
+      .whereNotIn("role", OWN_ONLY_ROLES)
+      .where((w) => w.where("name", "like", like).orWhere("email", "like", like).orWhere("phone", "like", like))
+      .orderBy("name", "asc").limit(60)
+      .select("id", "name", "email", "phone", "role", "extraRoles", "username", "invitedByAdminId");
+    const ties = await workspaceTiesOf(req.ownerAdminId, users);
+    const found = users.filter((u) => ties.has(u.id)).slice(0, 15);
+    const taken = found.length
+      ? new Set((await db(A).where({ ownerAdminId: req.ownerAdminId }).whereIn("userId", found.map((u) => u.id)).pluck("userId")))
+      : new Set();
+    return found.map((u) => ({
+      userId: u.id, name: u.name || u.email, email: u.email, phone: u.phone || null,
+      kind: ties.get(u.id).kind, detail: ties.get(u.id).detail, alreadyAffiliate: taken.has(u.id),
+    }));
+  },
   saveSettings,
 
   // ---- 1. Attribution (website sign-ups) ------------------------------------------------------
@@ -397,6 +478,12 @@ const AffiliateService = {
   // is linked or made and they're welcomed (welcome()); waiting for approval: an existing login is
   // only linked.
   async createAffiliate(req, input) {
+    // Someone already on Digifunzi, picked from the search: their own name, email and phone.
+    if (input.userId) {
+      const picked = await UserModel.findById(input.userId);
+      if (!picked || !(await workspaceTiesOf(req.ownerAdminId, [picked])).has(picked.id)) fail("That person isn't one of this workspace's people — search again.", 404);
+      input = { ...input, name: picked.name || picked.email, email: picked.email, phone: input.phone || picked.phone || null };
+    }
     const data = cleanAffiliateInput(input);
     if (!data.email) fail("Enter their email — it's what they sign in with.");
     const code = await uniqueCode(input.code, data.name);

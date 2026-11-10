@@ -38,11 +38,13 @@ const STATE = {
 };
 const PAYOUT_TONE = { requested: "waiting", paid: "strong", rejected: "danger" };
 
-function Modal({ title, onClose, children }) {
+// A dialog: the pages use the full width, but a form reads best at a comfortable width (`width`,
+// shrinking to fit a phone).
+function Modal({ title, onClose, children, width = 600 }) {
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ ...card, width: "100%", maxHeight: "92vh", overflowY: "auto", padding: 22, fontFamily: FONT, boxShadow: "0 20px 50px rgba(15,23,42,0.25)" }}>
+      <div style={{ ...card, width: "100%", maxWidth: width, maxHeight: "92vh", overflowY: "auto", padding: 22, fontFamily: FONT, boxShadow: "0 20px 50px rgba(15,23,42,0.25)", boxSizing: "border-box" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: BRAND.ink }}>{title}</h2>
           <button type="button" onClick={onClose} aria-label="Close" style={{ ...btn, padding: 6 }}><FiX size={16} /></button>
@@ -71,6 +73,73 @@ const copy = (text, what = "Copied") => {
 };
 
 // ---- Affiliates -----------------------------------------------------------------------------
+const KIND_SIGN_IN = {
+  parent: "Signs in with their own parent login — Refer & earn is in their parent portal.",
+  educator: "Signs in with their own educator login — Refer & earn is in their teacher portal.",
+  other: "Signs in with their own email and password, choosing Affiliate at sign-in.",
+};
+
+// Finds someone already on Digifunzi (this workspace's parents, educators, hub logins, staff) by
+// name, email or phone — a dropdown under the box; picking one fills the form with them.
+function PersonSearch({ picked, onPick }) {
+  const [text, setText] = useState("");
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(text.trim()), 300);
+    return () => clearTimeout(t);
+  }, [text]);
+  const { data: people = [], isFetching } = useQuery({
+    queryKey: ["affiliates", "people", term],
+    queryFn: () => affiliatesApi.people(term),
+    enabled: term.length >= 2 && !picked,
+    staleTime: 30 * 1000,
+  });
+
+  if (picked) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${BRAND.skyBorder}`, background: BRAND.skyTint }}>
+        <span style={{ width: 38, height: 38, borderRadius: "50%", background: BRAND.navy, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+          {String(picked.name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: BRAND.ink }}>{picked.name}</p>
+          <p style={{ margin: "1px 0 0", fontSize: 12.5, color: BRAND.muted, overflowWrap: "anywhere" }}>{picked.email}{picked.phone ? ` · ${picked.phone}` : ""}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: BRAND.skyText, fontWeight: 700 }}>{picked.detail}</p>
+        </div>
+        <button type="button" style={btn} onClick={() => { onPick(null); setText(""); }}>Change</button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      <label style={label}>Find them
+        <input style={input} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a name, email or phone number" autoFocus aria-autocomplete="list" />
+      </label>
+      {term.length >= 2 && (
+        <div role="listbox" aria-label="People found" style={{ border: `1.5px solid ${BRAND.border}`, borderRadius: 12, overflow: "hidden", maxHeight: 280, overflowY: "auto", background: "#fff" }}>
+          {isFetching && people.length === 0 && <p style={{ margin: 0, padding: "12px 14px", fontSize: 13, color: BRAND.muted }}>Searching…</p>}
+          {!isFetching && people.length === 0 && (
+            <p style={{ margin: 0, padding: "12px 14px", fontSize: 13, color: BRAND.muted }}>No one found among this workspace&rsquo;s parents, educators, hubs or staff. Not on Digifunzi yet? Choose &ldquo;Someone new&rdquo; above.</p>
+          )}
+          {people.map((p) => (
+            <button
+              key={p.userId} type="button" role="option" aria-selected="false" disabled={p.alreadyAffiliate}
+              onClick={() => onPick(p)}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: 0, borderTop: `1px solid ${BRAND.line}`, background: "#fff", textAlign: "left", cursor: p.alreadyAffiliate ? "not-allowed" : "pointer", opacity: p.alreadyAffiliate ? 0.55 : 1, fontFamily: FONT }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: BRAND.ink }}>{p.name}</p>
+                <p style={{ margin: "1px 0 0", fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{p.email}{p.phone ? ` · ${p.phone}` : ""}</p>
+              </div>
+              <span style={pill(p.alreadyAffiliate ? "neutral" : p.kind === "other" ? "info" : "good")}>{p.alreadyAffiliate ? "Already an affiliate" : p.detail}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AffiliateDialog({ affiliate, onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState(() => ({
@@ -78,20 +147,60 @@ function AffiliateDialog({ affiliate, onClose }) {
     code: affiliate?.code || "", status: affiliate?.status || "active", payoutMethod: affiliate?.payoutMethod || "credit",
     payoutPhone: affiliate?.payoutPhone || "", payoutDetails: affiliate?.payoutDetails || "", notes: affiliate?.notes || "",
   }));
+  // Adding: someone already on Digifunzi (picked from the search) or someone new (typed in).
+  const [who, setWho] = useState("existing");
+  const [picked, setPicked] = useState(null);
+  const pick = (person) => {
+    setPicked(person);
+    if (person) setForm((f) => ({ ...f, payoutMethod: person.kind === "parent" ? "credit" : "mpesa", payoutPhone: f.payoutPhone || person.phone || "" }));
+  };
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const usingExisting = !affiliate && who === "existing";
   const save = useMutation({
-    mutationFn: () => (affiliate ? affiliatesApi.update(affiliate.id, form) : affiliatesApi.create({ ...form, code: form.code || undefined })),
+    mutationFn: () => {
+      if (affiliate) return affiliatesApi.update(affiliate.id, form);
+      const { name, email, phone, ...rest } = form;
+      return usingExisting
+        ? affiliatesApi.create({ ...rest, userId: picked.userId, code: form.code || undefined })
+        : affiliatesApi.create({ ...form, code: form.code || undefined });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success(affiliate ? "Saved" : "Affiliate added"); onClose(); },
     onError: (err) => toast.error(errorOf(err)),
   });
+  const choice = (key, text) => (
+    <button type="button" role="radio" aria-checked={who === key} onClick={() => { setWho(key); setPicked(null); }}
+      style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${who === key ? BRAND.navy : BRAND.border}`, background: who === key ? BRAND.navy : "#fff", color: who === key ? "#fff" : BRAND.inkSoft, fontSize: 13, fontWeight: 800, fontFamily: FONT, cursor: "pointer" }}>
+      {text}
+    </button>
+  );
   return (
-    <Modal title={affiliate ? `Edit ${affiliate.name}` : "Add an affiliate"} onClose={onClose}>
-      <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 12 }}>
-        <label style={label}>Name<input style={input} value={form.name} onChange={set("name")} required /></label>
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-          <label style={label}>Email (they sign in with it)<input style={input} type="email" value={form.email} onChange={set("email")} required placeholder="name@example.com" /></label>
-          <label style={label}>Phone<input style={input} value={form.phone} onChange={set("phone")} /></label>
-        </div>
+    <Modal title={affiliate ? `Edit ${affiliate.name}` : "Add an affiliate"} onClose={onClose} width={640}>
+      <form onSubmit={(e) => { e.preventDefault(); if (usingExisting && !picked) { toast.error("Find and choose the person first"); return; } save.mutate(); }} style={{ display: "grid", gap: 12 }}>
+        {!affiliate && (
+          <div role="radiogroup" aria-label="Who are you adding?" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {choice("existing", "Someone already on Digifunzi")}
+            {choice("new", "Someone new")}
+          </div>
+        )}
+        {usingExisting ? (
+          <>
+            <PersonSearch picked={picked} onPick={pick} />
+            {picked && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted, lineHeight: 1.5 }}>{KIND_SIGN_IN[picked.kind] || KIND_SIGN_IN.other} Nothing to set up — no new password.</p>}
+          </>
+        ) : (
+          <>
+            <label style={label}>Name<input style={input} value={form.name} onChange={set("name")} required /></label>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+              <label style={label}>Email (they sign in with it)<input style={input} type="email" value={form.email} onChange={set("email")} required placeholder="name@example.com" /></label>
+              <label style={label}>Phone<input style={input} value={form.phone} onChange={set("phone")} /></label>
+            </div>
+            {!affiliate && (
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, fontSize: 12.5, color: BRAND.goldText, lineHeight: 1.55 }}>
+                <strong>Their password:</strong> you don&rsquo;t set one. Once they&rsquo;re active we email them a link to choose their own password (it works for 7 days), then they sign in as Affiliate with this email. Link expired or lost? Use <strong>Email sign-in details</strong> on their row to send a new one.
+              </div>
+            )}
+          </>
+        )}
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
           <label style={label}>Code<input style={{ ...input, textTransform: "uppercase" }} value={form.code} onChange={set("code")} placeholder={affiliate ? "" : "Made from their name"} /></label>
           <label style={label}>Status
@@ -109,11 +218,6 @@ function AffiliateDialog({ affiliate, onClose }) {
           {form.payoutMethod === "mpesa" && <label style={label}>M-Pesa number<input style={input} value={form.payoutPhone} onChange={set("payoutPhone")} /></label>}
           {form.payoutMethod === "bank" && <label style={label}>Bank details<input style={input} value={form.payoutDetails} onChange={set("payoutDetails")} placeholder="Bank, account name and number" /></label>}
         </div>
-        {!affiliate && (
-          <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted, lineHeight: 1.5 }}>
-            A parent or educator signs in with the login they already have and finds Refer &amp; earn in their portal. Anyone else gets their own login: once they&rsquo;re active we email them a link to set their password, and they sign in as Affiliate.
-          </p>
-        )}
         {affiliate?.promotion && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>How they said they&rsquo;d share us: &ldquo;{affiliate.promotion}&rdquo;</p>}
         <label style={label}>Notes (only staff see these)<textarea style={{ ...input, minHeight: 64, resize: "vertical" }} value={form.notes} onChange={set("notes")} /></label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -275,7 +379,7 @@ function PayDialog({ payout, onClose }) {
   });
   const a = payout.affiliate || {};
   return (
-    <Modal title={`Pay ${a.name || "the affiliate"} ${formatKsh(payout.amount)}`} onClose={onClose}>
+    <Modal title={`Pay ${a.name || "the affiliate"} ${formatKsh(payout.amount)}`} onClose={onClose} width={560}>
       <form onSubmit={(e) => { e.preventDefault(); pay.mutate(); }} style={{ display: "grid", gap: 12 }}>
         <label style={label}>How it's paid
           <select style={input} value={method} onChange={(e) => setMethod(e.target.value)}>

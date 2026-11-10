@@ -97,6 +97,8 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
   "/api/mentor-checkins": "mentor-checkins",
+  // The workspace's mentor standards are a setting.
+  "/api/mentor-standards": "settings",
   // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").
   "/api/tot/learners": "learners",
   "/api/tot": "teachers",

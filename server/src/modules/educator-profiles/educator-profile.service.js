@@ -24,7 +24,7 @@ const { getStats, fullName } = require("./educator-profile.stats");
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 const parseJson = (v) => (typeof v === "string" ? JSON.parse(v || "null") : v);
 
-const PROFILE_FIELDS = ["id", "firstName", "lastName", "email", "phone", "photo", "status", "teacherLevel", "supervisorId", "createdByAdminId",
+const PROFILE_FIELDS = ["id", "firstName", "lastName", "email", "phone", "photo", "status", "teacherLevel", "supervisorId", "createdByAdminId", "createdAt",
   "profileAbout", "profileAboutDraft", "profileOptIn", "profilePublic", "profileSlug", "profilePublishedAt", "profileApprovedBy", "profileReviewNote"];
 
 const about = (t) => R.cleanAbout(parseJson(t.profileAbout) || {});
@@ -153,6 +153,8 @@ const EducatorProfileService = {
       delete out.aboutDraft;
     }
     if (view === "manager") out.requests = await requestsFor(teacherId, ownerAdminId);
+    // The workspace's mentor standards and where they stand (10 Nov 2026) — never for a hub.
+    if (view !== "hub") out.standards = await require("../mentor-standards/mentor-standards.service").standingFor(teacher, stats, view === "manager" ? ownerAdminId : null);
     out.preview = publicView(teacher, stats, { useDraft: view !== "hub" });
     return out;
   },

@@ -132,6 +132,9 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "mentor_standard_below":
+      // A mentor below one of the workspace's mentor standards — their page (admin or supervisor).
+      return p.route || "/teachers";
     case "mentor_checkin_scheduled":
     case "mentor_checkin_round_scheduled":
     case "mentor_checkin_changed":

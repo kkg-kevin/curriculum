@@ -6,6 +6,8 @@
 
 const db = require("../../config/db");
 const { getStats, fullName } = require("../educator-profiles/educator-profile.stats");
+const MentorStandards = require("../mentor-standards/mentor-standards.service");
+const { standing: standingOf } = require("../mentor-standards/mentor-standards.rules");
 
 async function getEducators(scope) {
   if (scope.isHubView) return { hidden: true, educators: [] };
@@ -14,10 +16,13 @@ async function getEducators(scope) {
   const teaching = classIds.length ? await db("class_course_teacher_links").whereIn("classId", classIds).distinct("teacherId").pluck("teacherId") : [];
   const linked = !scope.filters.classId && scope.hubIds.length ? await db("teacher_hub_links").whereIn("hubId", scope.hubIds).distinct("teacherId").pluck("teacherId") : [];
   const ids = [...new Set([...teaching, ...linked])];
-  const teachers = ids.length ? await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "status", "profilePublic") : [];
+  const teachers = ids.length ? await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "status", "profilePublic", "createdAt") : [];
+  // The workspace's mentor standards (Settings → Mentor standards) — every educator measured against them.
+  const settings = await MentorStandards.getSettings(scope.ownerAdminId);
   const educators = [];
   for (const t of teachers) {
     const s = await getStats(t.id);
+    const st = standingOf(s.standards || {}, settings, { since: t.createdAt });
     educators.push({
       teacherId: t.id,
       name: fullName(t) || "Educator",
@@ -38,6 +43,10 @@ async function getEducators(scope) {
       finished: s.outcomes.learnersFinished,
       averageScore: s.outcomes.averageScore,
       badges: s.badges.filter((b) => b.earned).map((b) => b.label),
+      standards: {
+        met: st.met, counted: st.counted, total: st.total, overall: st.overall, inGrace: st.inGrace,
+        items: st.items.map((i) => ({ key: i.key, label: i.label, unit: i.unit, value: i.value, target: i.target, minimum: i.minimum, status: i.status, evidence: i.evidence })),
+      },
     });
   }
   const avg = (xs) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
@@ -49,7 +58,14 @@ async function getEducators(scope) {
       rating: avg(educators.filter((e) => e.rating != null).map((e) => e.rating)),
       qa: avg(educators.filter((e) => e.qa != null).map((e) => e.qa)),
       published: educators.filter((e) => e.published).length,
+      meetingAll: educators.filter((e) => e.standards.overall === "meets").length,
+      belowAny: educators.filter((e) => e.standards.overall === "below").length,
     },
+    // The standards switched on (for the table's columns), with their targets.
+    standards: Object.entries(settings.standards).filter(([, v]) => v.enabled).map(([key, v]) => {
+      const def = MentorStandards.definitions().find((d) => d.key === key);
+      return { key, label: def.label, unit: def.unit, higherIsBetter: def.higherIsBetter, target: v.target, minimum: v.minimum };
+    }),
   };
 }
 

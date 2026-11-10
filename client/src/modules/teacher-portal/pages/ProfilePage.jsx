@@ -238,7 +238,7 @@ export default function ProfilePage() {
       <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "24px 28px", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", position: "relative" }}>
-          <AvatarPhotoEditor firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} borderColor="rgba(255,255,255,0.3)" onChange={(photo) => updateTeacher({ id: teacher.id, data: { photo } })} />
+          <AvatarPhotoEditor firstName={teacher.firstName} lastName={teacher.lastName} photo={teacher.photo} borderColor="rgba(255,255,255,0.3)" onChange={(photo) => updateTeacher({ id: teacher.id, data: { photo }, successMessage: photo ? "Your photo is saved" : "Your photo was removed" })} />
           <div style={{ flex: "1 1 260px", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>{teacher.firstName} {teacher.lastName}</h1>

@@ -45,6 +45,7 @@ const ROOTS = {
   checkins: { table: null, noun: "hub check-in", module: "checkins" },
   qa: { table: null, noun: "QA visit", module: "qa" },
   "mentor-checkins": { table: null, noun: "parent check-in", module: "mentor-checkins" },
+  "mentor-standards": { table: null, noun: "mentor standards", module: "settings" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
