@@ -64,6 +64,8 @@ router.post("/payouts/:id/reject", admin, asyncHandler(async (req, res) => {
 }));
 
 const affiliateSchema = z.object({
+  // Someone already on Digifunzi (GET /people): their name and email come from their login.
+  userId: z.string().trim().max(36).optional().nullable(),
   name: z.string().trim().max(150).optional(),
   email: z.string().trim().max(255).optional().nullable(),
   phone: z.string().trim().max(40).optional().nullable(),
@@ -75,6 +77,8 @@ const affiliateSchema = z.object({
   notes: z.string().max(4000).optional().nullable(),
 });
 router.get("/", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listAffiliates(req))));
+// Search this workspace's people who already have a login (parents, educators, hub logins, staff).
+router.get("/people", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.searchPeople(req, req.query.q))));
 router.post("/", admin, asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: await AffiliateService.createAffiliate(req, affiliateSchema.parse(req.body || {})) });
 }));
