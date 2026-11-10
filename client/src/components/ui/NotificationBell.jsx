@@ -132,6 +132,15 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "mentor_checkin_scheduled":
+    case "mentor_checkin_round_scheduled":
+    case "mentor_checkin_changed":
+    case "mentor_checkin_cancelled":
+    case "mentor_checkin_today":
+    case "mentor_checkin_report_ready":
+    case "mentor_checkin_approved":
+      // Parent–mentor check-ins: the check-in's own page in the reader's portal.
+      return p.route || "/mentor-checkins";
     case "affiliate_referral":
     case "affiliate_commission":
     case "affiliate_approved":

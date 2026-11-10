@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
+import MentorCheckinsPopup from "../modules/mentor-checkins/components/MentorCheckinsPopup";
 import ParentSidebar from "../modules/parent/components/ParentSidebar";
 import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
@@ -63,6 +64,7 @@ export default function ParentPortalLayout() {
       </div>
       {/* Hub check-ins this parent takes part in (modules/checkins). */}
       <CheckinsDuePopup />
+      <MentorCheckinsPopup />
     </div>
   );
 }

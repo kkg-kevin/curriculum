@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -117,6 +117,8 @@ export const ADMIN_SECTIONS = [
     items: [
       { name: "Reports & Analytics", path: "/reports", icon: FiBarChart2, module: "reports", ownerOnly: true, match: (l) => l.pathname.startsWith("/reports") && !["parent-feedback", "educators"].includes(tabOf(l)) },
       { name: "Quality Assurance", path: "/qa", icon: FiStar, module: "qa" },
+      // A class's educators meeting each family about their child (modules/mentor-checkins).
+      { name: "Parent–Mentor Check-ins", path: "/mentor-checkins", icon: FiMessageCircle, module: "mentor-checkins" },
       { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: "checkins-manage" },
       { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
     ],

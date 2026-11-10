@@ -4,6 +4,7 @@ import { FiArrowDown, FiArrowLeft, FiArrowUp, FiBookOpen, FiChevronDown, FiPlus,
 import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
 import { reportHtml, useCheckinsBase } from "../../checkins/shared";
+import { useMentorBase } from "../../mentor-checkins/shared";
 import { templateSource, useSourceMutation, useSourceTemplate } from "../templateSources";
 import { KIND_LABEL, QaStyles, T, btn, card, font, hint, input, label, useQaBase } from "../shared";
 
@@ -70,7 +71,8 @@ export default function TemplateEditorPage({ source: sourceName = "qa" }) {
   const fromId = params.get("from");
   const qaBase = useQaBase();
   const checkinsBase = useCheckinsBase();
-  const base = sourceName === "checkins" ? checkinsBase : qaBase;
+  const mentorBase = useMentorBase();
+  const base = sourceName === "checkins" ? checkinsBase : sourceName === "mentor" ? mentorBase : qaBase;
   const navigate = useNavigate();
   const isNew = !id;
   const { data: existing, isLoading } = useSourceTemplate(source, id || fromId);

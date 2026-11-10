@@ -62,6 +62,7 @@ const claimRoutes = require("./modules/claims/claim.routes");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
+const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
 const { router: affiliateRoutes, publicRouter: publicAffiliateRoutes } = require("./modules/affiliates/affiliate.routes");
@@ -365,6 +366,10 @@ app.use("/api/tot", protect, attachOwnRecords, totRoutes);
 // reviewing them against a template; the educator reads and replies, the hub sees a summary. See
 // modules/qa/ (qa.access.js for who sees what).
 app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
+// Parent–mentor check-ins — a class's educators meeting each family, one at a time, about their
+// child; set up by an admin, times drawn at random, the parent confirms or picks another time and
+// approves the report. See modules/mentor-checkins/ (mentor-checkin.access.js for who sees what).
+app.use("/api/mentor-checkins", protect, attachOwnRecords, mentorCheckinRoutes);
 // Parent feedback on mentors — parents (and TOT learners) review the educators teaching them; admins,
 // supervisors, the educator (anonymously) and the hub (averages) read it. See modules/mentor-reviews/.
 app.use("/api/mentor-reviews", protect, attachOwnRecords, mentorReviewRoutes);

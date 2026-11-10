@@ -96,6 +96,8 @@ export default function CheckinsDuePopup() {
   const close = () => {
     try { sessionStorage.setItem(dismissedKey(user.id), "1"); } catch { /* private mode: shows again next page load */ }
     setDismissed(true);
+    // The parent–mentor check-ins pop-up waits for this one (one pop-up at a time).
+    window.dispatchEvent(new Event("checkins-popup-closed"));
   };
   const open = async (path, kind = "write") => {
     close();

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FiArchive, FiCopy, FiEdit2, FiPlus, FiRotateCcw, FiTrash2 } from "react-icons/fi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { useCheckinsBase } from "../../checkins/shared";
+import { useMentorBase } from "../../mentor-checkins/shared";
 import { templateSource, useSourceMutation, useSourceTemplates } from "../templateSources";
 import { Empty, Pill, Segmented, T, btn, card, formatDate, hint, toolbar, useQaBase } from "../shared";
 
@@ -15,7 +16,8 @@ export default function TemplatesTab({ source: sourceName = "qa" }) {
   const words = source.words;
   const qaBase = useQaBase();
   const checkinsBase = useCheckinsBase();
-  const base = sourceName === "checkins" ? checkinsBase : qaBase;
+  const mentorBase = useMentorBase();
+  const base = sourceName === "checkins" ? checkinsBase : sourceName === "mentor" ? mentorBase : qaBase;
   const navigate = useNavigate();
   const [status, setStatus] = useState("active");
   const [deleting, setDeleting] = useState(null);

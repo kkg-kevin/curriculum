@@ -111,6 +111,10 @@ import CheckinSessionPage from "../modules/checkins/pages/CheckinSessionPage";
 import QaPage from "../modules/qa/pages/QaPage";
 import QaVisitPage from "../modules/qa/pages/VisitPage";
 import QaTemplateEditorPage from "../modules/qa/pages/TemplateEditorPage";
+import MentorCheckinsPage from "../modules/mentor-checkins/pages/MentorCheckinsPage";
+import MentorNewRoundPage from "../modules/mentor-checkins/pages/NewRoundPage";
+import MentorRoundPage from "../modules/mentor-checkins/pages/RoundPage";
+import MentorMeetingPage from "../modules/mentor-checkins/pages/MeetingPage";
 import MyQaPage from "../modules/qa/pages/MyQaPage";
 import SupervisorEducatorPage from "../modules/qa/pages/SupervisorEducatorPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
@@ -226,6 +230,13 @@ export default function AppRoutes() {
         {/* Check-in report templates — QA's template editor, saving to check-ins (managers). */}
         <Route path="checkins/templates/new" element={<QaTemplateEditorPage key="checkins-template" source="checkins" />} />
         <Route path="checkins/templates/:id" element={<QaTemplateEditorPage key="checkins-template" source="checkins" />} />
+        {/* Parent–mentor check-ins — a class's educators meeting each family (modules/mentor-checkins). */}
+        <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
+        <Route path="mentor-checkins/rounds/new" element={<MentorNewRoundPage />} />
+        <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
+        <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
+        <Route path="mentor-checkins/templates/new" element={<QaTemplateEditorPage key="mentor-template" source="mentor" />} />
+        <Route path="mentor-checkins/templates/:id" element={<QaTemplateEditorPage key="mentor-template" source="mentor" />} />
         {/* Quality assurance — visits to educators, their reviews, schedules and templates (modules/qa). */}
         <Route path="qa" element={<QaPage />} />
         <Route path="qa/visits/:id" element={<QaVisitPage />} />
@@ -345,6 +356,10 @@ export default function AppRoutes() {
           {/* Hub check-ins this educator takes part in (modules/checkins). */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* Parent check-ins of this educator's classes — the schedule and the reports (modules/mentor-checkins). */}
+          <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
+          <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
+          <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
           {/* What families say about this educator — anonymous, from 3 reviews (modules/mentor-reviews). */}
           <Route path="feedback" element={<MyFeedbackPage />} />
           {/* Refer & earn — their referral link and commissions (modules/affiliates). */}
@@ -380,6 +395,10 @@ export default function AppRoutes() {
           <Route path="qa/visits/:id" element={<QaVisitPage />} />
           <Route path="qa/templates/new" element={<QaTemplateEditorPage />} />
           <Route path="qa/templates/:id" element={<QaTemplateEditorPage />} />
+          {/* Parent check-ins of their educators' classes — the schedule only (modules/mentor-checkins). */}
+          <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
+          <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
+          <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
           <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>
       </Route>
@@ -420,6 +439,10 @@ export default function AppRoutes() {
           {/* A hub's Account Manager / Training Lead (a hubLead session) — their check-ins. */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* The hub's parent check-ins — its classes' schedules (modules/mentor-checkins). */}
+          <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
+          <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
+          <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
           {/* The hub's QA view: its educators' announced visits and a summary of each report. */}
           <Route path="qa" element={<MyQaPage />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
@@ -474,6 +497,9 @@ export default function AppRoutes() {
           {/* Hub check-ins this parent takes part in (modules/checkins). */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* Check-ins with their children's mentors: confirm or move, read and approve the report (modules/mentor-checkins). */}
+          <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
+          <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
           <Route path="mentors/:slug" element={<MentorProfilePage />} />
           {/* Refer & earn — their referral link and commissions (modules/affiliates). */}
           <Route path="refer" element={<ReferEarnPage />} />

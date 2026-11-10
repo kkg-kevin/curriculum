@@ -52,6 +52,10 @@ const MODULES = [
   // Quality assurance: templates, visit schedules and every educator's reviews. Supervisors aren't
   // staff — they review the educators assigned to them in the supervisor portal (modules/qa/).
   { key: "qa", label: "Quality assurance (educator reviews)", group: "Workspace" },
+  // Parent–mentor check-ins: setting up a class's check-ins with its families, the schedules, every
+  // report. Educators, parents, hubs and supervisors aren't staff — they see their own in their
+  // portals (modules/mentor-checkins/mentor-checkin.access.js).
+  { key: "mentor-checkins", label: "Parent–mentor check-ins", group: "Workspace" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -92,6 +96,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/claims": "claims",
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
+  "/api/mentor-checkins": "mentor-checkins",
   // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").
   "/api/tot/learners": "learners",
   "/api/tot": "teachers",
@@ -189,6 +194,8 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/checkins\/schedules$/, module: "checkins-manage", action: "create" },
   { method: "PUT", pattern: /^\/api\/checkins\/schedules\/[^/]+$/, module: "checkins-manage", action: "edit" },
   { method: "POST", pattern: /^\/api\/checkins\/schedules\/[^/]+\/end$/, module: "checkins-manage", action: "edit" },
+  // Parent–mentor check-ins: drawing a round's times is part of setting it up.
+  { method: "POST", pattern: /^\/api\/mentor-checkins\/rounds\/preview$/, module: "mentor-checkins", action: "create" },
 ];
 
 // A POST that only works something out without saving it.
