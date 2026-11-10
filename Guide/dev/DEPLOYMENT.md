@@ -102,42 +102,99 @@ the frontend needs a second, separately-built zip.
 
 ---
 
-## This release (9 Nov 2026, afternoon) — Affiliate pages and forms use the full width of the screen
+## This release (10 Nov 2026) — Parent–mentor check-ins, mentor standards, a new Store, affiliates picked from existing users
 
-**Portal** from `curriculum` (branch `modules`) at `a335622`; backend and website rebuilt from the same code as
-the "9 Nov 2026" release below (backend unchanged since `1245213`, website at `24b881d`).
+**Portal and backend** from `curriculum` (branch `modules`) at `e429883`; **website** from `curriculum-web`
+(branch `new`) at `42dc915`. Includes the "9 Nov 2026" release below — if that isn't up yet, these files replace
+it: do its database checks and read its "Before you announce affiliates" too.
 
-### Upload
+### Upload in this order
 
-- **If the "9 Nov 2026" release below is NOT up yet:** follow it in full (database backup, backend with its three
-  migrations, portal, website) but use this release's files — they include it.
-- **If it is up:** only the **portal** changed — `index.html` + `assets.zip` (entry `index-Cxo7-MH9.js`). The backend
-  (`backend-deploy.zip`, 684 files, 173 migrations) and the website (`africa-digifunzi-com-dist.zip`, entry `index-CYgCqgEj.js`, 33
-  pages) are the same code; uploading them again is harmless but not needed.
+0. **Take a database backup** — two new migrations (five if the 9 Nov release isn't up yet).
+1. **Backend** — `backend-deploy.zip` (698 files, 175 migrations), then Restart. Two new migrations, applied on
+   Restart:
+   - `20261110090000` — parent–mentor check-ins: `mentor_checkin_templates`, `mentor_checkin_rounds`,
+     `mentor_checkin_meetings`.
+   - `20261110120000` — mentor standards: `mentor_standard_settings`, `mentor_standard_snapshots`.
 
-No migration, cron, environment variable or npm package.
+   Check: `SHOW TABLES LIKE 'mentor_checkin%';` (3 rows) and `SHOW TABLES LIKE 'mentor_standard%';` (2 rows). If
+   either is short: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-lQS1JzY8.js`). After the backend.
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-Cm5jV8cZ.js`, 33 pages). Unzip over the old files.
+
+No new cron job, environment variable or npm package. Two existing jobs do a little more: `checkins:process`
+(hourly) also sends parent–mentor check-ins' "it's today" notices, and `educators:stats` (nightly) also keeps each
+mentor's standing against the mentor standards and tells supervisors who has fallen below one.
+
+**Before the first night:** mentor standards are ON with their suggested values, and "tell their supervisor" is on.
+The first nightly run will flag every mentor below a standard at once — many show **Sessions held 0%** where a
+class has a timetable but attendance isn't being taken. If that would be noise, in **Settings → Mentor standards**
+untick the notice (or switch "Sessions held" off) before then.
 
 ### What changed
 
-Refer & earn (affiliate, parent and educator portals), the affiliate's My account and the admin Affiliates page
-no longer stop at a fixed width: they fill the screen. Admin → Affiliates → Settings is full width, each
-programme's commission rate in its own box; the Add / Edit affiliate and Pay dialogs take the screen's width;
-the payout fields grow with the page; the Settings checkboxes keep their size on phones.
+**Parent–mentor check-ins (Quality & insights → Parent–Mentor Check-ins).** One-to-one meetings between a class's
+educators and each family about their child. An admin picks the hub and class — every educator of the class
+attends, the families are the parent logins of its learners (brothers and sisters in the class share one meeting;
+learners whose parent has no login are listed as left out) — online with a meeting link or in person, an optional
+report template (the same editor as QA and hub check-ins), and the dates, days, hours and length. **Draw the
+times** puts each family on a free time at random — never sooner than 3 days away, never while an educator teaches
+or has another check-in; draw again or swap anyone, then **Publish** (families and educators are told). The parent
+sees a pop-up from 3 days before: **Confirm this time**, **Pick another time** (free times only — two families can
+never hold the same one), **Join** on the day. Afterwards an educator writes the report (template items, "How the
+child is doing", "What was agreed") or marks it missed; the parent reads the whole report and presses **Approve**,
+which locks it. The admin sees each class's schedule (confirmed, report due, with parents, approved) and can move
+or cancel; educators see theirs in the teacher portal ("Parent check-ins"); the hub's login and supervisors see
+the schedule only, never the reports. Emails for these are in Settings → Emails, group "Parent–mentor check-ins".
+
+**Mentor standards (Settings → Mentor standards).** One bar for every mentor: learner retention (80%), parent rating
+(4.0★), quality reviews (70%), sessions held (90%), work marked within 72 hours (90%), attendance marked on the
+day (95%), learner attendance (80%), learners on track (60%), parent check-ins written up (90%), open parent
+concerns (0). Each has a target, a minimum (below it is "Below", between is "Close") and the evidence it needs
+("Not enough data yet" until then, never a fail); new mentors have a 90-day grace period. Shown as the first card
+of every mentor's performance profile — the mentor sees "Your standards", with what helps — and in **Reports &
+Analytics → Educators**: "Meeting every standard" and "Below a standard" totals, a **Needs support** list and an
+**Against the standards** table. Hubs never see it; pay is never part of it.
+
+**Affiliates.** **Add affiliate** opens on "Someone already on Digifunzi": search this workspace's parents,
+educators, hub logins and staff by name, email or phone and pick one — they keep signing in with their own email
+and password. "Someone new" is the typed form, with a note that they set their password from the emailed link.
+The Add / Edit and Pay dialogs are a comfortable width instead of the whole screen.
+
+**Profile photo fix.** Saving a photo from the "Adjust your photo" window did nothing — no upload, no message — on
+the educator's and the supervisor's My Profile. It now saves, shows at once and says "Your photo is saved".
+
+**Website Store.** A real shopfront: a header with "Shop robots & kits" / "Browse projects" and a featured kit,
+the promises (pay your way, pickup or delivery, made for learning, real help), a toolbar that stays in view, cards
+with the product photo shown whole and the details under it, and "How buying works". Product and project pages:
+the photos with ONE buy panel beside them that stays in view (the second panel is gone), on phones photos → price
+and buttons → details, and a buy bar that slides up once the buttons have scrolled away. The cart: clearer lines,
+an order summary that stays in view, a checkout bar on phones, suggestions when empty.
 
 ### Verify
 
-1. Admin → Affiliates → Settings on a wide screen: the sections and the five programme boxes reach the right edge.
-2. Add affiliate: the form opens across the screen, fields side by side.
-3. An affiliate / parent → Refer & earn: the cards fill the width.
+1. **Settings → Mentor standards** loads with the ten standards. **Reports → Educators** shows Needs support and
+   Against the standards; an educator's **My Profile** shows "Your standards" first.
+2. **Parent–Mentor Check-ins → Set up check-ins**: a hub, a class (its educators and families appear) → Draw the
+   times → Publish. A parent with a check-in in the next 3 days gets the pop-up on signing in; **Pick another
+   time** offers only free times.
+3. **Affiliates → Add affiliate** → type a parent's name → pick them → Add affiliate: the row says they sign in
+   with their own login.
+4. Teacher portal → **My Profile** → the photo → Upload photo → **Save photo**: "Your photo is saved" and the new
+   photo shows.
+5. Website → **Store**: the header and featured kit; open a product — one buy panel; scroll down — the buy bar
+   appears; add to cart → the cart page.
 
 ---
 
-## This release (9 Nov 2026) — Affiliates: referral links and codes, commissions, payouts, and their own sign-in
+## This release (9 Nov 2026) — Affiliates with their own sign-in, marked work that reads like a report
 
-**Portal and backend** from `curriculum` (branch `modules`) at `1245213`; **website** from `curriculum-web`
-(branch `new`) at `24b881d`. Includes the affiliate work of 6 Nov (never bundled before) — this is the first
-release with affiliates. If the "6 Nov 2026, afternoon" release below isn't up yet, this replaces it (follow
-its Verify steps too).
+One release for everything done on 9 Nov — nothing from that day was uploaded earlier, so these files replace
+the separate "9 Nov", "9 Nov, afternoon" and "9 Nov, evening" notes. **Portal and backend** from `curriculum`
+(branch `modules`) at `963bedf` (backend code unchanged since `1245213`); **website** from `curriculum-web`
+(branch `new`) at `24b881d`. Includes the affiliate work of 6 Nov (never bundled before) — the first release with
+affiliates. If the "6 Nov 2026, afternoon" release below isn't up yet, this includes it too (follow its Verify
+steps as well).
 
 ### Upload in this order
 
@@ -152,52 +209,64 @@ its Verify steps too).
 
    Check: `SHOW TABLES LIKE 'affiliate%';` (5 rows) and `SHOW COLUMNS FROM users LIKE 'role';` (the Type ends
    in `'supervisor','affiliate')`). If either is missing: Run JS script → `db:migrate`.
-2. **Portal** — `index.html` + `assets.zip` (entry `index-DcnnXgZy.js`). After the backend.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-DRpaE3o1.js`). After the backend.
 3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-CYgCqgEj.js`, 33 pages). After the backend: the website's
    referral code check and "Become an affiliate" page call the new API.
 
 No new cron, environment variable or npm package.
 
-**Before you announce it:** the programme is ON with these defaults (Affiliates → Settings): 10% of what a
-referred family pays, on their first 3 paid periods (one-off purchases once), 14 days before a commission can
-be paid out, KSh 500 smallest payout, links count for 30 days, every new affiliate approved by an admin first,
+**Before you announce affiliates:** the programme is ON with these defaults (Affiliates → Settings): 10% of what a
+referred family pays, on their first 3 paid periods (one-off purchases once), 14 days before a commission can be
+paid out, KSh 500 smallest payout, links count for 30 days, every new affiliate approved by an admin first,
 parents / educators may join from their portal, anyone may apply on the website. Change any of it there, or
-untick "Referrals earn commission" until you're ready. The **Affiliate Terms** page (`/affiliate-terms`) is
-DRAFT wording — replace it before promoting the programme.
+untick "Referrals earn commission" until you're ready. The **Affiliate Terms** page (`/affiliate-terms`) is DRAFT
+wording — replace it before promoting the programme.
 
 ### What changed
 
 **Affiliates (Finance → Affiliates).** People who send families to the website earn a share of what those
 families pay. A family is credited to an affiliate when they open the affiliate's link (`?ref=CODE` on any
-website address) or type the affiliate's code when signing up — Home Learning, Tech Club, bootcamp, pathway
-plan and shop sign-ups. Only money earns: a commission is made when a referred family's invoice is paid in
-full. Tabs: Affiliates (add, approve, suspend, pay out), Referrals, Commissions, Payouts (mark paid by M-Pesa,
-bank or cash with a reference, or as credit on one of the affiliate's own invoices; or reject), Settings.
+website address) or type the affiliate's code when signing up — Home Learning, Tech Club, bootcamp, pathway plan
+and shop sign-ups. Only money earns: a commission is made when a referred family's invoice is paid in full. Tabs:
+Affiliates (add, approve, suspend, pay out), Referrals, Commissions, Payouts (mark paid by M-Pesa, bank or cash
+with a reference, or as credit on one of the affiliate's own invoices; or reject), Settings.
 
 **Every affiliate signs in.**
 - A parent or educator uses the login they already have — **Refer & earn** is in their portal (link, QR code,
-  code, WhatsApp share, families referred by first name only, earnings, asking for a payout). They can join
-  from there.
-- Anyone else gets their own login and signs in as **Affiliate** (Refer & earn + My account). It's made when
-  they become active — added by staff, or approved after applying on the website — and their welcome email has
-  a **Set your password** link (7 days, sent only to them; staff never see it). A login of another kind under
-  that email (a hub's, staff's) gets "Affiliate" added; they choose it at sign-in.
+  code, WhatsApp share, families referred by first name only, earnings, asking for a payout). They can join from
+  there.
+- Anyone else gets their own login and signs in as **Affiliate** (Refer & earn + My account). It's made when they
+  become active — added by staff, or approved after applying on the website — and their welcome email has a
+  **Set your password** link (7 days, sent only to them; staff never see it). A login of another kind under that
+  email (a hub's, staff's) gets "Affiliate" added; they choose it at sign-in.
 - Staff's **Email sign-in details** on an affiliate's row sends the link again.
 - Staff must give an email when adding an affiliate (it's their sign-in); an admin's email is refused.
+- Every affiliate page and form (Refer & earn, My account, the admin page, its Settings and dialogs) uses the
+  full width of the screen.
 
-**Website.** A referral code field on every sign-up form (filled in from the link), a **Become an affiliate**
-page (footer link) and the **Affiliate Terms** page. Package cards: the short summary is plain text, no longer
-bold.
+**Marked work, laid out like the reports.** A learner opening a marked assessment ("View feedback" in My
+Assessments, or "See marked work" from a report) — and a parent viewing their child's — sees it the way reports
+look: a score ring with its level word (Early days · Getting started · On track · Strong start) and one sentence;
+Doing well / To practise next and Skills for what this assessment checked; each answer with Got it / Partly there
+/ Not yet (the marks per question small underneath) and the **teacher's note on that answer** (teachers could
+always write these, but learners never saw them before); a project's milestones, work handed in and rubric in
+the same cards; From the teacher and What's next with **See my reports**. Surveys say "Answers recorded". **Fix:**
+on phones some report cards were narrower than the screen; they now fill it.
+
+**Website.** A referral code field on every sign-up form (filled in from the link), a **Become an affiliate** page
+(footer link) and the **Affiliate Terms** page. Package cards: the short summary is plain text, no longer bold.
 
 ### Verify
 
-1. Affiliates → **Add affiliate** with an email that has no login → the row says "Signs in as Affiliate ·
-   hasn't signed in yet"; the welcome email arrives with **Set your password** → set it → sign in → Refer & earn
-   shows the link and code.
+1. Affiliates → **Add affiliate** with an email that has no login → the row says "Signs in as Affiliate · hasn't
+   signed in yet"; the welcome email arrives with **Set your password** → set it → sign in → Refer & earn shows
+   the link and code.
 2. Website: open `https://africa.digifunzi.com/?ref=THATCODE`, then start any sign-up — the referral code field is filled in. Finish a
    sign-up → Affiliates → Referrals lists it.
 3. Website → Become an affiliate → apply → Affiliates shows "To approve" → Approve → the applicant gets the
    welcome email with the set-password link.
+4. As a learner, My Assessments → a marked one → **View feedback**: the ring, level word and cards show; a
+   question the teacher commented on shows the comment under the answer.
 
 ---
 
