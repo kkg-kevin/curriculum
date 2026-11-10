@@ -15,6 +15,7 @@ import PartPaymentsSection from "../payments/PartPaymentsSection";
 import { SettingsPage as SettingsLayoutPage } from "../components/SettingsLayout";
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
 import FeedbackSettingsPanel from "../../mentor-reviews/components/FeedbackSettingsPanel";
+import MentorStandardsPanel from "../../mentor-standards/MentorStandardsPanel";
 import { can } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
 import { useSettingsStyles } from "../components/settingsStyles";
@@ -45,6 +46,8 @@ const ALL_TABS = [
   { key: "educator-pay", label: "Educator pay" },
   // Parents reviewing the mentors teaching their children — see FeedbackSettingsPanel.
   { key: "parent-feedback", label: "Parent feedback" },
+  // The bar every mentor is measured against (their profile, Reports → Educators) — MentorStandardsPanel.
+  { key: "mentor-standards", label: "Mentor standards" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
@@ -101,6 +104,8 @@ export default function SettingsPage() {
           <button
             key={tab.key} type="button"
             className={`stg-tab-btn${activeTab === tab.key ? " active" : ""}`}
+            // The row scrolls sideways — the open tab is always brought into view.
+            ref={activeTab === tab.key ? (el) => el?.scrollIntoView?.({ block: "nearest", inline: "nearest" }) : undefined}
             onClick={() => setActiveTab(tab.key)}
           >
             {tab.label}
@@ -127,6 +132,7 @@ export default function SettingsPage() {
         )}
         {activeTab === "educator-pay" && <EducatorPayPanel />}
         {activeTab === "parent-feedback" && <FeedbackSettingsPanel />}
+        {activeTab === "mentor-standards" && <MentorStandardsPanel />}
       </div>
     </div>
   );

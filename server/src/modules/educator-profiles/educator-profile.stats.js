@@ -18,6 +18,10 @@ const { getSettings } = require("../mentor-reviews/mentor-review.service");
 //   feedback speed     typical hours from hand-in to marked, for hand-marked work in their classes.
 //   outcomes           learners who finished their courses (final report published), certificates, score.
 //   leadership         hub check-ins led (Account Manager / Training Lead) and their tasks.
+//   standards          the measures the workspace's mentor standards are judged on (10 Nov 2026 —
+//                      modules/mentor-standards/): retention, marking within 72 h, attendance marked
+//                      on the day, learner attendance, on-track work, parent check-ins written up and
+//                      open concerns, beside the rating, QA and reliability above. { value, evidence }.
 // Pay is never part of it.
 
 const STALE_MINUTES = 360;
@@ -26,6 +30,80 @@ const todayKe = () => new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice
 const addDays = (date, n) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const fullName = (p) => [p?.firstName, p?.lastName].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 const parseJson = (v) => (typeof v === "string" ? JSON.parse(v || "null") : v);
+const pct = (n, d) => (d ? Math.round((n / d) * 1000) / 10 : null);
+const kenyaDay = (ms) => new Date(ms + 3 * 3600 * 1000).toISOString().slice(0, 10);
+
+// The measures for the mentor standards (see the header). Retention: learners whose course final
+// report — on a course this mentor is the primary educator of (or one of its educators when none is
+// primary) — was published 60 days to 14 months ago; retained = still in an active class, or with
+// active pathway access, today. Learners who graduated don't count either way.
+async function standardMeasures({ teacherId, links, sessionKeys, attendance, since90, since12m, today, markHours, percents, rsum, qa, reliability }) {
+  const out = {
+    rating: { value: rsum.average ?? null, evidence: rsum.count || 0 },
+    qa: { value: qa.average ?? null, evidence: qa.count || 0 },
+    reliability: { value: reliability?.rate ?? null, evidence: reliability?.planned || 0 },
+    markedOnTime: { value: pct(markHours.filter((h) => h <= 72).length, markHours.length), evidence: markHours.length },
+    onTrack: { value: pct(percents.filter((x) => x >= 60).length, percents.length), evidence: percents.length },
+  };
+
+  // Retention.
+  out.retention = { value: null, evidence: 0 };
+  const classIds = uniq(links.map((l) => l.classId));
+  if (classIds.length) {
+    const pairLinks = await db("class_course_teacher_links").whereIn("classId", classIds);
+    const ownPairs = new Set(uniq(links.map((l) => `${l.classId}|${l.courseId}`)).filter((key) => {
+      const primaries = pairLinks.filter((p) => `${p.classId}|${p.courseId}` === key && p.isPrimary);
+      return primaries.length ? primaries.some((p) => p.teacherId === teacherId) : true;
+    }));
+    const reports = await db("reports").whereNull("sessionId").where({ status: "published" }).whereIn("classId", classIds)
+      .whereBetween("publishedAt", [new Date(`${addDays(today, -425)}T00:00:00Z`), new Date(`${addDays(today, -60)}T23:59:59Z`)])
+      .select("learnerId", "classId", "courseId");
+    const finished = uniq(reports.filter((r) => ownPairs.has(`${r.classId}|${r.courseId}`)).map((r) => r.learnerId));
+    if (finished.length) {
+      const graduated = new Set(await db("learner_hub_links").whereIn("learnerId", finished).where({ status: "graduated" }).pluck("learnerId"));
+      const counted = finished.filter((id) => !graduated.has(id));
+      if (counted.length) {
+        const [inClass, withAccess] = await Promise.all([
+          db("learner_hub_links").whereIn("learnerId", counted).where({ status: "active" }).pluck("learnerId"),
+          db("learner_pathway_access").whereIn("learnerId", counted).where({ status: "active" })
+            .where((w) => w.whereNull("accessUntil").orWhere("accessUntil", ">=", today)).pluck("learnerId"),
+        ]);
+        const retained = new Set([...inClass, ...withAccess]);
+        out.retention = { value: pct(counted.filter((id) => retained.has(id)).length, counted.length), evidence: counted.length };
+      }
+    }
+  }
+
+  // Attendance marked on the day, and learners' attendance (their sessions, last 90 days).
+  const firstMarked = new Map();
+  for (const a of attendance) {
+    const key = `${a.classId}|${R.dayKey(a.date)}`;
+    if (!sessionKeys.has(key) || !a.createdAt) continue;
+    const t = new Date(a.createdAt).getTime();
+    if (!firstMarked.has(key) || t < firstMarked.get(key)) firstMarked.set(key, t);
+  }
+  const recent = [...sessionKeys].filter((k) => k.split("|")[1] >= since90);
+  const onDay = recent.filter((k) => firstMarked.has(k) && kenyaDay(firstMarked.get(k)) <= k.split("|")[1]).length;
+  out.attendanceOnDay = { value: pct(onDay, recent.length), evidence: recent.length };
+  const marks = attendance.filter((a) => R.dayKey(a.date) >= since90 && sessionKeys.has(`${a.classId}|${R.dayKey(a.date)}`));
+  out.learnerAttendance = { value: pct(marks.filter((a) => ["present", "late"].includes(a.status)).length, marks.length), evidence: marks.length };
+
+  // Parent–mentor check-ins whose day has passed (last 12 months): held and written up.
+  try {
+    const rounds = await db("mentor_checkin_rounds").whereRaw("JSON_CONTAINS(educatorIds, JSON_QUOTE(?))", [teacherId]).pluck("id");
+    const meetings = rounds.length
+      ? await db("mentor_checkin_meetings").whereIn("roundId", rounds).whereNot({ status: "cancelled" }).where("date", "<", today).where("date", ">=", since12m).select("reportSubmittedAt")
+      : [];
+    out.mentorCheckins = { value: pct(meetings.filter((m) => m.reportSubmittedAt).length, meetings.length), evidence: meetings.length };
+  } catch {
+    out.mentorCheckins = { value: null, evidence: 0 };
+  }
+
+  // Open conduct concerns (always counts: none open is the standard).
+  const open = Number((await db("mentor_reviews").where({ teacherId, concern: 1 }).whereNull("concernResolvedAt").count({ n: "*" }).first())?.n || 0);
+  out.openConcerns = { value: open, evidence: 1 };
+  return out;
+}
 
 async function computeStats(teacherId) {
   const teacher = await db("teachers").where({ id: teacherId }).first("id", "firstName", "lastName", "email", "createdAt", "teacherLevel", "createdByAdminId");
@@ -50,7 +128,7 @@ async function computeStats(teacherId) {
   const curricula = classes.length ? await db("curricula").whereIn("id", uniq(classes.map((c) => c.curriculumId))).select("id", "name") : [];
 
   // Sessions held (attendance taken) and the timetable around them.
-  const attendance = classIds.length ? await db("attendance").whereIn("classId", classIds).select("classId", "date", "learnerId", "status") : [];
+  const attendance = classIds.length ? await db("attendance").whereIn("classId", classIds).select("classId", "date", "learnerId", "status", "createdAt") : [];
   const held = new Map();
   for (const a of attendance) (held.get(a.classId) || held.set(a.classId, new Set()).get(a.classId)).add(R.dayKey(a.date));
   const skips = classIds.length ? await db("timetable_session_skips").whereIn("classId", classIds) : [];
@@ -166,6 +244,8 @@ async function computeStats(teacherId) {
 
   const availability = await db("teacher_availability_slots").where({ teacherId }).select("dayOfWeek", "startTime", "endTime");
 
+  const standards = await standardMeasures({ teacherId, links, sessionKeys, attendance, since90, since12m, today, markHours, percents, rsum, qa, reliability });
+
   const stats = {
     hours: { total: R.round1(minutes / 60), last90Days: R.round1(minutes90 / 60), byMonth: [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, m]) => ({ month, hours: R.round1(m / 60) })) },
     sessions: { total: sessionKeys.size, untimed: untimed.reduce((n, u) => n + u.sessions.length, 0) },
@@ -193,6 +273,7 @@ async function computeStats(teacherId) {
     leadership,
     tot: { level: teacher.teacherLevel || null, certificates: totCertificates },
     availability,
+    standards,
   };
   stats.badges = R.badgesFor(stats);
   stats.tips = R.growthTips(stats, stats.badges);
@@ -209,7 +290,7 @@ async function getStats(teacherId, { fresh = false } = {}) {
     const row = await db("educator_stats").where({ teacherId }).first();
     const cached = row ? parseJson(row.stats) : null;
     // Figures counted before QA compounded (no qa.history) are recounted once.
-    if (cached && Array.isArray(cached.qa?.history) && Date.now() - new Date(row.computedAt).getTime() < STALE_MINUTES * 60000) return { ...cached, computedAt: row.computedAt };
+    if (cached && Array.isArray(cached.qa?.history) && cached.standards && Date.now() - new Date(row.computedAt).getTime() < STALE_MINUTES * 60000) return { ...cached, computedAt: row.computedAt };
   }
   return computeStats(teacherId);
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiAlertCircle, FiArrowDownRight, FiArrowUpRight, FiAward, FiBookOpen, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiMinus, FiRefreshCw, FiShield, FiStar, FiTrendingUp, FiUsers } from "react-icons/fi";
 import FeedbackSummary from "../../mentor-reviews/components/FeedbackSummary";
+import StandardsCard from "../../mentor-standards/StandardsCard";
 import { useRefreshEducatorProfile } from "../hooks/useEducatorProfile";
 import { BRAND as C, FONT, card, cardHeading, pill } from "../../../theme/brand";
 
@@ -215,6 +216,9 @@ export default function PerformanceProfile({ profile, teacherId = null, showCour
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: FONT }}>
+      {/* 0. Against the workspace's mentor standards (Settings → Mentor standards) — never for a hub. */}
+      {!hub && profile.standards && <StandardsCard standing={profile.standards} own={own} />}
+
       {/* 1. At a glance */}
       <section style={{ ...box, background: `linear-gradient(180deg, ${C.canvas}, ${C.surface})` }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>

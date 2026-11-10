@@ -63,6 +63,7 @@ const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
 const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
+const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standards.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
 const { router: affiliateRoutes, publicRouter: publicAffiliateRoutes } = require("./modules/affiliates/affiliate.routes");
@@ -370,6 +371,9 @@ app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
 // child; set up by an admin, times drawn at random, the parent confirms or picks another time and
 // approves the report. See modules/mentor-checkins/ (mentor-checkin.access.js for who sees what).
 app.use("/api/mentor-checkins", protect, attachOwnRecords, mentorCheckinRoutes);
+// Mentor standards — the bar every mentor is measured against (Settings → Mentor standards); each
+// mentor's standing comes with their profile and Reports → Educators. See modules/mentor-standards/.
+app.use("/api/mentor-standards", protect, attachOwnRecords, mentorStandardRoutes);
 // Parent feedback on mentors — parents (and TOT learners) review the educators teaching them; admins,
 // supervisors, the educator (anonymously) and the hub (averages) read it. See modules/mentor-reviews/.
 app.use("/api/mentor-reviews", protect, attachOwnRecords, mentorReviewRoutes);
