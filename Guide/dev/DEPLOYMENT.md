@@ -102,6 +102,86 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (10 Nov 2026, afternoon) — Reports & Analytics that point to what needs doing, a learner's year of work, clearer educator profiles
+
+**Portal and backend** from `curriculum` (branch `modules`) at `310aeddc`; **website** from `curriculum-web`
+(branch `new`) at `42dc915` (unchanged since the morning release, rebuilt). Includes the morning's "10 Nov 2026"
+release below — if that isn't up yet, do its database checks and read its "Before the first night" too.
+
+### Upload in this order
+
+0. **Take a database backup** — two new migrations.
+1. **Backend** — `backend-deploy.zip` (712 files, 177 migrations), then Restart. Two new migrations, applied on
+   Restart:
+   - `20261110150000` — website TOT sign-ups made before 4 Nov 2026 (saved as Active educators, so they showed
+     under Educators as well as TOT learners) become **In training**: only an Active educator whose own learner
+     record came from a website bootcamp sign-up and who has never been given a class or a Home Learning family.
+     To see who it will move first: `SELECT t.firstName, t.lastName, t.email FROM teachers t JOIN learners l ON
+     l.teacherId = t.id WHERE t.status = 'active';` (anyone listed who teaches stays Active). Make Active on their
+     page puts one back.
+   - `20261110170000` — `learner_followups` (what staff did about a learner at risk) and `report_views` (a family
+     opening a published report).
+
+   Check: `SHOW TABLES LIKE 'learner_followups';` and `SHOW TABLES LIKE 'report_views';` (1 row each). If either is
+   missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-BQlNUyaL.js`). After the backend.
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-Cm5jV8cZ.js`, 33 pages). Unzip over the old files.
+
+**One new cron job** (Monday mornings, e.g. 07:00): `npm run analytics:weekly` — the weekly summary email of
+Reports & Analytics to each workspace's admins and each hub's login. It is ON by default: to hold it back, switch
+off "The weekly summary of Reports & Analytics" in **Settings → Emails** first (or don't add the cron yet). Safe to
+run twice — one email per person per week. No new environment variable or npm package.
+
+### What changed
+
+**Reports & Analytics.**
+- The tabs are grouped (Summary · Learning · People · Business) with icons under a slim title; every tab's figures
+  are icon tiles with short labels, and long explanations are gone. The period and filters are remembered and
+  shown as chips you can remove one by one.
+- **Overview** opens with **Needs your attention**: work waiting over 72 hours to be marked, learners at risk not
+  followed up, learners absent 3+ times in two weeks, families who haven't opened a new report, educators below a
+  mentor standard, open parent concerns, learners paused for an unpaid invoice, enquiries still New after 2 days —
+  each opens where it's dealt with.
+- New tabs: **Trends** (12 months of on-time hand-ins, average score, attendance, learners handing in, mentors at
+  standard), **Hubs** (admins: every hub side by side, the weakest in each column marked, "Focus" narrows every tab
+  to one hub), **Growth** (each learner's first diagnostic against their marked work since, as level moves),
+  **Attendance** (rate, day by day, by weekday, by class, learners absent again and again), **Parent engagement**
+  (reports opened by parents — counted from this release — parent sign-ins, parent–mentor check-ins, reviews) and
+  **Enrolment & income** (admins: enquiry → signed up → paid → still learning per programme, where enquiries came
+  from, money in by month and programme, what's owed, paused / cancelled subscriptions, affiliates).
+- **Learners at risk → Follow up**: message the parent (to their login and email), tell the class's educators,
+  book a parent check-in (opens Parent–Mentor Check-ins with that family picked) or mark followed up with a note.
+  The row shows the latest follow-up; "Hide followed up" keeps the list to who still needs someone.
+- **Educators**: figure tiles, a bar per standard showing where the team stands, a card per educator who needs
+  support (with their profile photo), and a coloured scorecard of every educator against every standard.
+
+**Learner profile.** The banner is two matching cards: the learner's details in an even grid (record dates in its
+footer) and **a year of their assessment work**, a square per day like a GitHub graph. Clicking a day lists that
+day's work — marked (with its level), waiting for marking, in progress or taken back — with buttons to open the
+assessment and its session report ("Session report so far" while some is still to be marked). Staff read the
+report over their page.
+
+**"From the teacher"** on reports and marked assessments shows the teacher's photo and name with "Your teacher",
+the comment in a speech bubble.
+
+**Educator profile** (admin educator page and the educator's My Profile): tabs (Overview, Standards, Quality &
+feedback, Teaching, Training / Public profile, Account) under a strip of key figures, icons per standard and badge,
+less wording; email settings grouped by topic.
+
+**TOT.** Trainees still In training are left out of Reports → Educators, the nightly mentor standards run and a
+hub check-in's Mentors, as they already were from the Educators list.
+
+### Verify
+
+1. **Reports & Analytics → Overview**: "Needs your attention" lists items; click one — its tab opens. **Trends**,
+   **Hubs**, **Growth**, **Attendance**, **Parent engagement** and **Enrolment & income** load.
+2. **Learners at risk → Follow up → Mark followed up** with a note: the row shows "Followed up · today".
+3. A learner's page: the activity graph sits top right; click a gold square — the day's work with its buttons.
+4. As a parent, open a published report; **Parent engagement** then counts it as opened.
+5. An educator's page and My Profile open on their tabs; a report's "From the teacher" shows the teacher's photo.
+
+---
+
 ## This release (10 Nov 2026) — Parent–mentor check-ins, mentor standards, a new Store, affiliates picked from existing users
 
 **Portal and backend** from `curriculum` (branch `modules`) at `e429883`; **website** from `curriculum-web`
