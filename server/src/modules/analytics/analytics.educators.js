@@ -8,6 +8,7 @@ const db = require("../../config/db");
 const { getStats, fullName } = require("../educator-profiles/educator-profile.stats");
 const MentorStandards = require("../mentor-standards/mentor-standards.service");
 const { standing: standingOf } = require("../mentor-standards/mentor-standards.rules");
+const { withoutTotOnly } = require("../tot/tot.people");
 
 async function getEducators(scope) {
   if (scope.isHubView) return { hidden: true, educators: [] };
@@ -16,7 +17,8 @@ async function getEducators(scope) {
   const teaching = classIds.length ? await db("class_course_teacher_links").whereIn("classId", classIds).distinct("teacherId").pluck("teacherId") : [];
   const linked = !scope.filters.classId && scope.hubIds.length ? await db("teacher_hub_links").whereIn("hubId", scope.hubIds).distinct("teacherId").pluck("teacherId") : [];
   const ids = [...new Set([...teaching, ...linked])];
-  const teachers = ids.length ? await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "status", "profilePublic", "createdAt") : [];
+  // TOT learners only (in training, not teaching yet) are learners here, not educators (tot/tot.people.js).
+  const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "status", "profilePublic", "createdAt")) : [];
   // The workspace's mentor standards (Settings → Mentor standards) — every educator measured against them.
   const settings = await MentorStandards.getSettings(scope.ownerAdminId);
   const educators = [];

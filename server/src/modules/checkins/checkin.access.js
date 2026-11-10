@@ -130,7 +130,8 @@ async function participantOptions(ownerAdminId, hubId) {
 
   const teacherRows = await db("teachers").whereIn("id", db("teacher_hub_links").where({ hubId }).select("teacherId"))
     .whereNotNull("email").select("firstName", "lastName", "email", "status");
-  const teacherByEmail = new Map(teacherRows.filter((t) => (t.status || "active") !== "inactive").map((t) => [lower(t.email), t]));
+  // Not inactive, and not still in training (a TOT learner isn't one of the hub's mentors yet).
+  const teacherByEmail = new Map(teacherRows.filter((t) => !["inactive", "in_training"].includes(t.status || "active")).map((t) => [lower(t.email), t]));
   const mentorUsers = teacherByEmail.size ? await live(db("users").whereIn(db.raw("LOWER(email)"), [...teacherByEmail.keys()])).whereNot({ role: "admin" }).select("id", "name", "email") : [];
   const mentors = mentorUsers.map((u) => {
     const t = teacherByEmail.get(lower(u.email));
