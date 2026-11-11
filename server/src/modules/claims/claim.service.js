@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const db = require("../../config/db");
 const ClaimModel = require("./claim.model");
 const ClaimSettingsModel = require("./claim-settings.model");
 const ClaimNotifications = require("./claim.notifications");
@@ -138,6 +139,14 @@ function parseList(value) {
 }
 
 const isFullTime = (teacher) => teacher?.employmentType === "full_time";
+
+// A claim for mentor sessions: its sessions, and freeing them when it's declined or withdrawn.
+const releaseBookings = (claimId) => db("mentor_bookings").where({ claimId }).update({ claimId: null });
+async function bookingsOfClaim(claimId) {
+  const rows = await db("mentor_bookings").where({ claimId }).orderBy("date", "asc").select("id", "date", "startTime", "minutes", "status", "learnerId", "courseName", "sessionTitle", "educatorPay");
+  const learners = new Map((rows.length ? await db("learners").whereIn("id", [...new Set(rows.map((r) => r.learnerId))]).select("id", "firstName", "lastName") : []).map((l) => [l.id, [l.firstName, l.lastName].filter(Boolean).join(" ")]));
+  return rows.map((r) => ({ ...r, date: String(r.date).slice(0, 10), educatorPay: Number(r.educatorPay), learnerName: learners.get(r.learnerId) || null }));
+}
 
 // The ways this educator may be paid — their tags, in the usual order. An educator from before
 // pay types existed has none stored and was paid per session.
@@ -614,6 +623,7 @@ const ClaimService = {
     if (!PENDING.includes(claim.status)) fail("This claim has already been reviewed and can't be withdrawn", 409);
     const removed = await ClaimModel.deleteIfStatus(id, claim.status);
     if (!removed) fail("This claim has already been reviewed and can't be withdrawn", 409);
+    if (claim.type === "bookings") await releaseBookings(id);
     return { message: "Claim withdrawn" };
   },
 
@@ -687,6 +697,8 @@ const ClaimService = {
   // A claim together with the course's records as they stand now. The course part is null when
   // the class or course has since been deleted — the claim itself still reads on its own.
   async withCourse(claim) {
+    // A claim for mentor sessions has no course — it carries the sessions it was for.
+    if (claim.type === "bookings") return { ...claim, course: null, bookings: await bookingsOfClaim(claim.id) };
     let course = null;
     try {
       course = await ClaimService.getCourseDetail({ teacherId: claim.teacherId, classId: claim.classId, courseId: claim.courseId, requireLink: false });
@@ -713,6 +725,7 @@ const ClaimService = {
       ? await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "approved" })
       : await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "rejected", rejectedStage: "supervisor", rejectionReason: reason });
     if (!updated) fail("Someone else has just reviewed this claim", 409);
+    if (decision !== "approve" && updated.type === "bookings") await releaseBookings(id);
     if (decision === "approve") await ClaimNotifications.forwarded(updated);
     else await ClaimNotifications.rejected(updated);
     return updated;
@@ -727,6 +740,7 @@ const ClaimService = {
       ? await ClaimModel.transition(id, "pending_admin", { ...stamp, status: "approved" })
       : await ClaimModel.transition(id, "pending_admin", { ...stamp, status: "rejected", rejectedStage: "admin", rejectionReason: reason });
     if (!updated) fail("Someone else has just reviewed this claim", 409);
+    if (decision !== "approve" && updated.type === "bookings") await releaseBookings(id);
     if (decision === "approve") await ClaimNotifications.approved(updated);
     else await ClaimNotifications.rejected(updated);
     return updated;
@@ -744,6 +758,78 @@ const ClaimService = {
     if (!updated) fail("This claim has already been updated", 409);
     await ClaimNotifications.paid(updated);
     return updated;
+  },
+
+  // --- Mentor sessions (modules/mentor-bookings/) ------------------------------------------
+  // A mentor's held sessions (completed, or the learner didn't come) earn what Settings →
+  // Educator Pay → Mentor bookings set for their length, fixed when booked. They're claimed
+  // together, per workspace, with an eTIMS invoice — then reviewed and paid like any claim.
+  // Full-time educators don't claim. A declined or withdrawn claim frees its sessions again.
+
+  async myBookingEarnings(teacher) {
+    const MentorBookingService = require("../mentor-bookings/mentor-booking.service");
+    const rows = isFullTime(teacher) ? [] : await MentorBookingService.unclaimed(teacher.id);
+    const learners = new Map((rows.length ? await db("learners").whereIn("id", [...new Set(rows.map((r) => r.learnerId))]).select("id", "firstName", "lastName") : []).map((l) => [l.id, [l.firstName, l.lastName].filter(Boolean).join(" ")]));
+    const byOwner = new Map();
+    for (const b of rows) {
+      if (!byOwner.has(b.ownerAdminId)) byOwner.set(b.ownerAdminId, { ownerAdminId: b.ownerAdminId, count: 0, amount: 0, bookings: [] });
+      const group = byOwner.get(b.ownerAdminId);
+      group.count += 1;
+      group.amount = Math.round((group.amount + b.educatorPay) * 100) / 100;
+      group.bookings.push({ id: b.id, date: b.date, startTime: b.startTime, minutes: b.minutes, status: b.status, learnerName: learners.get(b.learnerId) || null, courseName: b.courseName, sessionTitle: b.sessionTitle, educatorPay: b.educatorPay });
+    }
+    return { fullTime: isFullTime(teacher), groups: [...byOwner.values()] };
+  },
+
+  async submitBookingsClaim(teacher, { ownerAdminId, invoiceUrl, invoiceFilename, note }) {
+    if (isFullTime(teacher)) fail("Full-time educators don't claim payment for mentor sessions", 403);
+    const rows = (await require("../mentor-bookings/mentor-booking.service").unclaimed(teacher.id)).filter((b) => b.ownerAdminId === ownerAdminId);
+    if (!rows.length) fail("There are no mentor sessions to claim yet", 409);
+    const amount = Math.round(rows.reduce((n, b) => n + b.educatorPay, 0) * 100) / 100;
+    const supervisor = await supervisorOf(teacher);
+    const dates = rows.map((b) => b.date).sort();
+    const claim = await ClaimModel.create({
+      ownerAdminId,
+      teacherId: teacher.id,
+      classId: null,
+      courseId: null,
+      hubId: null,
+      claimNumber: `CLM-${todayStr().replace(/-/g, "")}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
+      teacherName: teacherName(teacher),
+      teacherEmail: teacher.email || null,
+      teacherPhone: teacher.phone || null,
+      courseName: "Mentor sessions",
+      className: dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} – ${dates[dates.length - 1]}`,
+      hubName: null,
+      type: "bookings",
+      status: supervisor ? "pending_supervisor" : "pending_admin",
+      supervisorId: supervisor?.id || null,
+      supervisorName: supervisor?.name || null,
+      currency: "KES",
+      rateType: "booking",
+      rate: Math.round((amount / rows.length) * 100) / 100,
+      unitsTotal: rows.length,
+      unitsDelivered: rows.length,
+      sessionRate: Math.round((amount / rows.length) * 1000) / 1000,
+      sessionsTotal: rows.length,
+      sessionsDelivered: rows.length,
+      courseAmount: amount,
+      advanceDeducted: 0,
+      amount,
+      invoiceUrl,
+      invoiceFilename: invoiceFilename || null,
+      note: note || null,
+      evidence: { bookings: rows.map((b) => ({ id: b.id, date: b.date, startTime: b.startTime, minutes: b.minutes, status: b.status, educatorPay: b.educatorPay })) },
+    });
+    // Each session is claimed once — a second claim racing this one finds them taken.
+    const taken = await db("mentor_bookings").whereIn("id", rows.map((b) => b.id)).whereNull("claimId").update({ claimId: claim.id });
+    if (taken !== rows.length) {
+      await releaseBookings(claim.id);
+      await ClaimModel.deleteIfStatus(claim.id, claim.status);
+      fail("Some of these sessions were just claimed — refresh and try again", 409);
+    }
+    await ClaimNotifications.submitted(claim);
+    return claim;
   },
 
   // --- Rates --------------------------------------------------------------------------------

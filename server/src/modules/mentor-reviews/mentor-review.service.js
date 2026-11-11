@@ -87,6 +87,39 @@ async function mentorsForLearner(learner, settingsCache = new Map()) {
       });
     }
   }
+  // Mentors a family booked (modules/mentor-bookings/, 11 Nov 2026): once a session with them has
+  // been held, the family may review them for that course — one "end" review, as a booking is one
+  // session, not a running course. A mentor already listed for the course through a class isn't
+  // listed twice.
+  const booked = await db("mentor_bookings").where({ learnerId: learner.id, status: "completed" }).whereNotNull("courseId").orderBy("date", "desc");
+  for (const b of booked) {
+    if (rows.some((r) => r.teacher.id === b.teacherId && r.course.id === b.courseId)) continue;
+    if (!settingsCache.has(b.ownerAdminId)) settingsCache.set(b.ownerAdminId, await getSettings(b.ownerAdminId));
+    const settings = settingsCache.get(b.ownerAdminId);
+    if (!settings.enabled) continue;
+    const teacher = await db("teachers").where({ id: b.teacherId }).first("id", "firstName", "lastName", "photo", "status");
+    const course = await db("courses").where({ id: b.courseId }).first("id", "name");
+    if (!teacher || !course || teacher.status === "inactive") continue;
+    const sessions = booked.filter((x) => x.teacherId === b.teacherId && x.courseId === b.courseId).length;
+    const review = await db("mentor_reviews").where({ learnerId: learner.id, teacherId: teacher.id, courseId: course.id, stage: "end" }).first();
+    rows.push({
+      teacher: { id: teacher.id, name: fullName(teacher), photo: teacher.photo || null },
+      course: { id: course.id, name: course.name },
+      classId: null,
+      className: "Mentor sessions",
+      hub: { id: b.hubId, name: b.hubName || "Mentor sessions" },
+      ownerAdminId: b.ownerAdminId,
+      attended: sessions,
+      minSessions: 1,
+      stage: "end",
+      eligible: true,
+      due: !review,
+      review: review ? shapeOwnReview(review) : null,
+      editable: review ? isEditable(review) : true,
+      aspects: settings.aspects,
+      booked: true,
+    });
+  }
   return rows;
 }
 

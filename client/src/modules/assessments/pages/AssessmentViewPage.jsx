@@ -4,6 +4,7 @@ import { useAssessmentQuery } from "../hooks/useAssessment";
 import { STRUCTURE_MODE_LABELS } from "../schemas/assessment.schema";
 import AssessmentContent, { TYPE_LABELS } from "../components/AssessmentContent";
 import RecordHistory from "../../activity/components/RecordHistory";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const TYPE_ICONS = { quiz: <FiEdit3 />, exam: <FiAward />, project: <FiTool />, assignment: <FiFileText />, observation: <FiEye /> };
 
@@ -72,6 +73,8 @@ export default function AssessmentViewPage() {
           </div>
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="assessments" id={id} style={{ marginBottom: 20 }} />
 
       <AssessmentContent id={id} />
 

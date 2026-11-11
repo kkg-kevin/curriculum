@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CircularProgress } from "@mui/material";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 import {
   MarkEmailUnread as MarkEmailUnreadIcon,
   ErrorOutlineRounded as ErrorOutlineIcon,
@@ -292,6 +293,7 @@ function LeadRow({ lead, highlighted, rowRef }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <strong style={{ fontSize: 13, color: lead.anonymisedAt ? "#9CA3AF" : "#111827" }}>{lead.name}</strong>
+            <HistoryButton type="leads" id={lead.id} label={lead.name} iconOnly />
             {/* Settings → Enquiries housekeeping (server: leads/lead.housekeeping.js). */}
             {lead.status === "closed" && lead.autoClosedAt && !lead.anonymisedAt && (
               <span title="Nobody had touched it for a long time — change its status to reopen it" style={{ fontSize: 10.5, fontWeight: 700, padding: "1px 7px", borderRadius: 999, background: "#F3F4F6", color: "#6B7280" }}>Closed automatically</span>

@@ -10,6 +10,7 @@ import ReviewForm from "../components/ReviewForm";
 import VisitDialog from "../components/VisitDialog";
 import { ReportView, ScoreHeader, SummaryParts } from "../components/Report";
 import { educatorPagePath } from "../components/EducatorsTab";
+import RecordStamp from "../../activity/components/RecordStamp";
 import {
   Pill, QaPageStyles, QaStyles, REVIEWER_ROLES, SUMMARY_PARTS, stateLook, ScoreBadge, T, VisitTypePill, btn, card, font, formatDate, formatDateTime, hint, useQaBase, visitPath,
 } from "../shared";
@@ -114,6 +115,8 @@ export default function VisitPage() {
           )}
         </div>
       </section>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="qa_visits" id={id} />
 
       {cancelled && <section className="qa-card" style={{ ...card, padding: "16px 20px" }}><p style={{ ...hint, margin: 0, fontSize: 13 }}>This visit was cancelled.</p></section>}
 

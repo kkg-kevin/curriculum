@@ -43,6 +43,7 @@ import PathwayManagerCard from "../components/staff/PathwayManagerCard";
 import ParentTab from "../components/staff/ParentTab";
 import WebsiteDiagnosticsCard from "../components/staff/WebsiteDiagnosticsCard";
 import DiagnosticReportCard from "../../learner-portal/components/profile/DiagnosticReportCard";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 function NoClassNotice() {
   return (
@@ -187,6 +188,8 @@ export default function LearnerPage() {
         </div>
       )}
 
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="learners" id={id} />
       <HubSwitcher hubs={hubs} selectedHubId={selectedHub?.id} onChange={setPickedHubId} />
 
       <ProfileIdentityCard

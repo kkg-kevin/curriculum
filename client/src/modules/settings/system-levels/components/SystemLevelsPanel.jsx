@@ -5,6 +5,7 @@ import {
 } from "../hooks/useSystemLevels";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { systemLevelsApi } from "../services/systemLevelsApi";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 // One tile — sequence badge and an inline-editable name, with move earlier / later and delete
 // shown on hover or keyboard focus (settingsStyles.js's .stg-level). Kept intentionally simple
@@ -51,6 +52,7 @@ function LevelTile({ level, index, count, onRename, onMoveUp, onMoveDown, onDele
             {level.name}
           </button>
           <div className="stg-level-actions">
+            <HistoryButton type="system_levels" id={level.id} label={level.name} iconOnly />
             <button type="button" className="stg-icon-btn" disabled={index === 0} onClick={onMoveUp} title="Move earlier" aria-label={`Move ${level.name} earlier`}>
               <FiChevronLeft size={14} strokeWidth={2.2} />
             </button>

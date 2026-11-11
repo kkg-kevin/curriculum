@@ -20,7 +20,9 @@ export default function RecordHistory({ entityType, entityId, defaultOpen = fals
   // The record pages are shared with the hub and educator portals, whose logins can't read the log.
   const allowed = canSeeRecordHistory(user);
   const [open, setOpen] = useState(defaultOpen);
-  const filters = useMemo(() => ({ entityType, entityId }), [entityType, entityId]);
+  // The record with its parts (a learner's links, an assessment's issues…) when the log knows
+  // where its parts live (server: audit-log.model.js's RECORDS); else the record alone.
+  const filters = useMemo(() => ({ recordType: entityType, recordId: entityId }), [entityType, entityId]);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useActivity(filters, { enabled: allowed && open && Boolean(entityId) });
   const entries = (data?.pages || []).flatMap((page) => page.items);
 

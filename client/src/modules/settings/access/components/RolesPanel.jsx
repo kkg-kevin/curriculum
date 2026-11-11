@@ -5,6 +5,7 @@ import PermissionMatrix, { ACTION_LABELS } from "./PermissionMatrix";
 import { useAccessModules, useAccessRoles, useCreateRole, useDeleteRole, useUpdateRole } from "../hooks/useAccessRoles";
 import { accessApi } from "../services/accessApi";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 // "Learners: View, Add · Billing: View" — the first few modules a role covers.
 function summarise(permissions, modules) {
@@ -114,6 +115,7 @@ export default function RolesPanel({ onManageStaff }) {
               <div className="stg-item-top">
                 <span style={{ color: "#25476a", display: "inline-flex" }}><FiShield size={15} /></span>
                 <div className="stg-item-name">{role.name}</div>
+                <HistoryButton type="access_roles" id={role.id} label={role.name} iconOnly />
                 <span style={{ fontSize: 11, fontWeight: 700, color: role.staffCount ? "#1D4ED8" : "#9CA3AF", background: role.staffCount ? "#EFF6FF" : "#F3F4F6", borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>
                   {role.staffCount} staff
                 </span>

@@ -10,6 +10,14 @@ const CLAIM_STATUSES = ["pending_supervisor", "pending_admin", "approved", "paid
 // The eTIMS invoice is uploaded first (POST /api/uploads/document) and only its stored path is
 // sent here — so it has to be one of our own upload paths, and a PDF. The claim's own invoice is
 // generated from its figures (client/src/modules/claims/invoicePdf.js); both go with every claim.
+// A mentor claiming their held mentor sessions in one workspace (modules/mentor-bookings/).
+const submitBookingsClaimSchema = z.object({
+  ownerAdminId: z.string().min(1, "Choose the learning centre"),
+  invoiceUrl: z.string({ error: "Upload your eTIMS invoice as a PDF" }).regex(/^\/uploads\/[A-Za-z0-9-]+\.pdf$/i, "Upload your eTIMS invoice as a PDF"),
+  invoiceFilename: z.string().max(255).optional().nullable(),
+  note: z.string().max(500).optional().nullable(),
+});
+
 const submitClaimSchema = z.object({
   classId: z.string().min(1, "Class is required"),
   courseId: z.string().min(1, "Course is required"),
@@ -79,4 +87,4 @@ const updateSupervisorSchema = z.object({
 });
 
 module.exports = {
-  createSupervisorSchema, updateSupervisorSchema, submitClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES, RATE_TYPES };
+  createSupervisorSchema, updateSupervisorSchema, submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES, RATE_TYPES };

@@ -5,6 +5,7 @@ import { useAdminDecision, useClaim, useClaimPayouts, useMarkClaimPaid, usePayCl
 import { ClaimStatusPill, ClaimTimeline, Dialog, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateDetail, unitsLabel } from "../shared";
 import { InvoicePanel, useSideBySide } from "./ClaimInvoiceViewer";
 import SessionEvidence from "./SessionEvidence";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 // A reviewer's view of one claim: what is being asked for and how it was worked out, the
 // invoice, the course's records, and — for whoever's turn it is — the decision.
@@ -173,6 +174,8 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
 
   const details = (
     <>
+      {/* Who sent, reviewed and paid this claim (admin side only — modules/activity). */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}><HistoryButton type="teacher_claims" id={claim.id} label={claim.claimNumber} /></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 14 }}>
         <div style={{ padding: 16, borderRadius: 14, background: "#fff", border: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -234,15 +237,27 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
         </div>
       </div>
 
-      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>Records for delivered sessions</p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Record label="Attendance marked" then={then?.attendance} now={now?.attendance} empty="—" />
-        <Record label="Assignments graded" then={then?.assignments} now={now?.assignments} empty="None set" />
-        <Record label="Reports done" then={then?.reports} now={now?.reports} empty="Not needed" />
-      </div>
+      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>{claim.type === "bookings" ? "Sessions held" : "Records for delivered sessions"}</p>
+      {claim.type !== "bookings" && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Record label="Attendance marked" then={then?.attendance} now={now?.attendance} empty="—" />
+          <Record label="Assignments graded" then={then?.assignments} now={now?.assignments} empty="None set" />
+          <Record label="Reports done" then={then?.reports} now={now?.reports} empty="Not needed" />
+        </div>
+      )}
 
       <div style={{ marginTop: 14 }}>
-        {claim.course ? <SessionEvidence course={claim.course} /> : (
+        {claim.type === "bookings" ? (
+          // A claim for mentor sessions: the sessions it's for (modules/mentor-bookings).
+          <div style={{ display: "grid", gap: 6, gridTemplateColumns: "100%" }}>
+            {(claim.bookings || []).map((b) => (
+              <div key={b.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "9px 12px", borderRadius: 10, background: "#fff", border: `1px solid ${T.border}`, fontSize: 13 }}>
+                <span>{b.date} {b.startTime} · {b.minutes} min · {b.learnerName || "Learner"}{b.sessionTitle || b.courseName ? ` — ${b.sessionTitle || b.courseName}` : ""}{b.status === "no_show" ? " (didn't join)" : ""}</span>
+                <strong>{money(b.educatorPay)}</strong>
+              </div>
+            ))}
+          </div>
+        ) : claim.course ? <SessionEvidence course={claim.course} /> : (
           <p style={{ margin: 0, padding: "18px 16px", borderRadius: 12, background: "#fff", border: `1px solid ${T.border}`, fontSize: 13, color: T.inkMuted }}>The class or course behind this claim has since been removed, so its session records can't be shown. The figures above are what was recorded when the claim was submitted.</p>
         )}
       </div>

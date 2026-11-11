@@ -28,6 +28,8 @@ export default function CreateLearningHubPage() {
       description: "", photo: null, photos: [], amenities: [],
       operatingHours: { opensAt: "", closesAt: "", days: [] },
       spaces: [],
+      deskFeeOwner: "ours",
+      deskCollectionPercent: 0,
       clubDetails: EMPTY_CLUB_DETAILS,
     },
     mode: "onTouched",

@@ -1,6 +1,9 @@
 const { z } = require("zod");
 
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+// An educator's availability also takes weekends (11 Nov 2026 — families book mentor sessions on
+// evenings and weekends); class timetables stay Monday–Friday.
+const AVAILABILITY_DAYS = [...DAYS_OF_WEEK, "saturday", "sunday"];
 
 // A recurring weekly slot — "Math, Monday 9:00-10:00, every week" — not a specific calendar
 // date. teacherId is an optional override: when omitted, the class's primary educator for this
@@ -87,6 +90,7 @@ const occurrenceActionSchema = z.object({
 });
 
 module.exports = {
+  AVAILABILITY_DAYS,
   createSlotSchema, updateSlotSchema, DAYS_OF_WEEK,
   setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema,
   createSkipSchema, SKIP_MODES,

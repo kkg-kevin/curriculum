@@ -7,6 +7,7 @@ import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHu
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const STATUS_LABEL = { draft: "Draft", open: "Open", closed: "Closed" };
 const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
@@ -235,6 +236,8 @@ export default function CompetitionViewPage() {
           </div>
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="competitions" id={id} style={{ marginBottom: 16 }} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>

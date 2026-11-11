@@ -27,7 +27,10 @@ function labelOf(row) {
   if (!row) return null;
   const person = [row.firstName, row.lastName].filter(Boolean).join(" ").trim();
   const label =
-    row.name || row.title || person || row.invoiceNumber || row.batchNumber || row.guardianName || row.label ||
+    row.name || row.title || person || row.invoiceNumber || row.batchNumber || row.certificateNumber || row.orderNumber ||
+    row.pathwayName || row.guardianName || row.customerName || row.label ||
+    // A booking or a meeting: what it's about and when.
+    (row.date && row.startTime ? [row.sessionTitle || row.courseName, `${String(row.date).slice(0, 10)} ${row.startTime}`].filter(Boolean).join(" · ") : null) ||
     [row.gradeName, row.streamName].filter(Boolean).join(" ").trim() || row.email || row.username || null;
   return label ? clip(label, 255) : null;
 }
@@ -256,6 +259,28 @@ const AuditService = {
         path: clip(ctx.path, 255),
         ...clientOf(req),
       });
+      // A copy (a course, a curriculum… duplicated) is a new record too: its own "created" entry, so
+      // its stamp says who made it (modules/activity's RecordStamp — 12 Nov 2026).
+      const copy = ctx.action === "duplicate" && outcome === "success" && ctx.entity && data && typeof data.id === "string" && data.id !== ctx.entity.id ? data : null;
+      if (copy) {
+        await write({
+          ownerAdminId,
+          ...(await actorOf(req.user)),
+          action: "create",
+          module: ctx.module,
+          entityType: ctx.entity.table,
+          entityId: copy.id,
+          entityLabel: labelOf(copy),
+          summary: clip(`Made “${labelOf(copy) || "a copy"}” as a copy of “${label || "the original"}”`, 500),
+          changes: null,
+          outcome,
+          statusCode: status,
+          reason: null,
+          method: req.method,
+          path: clip(ctx.path, 255),
+          ...clientOf(req),
+        });
+      }
     } catch (err) {
       console.error("[audit] could not record:", err.message);
     }
@@ -335,6 +360,16 @@ const AuditService = {
     const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
     const rows = await AuditLogModel.find({ ...filters, ownerAdminId }, { limit, offset });
     return { items: rows.slice(0, limit), hasMore: rows.length > limit, page: Math.max(Number(page) || 1, 1) };
+  },
+
+  // A record's "Created by · Last changed by" stamp (its parts' changes included). `recordCreatedAt`
+  // is the record's own date, so a record made before the log began (2 Oct 2026) can say so.
+  async stamp(ownerAdminId, recordType, recordId) {
+    if (!AuditLogModel.RECORDS[recordType]) throw Object.assign(new Error("Unknown record"), { statusCode: 400 });
+    const row = await require("../../config/db")(recordType).where({ id: recordId }).first().catch(() => null);
+    if (!row) throw Object.assign(new Error("Not found"), { statusCode: 404 });
+    const stamp = await AuditLogModel.stamp(ownerAdminId, recordType, recordId);
+    return { ...stamp, recordCreatedAt: row.createdAt || null, recordUpdatedAt: row.updatedAt || null };
   },
 
   // { all, signins, added, edited, deleted, problems } — the numbers on the Activity page's tabs.

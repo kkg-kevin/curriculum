@@ -6,11 +6,15 @@ import { useCheckinsBase } from "../../checkins/shared";
 import { useMentorBase } from "../../mentor-checkins/shared";
 import { templateSource, useSourceMutation, useSourceTemplates } from "../templateSources";
 import { Empty, Pill, Segmented, T, btn, card, formatDate, hint, toolbar, useQaBase } from "../shared";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 // The workspace's templates — what a visit checks. Anyone who reviews can make one and use any;
 // the person who made it (or an admin) changes, archives or deletes it. One in use can't be
 // deleted — archive it instead (reports keep their own copy either way). `source` "qa" or
 // "checkins" (hub check-in templates, managers only) — qa/templateSources.js.
+// The table each kind of template lives in (the activity log's record type).
+const TEMPLATE_TABLE = { qa: "qa_templates", checkins: "checkin_templates", mentor: "mentor_checkin_templates" };
+
 export default function TemplatesTab({ source: sourceName = "qa" }) {
   const source = templateSource(sourceName);
   const words = source.words;
@@ -54,6 +58,8 @@ export default function TemplatesTab({ source: sourceName = "qa" }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
+              {/* Who made and changed this template (admin side only — modules/activity). */}
+              <HistoryButton type={TEMPLATE_TABLE[sourceName]} id={t.id} label={t.name} />
               <button type="button" className="ci-btn" onClick={() => navigate(`${base}/templates/new?from=${t.id}`)} style={btn("secondary", { size: "sm" })}><FiCopy size={13} /> Copy</button>
               {t.canEdit && (
                 <>

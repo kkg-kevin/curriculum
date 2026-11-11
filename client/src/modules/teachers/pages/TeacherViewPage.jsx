@@ -24,6 +24,7 @@ import PublishingCard from "../../educator-profiles/components/PublishingCard";
 import StandardsCard from "../../mentor-standards/StandardsCard";
 import { Tabs } from "../../../components/ui/TabBar";
 import { usePermissions } from "../../../hooks/usePermissions";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const ACCENT = "#25476a";
 
@@ -365,6 +366,8 @@ export default function TeacherViewPage() {
         </div>
       </div>
 
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="teachers" id={id} />
       {/* The figures that matter — each opens its tab */}
       {profile && <ProfileKpis profile={profile} onOpen={(key) => (TABS.some((t) => t.key === key) ? setTab(key) : null)} />}
 

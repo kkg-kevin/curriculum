@@ -63,6 +63,7 @@ const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
 const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
+const mentorBookingRoutes = require("./modules/mentor-bookings/mentor-booking.routes");
 const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standards.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
@@ -294,7 +295,26 @@ const supervisorPhotoOnly = (req, res, next) => (
     ? next()
     : res.status(403).json({ success: false, message: "You do not have permission to perform this action" })
 );
-app.use("/api/uploads", protect, authorize("admin", "teacher", "school", "learner", "supervisor"), supervisorPhotoOnly, uploadRoutes);
+// Staff (12 Nov 2026): a staff session doesn't pass through attachOwnRecords here, so its role is
+// checked on its own — a role that may add or edit anything at all may upload (course covers,
+// assessment pictures and files, hub photos, event images…). A file on its own changes nothing;
+// the record it's put on is still checked against the role as usual. A view-only role can't.
+const staffUploads = async (req, res, next) => {
+  if (req.user.role !== "collaborator") return next();
+  try {
+    const permissions = await require("./modules/access/access.service").permissionsFor(req.user);
+    const canWrite = Object.values(permissions || {}).some((actions) => Array.isArray(actions) && (actions.includes("create") || actions.includes("edit")));
+    if (!canWrite) return res.status(403).json({ success: false, message: "Your role can only view, so it can't upload files." });
+    req.user.actualRole = "collaborator";
+    req.user.permissions = permissions;
+    req.ownerAdminId = req.user.invitedByAdminId || null;
+    req.user.role = "admin";
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+};
+app.use("/api/uploads", protect, staffUploads, authorize("admin", "teacher", "school", "learner", "supervisor"), supervisorPhotoOnly, uploadRoutes);
 // Competitions — an independent module (a sibling of curriculum), admin-only. A competition can
 // optionally link to a curriculum via curriculumId.
 app.use("/api/competitions", protect, attachOwnRecords, authorize("admin"), competitionRoutes);
@@ -371,6 +391,10 @@ app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
 // child; set up by an admin, times drawn at random, the parent confirms or picks another time and
 // approves the report. See modules/mentor-checkins/ (mentor-checkin.access.js for who sees what).
 app.use("/api/mentor-checkins", protect, attachOwnRecords, mentorCheckinRoutes);
+// Mentor bookings (11 Nov 2026): a parent books a mentor for a child stuck on a session — pay
+// first, online or at a hub's space; partner hubs' desk fees settled from their statement. See
+// modules/mentor-bookings/ (mentor-booking.service.js for who sees what).
+app.use("/api/mentor-bookings", protect, attachOwnRecords, mentorBookingRoutes);
 // Mentor standards — the bar every mentor is measured against (Settings → Mentor standards); each
 // mentor's standing comes with their profile and Reports → Educators. See modules/mentor-standards/.
 app.use("/api/mentor-standards", protect, attachOwnRecords, mentorStandardRoutes);

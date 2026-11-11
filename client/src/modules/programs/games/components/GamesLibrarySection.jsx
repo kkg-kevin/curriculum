@@ -6,6 +6,7 @@ import { GameBadge, GameIcon, SkillChips } from "./GameTile";
 import GameFormModal from "./GameFormModal";
 import { gamesApi } from "../services/gamesApi";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 const iconBtn = { width: 30, height: 30, borderRadius: 8, border: "1.5px solid #E5E7EB", background: "#fff", color: "#6B7280", display: "grid", placeItems: "center", cursor: "pointer" };
 
@@ -82,7 +83,10 @@ export default function GamesLibrarySection() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <GameBadge game={game} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                        <h3 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{game.name}</h3>
+                        <HistoryButton type="event_games" id={game.id} label={game.name} iconOnly />
+                      </div>
                       <p style={{ margin: "2px 0 0", fontSize: 11.5, color: game.usedIn ? "#059669" : "#9CA3AF", fontWeight: 600 }}>
                         {game.usedIn ? `In ${game.usedIn} ${game.usedIn === 1 ? "bootcamp" : "bootcamps"}` : "Not in a bootcamp yet"}
                       </p>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { FiArrowLeft, FiAward, FiClock, FiSearch, FiStar, FiUsers } from "react-icons/fi";
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from "react-router-dom";
+import { FiAward, FiClock, FiSearch, FiStar, FiUsers } from "react-icons/fi";
 import Avatar from "../../../components/ui/Avatar";
 import { Modal, QaStyles as CheckinStyles, btn, input, label } from "../../qa/shared";
 import { useMentorDirectory, useRequestMentor } from "../hooks/useEducatorProfile";
@@ -9,7 +9,8 @@ import PublicProfileView from "../components/PublicProfileView";
 // Find a mentor (parent portal, /parent/mentors): the published educators of the learning centres the
 // family's children learn at — by rating, then hours — searchable by name, course or what they teach,
 // and filtered by place and online. A profile (/parent/mentors/:slug) is the same one the share page
-// shows, with "Ask for …": it goes to the team inside the system (nothing comes from the website).
+// shows — laid out like the educator page on the admin and educator side (header, key figures, tabs)
+// — with "Ask for …": it goes to the team inside the system (nothing comes from the website).
 
 function MentorCard({ m, onOpen }) {
   const [first, ...rest] = m.name.split(" ");
@@ -75,19 +76,35 @@ export function MentorProfilePage() {
   const navigate = useNavigate();
   const { children = [] } = useOutletContext() || {};
   const { data = [], isLoading } = useMentorDirectory();
+  const [params, setParams] = useSearchParams();
   const [asking, setAsking] = useState(false);
   const mentor = data.find((m) => m.slug === slug);
+  // The open tab lives in the address (?tab=), as on the educator's and the admin's pages.
+  const setTab = (key) => {
+    const next = new URLSearchParams(params);
+    if (key === "overview") next.delete("tab"); else next.set("tab", key);
+    setParams(next, { replace: true });
+  };
   if (isLoading) return <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>Loading…</div>;
   if (!mentor) return <div style={{ padding: "50px 20px", textAlign: "center", fontFamily: "Inter, sans-serif" }}>This educator isn&apos;t listed. <Link to="/parent/mentors">Back to Find a mentor</Link></div>;
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 14 }}>
-      <button type="button" onClick={() => navigate("/parent/mentors")} style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 999, border: "1.5px solid #E5E7EB", background: "#fff", color: "#4B5563", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}><FiArrowLeft /> Find a mentor</button>
+    <div style={{ fontFamily: "Inter, sans-serif" }}>
       <PublicProfileView
         profile={mentor}
+        crumb={{ label: "Find a mentor", onClick: () => navigate("/parent/mentors") }}
+        tab={params.get("tab")}
+        onTab={setTab}
         actions={children.length > 0 && (
-          <button type="button" onClick={() => setAsking(true)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: "#feb139", color: "#25476a", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-            Ask for {mentor.name.split(" ")[0]}
-          </button>
+          <>
+            {/* A session with them now, for a child stuck on something (modules/mentor-bookings). */}
+            <button type="button" onClick={() => navigate(`/parent/bookings/new?teacherId=${mentor.teacherId}`)} style={{ padding: "9px 16px", borderRadius: 10, border: "none", background: "#feb139", color: "#25476a", boxShadow: "0 2px 8px rgba(254,177,57,0.35)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Book a session
+            </button>
+            {/* Ongoing: ask the team for them as the child's class mentor. */}
+            <button type="button" onClick={() => setAsking(true)} style={{ padding: "9px 16px", borderRadius: 10, background: "rgba(255,255,255,0.14)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.35)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Ask for {mentor.name.split(" ")[0]}
+            </button>
+          </>
         )}
       />
       {asking && <AskDialog mentor={mentor} children={children} onClose={() => setAsking(false)} />}

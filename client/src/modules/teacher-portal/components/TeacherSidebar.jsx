@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -16,6 +16,8 @@ const menuItems = [
   { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices"] },
   { name: "QA Reviews",      path: "/teacher-portal/qa", icon: FiStar },
   { name: "Hub Check-ins",   path: "/teacher-portal/checkins", icon: FiClipboard },
+  // Sessions families booked with them, to take a stuck learner through (modules/mentor-bookings).
+  { name: "Mentor sessions", path: "/teacher-portal/bookings", icon: FiLifeBuoy },
   // Meeting each family of their classes about their child (modules/mentor-checkins).
   { name: "Parent check-ins", path: "/teacher-portal/mentor-checkins", icon: FiMessageCircle },
   // What families say — anonymous, from 3 reviews (modules/mentor-reviews).

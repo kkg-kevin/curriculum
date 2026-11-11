@@ -6,6 +6,7 @@ import {
   HOUSEHOLD_STATUS, Initials, Pill, formatDate, formatMoney, inputStyle, labelStyle, panelStyle, primaryButton, secondaryButton,
 } from "../../home-learning/components/ui";
 import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 // One family's membership of one club — the club counterpart of Home Learning's HouseholdCard,
 // with the same look. Children are placed in one of the club's classes instead of getting their
@@ -218,7 +219,7 @@ export default function MembershipCard({ membership, focused, cardRef, classes, 
       <Initials name={membership.guardianName} size={46} />
       <div style={{ flex: "1 1 240px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>{membership.guardianName}</h3>
+          <h3 style={{ margin: 0, fontSize: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>{membership.guardianName} <HistoryButton type="club_memberships" id={membership.id} label={membership.guardianName} iconOnly /></h3>
           <Pill tone={status}>{status.label}</Pill>
           {membership.source === "website" && <Pill tone={{ color: "#1D4ED8", background: "#EFF6FF" }}><FiGlobe /> Website sign-up</Pill>}
         </div>

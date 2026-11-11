@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiCalendar, FiClipboard, FiCreditCard, FiGift, FiHome, FiMessageCircle, FiPackage, FiSearch, FiStar, FiUser } from "react-icons/fi";
+import { FiCalendar, FiClipboard, FiCreditCard, FiGift, FiHome, FiLifeBuoy, FiMessageCircle, FiPackage, FiSearch, FiStar, FiUser } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -98,6 +98,10 @@ export default function ParentSidebar({ children = [], isMobile = false, isMobil
           <NavLink to="/parent/feedback" onClick={close} title={isCollapsed ? "Mentor feedback" : undefined} style={linkStyle(isCollapsed)}>
             <FiStar size={18} style={{ flexShrink: 0 }} />
             {!isCollapsed && <span>Mentor feedback</span>}
+          </NavLink>
+          <NavLink to="/parent/bookings" onClick={close} title={isCollapsed ? "Mentor sessions" : undefined} style={linkStyle(isCollapsed)}>
+            <FiLifeBuoy size={18} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Mentor sessions</span>}
           </NavLink>
           <NavLink to="/parent/mentor-checkins" onClick={close} title={isCollapsed ? "Mentor check-ins" : undefined} style={linkStyle(isCollapsed)}>
             <FiMessageCircle size={18} style={{ flexShrink: 0 }} />

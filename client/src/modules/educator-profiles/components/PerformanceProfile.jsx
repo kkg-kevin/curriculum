@@ -27,9 +27,9 @@ const monthShort = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString("en-KE
 const dayShort = (d) => new Date(`${d}T00:00:00`).toLocaleDateString("en-KE", { day: "numeric", month: "short" });
 const dayLong = (d) => (d ? new Date(`${String(d).slice(0, 10)}T00:00:00`).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—");
 export const QA_BAND_COLOR = { Excellent: C.navy, Strong: C.mid, Developing: C.goldText };
-const box = { ...card, padding: "18px 20px" };
+export const box = { ...card, padding: "18px 20px" };
 
-function SectionTitle({ icon: Icon, title, note, action }) {
+export function SectionTitle({ icon: Icon, title, note, action }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
       <div style={{ minWidth: 0 }}>
@@ -141,7 +141,7 @@ function HourBars({ byMonth = [] }) {
 }
 
 // A soft, iconed "nothing yet" — one short line, never a paragraph.
-function EmptyState({ icon: Icon, title, line }) {
+export function EmptyState({ icon: Icon, title, line }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "6px 0" }}>
       <span aria-hidden style={{ width: 46, height: 46, borderRadius: 14, background: C.skyTint, color: C.mid, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={21} /></span>
@@ -154,7 +154,7 @@ function EmptyState({ icon: Icon, title, line }) {
 }
 
 // A small figure tile with its icon.
-function IconFigure({ icon: Icon, label, value, sub }) {
+export function IconFigure({ icon: Icon, label, value, sub }) {
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 14, background: C.canvas, border: `1px solid ${C.line}`, minWidth: 0 }}>
       <span aria-hidden style={{ width: 38, height: 38, borderRadius: 11, background: C.surface, border: `1px solid ${C.line}`, color: C.mid, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={17} /></span>
@@ -238,6 +238,12 @@ export function ProfileKpis({ profile, onOpen = null }) {
     { key: "held", tab: "teaching", icon: FiCheckCircle, label: "Sessions held", value: rel.rate != null ? `${rel.rate}%` : "—", sub: rel.planned ? `${rel.given} of ${rel.planned} timetabled · 90 days` : "No timetabled sessions yet" },
     { key: "hours", tab: "teaching", icon: FiClock, label: "Verified hours", value: fmt(s.hours?.total, 1), sub: `${fmt(s.hours?.last90Days, 1)} in the last 90 days` },
   ].filter(Boolean);
+  return <KpiStrip tiles={tiles} onOpen={onOpen} />;
+}
+
+// The strip itself — tiles of { key, tab, icon, label, value, sub, tone? }. Shared with the families'
+// view of a profile (PublicProfileView), so every side sees an educator laid out the same way.
+export function KpiStrip({ tiles, onOpen = null }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontFamily: FONT }}>
       {tiles.map((t) => {
@@ -321,10 +327,10 @@ function WorkOnRow({ item }) {
 }
 
 // Each badge's own icon.
-const BADGE_ICON = { top_rated: FiStar, qa_excellent: FiShield, reliable: FiCalendar, fast_feedback: FiZap, hours: FiClock, tot_certified: FiBookOpen };
+export const BADGE_ICON = { top_rated: FiStar, qa_excellent: FiShield, reliable: FiCalendar, fast_feedback: FiZap, hours: FiClock, tot_certified: FiBookOpen };
 
 // A badge: earned ones in colour, the rest grey with how far along they are. The rule is on hover.
-function BadgeTile({ badge }) {
+export function BadgeTile({ badge }) {
   const earned = badge.earned;
   const Icon = BADGE_ICON[badge.key] || FiAward;
   return (

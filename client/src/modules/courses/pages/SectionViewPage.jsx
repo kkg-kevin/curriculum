@@ -8,6 +8,7 @@ import LearnerSessionAssessment from "../components/LearnerSessionAssessment";
 import RichContent from "../components/RichContent";
 import { sectionsForRole, SECTION_LABELS, sessionLabel, buildModuleLocalSessionIndex, groupSessionsByModule, isRepeatableSection, repeatableItemLabel } from "../sectionConfig";
 import { useAuth } from "../../../context/AuthContext";
+import AskForHelpButton from "../../mentor-bookings/components/AskForHelpButton";
 import { courseHomePath, sectionPath } from "../../../routes/portalPaths";
 import { normalizeActivityItems } from "../utils/sessionActivity";
 import { markSectionComplete, setLastViewedSection, getCourseSectionProgress, getSessionCompletion, areNonAssessmentSectionsComplete } from "../../learner-portal/utils/progressStorage";
@@ -547,7 +548,7 @@ export default function SectionViewPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
         <button
           type="button"
           onClick={() => navigate(courseHomePath(role, id))}
@@ -567,6 +568,8 @@ export default function SectionViewPage() {
           </svg>
           {sidebarCollapsed ? "Show Sessions" : "Hide Sessions"}
         </button>
+        {/* A learner stuck on this session tells their parent, who can book a mentor (modules/mentor-bookings). */}
+        {isLearner && <div style={{ marginLeft: "auto" }}><AskForHelpButton courseId={id} sessionId={sessionId} sessionTitle={session.title} /></div>}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: sidebarCollapsed ? "1fr" : "300px 1fr", gap: sidebarCollapsed ? "0" : "20px", alignItems: "start" }}>

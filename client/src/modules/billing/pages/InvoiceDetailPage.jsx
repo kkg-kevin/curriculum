@@ -16,6 +16,7 @@ import MpesaPayDialog, { PaybillInstructions } from "../components/MpesaPayDialo
 import PaymentScheduleCard from "../components/PaymentScheduleCard";
 import { billingApi } from "../services/billingApi";
 import { familyBillingBase } from "../utils/familyBillingBase";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 function Detail({ label, value }) { return <div><div style={{ color: "#9CA3AF", fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>{label}</div><div style={{ marginTop: 4, color: "#374151", fontSize: 13 }}>{value || "Not provided"}</div></div>; }
 
@@ -81,6 +82,9 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <div className="no-print"><RecordStamp type="billing_invoices" id={id} /></div>
 
       <BillToCard billTo={invoice.billTo} label="Bill to" />
 

@@ -10,6 +10,7 @@ import RichContent, { isEmptyHtml } from "../../assessments/components/RichConte
 import { TemplateItem } from "../../qa/components/ReviewForm";
 import { ScoreHeader, TemplateAnswers, liveScore } from "../../qa/components/Report";
 import { CheckinStyles, FORMAT_LABEL, Pill, REPORT_PARTS, T, btn, card, childNames, font, formatDate, formatDateTime, hint, input, label, reportHtml, safeMeetingLink, stateFor, useMentorBase } from "../shared";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const toForm = (m) => ({ summary: reportHtml(m?.report?.summary), actions: reportHtml(m?.report?.actions), answers: m?.answers || {} });
 
@@ -123,6 +124,8 @@ export default function MeetingPage() {
         {asParent && m.state === "today" && <p style={{ ...hint, marginTop: 10 }}>It&apos;s today, so the time can&apos;t change now. If you can&apos;t make it, let the hub know.</p>}
         {asParent && m.state === "upcoming" && !m.confirmed && <p style={{ ...hint, marginTop: 10 }}>Confirm the time, or pick another free time if this one doesn&apos;t suit you.</p>}
       </section>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="mentor_checkin_meetings" id={id} />
 
       {/* The report — not for the hub or a supervisor. */}
       {(viewer === "parent" || viewer === "educator" || viewer === "manager") && m.state !== "cancelled" && (

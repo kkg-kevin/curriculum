@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiChevronDown, FiChevronUp, FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
-import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
+import { AVAILABILITY_DAYS as DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import { useTeacherAvailability, useAddAvailabilitySlot, useRemoveAvailabilitySlot } from "../../teachers/hooks/useTeacher";
 import WeeklyAvailabilityGrid from "../../teachers/components/WeeklyAvailabilityGrid";
 

@@ -23,6 +23,8 @@ const MentorCheckinService = require("../modules/mentor-checkins/mentor-checkin.
   // Parent–mentor check-ins: "it's today" to each family and the class's educators.
   const mentorToday = await MentorCheckinService.sendTodayNotices();
   console.log("Parent–mentor check-ins:", JSON.stringify({ today: mentorToday }));
+  // Mentor bookings: "it's today" to the family and the mentor.
+  console.log("Mentor bookings today:", await require("../modules/mentor-bookings/mentor-booking.service").sendTodayNotices());
 })()
   .catch((err) => {
     console.error("Hub check-ins processing failed:", err);

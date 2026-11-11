@@ -10,6 +10,7 @@ import { usePathwayDirectory } from "../../settings/pathways/hooks/usePathwayTem
 import PathwayWebsiteFields from "../../pathway-subscriptions/components/PathwayWebsiteFields";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { pricePer } from "../../../utils/billingPeriods";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 const inputStyle = { width: "100%", boxSizing: "border-box", border: "1px solid #D1D5DB", borderRadius: 9, padding: "9px 11px", fontSize: 14, background: "#fff" };
 const labelStyle = { display: "grid", gap: 6, color: "#374151", fontSize: 13, fontWeight: 600 };
@@ -26,7 +27,7 @@ const OFFERED = [
 ];
 const blankPrices = () => Object.fromEntries(OFFERED.map((p) => [p.value, { on: false, amount: "", extra: "" }]));
 
-const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", prices: { ...blankPrices(), monthly: { on: true, amount: "", extra: "" } }, defaultPeriod: "monthly", legacyDaily: false, allowExtraChildren: false, maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [], pathwayTemplateId: "" };
+const EMPTY = { name: "", slug: "", summary: "", description: "", childrenIncluded: "1", prices: { ...blankPrices(), monthly: { on: true, amount: "", extra: "" } }, defaultPeriod: "monthly", legacyDaily: false, allowExtraChildren: false, maxChildren: "", features: "", badge: "", isPublished: true, status: "active", sortOrder: "0", hubIds: [], pathwayTemplateId: "", includedHelpSessions: "0" };
 
 // A package's prices, one per period (its periodPrices; a package saved before 6 Nov 2026 has just
 // its one amount + billingPeriod).
@@ -100,13 +101,14 @@ function toForm(pkg) {
   badge: pkg.badge || "", isPublished: !!pkg.isPublished, status: pkg.status, sortOrder: String(pkg.sortOrder ?? 0),
   hubIds: Array.isArray(pkg.hubIds) ? pkg.hubIds : [],
   pathwayTemplateId: pkg.pathwayTemplateId || "",
+  includedHelpSessions: String(pkg.includedHelpSessions ?? 0),
   };
 }
 
 // `withClubs` adds the club list — only Tech Club packages have one.
 const toPayload = (form, withClubs = false, withPathway = false) => ({
   ...(withClubs ? { hubIds: form.hubIds } : {}),
-  ...(withPathway ? { pathwayTemplateId: form.pathwayTemplateId } : {}),
+  ...(withPathway ? { pathwayTemplateId: form.pathwayTemplateId, includedHelpSessions: Number(form.includedHelpSessions || 0) } : {}),
   name: form.name,
   slug: form.slug,
   summary: form.summary,
@@ -213,6 +215,8 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
     <label style={labelStyle}>Package name<input style={inputStyle} required maxLength={150} value={form.name} onChange={set("name")} placeholder={config.namePlaceholder} /></label>
     <label style={labelStyle}>Children included<input style={inputStyle} required type="number" min={1} max={50} value={form.childrenIncluded} onChange={set("childrenIncluded")} /></label>
     <label style={labelStyle}>Badge (optional)<input style={inputStyle} maxLength={40} value={form.badge} onChange={set("badge")} placeholder="e.g. Most popular" /></label>
+    {/* Mentor sessions the plan includes each period — the mentor's fee is waived for them (modules/mentor-bookings). */}
+    {config.withPathway && <label style={labelStyle}>Mentor sessions included per period<input style={inputStyle} type="number" min={0} max={60} value={form.includedHelpSessions} onChange={set("includedHelpSessions")} placeholder="0" /></label>}
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Short summary (shown on the card)<input style={inputStyle} maxLength={300} value={form.summary} onChange={set("summary")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>Description (optional)<textarea style={{ ...inputStyle, minHeight: 64, resize: "vertical" }} maxLength={5000} value={form.description} onChange={set("description")} /></label>
     <label style={{ ...labelStyle, gridColumn: "1/-1" }}>What's included — one per line<textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={form.features} onChange={set("features")} placeholder={config.featuresPlaceholder} /></label>
@@ -240,6 +244,9 @@ function PackageForm({ initial, isEdit, onSubmit, onCancel, saving, config, club
 // With programme="pathway": the website pathways' subscription plans — each plan's form picks the
 // pathway (one the curricula use) and sets its picture and hubs; a pathway is on the website while
 // it has a published plan (public-site.service.js's onWebsite).
+// The table each programme's packages live in (the activity log's record type).
+const PACKAGE_TABLE = { home_learning: "home_learning_packages", tech_club: "club_packages", pathway: "pathway_packages" };
+
 export default function PackagesPanel({ programme = "home_learning" }) {
   const config = PROGRAMMES[programme];
   const queryClient = useQueryClient();
@@ -339,6 +346,8 @@ export default function PackagesPanel({ programme = "home_learning" }) {
               </div>}
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {/* Who made and changed this package (admin side only — modules/activity). */}
+              <HistoryButton type={PACKAGE_TABLE[programme]} id={pkg.id} label={pkg.name} />
               {pkg.status === "active" && pkg.billingPeriod !== "daily" && <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: { isPublished: !pkg.isPublished } })} style={smallButton}><FiGlobe /> {pkg.isPublished ? "Hide from website" : "Show on website"}</button>}
               <button type="button" onClick={() => setEditingId(pkg.id)} style={smallButton}><FiEdit2 /> Edit</button>
               <button type="button" disabled={quickMutation.isPending} onClick={() => quickMutation.mutate({ pkg, changes: pkg.status === "active" ? { status: "archived", isPublished: false } : { status: "active" } })} style={smallButton}>{pkg.status === "active" ? "Archive" : "Restore"}</button>

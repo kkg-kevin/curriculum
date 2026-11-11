@@ -6,6 +6,7 @@ import CardKebab from "./CardKebab";
 import { Modal, Label } from "../../components/Modal";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { itemsApi } from "../services/itemsApi";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 function ServiceModal({ editTarget, onClose }) {
   const { mutate: create, isPending: creating } = useCreateItem();
@@ -92,6 +93,7 @@ function ServiceCard({ item, onEdit, onMove, onDelete }) {
       <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3 }}>{item.name}</p>
+          <HistoryButton type="items" id={item.id} label={item.name} iconOnly />
           <CardKebab onEdit={onEdit} onMove={onMove} moveLabel="Move to Goods" onDelete={onDelete} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>

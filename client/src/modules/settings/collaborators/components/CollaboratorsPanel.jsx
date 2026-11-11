@@ -8,6 +8,7 @@ import { MODULE_OPTIONS } from "../moduleRegistry";
 import { Link } from "react-router-dom";
 import { useActivityFacets } from "../../../activity/hooks/useActivity";
 import { ago } from "../../../activity/labels";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 const emptyForm = { name: "", email: "", password: "", roleId: "" };
 
@@ -127,6 +128,7 @@ export default function CollaboratorsPanel({ onManageRoles }) {
               <div className="stg-item-top">
                 <span className="stg-item-dot" style={{ background: "#38aae1" }} />
                 <div className="stg-item-name">{c.name}</div>
+                <HistoryButton type="users" id={c.id} label={c.name} iconOnly />
                 <button type="button" className="stg-icon-btn" title="Change role" onClick={() => openEdit(c)}>
                   <FiSettings size={15} strokeWidth={2.2} />
                 </button>

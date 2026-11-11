@@ -14,6 +14,7 @@ import { classApi } from "../services/classApi";
 import PromotionPanel from "../components/PromotionPanel";
 import ClassCompletionPanel from "../components/ClassCompletionPanel";
 import { formatClassName } from "../utils/classDisplay";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 function DetailRow({ label, value, empty = "—" }) {
   return (
@@ -221,6 +222,8 @@ export default function ClassViewPage() {
           </div>
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="classes" id={id} style={{ marginBottom: 20 }} />
 
       {/* Details grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
