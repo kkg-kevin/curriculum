@@ -102,6 +102,91 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (11 Nov 2026) — Mentor bookings, who did what inside every record, a real dashboard, a sidebar without dropdowns
+
+**Portal and backend** from `curriculum` (branch `modules`) at `dc0a3208`; **website** from `curriculum-web`
+(branch `new`) at `cbb4edb`. Includes the "10 Nov 2026, afternoon" release below — if that isn't up yet, these
+files replace it: do its database checks and add its cron job too.
+
+### Upload in this order
+
+0. **Take a database backup** — one new migration that changes existing tables.
+1. **Backend** — `backend-deploy.zip` (723 files, 178 migrations), then Restart. One new migration, applied on
+   Restart:
+   - `20261111090000` — mentor bookings: new tables `mentor_bookings`, `mentor_help_requests`, `hub_settlements`;
+     Saturday and Sunday allowed in educators' availability; `claim_settings.mentorBookings` (the rates);
+     `learning_hubs.deskFeeOwner` / `deskCollectionPercent`; `pathway_packages.includedHelpSessions`; invoice type
+     `mentor_booking`; educator claims of type `bookings` (a claim's class and course may now be empty).
+
+   Check: `SHOW TABLES LIKE 'mentor_bookings';` and `SHOW TABLES LIKE 'hub_settlements';` (1 row each) and
+   `SHOW COLUMNS FROM learning_hubs LIKE 'deskFeeOwner';` (1 row). If any is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CDVO8S5o.js`). After the backend.
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-B2m7S5Kt.js`, 33 pages). Unzip over the old files.
+
+No new cron job, environment variable or npm package: the existing `billing:process` releases unpaid booking holds
+and `checkins:process` sends "your session is today".
+
+**Before parents can book** — mentor bookings stay OFF until you switch them on: **Settings → Educator Pay →
+Mentor bookings**. Check the lengths and prices there first (30 / 45 / 60 / 90 / 120 minutes, each with the
+family's price and the mentor's pay), the notice needed, how long an unpaid time is held, and the cancellation
+cut-off — they're starting values, not decisions. Each mentor also needs their availability set (now including
+weekends) and a published profile. For a hub that rents desks, set its **Spaces** on the hub form: its desk price
+and whose fees they are (ours, or the partner hub's, less what you keep for collecting).
+
+### What changed
+
+**Mentor bookings** (Programmes → Mentor Bookings). A pathway learner who is stuck presses **"Stuck? Ask for
+help"** on a session; their parent hears and books any published mentor — what the child is stuck on, a length,
+online or a hub's desk, a free time from the mentor's availability. The time is held and one invoice raised (the
+mentor + the desk); paying confirms it, an unpaid hold is released. The mentor marks it held (with a note for the
+family) or didn't join, and claims held sessions under **Mentor sessions → Claim it** (supervisor → admin → paid as
+usual). Cancelling: the family until the cut-off, the mentor or staff any time; paid money is marked refund due and
+staff **Mark refunded**. A partner hub's desk share is owed once the session has happened and settled from its
+statement (paid out, or credited on one of its invoices). A pathway plan can include sessions each period. Parents
+(`/parent/bookings`), mentors, hubs (read only) and admins (Bookings · Refunds · Hub settlements) each have their
+pages.
+
+**Who did what, inside the record** (admin side only). Courses, assessments, curricula, hubs, classes, educators,
+learners, bootcamps, competitions, QA visits, check-ins, invoices and more show **Created by · Last changed by · N
+changes by N people** and a **History** window ("Who did what"); lists and pop-ups (packages, templates, claims,
+households, memberships, subscriptions, affiliates, enquiries, staff, roles…) have a History button. Worked out
+from the activity log — records made before 2 Oct 2026 say so. Seen by the owner and staff allowed the Activity log.
+
+**Staff can upload** pictures and files when their role lets them create or edit anything (view-only roles can't).
+
+**Dashboard** redesigned as a dashboard: a greeting with what needs you today, key figures with 12-month
+sparklines, money collected by month, **Needs you** (most pressing first), today's timeline, learning health,
+programmes, learners by hub, the month's enquiry → paid funnel, recent activity and shortcuts. Every staff role can
+open it; each sees only the parts their role allows.
+
+**Sidebar**: no more dropdowns. An item with sub-pages opens its own page, and pointing at it shows its sub-pages in
+a second panel beside the sidebar; on phones they're listed under it. Sections are plain headings.
+
+**"Are you sure?" boxes** now match the system (title, short explanation, buttons that say what they do, red only
+for something destructive) instead of the browser's grey pop-up showing the site's address. Cancelling a referral
+or commission, or rejecting a payout, asks "are you sure" and "why" in one box.
+
+**Parents' view of a mentor** is laid out like the admin and educator pages (header, key figures, tabs).
+
+**Parent–mentor check-ins**: families' notices name the educator through their child — "John's Tech Educator, Jane
+Wanjiru, would like to meet you…".
+
+**Learner profile → Pathway**: each pathway opens to show its courses. **Website**: a project's long "What you'll
+build" list sits in two columns.
+
+### Verify
+
+1. **Settings → Educator Pay → Mentor bookings**: the rates load; switch on. As a parent, **Bookings → New**: a
+   mentor with availability shows free times; book one — an invoice appears; pay it (or Record payment) — the
+   booking turns Confirmed.
+2. A course's page (admin): the stamp under its title shows who created and last changed it; **History** lists
+   entries.
+3. **Dashboard** loads with figures and charts; as a staff member with a narrow role it loads too.
+4. Point at **Reports & Analytics** (or another item with sub-pages) in the sidebar: the second panel opens.
+5. **Affiliates → Email sign-in details**: the system's own box appears (press Cancel).
+
+---
+
 ## This release (10 Nov 2026, afternoon) — Reports & Analytics that point to what needs doing, a learner's year of work, clearer educator profiles
 
 **Portal and backend** from `curriculum` (branch `modules`) at `310aeddc`; **website** from `curriculum-web`
