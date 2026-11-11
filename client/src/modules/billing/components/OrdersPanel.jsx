@@ -5,6 +5,7 @@ import { useOrders, useOrder, useSetOrderStatus } from "../hooks/useBilling";
 import { cardStyle, buttonStyle, inputStyle, formatMoney } from "./shared";
 import { LoadingState, EmptyState } from "./PageStates";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Billing → Orders: what families bought on the website — Store goods and Projects (server:
 // modules/orders). An order is paid through its invoice like anything else (Payment step, To
 // confirm, M-Pesa); once paid, staff prepare it and mark it ready for pickup or dispatched, then
@@ -79,8 +80,8 @@ function OrderDetail({ id }) {
   const [note, setNote] = useState("");
   if (isLoading || !order) return <div style={{ padding: "12px 20px", fontSize: 12, color: "#6B7280" }}>Loading…</div>;
 
-  const act = (status) => {
-    if (status === "cancelled" && !window.confirm(`Cancel ${order.orderNumber}?${order.invoice?.amountPaid > 0 ? " It has been paid — arrange the refund yourself." : " Its unpaid invoice is cancelled too."}`)) return;
+  const act = async (status) => {
+    if (status === "cancelled" && !(await askConfirm({ title: `Cancel ${order.orderNumber}?`, message: order.invoice?.amountPaid > 0 ? "It has been paid — arrange the refund yourself." : "Its unpaid invoice is cancelled too.", confirmLabel: "Cancel order", cancelLabel: "Keep it", tone: "danger" }))) return;
     setStatus({ id: order.id, status, note: note.trim() || null }, { onSuccess: () => setNote("") });
   };
 

@@ -5,6 +5,7 @@ import {
   useAcceptConnection, useConnections, useCopyShared, useRemoveConnection, useRequestConnection, useSharedContent, useSharingKinds,
 } from "../hooks/useSharing";
 
+import { askConfirm } from "../../../../components/ui/AskDialog";
 // Sharing between admins. Each admin is their own workspace; two who connect can browse each
 // other's content and copy what they want into their own. A copy is theirs to change — it
 // doesn't follow later edits by the admin it came from, and editing it changes nothing for them.
@@ -155,7 +156,7 @@ export default function SharingPanel() {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter the other admin's email address");
     request(email.trim(), { onSuccess: () => { setEmail(""); setError(""); } });
   };
-  const confirmRemove = (connection, message) => { if (window.confirm(message)) remove(connection.id); };
+  const confirmRemove = async (connection, title, message, confirmLabel) => { if (await askConfirm({ title, message, confirmLabel, tone: "danger" })) remove(connection.id); };
 
   return (
     <div>
@@ -201,7 +202,7 @@ export default function SharingPanel() {
             {received.map((c) => (
               <ConnectionRow key={c.id} connection={c}>
                 <button type="button" className="stg-btn-primary" disabled={isAccepting} onClick={() => accept(c.id)}><FiCheck size={14} strokeWidth={2.4} /> Accept</button>
-                <button type="button" className="stg-btn-secondary" onClick={() => confirmRemove(c, `Decline the request from ${c.admin.name}?`)}>Decline</button>
+                <button type="button" className="stg-btn-secondary" onClick={() => confirmRemove(c, `Decline the request from ${c.admin.name}?`, "", "Decline")}>Decline</button>
               </ConnectionRow>
             ))}
           </div>
@@ -217,7 +218,7 @@ export default function SharingPanel() {
                 <button type="button" className="stg-btn-primary" onClick={() => setBrowsing(c)}><FiDownload size={14} strokeWidth={2.2} /> Browse their content</button>
                 <button
                   type="button" className="stg-icon-btn danger" title="End sharing"
-                  onClick={() => confirmRemove(c, `Stop sharing with ${c.admin.name}? Neither of you will be able to browse the other's content. Anything already added to a workspace stays.`)}
+                  onClick={() => confirmRemove(c, `Stop sharing with ${c.admin.name}?`, "Neither of you will be able to browse the other's content. Anything already added to a workspace stays.", "Stop sharing")}
                 >
                   <FiX size={16} strokeWidth={2.2} />
                 </button>
@@ -233,7 +234,7 @@ export default function SharingPanel() {
           <div className="stg-list">
             {sent.map((c) => (
               <ConnectionRow key={c.id} connection={c}>
-                <button type="button" className="stg-btn-secondary" onClick={() => confirmRemove(c, `Withdraw your request to ${c.admin.name}?`)}>Withdraw</button>
+                <button type="button" className="stg-btn-secondary" onClick={() => confirmRemove(c, `Withdraw your request to ${c.admin.name}?`, "", "Withdraw")}>Withdraw</button>
               </ConnectionRow>
             ))}
           </div>

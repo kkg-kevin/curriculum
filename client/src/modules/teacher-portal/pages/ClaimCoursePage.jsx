@@ -8,6 +8,7 @@ import SessionEvidence from "../../claims/components/SessionEvidence";
 import ClaimCard from "../../claims/components/ClaimCard";
 import RequestPaymentModal from "../../claims/components/RequestPaymentModal";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // One course's claim: what it pays, its sessions with every student's records, the payment
 // request, and the history of the claims already made for it.
 
@@ -62,7 +63,7 @@ export default function ClaimCoursePage() {
   const { evidence } = course;
 
   const onWithdraw = async (claim) => {
-    if (!window.confirm("Withdraw this payment request? You can send a new one afterwards.")) return;
+    if (!(await askConfirm({ title: "Withdraw this payment request?", message: "You can send a new one afterwards.", confirmLabel: "Withdraw", tone: "danger" }))) return;
     try {
       await withdraw.mutateAsync(claim.id);
       toast.success("Payment request withdrawn");

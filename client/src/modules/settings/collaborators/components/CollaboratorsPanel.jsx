@@ -10,6 +10,7 @@ import { useActivityFacets } from "../../../activity/hooks/useActivity";
 import { ago } from "../../../activity/labels";
 import { HistoryButton } from "../../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../../components/ui/AskDialog";
 const emptyForm = { name: "", email: "", password: "", roleId: "" };
 
 // Staff accounts (role "collaborator") get their access from a role — Settings → People & sharing → Roles & access.
@@ -136,7 +137,7 @@ export default function CollaboratorsPanel({ onManageRoles }) {
                   type="button"
                   className="stg-icon-btn danger"
                   title="Remove staff member"
-                  onClick={() => { if (window.confirm(`Remove ${c.name}? Their login will stop working.`)) revoke(c.id); }}
+                  onClick={async () => { if (await askConfirm({ title: `Remove ${c.name}?`, message: "Their login will stop working.", confirmLabel: "Remove", tone: "danger" })) revoke(c.id); }}
                 >
                   <FiX size={16} strokeWidth={2.2} />
                 </button>

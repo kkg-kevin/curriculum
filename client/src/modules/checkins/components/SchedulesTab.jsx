@@ -5,6 +5,7 @@ import { checkinsApi } from "../services/checkinsApi";
 import ScheduleDialog from "./ScheduleDialog";
 import { Empty, FORMAT_LABEL, FREQUENCY_LABEL, Pill, Segmented, T, btn, card, formatDate, hint, toolbar } from "../shared";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Every check-in schedule in the workspace (managers): set one up, change it, or end it. Ending
 // stops new check-ins and removes the upcoming ones; every report already written stays.
 export default function SchedulesTab({ canManage }) {
@@ -46,8 +47,8 @@ export default function SchedulesTab({ canManage }) {
                 <button
                   type="button"
                   disabled={end.isPending}
-                  onClick={() => {
-                    if (window.confirm(`End the check-ins with ${s.hubName}? No more will come round, and the upcoming ones are removed. Reports already written stay.`)) end.mutate(s.id);
+                  onClick={async () => {
+                    if (await askConfirm({ title: `End the check-ins with ${s.hubName}?`, message: "No more will come round, and the upcoming ones are removed. Reports already written stay.", confirmLabel: "End check-ins", tone: "danger" })) end.mutate(s.id);
                   }}
                   className="ci-btn"
                   style={btn("danger", { size: "sm", disabled: end.isPending })}

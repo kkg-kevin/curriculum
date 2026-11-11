@@ -5,6 +5,7 @@ import { qaApi } from "../services/qaApi";
 import VisitDialog from "./VisitDialog";
 import { Empty, FREQUENCY_LABEL, Pill, Segmented, T, VisitTypePill, btn, card, formatDate, hint, toolbar } from "../shared";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Regular visits — one schedule per educator: set one up, change it, or end it. Ending stops new
 // visits and removes the upcoming ones not started; every report stays.
 export default function SchedulesTab({ teacherId = "" }) {
@@ -45,8 +46,8 @@ export default function SchedulesTab({ teacherId = "" }) {
                 <button
                   type="button"
                   disabled={end.isPending}
-                  onClick={() => {
-                    if (window.confirm(`End the regular visits to ${s.teacherName}? No more will come round, and the upcoming ones not started are removed. Reports stay.`)) end.mutate(s.id);
+                  onClick={async () => {
+                    if (await askConfirm({ title: `End the regular visits to ${s.teacherName}?`, message: "No more will come round, and the upcoming ones not started are removed. Reports stay.", confirmLabel: "End visits", tone: "danger" })) end.mutate(s.id);
                   }}
                   className="ci-btn"
                   style={btn("danger", { size: "sm", disabled: end.isPending })}

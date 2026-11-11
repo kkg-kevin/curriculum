@@ -15,6 +15,7 @@ import {
   Pill, QaPageStyles, QaStyles, REVIEWER_ROLES, SUMMARY_PARTS, stateLook, ScoreBadge, T, VisitTypePill, btn, card, font, formatDate, formatDateTime, hint, useQaBase, visitPath,
 } from "../shared";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // The educator's reply to their report: shown to them with an editor, to reviewers read only.
 function ReplyBox({ visit, canReply }) {
   const [editing, setEditing] = useState(!visit.reply);
@@ -107,7 +108,7 @@ export default function VisitPage() {
           {isReviewer && p.canEdit && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button type="button" className="ci-btn" onClick={() => setChanging(true)} style={btn("secondary", { size: "sm" })}><FiEdit2 size={13} /> Change visit</button>
-              <button type="button" className="ci-btn" disabled={cancel.isPending} onClick={() => { if (window.confirm(`Cancel this visit to ${visit.teacherName}?${visit.started ? " The review written so far is kept with it, but it won't be sent." : ""}`)) cancel.mutate(); }} style={btn("danger", { size: "sm", disabled: cancel.isPending })}><FiSlash size={13} /> Cancel visit</button>
+              <button type="button" className="ci-btn" disabled={cancel.isPending} onClick={async () => { if (await askConfirm({ title: `Cancel this visit to ${visit.teacherName}?`, message: visit.started ? "The review written so far is kept with it, but it won't be sent." : "", confirmLabel: "Cancel visit", cancelLabel: "Keep it", tone: "danger" })) cancel.mutate(); }} style={btn("danger", { size: "sm", disabled: cancel.isPending })}><FiSlash size={13} /> Cancel visit</button>
             </div>
           )}
           {isReviewer && submitted && p.canReview && !editingReport && (

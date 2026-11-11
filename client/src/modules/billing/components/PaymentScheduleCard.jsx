@@ -6,6 +6,7 @@ import { billingApi } from "../services/billingApi";
 import { usePaymentOptions } from "../../settings/payments/paymentSettingsApi";
 import { cardStyle, buttonStyle, inputStyle, formatMoney, formatDate } from "./shared";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Part payments on an invoice (server: billing/billing.instalments.js). The schedule — each part's
 // amount, due date, what's been paid on it and where it stands — and the next part to pay. Staff can
 // split the invoice into parts (one of the workspace's plans, equal parts, or typed by hand), change
@@ -137,7 +138,7 @@ function Editor({ invoice, plans, onDone }) {
         <button type="submit" disabled={save.isPending} style={buttonStyle}>{save.isPending ? "Saving…" : "Save schedule"}</button>
         <button type="button" onClick={onDone} style={{ ...buttonStyle, background: "#fff", color: "#374151", border: "1px solid #D7DEE8" }}>Cancel</button>
         {invoice.instalments?.length > 0 && (
-          <button type="button" disabled={save.isPending} onClick={() => { if (window.confirm("Remove the payment schedule? The invoice is then due in one amount.")) save.mutate({}); }} style={{ ...buttonStyle, background: "#fff", color: "#B91C1C", border: "1px solid #FECACA", marginLeft: "auto" }}>
+          <button type="button" disabled={save.isPending} onClick={async () => { if (await askConfirm({ title: "Remove the payment schedule?", message: "The invoice is then due in one amount.", confirmLabel: "Remove schedule", tone: "danger" })) save.mutate({}); }} style={{ ...buttonStyle, background: "#fff", color: "#B91C1C", border: "1px solid #FECACA", marginLeft: "auto" }}>
             Remove schedule
           </button>
         )}

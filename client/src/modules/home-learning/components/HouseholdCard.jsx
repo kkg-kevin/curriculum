@@ -14,6 +14,7 @@ import {
 import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const EMPTY_CHILD = { firstName: "", lastName: "", gender: "", dateOfBirth: "", username: "", password: "", learnerPassword: "", curriculumId: "", gradeId: "", educatorId: "" };
 const INVOICE_STATUS_COLORS = { paid: "#047857", partially_paid: "#C2410C", overdue: "#B91C1C", issued: "#1D4ED8" };
 const tileStyle = { border: "1px solid #EEF1F5", borderRadius: 12, padding: 16, background: "#FBFCFE", minWidth: 0 };
@@ -78,8 +79,8 @@ function ParentMismatch({ household, parent, onUse, saving }) {
       <strong>{names}'s profile lists a different parent:</strong> {parent.name || "Unnamed"} · {parent.email}{parent.phone ? ` · ${parent.phone}` : ""}.{" "}
       {household.guardianEmail ? `Invoices are only visible to this household's parent (${household.guardianEmail}).` : "This household has no parent email, so no one can see its invoices in the portal."}
     </div>
-    <button type="button" disabled={saving} onClick={() => {
-      if (window.confirm(`Make ${parent.name || parent.email} this household's parent? Invoices will be addressed to them and visible in their portal.`)) onUse(parent);
+    <button type="button" disabled={saving} onClick={async () => {
+      if (await askConfirm({ title: `Make ${parent.name || parent.email} this household's parent?`, message: "Invoices will be addressed to them and visible in their portal.", confirmLabel: "Make them the parent" })) onUse(parent);
     }} style={{ ...secondaryButton, borderColor: "#D97706", color: "#92400E" }}>Use {parent.name || "this parent"} for the household</button>
   </div>;
 }
@@ -267,8 +268,8 @@ function SignupBanner({ household, children, canApprove, canDecline, actions, pe
       </div>
       {!approving && <div style={{ display: "flex", gap: 8 }}>
         {canApprove && <button type="button" onClick={() => setApproving(true)} style={{ ...primaryButton, padding: "8px 14px", fontSize: 13 }}>Approve payment</button>}
-        {canDecline && <button type="button" disabled={pending.declining} onClick={() => {
-          if (window.confirm("Decline this sign-up? Its invoice is cancelled and the family's accounts are removed (they can sign up again later).")) actions.declineSignup(household.id);
+        {canDecline && <button type="button" disabled={pending.declining} onClick={async () => {
+          if (await askConfirm({ title: "Decline this sign-up?", message: "Its invoice is cancelled and the family's accounts are removed (they can sign up again later).", confirmLabel: "Decline sign-up", tone: "danger" })) actions.declineSignup(household.id);
         }} style={{ ...secondaryButton, color: "#B91C1C" }}>{pending.declining ? "Declining…" : "Decline"}</button>}
       </div>}
     </div>

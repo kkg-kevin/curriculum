@@ -7,6 +7,7 @@ import { useHandleMentorRequest, useReviewEducatorProfile } from "../hooks/useEd
 import PublicProfileView from "./PublicProfileView";
 import { BRAND, pill } from "../../../theme/brand";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // The educator's public profile, for admins and the supervisor (on the educator page): where it
 // stands — private, waiting for approval, published, or published with changes waiting — a preview,
 // Publish / Send back / Take down (admins), the share link with its QR, and families who asked for them
@@ -63,7 +64,7 @@ export default function PublishingCard({ profile, teacherId, canPublish }) {
             </>
           )}
           {canPublish && p.public && (
-            <button type="button" className="ci-btn" disabled={review.isPending} onClick={() => { if (window.confirm("Take this profile down? The link stops working until it's published again.")) review.mutate({ action: "unpublish" }); }} style={btn("danger", { size: "sm" })}>Take down</button>
+            <button type="button" className="ci-btn" disabled={review.isPending} onClick={async () => { if (await askConfirm({ title: "Take this profile down?", message: "The link stops working until it's published again.", confirmLabel: "Take down", tone: "danger" })) review.mutate({ action: "unpublish" }); }} style={btn("danger", { size: "sm" })}>Take down</button>
           )}
         </div>
 

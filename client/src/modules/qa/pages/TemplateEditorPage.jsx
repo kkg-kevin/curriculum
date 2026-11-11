@@ -9,6 +9,7 @@ import { templateSource, useSourceMutation, useSourceTemplate } from "../templat
 import { KIND_LABEL, QaStyles, T, btn, card, font, hint, input, label, useQaBase } from "../shared";
 import RecordStamp from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 const DEFAULT_SCALE = [
   { score: 1, label: "Needs support" },
@@ -121,7 +122,7 @@ export default function TemplateEditorPage({ source: sourceName = "qa" }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: T.ink }}>{isNew ? "New template" : readOnly ? form.name : "Edit template"}</h1>
           {isNew && !fromId && (
-            <button type="button" className="ci-btn" onClick={() => { if (form.sections.every((s) => !s.title && s.criteria.every((c) => !c.text)) || window.confirm("Replace what you've written with the example?")) setForm(example(source)); }} style={btn("secondary", { size: "sm" })}>
+            <button type="button" className="ci-btn" onClick={async () => { if (form.sections.every((s) => !s.title && s.criteria.every((c) => !c.text)) || (await askConfirm({ title: "Replace what you've written with the example?", message: "What's in the template now is lost.", confirmLabel: "Use the example" }))) setForm(example(source)); }} style={btn("secondary", { size: "sm" })}>
               Start from an example
             </button>
           )}

@@ -7,6 +7,7 @@ import RichTextEditor from "../../assessments/components/RichTextEditor";
 import RichContent, { isEmptyHtml, stripHtml } from "../../assessments/components/RichContent";
 import { Pill, TASK_STATE, T, btn, control, formatDate, hint, label, useCheckinsBase } from "../shared";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // A task is rich text; where it has to be one line (a confirm box, a screen reader label), plain.
 const shortText = (html, max = 80) => {
   const text = stripHtml(html);
@@ -138,7 +139,7 @@ export function SessionTasks({ session }) {
           key={t.id}
           task={t}
           onEdit={canManage ? () => setEditingId(t.id) : undefined}
-          onRemove={canManage ? () => { if (window.confirm(`Remove the task "${shortText(t.title)}"?`)) remove.mutate(t.id); } : undefined}
+          onRemove={canManage ? async () => { if (await askConfirm({ title: "Remove this task?", message: `"${shortText(t.title)}"`, confirmLabel: "Remove", tone: "danger" })) remove.mutate(t.id); } : undefined}
         />
       )))}
       {canManage && !editingId && <TaskForm session={session} />}

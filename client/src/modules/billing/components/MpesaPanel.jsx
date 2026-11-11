@@ -8,6 +8,7 @@ import {
 import { cardStyle, buttonStyle, inputStyle, formatMoney } from "./shared";
 import { LoadingState, EmptyState } from "./PageStates";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Billing → M-Pesa: every M-Pesa payment into the Paybill, from a phone prompt, paid by hand with
 // an account number, or imported from a statement. Most go onto their invoice by themselves; the
 // ones that couldn't (a mistyped account number, an invoice already paid, more than was due) wait
@@ -103,9 +104,9 @@ function OperationActions({ tx }) {
       </div>
       {reverseOpen && (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            if (window.confirm(`Send ${formatMoney(tx.amount)} back to ${tx.payerName || tx.phone || "the payer"}? M-Pesa reverses the whole payment, and this can't be undone.`)) {
+            if (await askConfirm({ title: `Send ${formatMoney(tx.amount)} back to ${tx.payerName || tx.phone || "the payer"}?`, message: "M-Pesa reverses the whole payment, and this can't be undone.", confirmLabel: "Send it back", tone: "danger" })) {
               reverse({ id: tx.id, note: note.trim() || null }, { onSuccess: () => setReverseOpen(false) });
             }
           }}

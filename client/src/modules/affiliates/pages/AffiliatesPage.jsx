@@ -9,6 +9,7 @@ import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../th
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
+import { askConfirm, askText } from "../../../components/ui/AskDialog";
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
 // of what those families pay. Every active affiliate signs in: a parent or educator with their own
 // login (Refer & earn in their portal), anyone else as Affiliate (the affiliate portal — a login made
@@ -285,14 +286,14 @@ function AffiliatesTab({ onEdit }) {
               {a.status !== "pending" && (!a.account || a.account.asAffiliate) && (
                 <button type="button" style={btn} disabled={act.isPending}
                   title="Emails them how to sign in, with a link to set (or reset) their password — the link goes only to their email"
-                  onClick={() => window.confirm(`Email ${a.name} how to sign in, with a link to set their password?`) && act.mutate({ kind: "sign-in", a })}>
+                  onClick={async () => (await askConfirm({ title: `Email ${a.name} their sign-in details?`, message: "They get an email with how to sign in and a link to set their password.", confirmLabel: "Send email" })) && act.mutate({ kind: "sign-in", a })}>
                   <FiMail size={12} /> Email sign-in details
                 </button>
               )}
               <button type="button" style={btn} onClick={() => onEdit(a)}>Edit</button>
               {a.status === "active" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "suspended", a })}>Suspend</button>}
               {a.status === "suspended" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "active", a })}>Reactivate</button>}
-              {a.referrals === 0 && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={() => window.confirm(`Delete ${a.name}?`) && act.mutate({ kind: "delete", a })}>Delete</button>}
+              {a.referrals === 0 && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={async () => (await askConfirm({ title: `Delete ${a.name}?`, message: "They stop being an affiliate and their code no longer works.", confirmLabel: "Delete", tone: "danger" })) && act.mutate({ kind: "delete", a })}>Delete</button>}
             </div>
           </td>
         </tr>
@@ -307,7 +308,7 @@ function ReferralsTab() {
   const qc = useQueryClient();
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "referrals"], queryFn: () => affiliatesApi.referrals() });
   const cancel = useMutation({
-    mutationFn: (r) => affiliatesApi.cancelReferral(r.id, window.prompt("Why? (optional)") || undefined),
+    mutationFn: ({ r, why }) => affiliatesApi.cancelReferral(r.id, why || undefined),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Referral cancelled"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -323,7 +324,7 @@ function ReferralsTab() {
           <td style={td}>{r.via === "code" ? "Typed the code" : "Came by the link"}{r.landingPage && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.landingPage}</div>}</td>
           <td style={td}><span style={pill(r.status === "paid" ? "good" : r.status === "cancelled" ? "danger" : "waiting")}>{r.status === "paid" ? "Paying" : r.status === "cancelled" ? "Cancelled" : "Not paid yet"}</span></td>
           <td style={td}>{formatKsh(r.earned)}{r.payments > 0 && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.payments} {r.payments === 1 ? "payment" : "payments"}</div>}</td>
-          <td style={{ ...td, textAlign: "right" }}>{r.status !== "cancelled" && <button type="button" style={btn} onClick={() => window.confirm("Cancel this referral? It stops earning, and commissions not yet paid out are cancelled.") && cancel.mutate(r)}>Cancel</button>}</td>
+          <td style={{ ...td, textAlign: "right" }}>{r.status !== "cancelled" && <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Cancel this referral?", message: "It stops earning, and commissions not yet paid out are cancelled.", label: "Why?", confirmLabel: "Cancel referral", cancelLabel: "Keep it", tone: "danger" }); if (why !== null) cancel.mutate({ r, why }); }}>Cancel</button>}</td>
         </tr>
       ))}
     </Table>
@@ -336,7 +337,7 @@ function CommissionsTab() {
   const [state, setState] = useState("");
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "commissions"], queryFn: () => affiliatesApi.commissions() });
   const cancel = useMutation({
-    mutationFn: (c) => affiliatesApi.cancelCommission(c.id, window.prompt("Why? (optional)") || undefined),
+    mutationFn: ({ c, why }) => affiliatesApi.cancelCommission(c.id, why || undefined),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Commission cancelled"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -357,7 +358,7 @@ function CommissionsTab() {
               <td style={td}>{formatKsh(c.baseAmount)} × {c.ratePercent}%</td>
               <td style={td}><strong style={{ color: BRAND.ink }}>{formatKsh(c.amount)}</strong></td>
               <td style={td}><span style={pill(STATE[c.state][1])}>{STATE[c.state][0]}</span>{c.state === "waiting" && <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 3 }}>from {formatDay(c.availableAt)}</div>}{c.note && <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 3 }}>{c.note}</div>}</td>
-              <td style={{ ...td, textAlign: "right" }}>{["waiting", "available"].includes(c.state) && <button type="button" style={btn} onClick={() => window.confirm("Cancel this commission?") && cancel.mutate(c)}>Cancel</button>}</td>
+              <td style={{ ...td, textAlign: "right" }}>{["waiting", "available"].includes(c.state) && <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Cancel this commission?", message: "The affiliate won't be paid it.", label: "Why?", confirmLabel: "Cancel commission", cancelLabel: "Keep it", tone: "danger" }); if (why !== null) cancel.mutate({ c, why }); }}>Cancel</button>}</td>
             </tr>
           ))}
         </Table>
@@ -415,7 +416,7 @@ function PayoutsTab() {
   const [paying, setPaying] = useState(null);
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "payouts"], queryFn: () => affiliatesApi.payouts() });
   const reject = useMutation({
-    mutationFn: (p) => affiliatesApi.reject(p.id, window.prompt("Why? (the affiliate sees this)") || null),
+    mutationFn: ({ p, why }) => affiliatesApi.reject(p.id, why || null),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Rejected — its commissions are available again"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -437,7 +438,7 @@ function PayoutsTab() {
                 {p.status === "requested" && (
                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                     <button type="button" style={primary} onClick={() => setPaying(p)}>Mark paid</button>
-                    <button type="button" style={btn} onClick={() => reject.mutate(p)}>Reject</button>
+                    <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Reject this payout?", message: "Its commissions become available again.", label: "Why? The affiliate sees this", confirmLabel: "Reject payout", tone: "danger" }); if (why !== null) reject.mutate({ p, why }); }}>Reject</button>
                   </div>
                 )}
               </td>

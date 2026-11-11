@@ -5,6 +5,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useEducatorTraining, useEnrolInTot, usePublishTotCourseReport, useTotClasses, useWithdrawFromTot } from "../hooks/useTot";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const fmt = (v) => (v ? new Date(v).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 const select = { flex: "1 1 220px", minWidth: 0, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", background: "#fff" };
 
@@ -97,7 +98,7 @@ export default function TotTrainingCard({ teacherId, teacher = null }) {
                       <button
                         type="button"
                         disabled={withdraw.isPending}
-                        onClick={() => { if (window.confirm(`Withdraw them from ${c.curriculumName}? Their certificates and marked work stay; enrol them again to resume.`)) withdraw.mutate({ classId: c.classId }); }}
+                        onClick={async () => { if (await askConfirm({ title: `Withdraw them from ${c.curriculumName}?`, message: "Their certificates and marked work stay; enrol them again to resume.", confirmLabel: "Withdraw", tone: "danger" })) withdraw.mutate({ classId: c.classId }); }}
                         style={{ border: "none", background: "none", padding: 0, color: "#B91C1C", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
                       >
                         Withdraw

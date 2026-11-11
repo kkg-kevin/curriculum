@@ -4,6 +4,7 @@ import { usePaymentNotices, useConfirmPaymentNotice, useRejectPaymentNotice } fr
 import { cardStyle, buttonStyle, inputStyle, formatMoney } from "./shared";
 import { LoadingState, EmptyState } from "./PageStates";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Billing → To confirm: families who said "I've paid" on the website's Payment step (Home
 // Learning, Tech Club, Bootcamp sign-ups) — an M-Pesa code, a bank transfer reference, a cheque
 // number, or cash on its way. Check the money is really there, then Confirm (records the payment;
@@ -58,9 +59,9 @@ function Actions({ notice }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
       {!payable && <div style={{ fontSize: 12, color: "#6B7280" }}>The invoice is {notice.invoice ? notice.invoice.status.replace(/_/g, " ") : "gone"} — there's nothing left to put this on. Reject it if the family needs telling.</div>}
       {payable && <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (window.confirm(`Record ${formatMoney(Number(amount))} on ${notice.invoice.invoiceNumber}? Only confirm once the money is really in.`)) confirm({ id: notice.id, amount: Number(amount), paymentDate: date });
+          if (await askConfirm({ title: `Record ${formatMoney(Number(amount))} on ${notice.invoice.invoiceNumber}?`, message: "Only confirm once the money is really in.", confirmLabel: "Record payment" })) confirm({ id: notice.id, amount: Number(amount), paymentDate: date });
         }}
         style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}
       >

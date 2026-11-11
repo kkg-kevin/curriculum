@@ -12,6 +12,7 @@ import { ScoreHeader, TemplateAnswers, liveScore } from "../../qa/components/Rep
 import { CheckinStyles, FORMAT_LABEL, Pill, REPORT_PARTS, T, btn, card, childNames, font, formatDate, formatDateTime, hint, input, label, reportHtml, safeMeetingLink, stateFor, useMentorBase } from "../shared";
 import RecordStamp from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const toForm = (m) => ({ summary: reportHtml(m?.report?.summary), actions: reportHtml(m?.report?.actions), answers: m?.answers || {} });
 
 // The report, read only: the template's score and answers, then the two written parts.
@@ -119,7 +120,7 @@ export default function MeetingPage() {
           {can.canConfirm && <button type="button" className="ci-btn" disabled={confirm.isPending} onClick={() => confirm.mutate()} style={btn("primary", { disabled: confirm.isPending })}><FiCheckCircle size={14} /> Confirm this time</button>}
           {can.canChangeTime && <button type="button" className="ci-btn" onClick={() => setPicking(true)} style={btn("secondary")}><FiMove size={14} /> Pick another time</button>}
           {can.canMove && <button type="button" className="ci-btn" onClick={() => setPicking(true)} style={btn("secondary")}><FiMove size={14} /> Move</button>}
-          {can.canCancel && <button type="button" className="ci-btn" disabled={cancel.isPending} onClick={() => { if (window.confirm("Cancel this check-in? The family is told.")) cancel.mutate(); }} style={btn("danger", { disabled: cancel.isPending })}><FiSlash size={14} /> Cancel</button>}
+          {can.canCancel && <button type="button" className="ci-btn" disabled={cancel.isPending} onClick={async () => { if (await askConfirm({ title: "Cancel this check-in?", message: "The family is told.", confirmLabel: "Cancel check-in", cancelLabel: "Keep it", tone: "danger" })) cancel.mutate(); }} style={btn("danger", { disabled: cancel.isPending })}><FiSlash size={14} /> Cancel</button>}
         </div>
         {asParent && m.state === "today" && <p style={{ ...hint, marginTop: 10 }}>It&apos;s today, so the time can&apos;t change now. If you can&apos;t make it, let the hub know.</p>}
         {asParent && m.state === "upcoming" && !m.confirmed && <p style={{ ...hint, marginTop: 10 }}>Confirm the time, or pick another free time if this one doesn&apos;t suit you.</p>}
