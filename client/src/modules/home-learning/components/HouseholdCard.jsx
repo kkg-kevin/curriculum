@@ -12,6 +12,7 @@ import {
   primaryButton, secondaryButton, toDateInput,
 } from "./ui";
 import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 const EMPTY_CHILD = { firstName: "", lastName: "", gender: "", dateOfBirth: "", username: "", password: "", learnerPassword: "", curriculumId: "", gradeId: "", educatorId: "" };
 const INVOICE_STATUS_COLORS = { paid: "#047857", partially_paid: "#C2410C", overdue: "#B91C1C", issued: "#1D4ED8" };
@@ -329,7 +330,7 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
       <Initials name={household.guardianName} size={46} />
       <div style={{ flex: "1 1 240px", minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>{household.guardianName}</h3>
+          <h3 style={{ margin: 0, fontSize: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>{household.guardianName} <HistoryButton type="home_learning_households" id={household.id} label={household.guardianName} iconOnly /></h3>
           <Pill tone={status}>{status.label}</Pill>
           {household.source === "website" && <Pill tone={{ color: "#1D4ED8", background: "#EFF6FF" }}><FiGlobe /> Website sign-up</Pill>}
         </div>

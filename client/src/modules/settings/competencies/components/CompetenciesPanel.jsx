@@ -9,6 +9,7 @@ import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
 import { competenciesApi } from "../services/competenciesApi";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 const STOP_WORDS = new Set(["the", "and", "of", "for", "a", "an", "in", "on", "at", "to", "by", "with", "from", "or"]);
 
@@ -285,6 +286,7 @@ function CompetencyCard({ comp, color, onEdit, onDelete }) {
                 {comp.name}
               </p>
               {comp.code && <span className="stg-code-pill">{comp.code}</span>}
+              <HistoryButton type="competencies" id={comp.id} label={comp.name} iconOnly />
             </div>
           </div>
         <CardKebab onEdit={onEdit} onDelete={onDelete} />

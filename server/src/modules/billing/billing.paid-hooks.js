@@ -42,6 +42,8 @@ function runInvoicePaidHooks(invoice) {
     () => require("../payments/payment-notices.service").closeForPaidInvoice(invoice),
     // A referred family's invoice earns its affiliate a commission (modules/affiliates/).
     () => require("../affiliates/affiliate.service").onInvoicePaid(invoice),
+    // A mentor booking is paid for: its time is confirmed (modules/mentor-bookings/).
+    () => require("../mentor-bookings/mentor-booking.service").onInvoicePaid(invoice),
   ]);
 }
 

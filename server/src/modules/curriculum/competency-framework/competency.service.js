@@ -1394,6 +1394,27 @@ const CompetencyService = {
       if (pick) autoIds.add(pick.id);
     }
 
+    // The whole pathway's courses, stage by stage (12 Nov 2026 — the learner profile's Pathway tab
+    // lists them under each pathway): every row sharing the pathway's name is one of its stages.
+    const stages = (await AgeCategoryModel.findByCurriculumId(curriculumId)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const courseNames = new Map();
+    const nameOf = async (id) => {
+      if (!courseNames.has(id)) courseNames.set(id, (await CourseModel.findById(id))?.name || null);
+      return courseNames.get(id);
+    };
+    async function stagesOf(pathway) {
+      const group = pathways.filter((p) => samePathwayName(p.name, pathway.name));
+      const rank = (p) => { const i = stages.findIndex((s) => s.id === p.ageCategoryId); return i === -1 ? stages.length : i; };
+      const out = [];
+      for (const row of group.sort((a, b) => rank(a) - rank(b))) {
+        const ids = await CompetencyService.orderedPathwayCourseIds(curriculumId, row);
+        const courses = [];
+        for (const id of ids) { const name = await nameOf(id); if (name) courses.push({ id, name }); }
+        out.push({ pathwayId: row.id, stageId: row.ageCategoryId || null, stageName: stages.find((s) => s.id === row.ageCategoryId)?.name || null, isLearnerStage: row.id === pathway.id, courses });
+      }
+      return out;
+    }
+
     const rows = [];
     for (const pathway of pathways) {
       const record = records.find((r) => r.pathwayId === pathway.id);
@@ -1408,6 +1429,7 @@ const CompetencyService = {
         history: record?.history || [],
         isDefault: !record,
         courseIds,
+        stages: await stagesOf(pathway),
       });
     }
     return rows.sort((a, b) => Number(a.source === "manual") - Number(b.source === "manual"));

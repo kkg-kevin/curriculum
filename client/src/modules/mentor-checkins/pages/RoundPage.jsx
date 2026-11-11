@@ -5,6 +5,7 @@ import { useMentorMutation, useRound } from "../hooks/useMentorCheckins";
 import { mentorCheckinsApi } from "../services/mentorCheckinsApi";
 import TimePickerDialog from "../components/TimePickerDialog";
 import { CheckinStyles, FORMAT_LABEL, Modal, Pill, T, btn, card, childNames, font, formatDate, hint, input, label, safeMeetingLink, shortDay, stateFor, useMentorBase } from "../shared";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const WEEKDAY_SHORT = { monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun" };
 
@@ -101,6 +102,8 @@ export default function RoundPage() {
           {c.cancelled > 0 && <Pill look={{ bg: "#F3F4F6", color: "#6B7280" }}>{c.cancelled} cancelled</Pill>}
         </div>
       </section>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="mentor_checkin_rounds" id={id} />
 
       <section style={{ ...card, overflow: "hidden" }}>
         <h2 style={{ margin: 0, padding: "16px 20px 8px", fontSize: 15, fontWeight: 800, color: T.ink }}>Schedule</h2>

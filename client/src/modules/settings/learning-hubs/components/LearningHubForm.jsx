@@ -708,6 +708,31 @@ function ClubDetailsSection() {
   );
 }
 
+// When a family books a mentor session at one of these spaces, its fee goes on the family's
+// invoice (modules/mentor-bookings/). Whose it is: the workspace's own hub, or a partner's — then
+// it's owed to the hub, less the share kept for collecting it, and settled from the hub's
+// statement (Mentor Bookings → Hub settlements).
+function DeskFeesField() {
+  const { register, watch, formState: { errors } } = useFormContext();
+  const owner = watch("deskFeeOwner") || "ours";
+  const pct = Number(watch("deskCollectionPercent")) || 0;
+  return (
+    <div style={{ padding: "14px 16px", borderRadius: "12px", background: "#F8FBFE", border: "1px solid #DCEBF5", display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
+      <Field label="Desk fees from mentor sessions" hint="Who the space fee belongs to when a family books a mentor here.">
+        <select {...register("deskFeeOwner")} style={selectStyle}>
+          <option value="ours">Ours — this is our own hub</option>
+          <option value="hub">The hub's — a partner we collect for</option>
+        </select>
+      </Field>
+      {owner === "hub" && (
+        <Field label="We keep for collecting (%)" error={errors?.deskCollectionPercent?.message} hint={`The hub is owed ${100 - Math.min(100, Math.max(0, pct))}% of each desk fee, settled from its statement.`}>
+          <input type="number" min="0" max="100" step="0.5" {...register("deskCollectionPercent")} style={selectStyle} />
+        </Field>
+      )}
+    </div>
+  );
+}
+
 export default function LearningHubForm({ autoGenerateCode = false, id }) {
   const { register, watch, control, formState: { errors } } = useFormContext();
   const { data: curriculaData } = useCurriculaQuery();
@@ -952,6 +977,7 @@ export default function LearningHubForm({ autoGenerateCode = false, id }) {
           badge="Non-school types"
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <DeskFeesField />
             {fields.map((field, index) => (
               <SpaceConfigCard key={field.id} index={index} onRemove={() => remove(index)} />
             ))}

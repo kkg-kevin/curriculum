@@ -13,6 +13,7 @@ import BootcampGames from "../../programs/games/components/BootcampGames";
 import RecordHistory from "../../activity/components/RecordHistory";
 import { RunsSection, ScheduleRunDialog } from "../components/BootcampRuns";
 import BootcampParticipants from "../components/BootcampParticipants";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const FORMAT_LABEL = { holiday: "Holiday", weekend: "Weekend", after_school: "After school", online: "Online" };
 
@@ -290,6 +291,8 @@ export default function BootcampViewPage() {
           />
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="bootcamps" id={bootcamp.id} style={{ marginBottom: 16 }} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>

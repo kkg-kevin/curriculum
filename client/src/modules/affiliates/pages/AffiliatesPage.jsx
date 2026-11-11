@@ -7,6 +7,7 @@ import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiUse
 import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
 // of what those families pay. Every active affiliate signs in: a parent or educator with their own
@@ -260,7 +261,7 @@ function AffiliatesTab({ onEdit }) {
       {affiliates.map((a) => (
         <tr key={a.id}>
           <td style={td}>
-            <strong style={{ color: BRAND.ink }}>{a.name}</strong>
+            <strong style={{ color: BRAND.ink }}>{a.name}</strong> <HistoryButton type="affiliates" id={a.id} label={a.name} iconOnly style={{ marginLeft: 4, verticalAlign: "middle" }} />
             <div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{KIND[a.kind]}{a.email ? ` · ${a.email}` : ""}{a.phone ? ` · ${a.phone}` : ""}</div>
             <AccountLine a={a} />
             <div style={{ fontSize: 12, color: BRAND.faint }}>{SOURCE[a.source] || ""}{a.termsAcceptedAt ? ` · agreed to the terms ${formatDay(a.termsAcceptedAt)}` : ""}</div>

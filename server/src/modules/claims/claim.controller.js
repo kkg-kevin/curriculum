@@ -1,7 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const ClaimService = require("./claim.service");
 const SupervisorService = require("./supervisor.service");
-const { submitClaimSchema, decisionSchema, markPaidSchema, settingsSchema, createSupervisorSchema, updateSupervisorSchema, CLAIM_STATUSES } = require("./claim.validation");
+const { submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, createSupervisorSchema, updateSupervisorSchema, CLAIM_STATUSES } = require("./claim.validation");
 const UsageService = require("../usage/usage.service");
 
 // The educator behind this login — every educator route works off this, never off an id in the
@@ -30,6 +30,16 @@ const getMyCourse = asyncHandler(async (req, res) => {
 const submitClaim = asyncHandler(async (req, res) => {
   const data = submitClaimSchema.parse(req.body);
   res.status(201).json({ success: true, data: await ClaimService.submitClaim(ownTeacher(req), data) });
+});
+
+// Mentor sessions (modules/mentor-bookings/): what's waiting to be claimed, and claiming it.
+const getMyBookingEarnings = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await ClaimService.myBookingEarnings(ownTeacher(req)) });
+});
+
+const submitBookingsClaim = asyncHandler(async (req, res) => {
+  const data = submitBookingsClaimSchema.parse(req.body);
+  res.status(201).json({ success: true, data: await ClaimService.submitBookingsClaim(ownTeacher(req), data) });
 });
 
 const withdrawClaim = asyncHandler(async (req, res) => {
@@ -119,6 +129,6 @@ const removeSupervisor = asyncHandler(async (req, res) => {
 
 module.exports = {
   listSupervisors, createSupervisor, updateSupervisor, removeSupervisor,
-  getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims,
+  getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims, getMyBookingEarnings, submitBookingsClaim,
   getClaim, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,
 };

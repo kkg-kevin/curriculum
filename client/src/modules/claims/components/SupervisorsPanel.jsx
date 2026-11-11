@@ -5,6 +5,7 @@ import { useCreateSupervisor, useRemoveSupervisor, useSupervisors, useUpdateSupe
 import { T, ghostButton, inputStyle, primaryButton } from "../shared";
 import { claimsApi } from "../services/claimsApi";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 const label = { display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink };
 const EMPTY = { name: "", email: "", password: "" };
@@ -84,6 +85,7 @@ export default function SupervisorsPanel({ heading = false }) {
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{supervisor.name}</p>
                   <p style={{ margin: "1px 0 0", fontSize: 12, color: T.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{supervisor.email} · {supervisor.educators} {supervisor.educators === 1 ? "educator" : "educators"}</p>
                 </div>
+                <HistoryButton type="users" id={supervisor.id} label={supervisor.name} iconOnly />
                 <button type="button" disabled={busy} onClick={() => setResetting(resetting?.id === supervisor.id ? null : { id: supervisor.id, password: "" })} style={{ ...ghostButton, padding: "7px 11px", fontSize: 12.5 }}><FiKey size={13} /> Password</button>
                 <button type="button" disabled={busy} onClick={() => setRemoveTarget(supervisor)} aria-label={`Remove ${supervisor.name}`} style={{ ...ghostButton, padding: "7px 10px", color: "#B91C1C", borderColor: "#FECACA" }}><FiTrash2 size={14} /></button>
               </div>

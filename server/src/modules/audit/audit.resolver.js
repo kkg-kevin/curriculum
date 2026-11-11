@@ -46,6 +46,17 @@ const ROOTS = {
   qa: { table: null, noun: "QA visit", module: "qa" },
   "mentor-checkins": { table: null, noun: "parent check-in", module: "mentor-checkins" },
   "mentor-standards": { table: null, noun: "mentor standards", module: "settings" },
+  // Newer modules (named 12 Nov 2026 so their entries read properly and attach to their record).
+  affiliates: { table: "affiliates", noun: "affiliate", module: "affiliates" },
+  "pathway-subscriptions": { table: "pathway_subscriptions", noun: "pathway subscription", module: "pathway-subscriptions" },
+  "mentor-bookings": { table: "mentor_bookings", noun: "mentor booking", module: "mentor-bookings" },
+  certificates: { table: "certificates", noun: "certificate", module: "reports" },
+  tot: { table: null, noun: "educator training (TOT)", module: "teachers" },
+  "educator-profiles": { table: "teachers", noun: "educator profile", module: "teachers" },
+  "mentor-reviews": { table: "mentor_reviews", noun: "parent review", module: "teachers" },
+  analytics: { table: null, noun: "analytics", module: "reports" },
+  "payment-settings": { table: null, noun: "payment settings", module: "settings" },
+  "certificate-settings": { table: null, noun: "certificate settings", module: "settings" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
@@ -90,7 +101,28 @@ const COLLECTIONS = {
   checkins: {
     schedules: { table: "checkin_schedules", noun: "check-in schedule" },
     sessions: { table: "checkin_sessions", noun: "hub check-in" },
+    templates: { table: "checkin_templates", noun: "check-in template" },
+    tasks: { table: "checkin_tasks", noun: "check-in task" },
   },
+  "mentor-checkins": {
+    templates: { table: "mentor_checkin_templates", noun: "parent check-in template" },
+    rounds: { table: "mentor_checkin_rounds", noun: "parent check-in round" },
+    meetings: { table: "mentor_checkin_meetings", noun: "parent check-in" },
+  },
+  affiliates: {
+    referrals: { table: "affiliate_referrals", noun: "referral" },
+    commissions: { table: "affiliate_commissions", noun: "commission" },
+    payouts: { table: "affiliate_payouts", noun: "payout" },
+  },
+  // Pathway plans (Billing → Packages → Pathway plans) — not Home Learning's "packages".
+  "pathway-subscriptions": { packages: { table: "pathway_packages", noun: "pathway plan" } },
+  "mentor-bookings": {
+    help: { table: "mentor_help_requests", noun: "help request" },
+    hubs: { table: "learning_hubs", noun: "learning hub" },
+  },
+  tot: { educators: { table: "teachers", noun: "educator" } },
+  "educator-profiles": { requests: { table: "mentor_requests", noun: "mentor request" } },
+  analytics: { followups: { table: "learner_followups", noun: "follow-up" } },
   qa: {
     templates: { table: "qa_templates", noun: "QA template" },
     schedules: { table: "qa_schedules", noun: "QA visit schedule" },

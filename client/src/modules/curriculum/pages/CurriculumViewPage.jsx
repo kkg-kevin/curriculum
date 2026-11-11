@@ -34,6 +34,7 @@ import { useCoursesQuery } from "../../courses/hooks/useCourse";
 import CurriculumCompetitionsSection from "../../competitions/components/CurriculumCompetitionsSection";
 import CurriculumBootcampsSection from "../../bootcamps/components/CurriculumBootcampsSection";
 import { isEmptyHtml, stripHtml } from "../../courses/components/RichContent";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -873,6 +874,8 @@ export default function CurriculumViewPage() {
           ))}
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="curricula" id={id} style={{ marginBottom: 20 }} />
 
       <SectionNav links={sectionLinks} />
 

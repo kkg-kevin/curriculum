@@ -56,6 +56,9 @@ const MODULES = [
   // report. Educators, parents, hubs and supervisors aren't staff — they see their own in their
   // portals (modules/mentor-checkins/mentor-checkin.access.js).
   { key: "mentor-checkins", label: "Parent–mentor check-ins", group: "Workspace" },
+  // Mentor bookings: every family's booking of a mentor, refunds due, and settling partner hubs'
+  // desk fees. Mentors, parents and hubs see their own in their portals (modules/mentor-bookings/).
+  { key: "mentor-bookings", label: "Mentor bookings & hub settlements", group: "Finance" },
 ];
 
 const MODULE_KEYS = MODULES.map((m) => m.key);
@@ -97,6 +100,9 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
   "/api/mentor-checkins": "mentor-checkins",
+  // The booking rates sit on Settings → Educator Pay (first match wins — before the bookings).
+  "/api/mentor-bookings/settings": "claims-approval",
+  "/api/mentor-bookings": "mentor-bookings",
   // The workspace's mentor standards are a setting.
   "/api/mentor-standards": "settings",
   // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").

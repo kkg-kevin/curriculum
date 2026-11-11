@@ -1,4 +1,4 @@
-import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
+import { AVAILABILITY_DAYS as DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", accentLight: "#38aae1",

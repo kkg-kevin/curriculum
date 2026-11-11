@@ -35,6 +35,7 @@ import { UnsavedDraftBadge } from "../../../components/ui/DraftCard";
 import { SECTIONS, sessionLabel, sectionLinkPath, buildModuleLocalSessionIndex } from "../sectionConfig";
 import { getSessionAssessmentIds, normalizeAssessmentAttachments } from "../utils/sessionAssessment";
 import { normalizeActivityItems } from "../utils/sessionActivity";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const ASM_TYPE_LABELS = { quiz: "Quiz", exam: "Exam", assignment: "Assignment", project: "Project", observation: "Teacher Observation" };
 const ASM_TYPE_COLORS = { quiz: "#25476a", exam: "#38aae1", assignment: "#059669", project: "#7C3AED", observation: "#D97706" };
@@ -762,6 +763,8 @@ export default function CourseViewPage() {
         </button>
       </div>
 
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="courses" id={id} style={{ marginBottom: 16 }} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "20px", alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", marginBottom: "12px" }}>

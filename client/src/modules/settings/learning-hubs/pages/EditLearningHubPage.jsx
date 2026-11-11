@@ -60,6 +60,8 @@ export default function EditLearningHubPage() {
           days: hub.operatingHours?.days || [],
         },
         spaces: hub.spaces || [],
+        deskFeeOwner: hub.deskFeeOwner || "ours",
+        deskCollectionPercent: Number(hub.deskCollectionPercent) || 0,
         clubDetails: clubDetailsToForm(hub.clubDetails),
       });
     }

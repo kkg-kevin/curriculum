@@ -14,6 +14,8 @@ export const activityApi = {
   counts: (filters) => api.get(`${BASE}/counts`, { params: clean(filters) }).then((r) => r.data.data),
   // { actors: [{ id, name, email, role, lastActiveAt, entries }], modules, retentionDays }
   facets: () => api.get(`${BASE}/facets`).then((r) => r.data.data),
+  // A record's stamp: who created it, who changed it last (it or its parts), who has worked on it.
+  stamp: (type, id) => api.get(`${BASE}/stamp`, { params: { type, id } }).then((r) => r.data.data),
   // The same entries as a spreadsheet file.
   exportCsv: (filters) => api.get(`${BASE}/export.csv`, { params: clean(filters), responseType: "blob", timeout: 60000 }).then((r) => r.data),
 };

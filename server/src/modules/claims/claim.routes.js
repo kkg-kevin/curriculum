@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims,
+  getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims, getMyBookingEarnings, submitBookingsClaim,
   getClaim, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,
   listSupervisors, createSupervisor, updateSupervisor, removeSupervisor,
 } = require("./claim.controller");
@@ -21,6 +21,9 @@ const router = express.Router();
 
 router.get("/courses", authorize("teacher"), getMyCourses);
 router.get("/courses/:classId/:courseId", authorize("teacher"), getMyCourse);
+// Mentor sessions held (modules/mentor-bookings/): waiting to be claimed, and claiming them.
+router.get("/bookings", authorize("teacher"), getMyBookingEarnings);
+router.post("/bookings", authorize("teacher"), submitBookingsClaim);
 
 router.get("/settings", authorize("admin"), getSettings);
 router.put("/settings", authorize("admin"), updateSettings);

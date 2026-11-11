@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { DAYS_OF_WEEK } = require("../timetable/timetable.validation");
+const { AVAILABILITY_DAYS } = require("../timetable/timetable.validation");
 
 // "in_training" — joined through a website TOT bootcamp, not teaching yet: signs in and learns,
 // but can't be given a class or Home Learning family until made active (canTeach below).
@@ -68,7 +68,7 @@ const updateTeacherStatusSchema = z.object({
 // declaration. See teacher-availability.model.js / TimetableService's hasConflict extension for
 // how this feeds into actual scheduling.
 const baseAvailabilitySchema = z.object({
-  dayOfWeek: z.enum(DAYS_OF_WEEK, { errorMap: () => ({ message: "Select a valid day" }) }),
+  dayOfWeek: z.enum(AVAILABILITY_DAYS, { errorMap: () => ({ message: "Select a valid day" }) }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Start time must be in HH:MM format"),
   endTime:   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "End time must be in HH:MM format"),
 });

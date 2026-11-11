@@ -12,6 +12,7 @@ import { learningHubApi } from "../services/learningHubApi";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { usePermissions } from "../../../hooks/usePermissions";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const TEAL = "#38aae1";
 
@@ -247,6 +248,8 @@ export default function LearningHubViewPage() {
           </div>
         </div>
       </div>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="learning_hubs" id={id} style={{ marginBottom: 20 }} />
 
       {/* Photo gallery */}
       {hub.photos?.length > 0 && (

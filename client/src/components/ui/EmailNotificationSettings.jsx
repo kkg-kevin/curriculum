@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { FiAward, FiBell, FiBookOpen, FiChevronDown, FiChevronRight, FiClipboard, FiCreditCard, FiDollarSign, FiGift, FiHeart, FiInbox, FiMessageCircle, FiShield } from "react-icons/fi";
+import { FiAward, FiBell, FiBookOpen, FiCalendar, FiChevronDown, FiChevronRight, FiClipboard, FiCreditCard, FiDollarSign, FiGift, FiHeart, FiInbox, FiMessageCircle, FiShield } from "react-icons/fi";
 import { useEmailPreferences, useUpdateEmailPreferences } from "../../modules/notifications/hooks/useNotifications";
 
 export function Toggle({ checked, disabled, onChange, label }) {
@@ -27,6 +27,7 @@ export function Toggle({ checked, disabled, onChange, label }) {
 // has 20+) reads as a few groups. Anything unknown falls into "Other".
 const GROUPS = [
   { key: "mentor-checkins", label: "Parent check-ins", icon: FiMessageCircle, match: (t) => t.startsWith("mentor_checkin_") },
+  { key: "mentor-bookings", label: "Mentor sessions", icon: FiCalendar, match: (t) => t.startsWith("mentor_booking_") || t === "mentor_help_requested" },
   { key: "checkins", label: "Hub check-ins", icon: FiClipboard, match: (t) => t.startsWith("checkin_") },
   { key: "quality", label: "Quality reviews", icon: FiShield, match: (t) => t.startsWith("qa_") },
   { key: "feedback", label: "Feedback & your profile", icon: FiHeart, match: (t) => t.startsWith("mentor_review") || t.startsWith("educator_profile") || t === "mentor_requested" },

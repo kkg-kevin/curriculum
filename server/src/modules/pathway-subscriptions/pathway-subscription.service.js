@@ -70,6 +70,9 @@ function cleanPackageInput(input) {
     maxChildren,
     features: Array.isArray(input.features) ? input.features.map((f) => String(f).trim()).filter(Boolean).slice(0, 12) : [],
     badge: input.badge ? String(input.badge).slice(0, 40) : null,
+    // Mentor sessions included each billing period (modules/mentor-bookings/ — the mentor's fee is
+    // waived for them; a desk at a hub is still charged).
+    includedHelpSessions: Math.min(60, Math.max(0, Math.round(Number(input.includedHelpSessions) || 0))),
     isPublished: !!input.isPublished,
     status: input.status === "archived" ? "archived" : "active",
     sortOrder: Number.isFinite(Number(input.sortOrder)) ? Math.round(Number(input.sortOrder)) : 0,

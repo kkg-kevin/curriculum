@@ -10,6 +10,7 @@ import { SessionTasks } from "../components/Tasks";
 import { TemplateItem } from "../../qa/components/ReviewForm";
 import { ScoreHeader, TemplateAnswers, liveScore } from "../../qa/components/Report";
 import { CheckinStyles, FORMAT_LABEL, FREQUENCY_LABEL, PARTICIPANT_KIND, Pill, REPORT_PARTS, STATE, T, btn, card, font, formatDate, formatDateTime, hint, label, reportHtml, safeMeetingLink, useCheckinsBase } from "../shared";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const EMPTY = { highs: "", lows: "", resolutions: "", answers: {} };
 const toForm = (session) => ({
@@ -127,6 +128,8 @@ export default function CheckinSessionPage() {
           </div>
         )}
       </section>
+      {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      <RecordStamp type="checkin_sessions" id={id} />
 
       <section style={{ ...card, padding: "18px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>

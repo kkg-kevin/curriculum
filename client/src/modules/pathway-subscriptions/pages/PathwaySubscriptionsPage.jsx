@@ -6,6 +6,7 @@ import { FiFileText, FiLock, FiPause, FiPlay, FiRepeat, FiUnlock, FiUsers, FiXCi
 import { pathwaySubscriptionApi } from "../services/pathwaySubscriptionApi";
 import { formatDay, formatKsh, outlookLine, pricePer } from "../../../utils/billingPeriods";
 import { periodLabel, pricesOf } from "../../home-learning/services/homeLearningApi";
+import { HistoryButton } from "../../activity/components/RecordStamp";
 
 // Pathway subscriptions (modules/pathway-subscriptions): the families paying for a website pathway
 // by the week, month, quarter or year. Each card: the family, the pathway and plan, the children
@@ -47,6 +48,7 @@ function SubscriptionCard({ sub, plans, focused, onAction, busy }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <strong style={{ fontSize: 15, color: "#111827" }}>{sub.guardianName}</strong>
+            <HistoryButton type="pathway_subscriptions" id={sub.id} label={`${sub.guardianName} · ${sub.pathwayName}`} iconOnly />
             <Pill look={look} />
           </div>
           <p style={{ margin: "3px 0 0", fontSize: 12.5, color: "#6B7280", overflowWrap: "anywhere" }}>{[sub.guardianEmail, sub.guardianPhone].filter(Boolean).join(" · ")}</p>

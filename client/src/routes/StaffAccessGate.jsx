@@ -33,6 +33,7 @@ const PATH_MODULES = [
   ["/affiliates", "affiliates"],
   ["/qa", "qa"],
   ["/mentor-checkins", "mentor-checkins"],
+  ["/mentor-bookings", "mentor-bookings"],
   ["/activity", "activity"],
   ["/settings", "settings"],
   ["/enquiries", null],

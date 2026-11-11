@@ -4,6 +4,7 @@ import { useUpdateLearnerHubLink } from "../../hooks/useLearners";
 import { usePathway, usePathways, useAgeCategories, useAssignLearnerPathway, useRemoveLearnerPathway } from "../../../curriculum/hooks/useCompetencies";
 import { useCoursesQuery } from "../../../courses/hooks/useCourse";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
+import PathwayStagesList from "../PathwayStagesList";
 
 const ACCENT = "#25476a";
 
@@ -178,7 +179,10 @@ export default function PathwayManagerCard({ learnerId, hubId, currentStageId, s
                     </button>
                   )}
                 </div>
-                {open && (
+                {open && (j.stages ? (
+                  // The whole pathway, stage by stage — their stage marked (PathwayStagesList).
+                  <PathwayStagesList stages={j.stages} currentCourseId={j.currentCourseId} color={areaColor} awaitingDiagnostic={j.isDefault} audience="staff" />
+                ) : (
                   <PathwayCourseList
                     courseIds={courseIds}
                     currentCourseId={j.currentCourseId}
@@ -186,7 +190,7 @@ export default function PathwayManagerCard({ learnerId, hubId, currentStageId, s
                     color={areaColor}
                     awaitingDiagnostic={j.isDefault}
                   />
-                )}
+                ))}
               </div>
             );
           })}

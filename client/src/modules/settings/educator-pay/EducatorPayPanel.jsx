@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useClaimSettings, useUpdateClaimSettings } from "../../claims/hooks/useClaims";
 import { formatMoney } from "../../claims/shared";
+import BookingSettingsSection from "../../mentor-bookings/components/BookingSettingsSection";
 import { SettingsPage, SettingsSection, Field, FieldGrid, FooterNote, LoadState } from "../components/SettingsLayout";
 
 
@@ -170,6 +171,8 @@ export default function EducatorPayPanel() {
           />
         </form>
       )}
+      {/* What families pay to book a mentor, and what the mentor earns (modules/mentor-bookings). */}
+      {data && <BookingSettingsSection />}
     </SettingsPage>
   );
 }

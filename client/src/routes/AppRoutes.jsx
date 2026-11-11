@@ -115,6 +115,12 @@ import MentorCheckinsPage from "../modules/mentor-checkins/pages/MentorCheckinsP
 import MentorNewRoundPage from "../modules/mentor-checkins/pages/NewRoundPage";
 import MentorRoundPage from "../modules/mentor-checkins/pages/RoundPage";
 import MentorMeetingPage from "../modules/mentor-checkins/pages/MeetingPage";
+import ParentBookingsPage from "../modules/mentor-bookings/pages/ParentBookingsPage";
+import BookMentorPage from "../modules/mentor-bookings/pages/BookMentorPage";
+import BookingPage from "../modules/mentor-bookings/pages/BookingPage";
+import MentorBookingsPage from "../modules/mentor-bookings/pages/MentorBookingsPage";
+import AdminBookingsPage from "../modules/mentor-bookings/pages/AdminBookingsPage";
+import HubBookingsPage from "../modules/mentor-bookings/pages/HubBookingsPage";
 import MyQaPage from "../modules/qa/pages/MyQaPage";
 import SupervisorEducatorPage from "../modules/qa/pages/SupervisorEducatorPage";
 import BillingPage from "../modules/billing/pages/BillingPage";
@@ -237,6 +243,9 @@ export default function AppRoutes() {
         <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
         <Route path="mentor-checkins/templates/new" element={<QaTemplateEditorPage key="mentor-template" source="mentor" />} />
         <Route path="mentor-checkins/templates/:id" element={<QaTemplateEditorPage key="mentor-template" source="mentor" />} />
+        {/* Families booking a mentor; refunds; partner hubs' desk fees (modules/mentor-bookings). */}
+        <Route path="mentor-bookings" element={<AdminBookingsPage />} />
+        <Route path="mentor-bookings/:id" element={<BookingPage />} />
         {/* Quality assurance — visits to educators, their reviews, schedules and templates (modules/qa). */}
         <Route path="qa" element={<QaPage />} />
         <Route path="qa/visits/:id" element={<QaVisitPage />} />
@@ -356,6 +365,9 @@ export default function AppRoutes() {
           {/* Hub check-ins this educator takes part in (modules/checkins). */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* Mentor sessions families booked with this educator (modules/mentor-bookings). */}
+          <Route path="bookings" element={<MentorBookingsPage />} />
+          <Route path="bookings/:id" element={<BookingPage />} />
           {/* Parent check-ins of this educator's classes — the schedule and the reports (modules/mentor-checkins). */}
           <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
           <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
@@ -439,6 +451,9 @@ export default function AppRoutes() {
           {/* A hub's Account Manager / Training Lead (a hubLead session) — their check-ins. */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* Mentor sessions at the hub's spaces, and its desk-fee statement (modules/mentor-bookings). */}
+          <Route path="mentor-bookings" element={<HubBookingsPage />} />
+          <Route path="mentor-bookings/:id" element={<BookingPage />} />
           {/* The hub's parent check-ins — its classes' schedules (modules/mentor-checkins). */}
           <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
           <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
@@ -497,6 +512,10 @@ export default function AppRoutes() {
           {/* Hub check-ins this parent takes part in (modules/checkins). */}
           <Route path="checkins" element={<CheckinsPage />} />
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          {/* Mentor sessions: their children's help requests, booking a mentor, each booking (modules/mentor-bookings). */}
+          <Route path="bookings" element={<ParentBookingsPage />} />
+          <Route path="bookings/new" element={<BookMentorPage />} />
+          <Route path="bookings/:id" element={<BookingPage />} />
           {/* Check-ins with their children's mentors: confirm or move, read and approve the report (modules/mentor-checkins). */}
           <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
           <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />

@@ -197,6 +197,9 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
 
   const getPageTitle = (pathname) => {
     if (pageTitles[pathname]) return pageTitles[pathname];
+    // Mentor bookings, in every portal (modules/mentor-bookings).
+    if (/^\/(parent\/bookings|teacher-portal\/bookings|school-portal\/mentor-bookings)(\/|$)/.test(pathname)) return pathname.endsWith("/new") ? "Book a Mentor" : "Mentor Sessions";
+    if (/^\/mentor-bookings(\/|$)/.test(pathname)) return "Mentor Bookings";
     if (pathname === "/curriculum/create")
       return "Create Curriculum";
     if (pathname.startsWith("/curriculum/") && pathname.endsWith("/structure"))

@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -65,6 +65,15 @@ export const ADMIN_SECTIONS = [
       { name: "Home Learning", path: "/home-learning", icon: FiHeart, module: "home-learning" },
       { name: "Tech Clubs", path: "/tech-clubs", icon: FiCpu, module: "tech-clubs" },
       { name: "Pathway Subscriptions", path: "/pathway-subscriptions", icon: FiRepeat, module: "pathway-subscriptions" },
+      // Families booking a mentor for a stuck learner (modules/mentor-bookings — its tabs, ?tab=).
+      {
+        name: "Mentor Bookings", path: "/mentor-bookings", icon: FiCalendar, module: "mentor-bookings",
+        children: [
+          { name: "Bookings", path: "/mentor-bookings?tab=bookings", isDefault: true, match: (l) => l.pathname.startsWith("/mentor-bookings") && (!tabOf(l) || tabOf(l) === "bookings") },
+          { name: "Refunds", path: "/mentor-bookings?tab=refunds" },
+          { name: "Hub settlements", path: "/mentor-bookings?tab=hubs" },
+        ],
+      },
       {
         name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"],
         // One page with three sections (ProgramsListPage scrolls to #…); a bootcamp's or a

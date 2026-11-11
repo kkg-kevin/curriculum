@@ -7,6 +7,7 @@ import { reportHtml, useCheckinsBase } from "../../checkins/shared";
 import { useMentorBase } from "../../mentor-checkins/shared";
 import { templateSource, useSourceMutation, useSourceTemplate } from "../templateSources";
 import { KIND_LABEL, QaStyles, T, btn, card, font, hint, input, label, useQaBase } from "../shared";
+import RecordStamp from "../../activity/components/RecordStamp";
 
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 const DEFAULT_SCALE = [
@@ -63,6 +64,9 @@ function IconButton({ onClick, label: text, disabled, children, danger }) {
 // comment. /templates/new (?from=<id> copies one), /templates/:id. Someone who can't change it sees
 // it read only, and can copy it. `source` "qa" (QA visits) or "checkins" (hub check-ins) — where
 // it saves and how it's worded (qa/templateSources.js).
+// The table each kind of template lives in (the activity log's record type).
+const TEMPLATE_TABLE = { qa: "qa_templates", checkins: "checkin_templates", mentor: "mentor_checkin_templates" };
+
 export default function TemplateEditorPage({ source: sourceName = "qa" }) {
   const source = templateSource(sourceName);
   const words = source.words;
@@ -109,6 +113,9 @@ export default function TemplateEditorPage({ source: sourceName = "qa" }) {
     <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
       <QaStyles />
       <Link to={`${base}?tab=templates`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: T.accentMid, textDecoration: "none", alignSelf: "flex-start" }}><FiArrowLeft size={14} /> Templates</Link>
+
+      {/* Who made it, who changed it last (admin side only — modules/activity). */}
+      {!isNew && <RecordStamp type={TEMPLATE_TABLE[sourceName]} id={id} />}
 
       <section style={{ ...card, padding: "18px 20px", display: "grid", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>

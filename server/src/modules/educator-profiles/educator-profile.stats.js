@@ -9,8 +9,9 @@ const { getSettings } = require("../mentor-reviews/mentor-review.service");
 //   hours / sessions   each day a class's attendance was taken, on the weekday of this educator's
 //                      timetable slot for a course of it (a shifted session on its new day) — that
 //                      slot's length. A class with no timetable, taught by this educator alone, counts
-//                      its sessions with no hours ("untimed").
-//   learners taught    learners marked present or late in those sessions.
+//                      its sessions with no hours ("untimed"). Plus each mentor session a family
+//                      booked and the mentor held (modules/mentor-bookings/), at its booked length.
+//   learners taught    learners marked present or late in those sessions, and those they mentored.
 //   reliability        of the sessions their timetable planned in the last 90 days, how many were held.
 //   parent rating      mentor_reviews of the last 12 months: average, smoothed, per aspect.
 //   quality reviews    every submitted QA visit, compounded: all-time average and band, running average
@@ -157,8 +158,19 @@ async function computeStats(teacherId) {
       if (d >= since12m) byMonth.set(d.slice(0, 7), (byMonth.get(d.slice(0, 7)) || 0) + per);
     }
   }
+  // Mentor sessions held (modules/mentor-bookings/, 11 Nov 2026) are verified teaching too: each
+  // at its booked length, its learner taught.
+  const booked = await require("../mentor-bookings/mentor-booking.service").heldSessions(teacherId).catch(() => []);
+  for (const b of booked) {
+    minutes += b.minutes;
+    if (b.date >= since90) minutes90 += b.minutes;
+    if (b.date >= since12m) byMonth.set(b.date.slice(0, 7), (byMonth.get(b.date.slice(0, 7)) || 0) + b.minutes);
+  }
   const sessionKeys = new Set([...credited.flatMap((c) => c.sessions.map((d) => `${c.classId}|${d}`)), ...untimed.flatMap((u) => u.sessions.map((d) => `${u.classId}|${d}`))]);
-  const learnersTaught = uniq(attendance.filter((a) => ["present", "late"].includes(a.status) && sessionKeys.has(`${a.classId}|${R.dayKey(a.date)}`)).map((a) => a.learnerId)).length;
+  const learnersTaught = uniq([
+    ...attendance.filter((a) => ["present", "late"].includes(a.status) && sessionKeys.has(`${a.classId}|${R.dayKey(a.date)}`)).map((a) => a.learnerId),
+    ...booked.map((b) => b.learnerId),
+  ]).length;
 
   // Reliability (last 90 days, active classes).
   const schedules = classIds.length ? await db("timetable_course_schedules").whereIn("classId", classIds) : [];
@@ -248,7 +260,8 @@ async function computeStats(teacherId) {
 
   const stats = {
     hours: { total: R.round1(minutes / 60), last90Days: R.round1(minutes90 / 60), byMonth: [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, m]) => ({ month, hours: R.round1(m / 60) })) },
-    sessions: { total: sessionKeys.size, untimed: untimed.reduce((n, u) => n + u.sessions.length, 0) },
+    sessions: { total: sessionKeys.size + booked.length, untimed: untimed.reduce((n, u) => n + u.sessions.length, 0), mentoring: booked.length },
+    mentoring: { sessions: booked.length, hours: R.round1(booked.reduce((n, b) => n + b.minutes, 0) / 60), learners: uniq(booked.map((b) => b.learnerId)).length },
     learnersTaught,
     reliability,
     courses: coursesTaught,

@@ -11,6 +11,7 @@ import { itemsApi } from "../services/itemsApi";
 import PhotoGalleryField from "../../../learning-hubs/components/PhotoGalleryField";
 import { Editor as RichTextEditorControlled } from "../../../courses/components/RichTextEditor";
 import { isEmptyHtml, stripHtml } from "../../../courses/components/RichContent";
+import { HistoryButton } from "../../../activity/components/RecordStamp";
 
 const STORE_CATEGORY_LABELS = { kit: "Robots & kits", bundle: "Bundle", accessory: "Accessory" };
 const STOCK_STATUS_LABELS = { available: "Available now", preorder: "Pre-order", coming_soon: "Coming soon" };
@@ -406,6 +407,7 @@ function GoodsCard({ item, onEdit, onMove, onDelete }) {
           <p style={{ margin: 0, fontSize: "14.5px", fontWeight: "700", color: "#111827", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
             {item.name}
           </p>
+          <HistoryButton type="items" id={item.id} label={item.name} iconOnly />
           {forSale && <InStoreBadge />}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

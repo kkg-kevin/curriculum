@@ -158,8 +158,9 @@ async function classPeople(ownerAdminId, classId) {
 }
 
 // When these educators are busy between two dates: their classes on the weekly timetable (and the
-// class's own timetable), and their other check-ins still on.
-async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId = null } = {}) {
+// class's own timetable), their other check-ins still on, and their mentor bookings (11 Nov 2026 —
+// modules/mentor-bookings/; that module passes withBookings: false, as it adds its own).
+async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId = null, withBookings = true } = {}) {
   const weekly = await db("timetable_slots")
     .where((w) => {
       if (teacherIds.length) w.whereIn("teacherId", teacherIds);
@@ -174,6 +175,7 @@ async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId 
     if (excludeMeetingId) q = q.whereNot({ id: excludeMeetingId });
     dated = await q.select("date", "startTime", "endTime");
   }
+  if (withBookings) dated = dated.concat(await require("../mentor-bookings/mentor-booking.service").heldTimes(teacherIds, from, to));
   return { weekly, dated };
 }
 

@@ -26,6 +26,8 @@ const { releaseUnpaidTotSignups } = require("../modules/bootcamp-enrollment/educ
   // Pathway subscriptions: a period unpaid past the grace days pauses it (courses lock, that
   // invoice cancelled); a sign-up never paid is cancelled (pathway-subscription.service.js).
   console.log("Pathway subscriptions:", JSON.stringify(await require("../modules/pathway-subscriptions/pathway-subscription.service").processLapses()));
+  // Mentor bookings whose time was held but not paid in time: released, invoice cancelled.
+  console.log("Mentor bookings released:", await require("../modules/mentor-bookings/mentor-booking.service").releaseExpiredHolds());
 })()
   .catch((err) => {
     console.error("Part payments processing failed:", err);

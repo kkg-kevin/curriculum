@@ -29,13 +29,15 @@ export function formatDate(value) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export const TYPE_LABEL = { advance: "Advance", full: "Full payment" };
+export const TYPE_LABEL = { advance: "Advance", full: "Full payment", bookings: "Mentor sessions" };
 
 // How a claim (or a course's figures) is worked out — per session, by the hour, by the day, or
 // Base plus (its own session rate plus a commission per enrolled learner, each session), at the
 // workspace's rates (Settings → Educator pay). Older claims are all per session.
-export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily", base_plus: "Base plus" };
-const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"], base_plus: ["session", "sessions"] };
+// "booking": a claim for mentor sessions families booked (modules/mentor-bookings) — each earns
+// what Settings → Educator Pay set for its length.
+export const RATE_TYPE_LABEL = { session: "Per session", hourly: "Hourly", daily: "Daily", base_plus: "Base plus", booking: "Mentor sessions" };
+const UNIT = { session: ["session", "sessions"], hourly: ["hour", "hours"], daily: ["day", "days"], base_plus: ["session", "sessions"], booking: ["mentor session", "mentor sessions"] };
 
 export function unitsLabel(count, rateType = "session") {
   const n = Number(count) || 0;
@@ -72,6 +74,8 @@ export function rateDetail(figures) {
 // total for an advance (a share of the whole course) and what was delivered for the full payment.
 export function claimBasis(claim) {
   const rateType = claim.rateType || "session";
+  // Mentor sessions are each priced by their length, so there's no single rate to show.
+  if (claim.type === "bookings" || rateType === "booking") return `${unitsLabel(claim.unitsDelivered ?? claim.sessionsDelivered, "booking")} held`;
   const rate = claim.rate ?? claim.sessionRate;
   const units = claim.type === "advance" ? claim.unitsTotal ?? claim.sessionsTotal : claim.unitsDelivered ?? claim.sessionsDelivered;
   return `${unitsLabel(units, rateType)} × ${rateDetail({ ...claim, rate, rateType })}`;

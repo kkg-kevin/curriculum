@@ -235,6 +235,10 @@ export const learningHubSchema = z
     amenities: z.array(z.string()).default([]),
     operatingHours: operatingHoursSchema.default({}),
     spaces: z.array(spaceSchema).default([]),
+    // Whose the spaces' fees are when a family books a mentor session here: "ours", or a partner
+    // hub's ("hub" — owed them, less the % we keep for collecting). Mirrors the server.
+    deskFeeOwner: z.enum(["ours", "hub"]).default("ours"),
+    deskCollectionPercent: z.coerce.number().min(0, "Between 0 and 100").max(100, "Between 0 and 100").default(0),
     clubDetails: clubDetailsFormSchema.optional(),
   })
   .superRefine((data, ctx) => {

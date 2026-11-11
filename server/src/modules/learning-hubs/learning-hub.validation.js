@@ -175,6 +175,11 @@ const baseLearningHubSchema = z.object({
   amenities: z.array(z.string()).default([]),
   operatingHours: operatingHoursSchema.default({}),
   spaces: z.array(spaceSchema).default([]),
+  // Whose its spaces' fees are when a family books a mentor session here (modules/mentor-bookings/):
+  // "ours" — the workspace's own hub; "hub" — a partner, owed its desk fees less
+  // deskCollectionPercent (the share kept for collecting them), settled from its statement.
+  deskFeeOwner: z.enum(["ours", "hub"]).default("ours"),
+  deskCollectionPercent: z.coerce.number().min(0, "Between 0 and 100").max(100, "Between 0 and 100").default(0),
   clubDetails: clubDetailsSchema.nullable().default(null),
 });
 

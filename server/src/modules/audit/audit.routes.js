@@ -21,6 +21,9 @@ function filtersFrom(query) {
     outcome: text(query.outcome),
     entityType: text(query.entityType),
     entityId: text(query.entityId),
+    // One record with its parts (a course and its sessions…) — audit-log.model.js's RECORDS.
+    recordType: text(query.recordType),
+    recordId: text(query.recordId),
     q: text(query.q),
     // Whole days, as the date pickers give them.
     from: from && DAY.test(from) ? new Date(`${from}T00:00:00`) : undefined,
@@ -31,6 +34,13 @@ function filtersFrom(query) {
 router.get("/", asyncHandler(async (req, res) => {
   const result = await AuditService.list(req.ownerAdminId, filtersFrom(req.query), { page: req.query.page, pageSize: req.query.pageSize });
   res.json({ success: true, data: result });
+}));
+
+// The stamp inside a record's page: who made it, who changed it last, who has worked on it.
+// Admin side only — the same people as the Activity log (the owner, and staff whose role grants
+// Activity log → View); never the educator, hub or parent portals.
+router.get("/stamp", asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await AuditService.stamp(req.ownerAdminId, String(req.query.type || ""), String(req.query.id || "")) });
 }));
 
 router.get("/counts", asyncHandler(async (req, res) => {

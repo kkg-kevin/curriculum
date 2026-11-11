@@ -39,6 +39,9 @@ const MENTOR_CHECKIN_BOTH_ROLES = ["learner", "teacher"];
 const mentorCheckinPath = (fallback) => (p) => routeOr(p, fallback);
 // The weekly summary of Reports & Analytics goes to the workspace's admins and each hub's login.
 const SUMMARY_ROLES = ["admin", "school"];
+// Mentor bookings (modules/mentor-bookings/): families and mentors.
+const BOOKING_PARENT_ROLES = ["learner"];
+const BOOKING_BOTH_ROLES = ["learner", "teacher"];
 const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
@@ -158,6 +161,12 @@ const EMAIL_TYPES = {
   mentor_checkin_approved: { label: "A parent approves a check-in report", roles: MENTOR_CHECKIN_EDUCATOR_ROLES, default: true, look: { tone: "success", icon: "check", eyebrow: "Parent check-ins" }, path: mentorCheckinPath("/teacher-portal/mentor-checkins") },
   mentor_checkin_changed: { label: "A parent check-in moves to another time", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "info", icon: "refresh", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
   mentor_checkin_cancelled: { label: "A parent check-in is cancelled", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
+  // Mentor bookings (modules/mentor-bookings/mentor-booking.notifications.js).
+  mentor_help_requested: { label: "Your child asks for help with a session", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "alert", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
+  mentor_booking_confirmed: { label: "A mentor session is booked", roles: BOOKING_BOTH_ROLES, default: true, look: { tone: "success", icon: "check", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
+  mentor_booking_cancelled: { label: "A mentor session is cancelled", roles: BOOKING_BOTH_ROLES, default: true, look: { tone: "warning", icon: "alert", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
+  mentor_booking_today: { label: "A mentor session is today", roles: BOOKING_BOTH_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
+  mentor_booking_note: { label: "The mentor's note after a session", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
   mentor_checkin_today: { label: "A parent check-in is today", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
 
   qa_visit_announced: { label: "A QA visit to you is coming up", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/teacher-portal/qa") },
@@ -383,6 +392,7 @@ const groupFor = (roles) => {
   if (roles === CHECKIN_PARTICIPANT_ROLES) return "Hub check-ins (everyone taking part)";
   if (roles === SUMMARY_ROLES) return "Weekly summary (you and your hubs)";
   if (roles === MENTOR_CHECKIN_PARENT_ROLES || roles === MENTOR_CHECKIN_EDUCATOR_ROLES || roles === MENTOR_CHECKIN_BOTH_ROLES) return "Parent–mentor check-ins";
+  if (roles === BOOKING_PARENT_ROLES || roles === BOOKING_BOTH_ROLES) return "Mentor sessions (families and mentors)";
   return "You (the admin)";
 };
 
