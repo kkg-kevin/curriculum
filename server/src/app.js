@@ -64,6 +64,7 @@ const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
 const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
 const mentorBookingRoutes = require("./modules/mentor-bookings/mentor-booking.routes");
+const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standards.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
@@ -395,6 +396,8 @@ app.use("/api/mentor-checkins", protect, attachOwnRecords, mentorCheckinRoutes);
 // first, online or at a hub's space; partner hubs' desk fees settled from their statement. See
 // modules/mentor-bookings/ (mentor-booking.service.js for who sees what).
 app.use("/api/mentor-bookings", protect, attachOwnRecords, mentorBookingRoutes);
+// The admin dashboard (12 Nov 2026): today, to-dos, counts, programmes — modules/dashboard/.
+app.use("/api/dashboard", protect, attachOwnRecords, dashboardRoutes);
 // Mentor standards — the bar every mentor is measured against (Settings → Mentor standards); each
 // mentor's standing comes with their profile and Reports → Educators. See modules/mentor-standards/.
 app.use("/api/mentor-standards", protect, attachOwnRecords, mentorStandardRoutes);

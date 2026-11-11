@@ -103,6 +103,8 @@ const PATH_PREFIX_TO_MODULE = {
   // The booking rates sit on Settings → Educator Pay (first match wins — before the bookings).
   "/api/mentor-bookings/settings": "claims-approval",
   "/api/mentor-bookings": "mentor-bookings",
+  // The dashboard: open to every staff role (CATALOG_READERS below); its sections follow the role.
+  "/api/dashboard": "dashboard",
   // The workspace's mentor standards are a setting.
   "/api/mentor-standards": "settings",
   // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").
@@ -129,6 +131,9 @@ const CATALOG_READERS = {
   // to read the claims they are approving.
   "/api/claims": ["claims-approval"],
 };
+// Every staff role may open the dashboard — viewing any module is enough (dashboard.service.js
+// then leaves out the sections their role can't view).
+CATALOG_READERS["/api/dashboard"] = MODULES.map((m) => m.key);
 // The educator form offers a supervisor to pick — so the list of supervisors can also be read by
 // anyone who can view Educators.
 const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
