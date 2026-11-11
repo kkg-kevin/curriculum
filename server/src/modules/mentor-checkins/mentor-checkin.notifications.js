@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const NotificationService = require("../notifications/notification.service");
 
 // In-app notifications (and, for the types in notification.emails.js's EMAIL_TYPES, emails) for
@@ -19,6 +20,24 @@ const names = (list) => {
 };
 const where = (round) => (round.format === "online" ? "online" : round.location ? `at ${round.location}` : "in person");
 
+// How a family hears who they're meeting (12 Nov 2026): "John's Tech Educator, Jane Wanjiru," —
+// the child first, then the educator's role and name (several: "Tech Educators, Jane and Ken,").
+// Used mid-sentence, so it ends with a comma when there are names.
+const childs = (childNames) => { const n = names(childNames || []); return n ? `${n}'s` : "Your child's"; };
+function educatorPhrase(childNames, educatorNames = []) {
+  const list = (educatorNames || []).filter(Boolean);
+  const role = list.length > 1 ? "Tech Educators" : "Tech Educator";
+  return list.length ? `${childs(childNames)} ${role}, ${names(list)},` : `${childs(childNames)} ${role}`;
+}
+// The round's educators by name, when the caller didn't pass them.
+async function educatorNamesOf(round) {
+  const ids = round?.educatorIds || [];
+  if (!ids.length) return [];
+  const rows = await db("teachers").whereIn("id", ids).select("id", "firstName", "lastName");
+  const byId = new Map(rows.map((t) => [t.id, [t.firstName, t.lastName].filter(Boolean).join(" ").replace(/\s+/g, " ").trim()]));
+  return ids.map((id) => byId.get(id)).filter(Boolean);
+}
+
 async function send(userId, event, ownerAdminId) {
   if (!userId) return;
   await NotificationService.notifyPerson(userId, { ...event, ownerAdminId, dedupeKey: `${event.dedupeKey}:${userId}` }).catch((err) => {
@@ -32,8 +51,8 @@ const MentorCheckinNotifications = {
   scheduled(round, meeting, { childNames, educatorNames }) {
     return send(meeting.parentUserId, {
       type: "mentor_checkin_scheduled",
-      title: `Check-in about ${names(childNames) || "your child"}`,
-      message: `${names(educatorNames) || "Your child's mentor"} would like to meet you ${where(round)} on ${when(meeting)} to talk about how ${names(childNames) || "your child"} is doing. Confirm the time, or pick another that suits you.`,
+      title: `Check-in with ${childs(childNames)} Tech Educator${(educatorNames || []).length > 1 ? "s" : ""}`,
+      message: `${educatorPhrase(childNames, educatorNames)} would like to meet you ${where(round)} on ${when(meeting)} to talk about how ${names(childNames) || "your child"} is doing. Confirm the time, or pick another that suits you.`,
       payload: { route: `${PARENT_BASE}/meetings/${meeting.id}`, meetingId: meeting.id },
       dedupeKey: `mentor_checkin_scheduled:${meeting.id}`,
     }, round.ownerAdminId);
@@ -52,8 +71,9 @@ const MentorCheckinNotifications = {
 
   // A check-in's time moved — by the parent (the educators are told) or by our team (the parent and
   // the educators are told).
-  changed(round, meeting, { byParent, parentName, childNames, educatorUserIds }) {
+  async changed(round, meeting, { byParent, parentName, childNames, educatorUserIds }) {
     const stamp = `${meeting.date} ${meeting.startTime}`;
+    const educators = byParent ? [] : await educatorNamesOf(round);
     const toEducators = sendAll(educatorUserIds, {
       type: "mentor_checkin_changed",
       title: byParent ? `${parentName || "A parent"} picked another time` : "A parent check-in has moved",
@@ -64,23 +84,24 @@ const MentorCheckinNotifications = {
     const toParent = byParent ? null : send(meeting.parentUserId, {
       type: "mentor_checkin_changed",
       title: "Your check-in has a new time",
-      message: `Your check-in about ${names(childNames) || "your child"} is now on ${when(meeting)} (${where(round)}).`,
+      message: `Your check-in with ${educatorPhrase(childNames, educators)} about ${names(childNames) || "your child"} is now on ${when(meeting)} (${where(round)}).`,
       payload: { route: `${PARENT_BASE}/meetings/${meeting.id}`, meetingId: meeting.id },
       dedupeKey: `mentor_checkin_changed:${meeting.id}:${stamp}`,
     }, round.ownerAdminId);
     return Promise.all([toEducators, toParent]);
   },
 
-  cancelled(round, meeting, { childNames, educatorUserIds, notifyEducators = true }) {
-    const event = (base) => ({
+  async cancelled(round, meeting, { childNames, educatorUserIds, notifyEducators = true }) {
+    const event = (base, message) => ({
       type: "mentor_checkin_cancelled",
       title: "A check-in has been cancelled",
-      message: `The check-in about ${names(childNames) || "a learner"} on ${when(meeting)} won't go ahead.`,
+      message: message || `The check-in about ${names(childNames) || "a learner"} on ${when(meeting)} won't go ahead.`,
       payload: { route: `${base}/meetings/${meeting.id}`, meetingId: meeting.id },
       dedupeKey: `mentor_checkin_cancelled:${meeting.id}`,
     });
+    const forParent = `Your check-in with ${educatorPhrase(childNames, await educatorNamesOf(round))} on ${when(meeting)} won't go ahead.`;
     return Promise.all([
-      send(meeting.parentUserId, event(PARENT_BASE), round.ownerAdminId),
+      send(meeting.parentUserId, event(PARENT_BASE, forParent), round.ownerAdminId),
       notifyEducators ? sendAll(educatorUserIds, event(EDUCATOR_BASE), round.ownerAdminId) : null,
     ]);
   },
@@ -97,12 +118,13 @@ const MentorCheckinNotifications = {
   },
 
   // On the day: the parent, with the link to join an online one …
-  todayForParent(round, meeting, { childNames }) {
+  async todayForParent(round, meeting, { childNames }) {
+    const educators = await educatorNamesOf(round);
     const join = round.format === "online" && round.meetingLink ? ` Join here: ${round.meetingLink}` : "";
     return send(meeting.parentUserId, {
       type: "mentor_checkin_today",
       title: "Your check-in is today",
-      message: `Your check-in about ${names(childNames) || "your child"} is today at ${meeting.startTime} (${where(round)}).${join}`,
+      message: `Your check-in with ${educatorPhrase(childNames, educators)} is today at ${meeting.startTime} (${where(round)}).${join}`,
       payload: { route: `${PARENT_BASE}/meetings/${meeting.id}`, meetingId: meeting.id, meetingLink: round.format === "online" ? round.meetingLink || null : null },
       dedupeKey: `mentor_checkin_today:${meeting.id}:${meeting.date}`,
     }, round.ownerAdminId);
@@ -125,7 +147,7 @@ const MentorCheckinNotifications = {
     return send(meeting.parentUserId, {
       type: "mentor_checkin_report_ready",
       title: `Report from your check-in about ${names(childNames) || "your child"}`,
-      message: `${educatorName || "The mentor"} has written up your check-in on ${day(meeting.date)}. Read it through, then approve it.`,
+      message: `${educatorPhrase(childNames, educatorName ? [educatorName] : [])} has written up your check-in on ${day(meeting.date)}. Read it through, then approve it.`,
       payload: { route: `${PARENT_BASE}/meetings/${meeting.id}`, meetingId: meeting.id },
       dedupeKey: `mentor_checkin_report_ready:${meeting.id}`,
     }, round.ownerAdminId);
@@ -143,3 +165,4 @@ const MentorCheckinNotifications = {
 };
 
 module.exports = MentorCheckinNotifications;
+module.exports._wording = { educatorPhrase };
