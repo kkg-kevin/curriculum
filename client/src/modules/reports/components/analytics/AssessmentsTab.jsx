@@ -1,3 +1,4 @@
+import { FiAward, FiBookOpen, FiClipboard, FiEdit3, FiFileText, FiInbox, FiXCircle } from "react-icons/fi";
 import { Card, DataTable, Delta, Empty, Funnel, LevelLegend, LevelStack, Note, Stat, T, fmtDate, fmtNum, fmtPct } from "./ui";
 
 export default function AssessmentsTab({ data, links, isHub }) {
@@ -17,30 +18,29 @@ export default function AssessmentsTab({ data, links, isHub }) {
   return (
     <>
       <div className="an-stats">
-        <Stat label="Assessments issued" value={fmtNum(h.issues)} sub={`${fmtNum(h.tasks)} learner tasks`} delta={<Delta now={h.issues} before={h.prevIssues} />} />
-        <Stat label="Handed in" value={fmtPct(h.handedInPercent)} delta={<Delta now={h.handedInPercent} before={h.prevHandedInPercent} suffix=" pts" />} />
-        <Stat label="Average score" value={fmtPct(h.averageScore)} sub="Marked work issued in the period" delta={<Delta now={h.averageScore} before={h.prevAverageScore} suffix=" pts" />} />
-        <Stat label="Waiting to be marked" value={fmtNum(h.waitingToMark)} sub="Right now, whenever it was issued" />
-        <Stat label="Missed" value={fmtNum(h.missed)} sub={h.withoutDueDate ? `${fmtNum(h.withoutDueDate)} issued with no due date` : "Past the due date, not handed in"} />
+        <Stat icon={FiClipboard} label="Assessments issued" value={fmtNum(h.issues)} sub={`${fmtNum(h.tasks)} learner tasks`} delta={<Delta now={h.issues} before={h.prevIssues} />} />
+        <Stat icon={FiInbox} label="Handed in" value={fmtPct(h.handedInPercent)} delta={<Delta now={h.handedInPercent} before={h.prevHandedInPercent} suffix=" pts" />} tone="mid" />
+        <Stat icon={FiAward} label="Average score" value={fmtPct(h.averageScore)} delta={<Delta now={h.averageScore} before={h.prevAverageScore} suffix=" pts" />} tone="sky" />
+        <Stat icon={FiEdit3} label="Waiting to be marked" value={fmtNum(h.waitingToMark)} sub="right now" tone="gold" />
+        <Stat icon={FiXCircle} label="Missed" value={fmtNum(h.missed)} sub={h.withoutDueDate ? `${fmtNum(h.withoutDueDate)} with no due date` : null} tone="danger" />
       </div>
 
       <div className="an-two">
-        <Card title="From issuing to the learner's report" subtitle="Learner tasks issued in the period, and how far each got">
+        <Card title="From issuing to the learner's report">
           {data.funnel[0].count ? <Funnel steps={data.funnel} /> : <Empty>No work was issued in this period.</Empty>}
         </Card>
-        <Card title="Reports and certificates" subtitle="In the period">
+        <Card title="Reports and certificates">
           <div className="an-stats" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-            <Stat label="Session reports out" value={fmtNum(r.sessionReportsPublished)} />
-            <Stat label="Course reports published" value={fmtNum(r.courseReportsPublished)} />
-            <Stat label="Course reports in draft" value={fmtNum(r.courseReportsDraft)} sub="Ready for an educator to publish (now)" />
-            <Stat label="Certificates issued" value={fmtNum(r.certificatesIssued)} />
+            <Stat icon={FiFileText} label="Session reports out" value={fmtNum(r.sessionReportsPublished)} />
+            <Stat icon={FiBookOpen} label="Course reports published" value={fmtNum(r.courseReportsPublished)} tone="mid" />
+            <Stat icon={FiEdit3} label="Course reports in draft" value={fmtNum(r.courseReportsDraft)} sub="ready to publish" tone="gold" />
+            <Stat icon={FiAward} label="Certificates issued" value={fmtNum(r.certificatesIssued)} tone="sky" />
           </div>
         </Card>
       </div>
 
       <DataTable
         title="Waiting to be marked"
-        subtitle="Handed in and not yet marked — longest waiting first"
         columns={[
           { key: "learner", label: "Learner", render: learnerCell },
           { key: "assessment", label: "Assessment" },
@@ -56,7 +56,6 @@ export default function AssessmentsTab({ data, links, isHub }) {
 
       <DataTable
         title="Missed work"
-        subtitle="Issued in the period, past its due date and never handed in — most overdue first"
         columns={[
           { key: "learner", label: "Learner", render: learnerCell },
           { key: "assessment", label: "Assessment" },
@@ -72,7 +71,7 @@ export default function AssessmentsTab({ data, links, isHub }) {
         empty={h.withoutDueDate ? "Nothing missed — but work without a due date can never count as missed." : "Nothing missed in this period."}
       />
 
-      <DataTable title="By class" subtitle="Lowest hand-in rate first" columns={[
+      <DataTable title="By class" columns={[
         { key: "label", label: "Class", render: (x) => [x.label, !isHub ? x.hubName : null].filter(Boolean).join(" · "), csv: (x) => [x.label, x.hubName].filter(Boolean).join(" · ") },
         { key: "learners", label: "Learners", align: "num" },
         ...rateColumns({ key: "_", label: "" }).slice(2),
@@ -93,7 +92,7 @@ export default function AssessmentsTab({ data, links, isHub }) {
         />
       )}
 
-      <Card title="How each assessment went" subtitle="Marked work, spread across the four level words">
+      <Card title="How each assessment went">
         {data.scoreSpread.length ? (
           <>
             <LevelLegend />
@@ -114,7 +113,7 @@ export default function AssessmentsTab({ data, links, isHub }) {
 
       <DataTable
         title="Questions most learners got wrong"
-        subtitle="Auto-marked questions answered at least twice — a sign the question or its teaching needs another look"
+        subtitle="Auto-marked, answered at least twice"
         columns={[
           { key: "question", label: "Question", render: (x) => <span style={{ display: "block", maxWidth: 460 }}>{x.question}</span> },
           { key: "assessment", label: "Assessment" },
@@ -126,7 +125,7 @@ export default function AssessmentsTab({ data, links, isHub }) {
         initialSort={{ key: "correctPercent", dir: "asc" }}
         empty="No auto-marked question has been answered twice yet."
       />
-      <Note>“Learner tasks” are one per learner for each piece of work issued to them (a class's work counts once per learner in it). Work issued by the website's diagnostics isn't counted here.</Note>
+      <Note>A learner task is one learner's copy of a piece of work. Website diagnostics aren&apos;t counted.</Note>
     </>
   );
 }

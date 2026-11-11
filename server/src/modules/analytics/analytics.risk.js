@@ -10,6 +10,7 @@ const { pct, inChunks, fullName } = require("./analytics.utils");
 const { loadWork } = require("./analytics.work");
 const { className } = require("./analytics.scope");
 const CountedWork = require("../assessments/submissions/counted-work");
+const { latestFor, FOLLOWED_UP_DAYS } = require("./analytics.followups");
 
 const FLAGS = {
   lowScore: { label: "Low scores", threshold: 40 },
@@ -90,6 +91,8 @@ async function getAtRisk(scope) {
     rows.push({
       learnerId: l.id,
       name: fullName(l),
+      hubId: link?.hubId || null,
+      classId: link?.classId || null,
       hubName: scope.hubById.get(link?.hubId)?.name || "",
       className: link?.classId ? className(scope.classById.get(link.classId)) : "",
       score,
@@ -103,6 +106,9 @@ async function getAtRisk(scope) {
     });
   }
   rows.sort((x, y) => y.flags.length - x.flags.length || (x.score ?? 101) - (y.score ?? 101));
+  // What staff last did about each (analytics.followups.js) — the list can hide those followed up.
+  const followUps = await latestFor(rows.map((r) => r.learnerId));
+  for (const r of rows) r.followUp = followUps.get(r.learnerId) || null;
 
   return {
     period,
@@ -111,6 +117,8 @@ async function getAtRisk(scope) {
     learnerCount: scope.learners.length,
     atRiskCount: rows.length,
     atRiskPercent: pct(rows.length, scope.learners.length),
+    followedUp: rows.filter((r) => r.followUp).length,
+    followedUpDays: FOLLOWED_UP_DAYS,
     learners: rows.slice(0, 1000),
   };
 }

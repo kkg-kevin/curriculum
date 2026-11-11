@@ -108,7 +108,9 @@ const MentorStandardsService = {
   // The nightly run (npm run educators:stats, after the figures are refreshed): every active mentor.
   async runAll() {
     const { getStats } = require("../educator-profiles/educator-profile.stats");
-    const teachers = await db("teachers").whereNot("status", "inactive").select("id", "firstName", "lastName", "createdAt", "createdByAdminId", "supervisorId");
+    // TOT learners only (in training) aren't mentors yet — never measured or reported below (tot/tot.people.js).
+    const { withoutTotOnly } = require("../tot/tot.people");
+    const teachers = await withoutTotOnly(await db("teachers").whereNot("status", "inactive").select("id", "firstName", "lastName", "createdAt", "createdByAdminId", "supervisorId"));
     let done = 0;
     for (const t of teachers) {
       try { await MentorStandardsService.snapshotAndNotify(t, await getStats(t.id)); done += 1; } catch (err) { console.error(`[mentor-standards] ${t.id}: ${err.message}`); }

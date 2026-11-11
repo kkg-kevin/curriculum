@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const { redactUnpublishedReport } = require("./grading.utils");
 const AssessmentSubmissionService = require("./assessment-submission.service");
 const WebsiteDiagnosticService = require("./website-diagnostic.service");
+const LearnerActivityService = require("./learner-activity.service");
 const AssessmentModel = require("../assessment.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
@@ -215,6 +216,25 @@ const getIssuedForLearnerAsStaff = asyncHandler(async (req, res) => {
   const rows = (await issuedRowsAsLearnerSeesThem(learnerId))
     .filter((row) => !row.issue.classId || ownClassIds.has(row.issue.classId));
   res.json({ success: true, data: rows, count: rows.length });
+});
+
+// The profile's activity grid (10 Nov 2026): a year of the learner's assessment work by day, with
+// what each piece is and where it opens (learner-activity.service.js). The learner (or their
+// parent, through the active child) their own; an admin / hub / staff only work of classes at
+// their own hubs, as the issued list above.
+const getLearnerActivity = asyncHandler(async (req, res) => {
+  const { learnerId } = req.params;
+  let classIds = null;
+  if (req.user.role === "learner") {
+    assertOwn(learnerId === req.ownLearner?.id);
+  } else {
+    await assertLearnerHubAccess(req, learnerId);
+    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
+    const own = await Promise.all(links.map((l) => (req.user.role === "school" ? isOwnHub(req, l.hubId) : isOwnHubForAdmin(req, l.hubId))));
+    classIds = new Set(links.filter((l, i) => own[i] && l.classId).map((l) => l.classId));
+  }
+  const data = await LearnerActivityService.forLearner(learnerId, { classIds });
+  res.json({ success: true, data });
 });
 
 // Admin/school-facing: this learner's auto-issued diagnostic (if any), for the Diagnostic
@@ -525,6 +545,7 @@ module.exports = {
   revokeIssue,
   getIssuedForLearner,
   getIssuedForLearnerAsStaff,
+  getLearnerActivity,
   getDiagnosticForLearner,
   getPathwayDiagnosticsForLearner,
   getDiagnosticReportsForLearner,

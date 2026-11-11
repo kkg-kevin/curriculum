@@ -18,6 +18,21 @@ export const STANDARD_ICON = {
 };
 export const iconOf = (key) => STANDARD_ICON[key] || FiTarget;
 
+// A word or two for each standard, where a chart has no room for the full name.
+export const STANDARD_SHORT = {
+  retention: "Retention",
+  rating: "Parent rating",
+  qa: "QA",
+  reliability: "Sessions held",
+  markedOnTime: "Marked in 72 h",
+  attendanceOnDay: "Register on day",
+  learnerAttendance: "Attendance",
+  onTrack: "On track",
+  mentorCheckins: "Parent check-ins",
+  openConcerns: "Concerns",
+};
+export const shortOf = (item) => STANDARD_SHORT[item?.key] || item?.label || "";
+
 // Mentor standards (server: modules/mentor-standards/) — the bar every mentor is measured against,
 // set in Settings → Mentor standards; each mentor's standing comes with their profile and with
 // Reports & Analytics → Educators. Status keys match mentor-standards.rules.js's evaluate().

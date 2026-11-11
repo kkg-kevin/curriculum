@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FiAlertTriangle, FiArrowLeft, FiCheck, FiRefreshCw, FiSend, FiShuffle, FiUser } from "react-icons/fi";
 import { useClassPeople, useHubClasses, useMentorHubs, useMentorMutation } from "../hooks/useMentorCheckins";
 import { mentorCheckinsApi } from "../services/mentorCheckinsApi";
@@ -46,7 +46,11 @@ function Section({ step, title, children, aside }) {
 export default function NewRoundPage() {
   const navigate = useNavigate();
   const base = "/mentor-checkins";
-  const [form, setForm] = useState(EMPTY);
+  // Opened from Reports & Analytics → Learners at risk (10 Nov 2026): ?hubId&classId&learnerId —
+  // that class, with only that learner's family ticked.
+  const [params] = useSearchParams();
+  const onlyLearnerId = params.get("learnerId") || "";
+  const [form, setForm] = useState(() => ({ ...EMPTY, hubId: params.get("hubId") || "", classId: params.get("classId") || "" }));
   const [draw, setDraw] = useState(null); // { meetings, unplaced, freeTimes, short }
   const [problems, setProblems] = useState([]);
   const { data: hubs = [] } = useMentorHubs();
@@ -59,10 +63,14 @@ export default function NewRoundPage() {
     if (!people) return;
     setForm((f) => ({
       ...f,
-      parentUserIds: people.families.map((x) => x.parentUserId),
+      parentUserIds: (() => {
+        const only = onlyLearnerId && people.families.find((x) => x.learners.some((l) => l.id === onlyLearnerId));
+        return only ? [only.parentUserId] : people.families.map((x) => x.parentUserId);
+      })(),
       windowStart: f.windowStart && f.windowStart >= people.earliestDate ? f.windowStart : people.earliestDate,
       windowEnd: f.windowEnd && f.windowEnd >= people.earliestDate ? f.windowEnd : addDays(people.earliestDate, 13),
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people]);
 
   // Any change to who or when throws away a draw already made.

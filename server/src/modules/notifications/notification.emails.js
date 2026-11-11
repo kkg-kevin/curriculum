@@ -37,6 +37,8 @@ const MENTOR_CHECKIN_PARENT_ROLES = ["learner"];
 const MENTOR_CHECKIN_EDUCATOR_ROLES = ["teacher"];
 const MENTOR_CHECKIN_BOTH_ROLES = ["learner", "teacher"];
 const mentorCheckinPath = (fallback) => (p) => routeOr(p, fallback);
+// The weekly summary of Reports & Analytics goes to the workspace's admins and each hub's login.
+const SUMMARY_ROLES = ["admin", "school"];
 const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
@@ -274,6 +276,30 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "check", eyebrow: "Claim paid" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
+  // Following up a learner at risk (Reports & Analytics, 10 Nov 2026 — analytics.followups.js).
+  learner_followup: {
+    label: "A message from the learning hub about your child",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "info", icon: "envelope", eyebrow: "A message about your child" },
+    path: (p) => routeOr(p, "/parent"),
+  },
+  learner_flagged: {
+    label: "A learner of yours needs support",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Learner needs support" },
+    path: (p) => routeOr(p, "/teacher-portal"),
+  },
+  // Not a notification: the Monday summary of Reports & Analytics (analytics.weekly.js), listed
+  // here so the workspace and each person can switch it off like any other email.
+  analytics_weekly: {
+    label: "The weekly summary of Reports & Analytics",
+    roles: SUMMARY_ROLES,
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Weekly summary" },
+    path: () => "/reports",
+  },
 };
 
 const typesForRole = (role) => Object.entries(EMAIL_TYPES).filter(([, def]) => def.roles.includes(role));
@@ -355,6 +381,7 @@ const groupFor = (roles) => {
   if (roles === CLAIM_REVIEWER_ROLES) return "You and your supervisors";
   if (roles === CHECKIN_ROLES) return "Hub check-ins (Account Managers and Training Leads)";
   if (roles === CHECKIN_PARTICIPANT_ROLES) return "Hub check-ins (everyone taking part)";
+  if (roles === SUMMARY_ROLES) return "Weekly summary (you and your hubs)";
   if (roles === MENTOR_CHECKIN_PARENT_ROLES || roles === MENTOR_CHECKIN_EDUCATOR_ROLES || roles === MENTOR_CHECKIN_BOTH_ROLES) return "Parent–mentor check-ins";
   return "You (the admin)";
 };
@@ -380,4 +407,4 @@ async function saveWorkspaceEmails(ownerAdminId, types = {}) {
   return describeWorkspaceEmails(ownerAdminId);
 }
 
-module.exports = { sendNotificationEmail, describePreferences, mergePreferences, describeWorkspaceEmails, saveWorkspaceEmails, userForPreferencesToken };
+module.exports = { sendNotificationEmail, describePreferences, mergePreferences, describeWorkspaceEmails, saveWorkspaceEmails, userForPreferencesToken, wantsEmail };

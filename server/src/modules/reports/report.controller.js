@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const { recordView } = require("./report-views");
 const ReportService = require("./report.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
@@ -151,6 +152,8 @@ const getReport = asyncHandler(async (req, res) => {
     await assertClassAccess(req, cls);
   }
   await ReportService.withAuthor(report);
+  // The family opened it (Parent engagement) — fire and forget.
+  if (req.user.role === "learner") recordView(report, req.user);
   res.json({ success: true, data: report });
 });
 

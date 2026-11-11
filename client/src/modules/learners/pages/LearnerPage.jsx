@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { FiClipboard, FiEye } from "react-icons/fi";
+import { FiCalendar, FiClipboard, FiEye, FiUsers } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learnersListPath, learnerPath } from "../../../routes/portalPaths";
 import {
@@ -19,6 +19,7 @@ import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import RecordHistory, { canSeeRecordHistory } from "../../activity/components/RecordHistory";
 import { T, cardStyle, EmptyState } from "../../learner-portal/components/profile/theme";
 import ProfileIdentityCard from "../../learner-portal/components/profile/ProfileIdentityCard";
+import AssessmentActivity from "../../learner-portal/components/profile/AssessmentActivity";
 import GuardianProfileCard from "../../learner-portal/components/profile/GuardianProfileCard";
 import PortfolioSnapshot from "../../learner-portal/components/profile/PortfolioSnapshot";
 import ShareProfileCard from "../../learner-portal/components/profile/ShareProfileCard";
@@ -192,13 +193,14 @@ export default function LearnerPage() {
         learner={learner} stage={stage} band={currentBand} nextBand={nextBand} curriculumId={curriculumId}
         onEdit={manage ? () => setEditing("learner") : undefined}
         stageHint={stage ? null : stagePendingReason({ learner, inClass: !!curriculumId, stages: ageCategories, staff: true })}
+        activity={<AssessmentActivity learnerId={id} firstName={learner.firstName} staff />}
         extraMeta={preview ? [] : [
-          { label: "Gender", value: learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null },
-          { label: "Date of birth", value: learner.dateOfBirth ? formatBirthDate(learner.dateOfBirth) : learner.statedAge != null ? `Not known — age ${learner.statedAge} given on ${formatBirthDate(learner.statedAgeOn)}` : null },
-          { label: "Joined via", value: joinedVia(learner.origin) },
-          ...(learner.origin?.note ? [{ label: "From the family", value: learner.origin.note }] : []),
-          { label: "Added", value: formatDate(learner.createdAt) },
-          { label: "Last updated", value: formatDate(learner.updatedAt) },
+          { label: "Gender", icon: FiUsers, value: learner.gender ? learner.gender.charAt(0).toUpperCase() + learner.gender.slice(1) : null },
+          { label: "Date of birth", icon: FiCalendar, value: learner.dateOfBirth ? formatBirthDate(learner.dateOfBirth) : learner.statedAge != null ? `Not known, age ${learner.statedAge} given on ${formatBirthDate(learner.statedAgeOn)}` : null },
+          { label: "Joined via", record: true, value: joinedVia(learner.origin) },
+          ...(learner.origin?.note ? [{ label: "From the family", record: true, value: learner.origin.note }] : []),
+          { label: "Added", record: true, value: formatDate(learner.createdAt) },
+          { label: "Last updated", record: true, value: formatDate(learner.updatedAt) },
         ]}
       />
 
