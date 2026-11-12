@@ -335,7 +335,38 @@ function daysUntil(event, now = new Date()) {
   return Math.round((start - today) / DAY_MS);
 }
 
+// ---- Tickets (13 Nov 2026) ------------------------------------------------------------------------
+// Every registration has a ticket code, "EV-" + 6 letters / digits without the ones read wrong at a
+// door (0/O, 1/I). Typed at check-in it's forgiving: any case, spaces or dashes, with or without
+// "EV". A ticket admits the whole party; only a registration with a place has a valid one.
+const TICKET_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const TICKET_PATTERN = /^EV-[A-HJ-NP-Z2-9]{6}$/;
+
+function newTicketCode(random = require("crypto").randomBytes) {
+  return `EV-${Array.from(random(6), (b) => TICKET_ALPHABET[b % TICKET_ALPHABET.length]).join("")}`;
+}
+
+// What someone typed or scanned → "EV-XXXXXX", or null when it can't be a ticket code.
+function normaliseTicketCode(input) {
+  // A scanned QR is the whole check-in address — the code is its last part.
+  const last = String(input || "").trim().replace(/[?#].*$/, "").split("/").filter(Boolean).pop() || "";
+  const bare = last.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^EV(?=[A-Z0-9]{6}$)/, "");
+  const code = `EV-${bare}`;
+  return TICKET_PATTERN.test(code) ? code : null;
+}
+
+// What a ticket means at the door.
+function ticketState(reg, event) {
+  if (!reg) return { valid: false, label: "No such ticket" };
+  if (reg.status === "cancelled") return { valid: false, label: "Cancelled" };
+  if (reg.status === "waitlisted") return { valid: false, label: "On the waiting list — no place yet" };
+  if (event && event.status === "cancelled") return { valid: false, label: "The event was cancelled" };
+  if (reg.attendedAt) return { valid: true, used: true, label: "Already checked in" };
+  return { valid: true, used: false, label: `Valid — admits ${Number(reg.partySize) || 1}` };
+}
+
 module.exports = {
+  TICKET_ALPHABET, newTicketCode, normaliseTicketCode, ticketState,
   KINDS, FORMATS, STATUSES, PERSON_TYPES, INTERESTS, HEARD_FROM, AUDIENCE_GROUPS,
   isDate, isTime, dateOnly, kenyaDateOf, kenyaMoment, startsAt, endsAt, eventState, isFree,
   seatsTaken, registrationState, placeFor, promotions, audienceGroupOf, audienceAllows, popupShows, soonest,

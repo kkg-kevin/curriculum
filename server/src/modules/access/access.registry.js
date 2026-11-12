@@ -186,6 +186,10 @@ const ACTION_OVERRIDES = [
   { method: "DELETE", pattern: /^\/api\/courses\/folders\/[^/]+\/courses\/[^/]+$/, module: "courses", action: "edit" },
   // The same for an assessment taken out of a folder (Assessments page).
   { method: "DELETE", pattern: /^\/api\/assessments\/folders\/[^/]+\/assessments\/[^/]+$/, module: "assessments", action: "edit" },
+  // Checking someone in at an event (ticked off, or their ticket scanned) changes a registration —
+  // Edit, like the Check-in tab's buttons.
+  { method: "POST", pattern: /^\/api\/general-events\/[^/]+\/registrations\/[^/]+\/arrived$/, module: "general-events", action: "edit" },
+  { method: "POST", pattern: /^\/api\/general-events\/tickets\/[^/]+\/check-in$/, module: "general-events", action: "edit" },
   // A form's draft of unsaved work is kept, changed and thrown away as the form is used — anyone
   // who can add or edit assessments (or courses) uses it, whichever they're doing.
   { method: "POST", pattern: /^\/api\/assessments\/drafts$/, module: "assessments", action: "create", orActions: ["edit"] },

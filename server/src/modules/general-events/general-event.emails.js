@@ -21,6 +21,29 @@ const siteUrl = (path) => (siteBase() ? `${siteBase()}${path}` : null);
 const eventUrl = (event) => siteUrl(`/events/${event.slug}`);
 const manageUrl = (reg) => siteUrl(`/events/registration/${reg.token}`);
 
+// The QR code image sits on this API (mail apps fetch images by address), so it needs
+// API_PUBLIC_URL; without it the ticket still shows its code.
+function qrUrl(reg) {
+  const base = String(env.API_PUBLIC_URL || "").replace(/\/+$/, "");
+  return /^https?:\/\//i.test(base) ? `${base}/api/public/event-registrations/${encodeURIComponent(reg.token)}/ticket.png` : null;
+}
+
+// Someone with a place gets their ticket in every email about the event; someone waiting doesn't.
+function ticketOf(event, reg) {
+  if (!reg?.ticketCode || reg.status !== "registered") return undefined;
+  const online = event.format === "online";
+  return {
+    code: reg.ticketCode,
+    title: event.title,
+    holder: reg.name,
+    admits: Number(reg.partySize) || 1,
+    qrUrl: online ? null : qrUrl(reg),
+    note: online
+      ? "Your ticket code — the join link is below and on your ticket page."
+      : "Show this QR code at the entrance — or just tell us your ticket code.",
+  };
+}
+
 function detailRows(event, reg, { hubName, withLink = false } = {}) {
   const rows = [
     ["When", R.describeWhen(event)],
@@ -37,14 +60,14 @@ function send(reg, { subject, template, dedupeKey, button, ...content }) {
   const { html, text } = renderEmail({
     greeting: `Hi ${firstName(reg.name)},`,
     footerNote,
-    button: button === undefined ? (manageUrl(reg) ? { label: "View my registration", url: manageUrl(reg) } : undefined) : button,
+    button: button === undefined ? (manageUrl(reg) ? { label: reg.status === "registered" && reg.ticketCode ? "View or print my ticket" : "View my registration", url: manageUrl(reg) } : undefined) : button,
     ...content,
   });
   return queueMail({ to: reg.email, subject, html, text, template, dedupeKey, userId: reg.userId || undefined });
 }
 
 module.exports = {
-  siteUrl, eventUrl, manageUrl,
+  siteUrl, eventUrl, manageUrl, qrUrl, ticketOf,
 
   // Registered or on the waiting list. `again` = they registered before and asked again.
   confirmation(event, reg, { hubName, again = false } = {}) {
@@ -61,8 +84,12 @@ module.exports = {
           ? "The event is full right now. If a place frees up we'll give it to you in the order people joined the list, and email you straight away."
           : again ? "You're already registered — here are your details again." : `Thanks for registering. We've kept ${Number(reg.partySize) === 1 ? "a place" : `${reg.partySize} places`} for you.`,
       ],
+      ticket: ticketOf(event, reg),
       rows: detailRows(event, reg, { hubName, withLink: !waiting }),
-      afterParagraphs: ["Can't make it any more? Please cancel from your registration page so someone else can have your place."],
+      afterParagraphs: [
+        ...(waiting ? ["Your ticket comes by email the moment a place is yours."] : []),
+        "Can't make it any more? Please cancel from your registration page so someone else can have your place.",
+      ],
     });
   },
 
@@ -74,7 +101,8 @@ module.exports = {
       tone: "celebrate", icon: "star", eyebrow: R.KINDS[event.kind] || "Event",
       heading: "Good news — you have a place",
       highlight: { label: event.title, value: R.describeWhen(event) },
-      paragraphs: ["Someone couldn't make it, so the place is yours. Nothing else to do — just come along."],
+      paragraphs: ["Someone couldn't make it, so the place is yours. Here's your ticket — just bring it along."],
+      ticket: ticketOf(event, reg),
       rows: detailRows(event, reg, { hubName, withLink: true }),
     });
   },
@@ -91,6 +119,7 @@ module.exports = {
       paragraphs: [today
         ? event.format === "online" ? "Join with the link below a few minutes before it starts." : "We're looking forward to seeing you. Give yourself time to find the place."
         : "Just a reminder that you're registered. Let us know if you can't make it any more."],
+      ticket: ticketOf(event, reg),
       rows: detailRows(event, reg, { hubName, withLink: true }),
     });
   },

@@ -1,4 +1,10 @@
 const test = require("node:test");
+// The ticket email test loads the mail layout, which reads the environment.
+process.env.JWT_SECRET ||= "test-secret";
+process.env.CLIENT_URL ||= "http://localhost:5173";
+process.env.DB_USER ||= "test";
+process.env.DB_PASSWORD ||= "test";
+process.env.DB_NAME ||= "test";
 const assert = require("node:assert/strict");
 const R = require("../src/modules/general-events/general-event.rules");
 
@@ -140,4 +146,51 @@ test("the event page's ages and what to expect", () => {
   assert.deepEqual(R.highlightsOf({ kind: "workshop", highlights: [" Build a robot ", "", "Take it home"] }), ["Build a robot", "Take it home"]);
   assert.equal(R.highlightsOf({ kind: "open_day", highlights: [] }), R.DEFAULT_HIGHLIGHTS.open_day);
   assert.equal(R.highlightsOf({ kind: "nope" }), R.DEFAULT_HIGHLIGHTS.other);
+});
+
+test("tickets: a code to read out at the door, forgiving when typed or scanned", () => {
+  for (let i = 0; i < 200; i += 1) assert.match(R.newTicketCode(), /^EV-[A-HJ-NP-Z2-9]{6}$/);
+  assert.equal(R.newTicketCode(() => Buffer.from([0, 1, 2, 3, 4, 31])), "EV-ABCDE9");
+  assert.equal(R.normaliseTicketCode("ev-7k3m9q"), "EV-7K3M9Q");
+  assert.equal(R.normaliseTicketCode(" EV 7K3 M9Q "), "EV-7K3M9Q");
+  assert.equal(R.normaliseTicketCode("7k3m9q"), "EV-7K3M9Q");
+  assert.equal(R.normaliseTicketCode("https://lms.example.com/ticket/EV-7K3M9Q?from=qr#x"), "EV-7K3M9Q");
+  assert.equal(R.normaliseTicketCode("EVABCDEF"), "EV-ABCDEF");
+  assert.equal(R.normaliseTicketCode("EV-7K3M90"), null); // 0 is never in a code
+  assert.equal(R.normaliseTicketCode("EV-7K3M9"), null);
+  assert.equal(R.normaliseTicketCode(""), null);
+});
+
+test("tickets: only a place lets you in, once, with the whole party", () => {
+  const reg = (over = {}) => ({ status: "registered", partySize: 3, attendedAt: null, ...over });
+  assert.deepEqual(R.ticketState(reg(), event()), { valid: true, used: false, label: "Valid — admits 3" });
+  assert.equal(R.ticketState(reg({ attendedAt: "2026-12-06T07:10:00Z" }), event()).used, true);
+  assert.equal(R.ticketState(reg({ status: "waitlisted" }), event()).valid, false);
+  assert.equal(R.ticketState(reg({ status: "cancelled" }), event()).valid, false);
+  assert.equal(R.ticketState(reg(), event({ status: "cancelled" })).valid, false);
+  assert.equal(R.ticketState(null).valid, false);
+});
+
+test("tickets in the emails: the QR and code for a place, nothing while waiting", () => {
+  const env = require("../src/config/env");
+  const saved = env.API_PUBLIC_URL;
+  env.API_PUBLIC_URL = "https://api.example.com/";
+  try {
+    const Emails = require("../src/modules/general-events/general-event.emails");
+    const { renderEmail } = require("../src/shared/mail/mail.layout");
+    const reg = { token: "tok_1", ticketCode: "EV-7K3M9Q", status: "registered", name: "Jane Wanjiru", partySize: 2 };
+    const t = Emails.ticketOf(event(), reg);
+    assert.equal(t.code, "EV-7K3M9Q");
+    assert.equal(t.admits, 2);
+    assert.equal(t.qrUrl, "https://api.example.com/api/public/event-registrations/tok_1/ticket.png");
+    assert.equal(Emails.ticketOf(event({ format: "online" }), reg).qrUrl, null);
+    assert.equal(Emails.ticketOf(event(), { ...reg, status: "waitlisted" }), undefined);
+    const { html, text } = renderEmail({ heading: "See you there!", ticket: t });
+    assert.match(html, /EV-7K3M9Q/);
+    assert.match(html, /ticket\.png/);
+    assert.match(html, /Admits 2/);
+    assert.match(text, /Your ticket: EV-7K3M9Q \(admits 2\)/);
+  } finally {
+    env.API_PUBLIC_URL = saved;
+  }
 });

@@ -102,6 +102,57 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (12 Nov 2026, later) — Event tickets: a QR code in the email, scanned at the door
+
+**Portal and backend** from `curriculum` (branch `modules`) at `88638cd0`; **website** from `curriculum-web`
+(branch `new`) at `bd22450`. If the earlier "12 Nov 2026" release below isn't up yet, these files replace it —
+follow its steps too (its three migrations, its checks, and the extra website build once the backend is live).
+
+### Upload in this order
+
+0. **Take a database backup** — one new migration.
+1. **Backend** — `backend-deploy.zip` (733 files, 182 migrations). **New npm package `qrcode`**: after
+   uploading, cPanel → Setup Node.js App → the API → **Run NPM Install**, then Restart. One new migration,
+   applied on Restart:
+   - `20261113100000` — event tickets: `general_event_registrations.ticketCode` (UNIQUE); everyone already
+     registered is given a code.
+
+   Check: `SHOW COLUMNS FROM general_event_registrations LIKE 'ticketCode';` (1 row) and
+   `SELECT COUNT(*) FROM general_event_registrations WHERE ticketCode IS NULL;` (0). If the column is missing:
+   Run JS script → `db:migrate`. If the API won't start after Restart with "Cannot find module 'qrcode'", Run
+   NPM Install was skipped.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-BW_L_ig9.js`). After the backend.
+3. **Website** — `digifunzi-co-ke-dist.zip` to https://digifunzi.co.ke (entry `index-B0b5lS7U.js`, 27 pages). Unzip over the old files.
+
+No new cron job or environment variable — but **`API_PUBLIC_URL` must be set** on the API (it already is if
+emails show the logo): mail apps load the ticket's QR image from it. Without it the emails show the ticket code
+only.
+
+### What changed
+
+**Event tickets.** Everyone with a place gets a ticket: a code like `EV-7K3M9Q` and a QR code, admitting their
+whole party. It's in the confirmation email, "a place opened up" and both reminders, and on their registration
+page on the website (**Print or save as PDF**). People on the waiting list get theirs when a place opens; online
+events show the code only. People registered before this release have codes too — their reminders carry them.
+
+**At the door: Check-in → Scan tickets.** On a phone signed in to the portal, the camera opens inside the page:
+point it at the QR (on a phone screen or printed) and it shows **Valid — admits 3** with **Let all 3 in** (the
+party is marked arrived), **Already checked in** (a forwarded ticket can't get in twice), **On the waiting list**
+/ **Cancelled** (refused), or **a ticket for another event**. No camera or a cracked screen: type the code. Allow
+the camera the first time the browser asks. Use the button in the portal, not the phone's camera app — a link
+opened by the camera app lands in a new tab that is usually signed out. Staff need General events → Edit to let
+people in (View can scan and check).
+
+### Verify
+
+1. Register for a published event on the website with your own email: the email shows the ticket with its QR
+   code and `EV-…` code; "View or print my ticket" opens the ticket page.
+2. On a phone: Events → General events → that event → Check-in → **Scan tickets**, allow the camera, scan the
+   QR from the email — "Valid — admits 1", then **Let them in**; scan again — "Already checked in".
+3. Cancel that test registration from its page afterwards.
+
+---
+
 ## This release (12 Nov 2026) — General events, affiliate teams, QA planned by timetable, today across hubs, a Store project page that sells
 
 **Portal and backend** from `curriculum` (branch `modules`) at `eb89c8bc`; **website** from `curriculum-web`

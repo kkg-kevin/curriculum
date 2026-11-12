@@ -296,7 +296,7 @@ export default function GeneralEventPopup() {
                 <p style={{ margin: 0, fontSize: 14.5, color: BRAND.inkSoft, lineHeight: 1.55 }}>
                   {waiting
                     ? "It's full right now. If a place frees up it's yours in turn — we'll email you straight away."
-                    : `We've kept ${registration?.partySize > 1 ? `${registration.partySize} places` : "a place"} for you at ${event.title}. The details are in your email, with a reminder before the day.`}
+                    : `We've kept ${registration?.partySize > 1 ? `${registration.partySize} places` : "a place"} for you at ${event.title}. Your ticket is in your email — show its QR code at the entrance. We'll remind you before the day.`}
                 </p>
               </div>
               <div style={{ display: "grid", gap: 8 }}>
