@@ -177,9 +177,14 @@ function asAttempt(summary) {
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+// The address a request came from, for the log. With TRUST_PROXY set, req.ip already is the
+// visitor's address (Express reads only the hops it's told to trust). Without it, the LAST entry
+// of X-Forwarded-For is the one our own web server added; the first one (used before 13 Nov 2026)
+// is whatever the visitor's browser chose to send, so anyone could write any address there.
 function clientOf(req) {
-  const forwarded = String(req.headers?.["x-forwarded-for"] || "").split(",")[0].trim();
-  const address = forwarded || req.ip || req.socket?.remoteAddress || null;
+  const trust = typeof req.app?.get === "function" ? req.app.get("trust proxy") : false;
+  const hops = String(req.headers?.["x-forwarded-for"] || "").split(",").map((h) => h.trim()).filter(Boolean);
+  const address = (trust ? req.ip : hops[hops.length - 1]) || req.ip || req.socket?.remoteAddress || null;
   // "::ffff:41.90.x.x" is just how an IPv4 address looks on a dual-stack socket.
   return { ip: clip(address ? String(address).replace(/^::ffff:/, "") : null, 64), userAgent: clip(req.headers?.["user-agent"] || null, 255) };
 }
@@ -399,3 +404,4 @@ const AuditService = {
 };
 
 module.exports = AuditService;
+module.exports._internal = { clientOf };

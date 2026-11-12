@@ -36,4 +36,14 @@ function perAccountKey(pick) {
   };
 }
 
-module.exports = { apiRateLimitKey, perAccountKey };
+// Requests the general /api limiter leaves alone because they carry a stricter limiter of their
+// own, counted per account (auth.routes.js, parent-signup.routes.js): signing in, asking for and
+// using a password reset, the website's parent sign-in. Without this, everyone not yet signed in
+// — every visitor of the public website too, all seen as one address while TRUST_PROXY is unset —
+// drew on one shared general allowance, so a busy hour could refuse every sign-in with "Too many
+// requests" (13 Nov 2026). Their own per-account limits still stop password guessing.
+// `req.path` is relative to the /api mount; matching ignores case and a trailing slash, as Express does.
+const OWN_LIMITER_PATHS = /^\/(auth\/(login|forgot-password|reset-password(\/[^/]+)?)|public\/parent-sign-in)\/?$/i;
+const hasOwnLimiter = (req) => req.method === "POST" || req.method === "GET" ? OWN_LIMITER_PATHS.test(String(req.path || "")) : false;
+
+module.exports = { apiRateLimitKey, perAccountKey, hasOwnLimiter };

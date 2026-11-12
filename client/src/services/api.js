@@ -38,8 +38,20 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A request that never reached the API (no answer at all), or one stopped on the way by
+    // something other than the API — a firewall or security filter answering with its own page
+    // instead of our JSON. Said plainly, so someone on a blocked network (13 Nov 2026: a Starlink
+    // user who couldn't sign in) can tell us what happened instead of "Network Error".
+    const answered = Boolean(error.response);
+    const ourAnswer = answered && error.response.data && typeof error.response.data === "object";
+    const blockedOnTheWay = answered && !ourAnswer && [403, 406, 429, 451, 503].includes(error.response.status);
     const message =
-      error.response?.data?.message || error.message || "Something went wrong";
+      error.response?.data?.message
+      || (error.code === "ECONNABORTED" ? "Digifunzi is taking too long to answer. Check your connection and try again."
+        : !answered ? "We couldn't reach Digifunzi from this network. Check your internet connection and try again — if it keeps happening, try another network (or mobile data) and let us know which network you were on."
+          : blockedOnTheWay ? `This network's connection to Digifunzi was blocked before it reached us (error ${error.response.status}). Try another network (or mobile data), and let us know which network you were on so we can fix it.`
+            : null)
+      || error.message || "Something went wrong";
     const wrapped = new Error(message);
     // Field-level detail (e.g. Zod issues) — dropped otherwise, since only `message` above
     // survives past this point. Callers that want specifics read `err.errors`.
