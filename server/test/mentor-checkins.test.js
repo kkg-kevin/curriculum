@@ -88,3 +88,17 @@ test("the report needs both written parts", () => {
   assert.equal(R.reportProblems({ summary: "<p>Doing well</p>", actions: "<p></p>" }).length, 1);
   assert.deepEqual(R.reportProblems({ summary: "<p>Doing well</p>", actions: "None" }), []);
 });
+
+test("the report can be written before the planned day (13 Nov 2026), never once approved", () => {
+  const today = "2026-11-18";
+  const at = (m) => R.canReportIn(R.meetingState(m, today));
+  assert.equal(at({ status: "scheduled", date: "2026-11-25" }), true, "upcoming: the family came in early");
+  assert.equal(at({ status: "scheduled", date: today }), true);
+  assert.equal(at({ status: "scheduled", date: "2026-11-10" }), true);
+  assert.equal(at({ status: "held", date: "2026-11-25", reportSubmittedAt: new Date() }), true, "still correctable before approval");
+  assert.equal(at({ status: "held", date: "2026-11-25", reportSubmittedAt: new Date(), approvedAt: new Date() }), false);
+  assert.equal(at({ status: "missed", date: "2026-11-10" }), false);
+  assert.equal(at({ status: "cancelled", date: "2026-11-25" }), false);
+  // Written early, it waits for the parent's approval at once — whatever the planned date.
+  assert.equal(R.meetingState({ status: "held", date: "2026-11-25", reportSubmittedAt: new Date() }, today), "awaiting_approval");
+});

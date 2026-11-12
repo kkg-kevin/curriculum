@@ -19,6 +19,7 @@ const EMPTY = {
   format: "in_person", hubId: "", venueName: "", venueAddress: "", mapUrl: "", meetingLink: "",
   bootcampId: "", capacity: "", waitlistOn: true, maxPartySize: 5, registrationOpen: true, registrationClosesOn: "", askAboutYou: true,
   isPublic: true, websitePopup: true, systemPopup: true, systemAudience: null, popupFrom: "", popupUntil: "",
+  ageMin: "", ageMax: "", highlightsText: "",
 };
 
 function Section({ icon: Icon, title, hint, children }) {
@@ -63,6 +64,9 @@ const fromEvent = (e) => ({
   capacity: e.capacity ?? "",
   images: e.images || [],
   systemAudience: e.systemAudience || null,
+  ageMin: e.ageMin ?? "", ageMax: e.ageMax ?? "",
+  // The page's own "What to expect" lines, one per line (not the kind's defaults it shows otherwise).
+  highlightsText: e.public?.ownHighlights ? (e.public.highlights || []).join("\n") : "",
 });
 
 export default function GeneralEventFormPage() {
@@ -114,7 +118,11 @@ export default function GeneralEventFormPage() {
       capacity: form.capacity === "" ? null : Number(form.capacity),
       maxPartySize: Number(form.maxPartySize) || 5,
       bootcampId: form.bootcampId || null,
+      ageMin: form.ageMin === "" ? null : Number(form.ageMin),
+      ageMax: form.ageMax === "" ? null : Number(form.ageMax),
+      highlights: String(form.highlightsText || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 8),
     };
+    delete body.highlightsText;
     setSaving(true);
     try {
       const saved = editing ? await generalEventsApi.update(id, body) : await generalEventsApi.create(body);
@@ -157,6 +165,16 @@ export default function GeneralEventFormPage() {
           <RichTextEditor value={form.description || ""} onChange={set("description")} size="sm" />
           <span style={hintStyle}>What happens, who it&rsquo;s for, what to bring.</span>
         </div>
+        <div className="ge-grid-3">
+          <label style={labelStyle}>Youngest age (optional)<input type="number" min={1} max={99} style={inputStyle} {...field("ageMin")} placeholder="Any" /></label>
+          <label style={labelStyle}>Oldest age (optional)<input type="number" min={1} max={99} style={inputStyle} {...field("ageMax")} placeholder="Any" /></label>
+          <span style={{ ...hintStyle, alignSelf: "end", paddingBottom: 10 }}>Shown as &ldquo;For ages 6–14&rdquo; — parents look for it first.</span>
+        </div>
+        <label style={labelStyle}>What to expect (one per line, up to 8)
+          <textarea rows={4} style={{ ...inputStyle, resize: "vertical", lineHeight: 1.55 }} {...field("highlightsText")}
+            placeholder={(options?.defaultHighlights?.[form.kind] || []).join("\n")} />
+          <span style={hintStyle}>The reasons to come, as short lines. Left empty, the page shows the lines in grey above — written for a {(options?.kinds?.[form.kind] || "event").toLowerCase()}.</span>
+        </label>
         <div className="ge-grid-2">
           <ImageUploadField label="Cover picture" value={form.coverImage || ""} onChange={set("coverImage")} width="100%" height="160px" cropAspect={16 / 9} />
           <PhotoGalleryField label="More pictures (optional)" value={form.images} onChange={set("images")} max={12} hint="Add photos after the event too — past events show them on the website." />

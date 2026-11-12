@@ -48,6 +48,54 @@ const HEARD_FROM = {
   other: "Somewhere else",
 };
 
+// "What to expect" when the event doesn't say (the website's event page) — by kind.
+const DEFAULT_HIGHLIGHTS = {
+  showcase: [
+    "See the games, robots and apps our learners built — and try them yourself",
+    "Meet the mentors who teach them",
+    "Find the right programme for your child's age",
+    "Free, and the whole family is welcome",
+  ],
+  open_day: [
+    "Tour the hub and see a class in action",
+    "Try a hands-on coding or robotics activity",
+    "Talk to mentors about your child's interests",
+    "Free — come with your questions",
+  ],
+  workshop: [
+    "Hands-on: build something to take home",
+    "Small groups, each with a mentor",
+    "No experience needed",
+    "Free — places are limited",
+  ],
+  talk: [
+    "What digital skills children need next — and why",
+    "Practical tips you can use at home",
+    "Bring your questions for our team",
+    "Free to attend",
+  ],
+  other: [
+    "Meet the Digifunzi team and mentors",
+    "See what our learners make",
+    "Find the right programme for your child",
+    "Free to attend",
+  ],
+};
+// Its own lines (trimmed, at most 8), else the kind's.
+function highlightsOf(event) {
+  const own = (Array.isArray(event?.highlights) ? event.highlights : []).map((h) => String(h || "").trim()).filter(Boolean).slice(0, 8);
+  return own.length ? own : DEFAULT_HIGHLIGHTS[event?.kind] || DEFAULT_HIGHLIGHTS.other;
+}
+// "For ages 6–14", "For ages 6 and up", "Up to age 12", or null for all ages.
+function agesText(event) {
+  const lo = Number(event?.ageMin) || null;
+  const hi = Number(event?.ageMax) || null;
+  if (lo && hi) return lo === hi ? `For age ${lo}` : `For ages ${lo}–${hi}`;
+  if (lo) return `For ages ${lo} and up`;
+  if (hi) return `Up to age ${hi}`;
+  return null;
+}
+
 // Who sees the sign-in pop-up — each login falls into one group (audienceGroupOf).
 const AUDIENCE_GROUPS = {
   parents: "Parents",
@@ -292,4 +340,5 @@ module.exports = {
   isDate, isTime, dateOnly, kenyaDateOf, kenyaMoment, startsAt, endsAt, eventState, isFree,
   seatsTaken, registrationState, placeFor, promotions, audienceGroupOf, audienceAllows, popupShows, soonest,
   dayLabel, describeWhen, cleanAges, cleanKeys, leadInterestOf, leadMessage, calendarFile, whereText, daysUntil,
+  DEFAULT_HIGHLIGHTS, highlightsOf, agesText,
 };

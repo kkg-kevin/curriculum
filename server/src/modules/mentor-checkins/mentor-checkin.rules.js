@@ -109,6 +109,12 @@ function meetingState(meeting, today) {
   return "report_due";
 }
 
+// When the report can be written (13 Nov 2026): any time before the parent approves it — before
+// the planned day too, since families often just turn up at the hub early. Not for a check-in
+// cancelled or marked missed (undo "missed" first), nor once approved.
+const REPORTABLE = ["upcoming", "today", "report_due", "awaiting_approval"];
+const canReportIn = (state) => REPORTABLE.includes(state);
+
 // The report's two written parts, both needed (write "None" when there's nothing to say).
 const REPORT_PARTS = [
   ["summary", "How the child is doing"],
@@ -121,5 +127,5 @@ function reportProblems(report) {
 module.exports = {
   MIN_NOTICE_DAYS, PARENT_CHANGE_MIN_DAYS, POPUP_DAYS, MAX_SLOTS, WEEKDAYS, REPORT_PARTS,
   toMinutes, fromMinutes, weekdayOf, slotKey, firstAllowedDate,
-  buildSlots, timesOverlap, isBusy, shuffle, chooseSlots, assignTimes, meetingState, reportProblems,
+  buildSlots, timesOverlap, isBusy, shuffle, chooseSlots, assignTimes, meetingState, reportProblems, canReportIn,
 };

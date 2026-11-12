@@ -689,7 +689,7 @@ const MentorCheckinService = {
     const [view] = await decorateMeetings([meeting], today, { withReport: access.report });
     const state = view.state;
     // A round cancelled later still lets its past check-ins be written up.
-    const canWrite = (access.asEducator || (access.asManager && ctx.canManage)) && ["today", "report_due", "awaiting_approval"].includes(state);
+    const canWrite = (access.asEducator || (access.asManager && ctx.canManage)) && R.canReportIn(state);
     return {
       ...view,
       round: { id: round.id, status: round.status, templateId: round.templateId || null },
@@ -806,7 +806,7 @@ const MentorCheckinService = {
       if (!(access.asEducator || (access.asManager && ctx.canManage))) fail("The report is written by the class's educators", 403);
       const state = R.meetingState(meeting, todayInKenya());
       if (state === "approved") fail("The parent has approved this report — it can't change now", 409);
-      if (!["today", "report_due", "awaiting_approval"].includes(state)) fail(state === "upcoming" ? "Write the report on or after the day of the check-in" : "This check-in has no report to write", 409);
+      if (!R.canReportIn(state)) fail(state === "missed" ? "This check-in is marked missed — undo that first" : "This check-in has no report to write", 409);
       const template = await meetingTemplate(meeting, round);
       const answers = template ? cleanAnswers(template, rawAnswers) : {};
       const report = { summary: summary || "", actions: actions || "" };

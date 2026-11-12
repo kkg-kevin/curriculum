@@ -76,7 +76,7 @@ const { errorHandler, notFound } = require("./shared/middleware/error.middleware
 const { protect: protectBase, authorize, blockIfSuspended, blockHubLeadWrites, blockIfCollaboratorRestricted } = require("./shared/middleware/auth.middleware");
 const { attachOwnRecords } = require("./shared/middleware/scope.middleware");
 const { auditTrail } = require("./shared/middleware/audit.middleware");
-const { apiRateLimitKey } = require("./shared/middleware/rate-limit.middleware");
+const { apiRateLimitKey, hasOwnLimiter } = require("./shared/middleware/rate-limit.middleware");
 const { setUploadHeaders } = require("./modules/uploads/upload.static");
 const db = require("./config/db");
 
@@ -168,6 +168,9 @@ const apiLimiter = rateLimit({
   limit: 3000,
   // Signed-in requests are counted per account, the rest per address — see apiRateLimitKey.
   keyGenerator: apiRateLimitKey,
+  // Sign-in and password reset have stricter per-account limiters of their own — they're never
+  // held up by everyone else's anonymous traffic (see hasOwnLimiter).
+  skip: hasOwnLimiter,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many requests. Please try again later." },

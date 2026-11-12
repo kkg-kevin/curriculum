@@ -26,7 +26,7 @@ const { htmlToText } = require("../../shared/utils/public-content");
 const EVENTS = "general_events";
 const REGS = "general_event_registrations";
 const POPUPS = "general_event_popup_states";
-const JSON_EVENT = ["images", "systemAudience"];
+const JSON_EVENT = ["images", "systemAudience", "highlights"];
 const JSON_REG = ["childrenAges", "interests", "visitSource"];
 
 const fail = (status, message, extra = {}) => Object.assign(new Error(message), { statusCode: status, ...extra });
@@ -35,7 +35,7 @@ const parseJson = (v, fallback = null) => {
   if (typeof v !== "string") return v;
   try { return JSON.parse(v); } catch { return fallback; }
 };
-const rowEvent = (e) => (e ? { ...e, images: parseJson(e.images, []) || [], systemAudience: parseJson(e.systemAudience, null), registrationOpen: !!e.registrationOpen, waitlistOn: !!e.waitlistOn, askAboutYou: !!e.askAboutYou, isPublic: !!e.isPublic, websitePopup: !!e.websitePopup, systemPopup: !!e.systemPopup } : null);
+const rowEvent = (e) => (e ? { ...e, images: parseJson(e.images, []) || [], systemAudience: parseJson(e.systemAudience, null), highlights: parseJson(e.highlights, []) || [], registrationOpen: !!e.registrationOpen, waitlistOn: !!e.waitlistOn, askAboutYou: !!e.askAboutYou, isPublic: !!e.isPublic, websitePopup: !!e.websitePopup, systemPopup: !!e.systemPopup } : null);
 const rowReg = (r) => (r ? { ...r, childrenAges: parseJson(r.childrenAges, []) || [], interests: parseJson(r.interests, []) || [], visitSource: parseJson(r.visitSource, null), marketingConsent: !!r.marketingConsent } : null);
 const newToken = () => crypto.randomBytes(24).toString("base64url");
 const lowerEmail = (e) => String(e || "").trim().toLowerCase();
@@ -116,8 +116,25 @@ async function publicView(raw, { regs = null } = {}) {
     },
     askAboutYou: event.askAboutYou,
     questions: QUESTIONS,
+    // What helps a family say yes (13 Nov 2026).
+    ageMin: event.ageMin ?? null,
+    ageMax: event.ageMax ?? null,
+    ages: R.agesText(event),
+    highlights: R.highlightsOf(event),
+    ownHighlights: Array.isArray(event.highlights) && event.highlights.length > 0,
+    // "38 people are coming" — only once it's worth saying (5 or more).
+    going: taken >= 5 ? taken : null,
+    bootcamp: await linkedBootcamp(event),
     cancelReason: event.status === "cancelled" ? event.cancelReason || null : null,
   };
+}
+
+// The bootcamp an event is for, when it's on sale on the website — the event page links to it.
+async function linkedBootcamp(event) {
+  if (!event.bootcampId) return null;
+  const b = await db("bootcamps").where({ id: event.bootcampId }).first("id", "name", "saleStatus", "startDate", "endDate", "coverImage");
+  if (!b || b.saleStatus !== "for_sale") return null;
+  return { name: b.name, slug: slugify(b.name) || "bootcamp", startDate: b.startDate || null, endDate: b.endDate || null, coverImage: b.coverImage || null };
 }
 
 // The registration as its owner sees it.
@@ -159,6 +176,7 @@ function cleanEventInput(data) {
   if (data.priceAmount != null && Number(data.priceAmount) > 0) throw fail(400, "Paid events aren't available yet — leave the price empty for a free event.");
   if (data.endDate && R.dateOnly(data.endDate) < R.dateOnly(data.startDate)) throw fail(400, "The end date can't be before the start date.");
   if (data.format !== "in_person" && data.meetingLink && !/^https?:\/\//i.test(data.meetingLink)) throw fail(400, "The online link must start with https://");
+  if (data.ageMin && data.ageMax && Number(data.ageMin) > Number(data.ageMax)) throw fail(400, "The youngest age can't be above the oldest.");
   if (data.format === "online" && !data.meetingLink) throw fail(400, "Add the link people join with (Google Meet, Zoom…) for an online event.");
   const audience = Array.isArray(data.systemAudience) ? data.systemAudience.filter((g) => R.AUDIENCE_GROUPS[g]) : null;
   return {
@@ -192,6 +210,9 @@ function cleanEventInput(data) {
     popupFrom: data.popupFrom || null,
     popupUntil: data.popupUntil || null,
     priceAmount: null,
+    ageMin: data.ageMin ? Math.round(Number(data.ageMin)) : null,
+    ageMax: data.ageMax ? Math.round(Number(data.ageMax)) : null,
+    highlights: toJson((data.highlights || []).map((h) => String(h || "").trim().slice(0, 160)).filter(Boolean).slice(0, 8)),
   };
 }
 
@@ -572,6 +593,7 @@ const GeneralEventService = {
       formats: R.FORMATS,
       audienceGroups: R.AUDIENCE_GROUPS,
       questions: QUESTIONS,
+      defaultHighlights: R.DEFAULT_HIGHLIGHTS,
     };
   },
 

@@ -76,6 +76,8 @@ export default function MeetingPage() {
   const asParent = viewer === "parent";
   const reported = Boolean(m.reportSubmittedAt);
   const showForm = can.canWriteReport && (!reported || editing);
+  // Written before the planned day (the family came in early) — allowed; said so, so it's on purpose.
+  const early = m.state === "upcoming" && !reported;
   const template = m.template;
   const unanswered = template ? template.sections.flatMap((s) => s.criteria.filter((c) => c.kind !== "comment" && form.answers?.[c.id]?.value === undefined)) : [];
   const live = template ? liveScore(template, form.answers || {}) : null;
@@ -143,7 +145,15 @@ export default function MeetingPage() {
             </div>
           </div>
 
-          {m.state === "upcoming" && <p style={{ ...hint, fontSize: 13 }}>{asParent ? "After the check-in, the mentor writes it up here for you to read and approve." : `The report can be written from ${formatDate(m.date)}.`}</p>}
+          {m.state === "upcoming" && (
+            <p style={{ ...hint, fontSize: 13 }}>
+              {asParent
+                ? "After the check-in, the mentor writes it up here for you to read and approve — even if you meet before the planned day."
+                : early && can.canWriteReport
+                  ? `Planned for ${formatDate(m.date)}. Met the family already (they came in early)? Write it up now — they can read and approve it straight away.`
+                  : `Planned for ${formatDate(m.date)}.`}
+            </p>
+          )}
           {m.state === "missed" && <p style={{ ...hint, fontSize: 13 }}>This check-in didn&apos;t happen.</p>}
 
           {showForm ? (

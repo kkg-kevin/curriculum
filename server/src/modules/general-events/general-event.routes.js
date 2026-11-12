@@ -52,6 +52,9 @@ const eventSchema = z.object({
   popupFrom: optional(date),
   popupUntil: optional(date),
   priceAmount: z.coerce.number().min(0).optional().nullable(),
+  ageMin: z.coerce.number().int().min(1).max(99).optional().nullable().or(z.literal("").transform(() => null)),
+  ageMax: z.coerce.number().int().min(1).max(99).optional().nullable().or(z.literal("").transform(() => null)),
+  highlights: z.array(z.string().trim().max(160)).max(8).optional().default([]),
   status: z.enum(["draft", "published"]).optional(),
 }).superRefine((d, ctx) => {
   if (d.format !== "online" && !d.hubId && !d.venueName) ctx.addIssue({ code: "custom", path: ["venueName"], message: "Pick a hub or type where it is" });
