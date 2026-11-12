@@ -69,6 +69,7 @@ const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standard
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
 const { router: educatorProfileRoutes, publicRouter: publicEducatorProfileRoutes } = require("./modules/educator-profiles/educator-profile.routes");
 const { router: affiliateRoutes, publicRouter: publicAffiliateRoutes } = require("./modules/affiliates/affiliate.routes");
+const { router: generalEventRoutes, mineRouter: myEventRoutes, publicRouter: publicGeneralEventRoutes } = require("./modules/general-events/general-event.routes");
 const reassignOwnerRoutes = require("./modules/admin-tools/reassign-owner.routes");
 const collaboratorRoutes = require("./modules/admin-tools/collaborator.routes");
 const { errorHandler, notFound } = require("./shared/middleware/error.middleware");
@@ -203,6 +204,9 @@ app.use("/api/public", publicEducatorProfileRoutes);
 // Unauthenticated by design — the website checks a typed referral code (only valid / not, never
 // whose it is). See modules/affiliates/.
 app.use("/api/public", publicAffiliateRoutes);
+// General events on the website: the Events section, its pop-up, registering, and a registration's
+// own page by its private link (modules/general-events/).
+app.use("/api/public", publicGeneralEventRoutes);
 // Unauthenticated by design — the anonymous public diagnostic feature (pick a pathway, take a
 // diagnostic, see a graded report on the spot). Reads/grades against the ONE admin tenant
 // PUBLIC_CONTENT_ADMIN_ID designates (see env.js) — never the caller's own tenant, since there
@@ -410,6 +414,10 @@ app.use("/api/educator-profiles", protect, attachOwnRecords, educatorProfileRout
 // Affiliate marketing — admins manage affiliates, commissions and payouts; parents and educators
 // see their own "Refer & earn" (/me). See modules/affiliates/.
 app.use("/api/affiliates", protect, attachOwnRecords, affiliateRoutes);
+// General events (Events → General events): admins and staff run them; everyone signed in gets the
+// sign-in pop-up and registers from it (/api/my-events). See modules/general-events/.
+app.use("/api/general-events", protect, attachOwnRecords, generalEventRoutes);
+app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

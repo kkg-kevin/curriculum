@@ -28,6 +28,9 @@ const MODULES = [
   { key: "pathway-subscriptions", label: "Pathway subscriptions", group: "Programmes" },
   { key: "competitions", label: "Competitions", group: "Programmes", legacy: true },
   { key: "bootcamps", label: "Bootcamps", group: "Programmes", legacy: true },
+  // General events: events anyone can come to (showcases, open days), who registered, check-in on
+  // the day, messages and invitations. Everyone signed in sees the pop-up whatever their role.
+  { key: "general-events", label: "General events (showcases, open days)", group: "Programmes" },
   { key: "reports", label: "Reports", group: "Teaching", legacy: true },
   { key: "notifications", label: "Notifications", group: "Workspace", legacy: true },
   { key: "settings", label: "Settings", group: "Workspace", legacy: true },
@@ -88,6 +91,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/certificates": "reports",
   "/api/competitions": "competitions",
   "/api/bootcamps": "bootcamps",
+  "/api/general-events": "general-events",
   "/api/notifications": "notifications",
   "/api/home-learning": "home-learning",
   "/api/tech-clubs": "tech-clubs",

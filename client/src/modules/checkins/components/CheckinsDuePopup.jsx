@@ -128,7 +128,7 @@ export default function CheckinsDuePopup() {
     : `${firstName ? `${firstName}, ` : ""}${toAttend.length === 1 ? "a hub check-in is" : `${toAttend.length} hub check-ins are`} coming up`;
 
   return createPortal(
-    <div role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }} className="ci-due-backdrop" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: font }}>
+    <div role="presentation" data-signin-popup="" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }} className="ci-due-backdrop" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: font }}>
       <CheckinStyles />
       <style>{`
         @keyframes ciDueIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }

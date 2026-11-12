@@ -111,6 +111,20 @@ module.exports = {
     });
   },
 
+  // A manager's share of what an affiliate in their team earned (never the family's name).
+  teamCommission(affiliate, { commission, member, programme, accountUrl }) {
+    return send(affiliate, {
+      subject: `Your team earned you ${ksh(commission.amount)}`,
+      template: "affiliate_team_commission",
+      dedupeKey: `affiliate_team_commission_email:${commission.id}`,
+      tone: "success", icon: "star", eyebrow: "Team commission",
+      heading: "Your team earned you a share",
+      highlight: { label: "Earned", value: ksh(commission.amount), note: `Can be paid out from ${day(commission.availableAt)}` },
+      paragraphs: [`A family ${firstName(member?.name)} referred paid for ${programme}.`],
+      button: accountButton(accountUrl),
+    });
+  },
+
   payoutPaid(affiliate, { payout, how, accountUrl }) {
     return send(affiliate, {
       subject: `Your payout of ${ksh(payout.amount)} is paid`,

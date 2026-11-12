@@ -3,12 +3,15 @@ import { useAuth } from "../../../context/AuthContext";
 import { useQaEducators, useQaMutation, useQaReviewers, useQaTemplates } from "../hooks/useQa";
 import { qaApi } from "../services/qaApi";
 import EducatorPicker from "./EducatorPicker";
+import EducatorTimetable from "./EducatorTimetable";
 import { FREQUENCY_LABEL, FREQUENCY_OPTIONS, Modal, T, VISIT_TYPE, btn, chip, hint, input, label, todayKe } from "../shared";
 
 // Plans QA visits — one at a time (`mode` "visit") or regularly (`mode` "schedule") — or changes
-// one (`visit` / `schedule` given). Who: the educator (fixed once planned), where (one of their
-// hubs, optional), with which template, by whom (an admin picks an admin or supervisor; a
-// supervisor always does their own), announced or a surprise, and when.
+// one (`visit` / `schedule` given), in the order it's decided (12 Nov 2026): the educator (fixed
+// once planned) → their hubs, shown once they're chosen (tap one, or none; a single hub is picked
+// for you) → the template → their timetable and what's coming up (EducatorTimetable — tap a class
+// to plan the visit for it) → who does the QA (an admin picks an admin or supervisor; a supervisor
+// always does their own) → announced or a surprise → when.
 export default function VisitDialog({ mode = "visit", visit = null, schedule = null, teacherId = "", title: titleOverride, onClose, onSaved }) {
   const { user } = useAuth();
   const isSupervisor = user?.role === "supervisor";
@@ -61,7 +64,7 @@ export default function VisitDialog({ mode = "visit", visit = null, schedule = n
     <Modal
       title={title}
       onClose={onClose}
-      width={600}
+      width={720}
       footer={<>
         <button type="button" className="ci-btn" onClick={onClose} style={btn("secondary")}>Cancel</button>
         <button type="button" className="ci-btn" onClick={submit} disabled={save.isPending} style={btn("primary", { disabled: save.isPending })}>
@@ -72,20 +75,28 @@ export default function VisitDialog({ mode = "visit", visit = null, schedule = n
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 230px), 1fr))" }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <label htmlFor="qa-educator" style={label}>Educator</label>
-          <EducatorPicker id="qa-educator" educators={educators} value={form.teacherId} onChange={(id) => setForm((f) => ({ ...f, teacherId: id, hubId: "", reviewerId: "" }))} disabled={!!editing || !!teacherId} />
+          <EducatorPicker id="qa-educator" educators={educators} value={form.teacherId} onChange={(id) => { const hubs = educators.find((e) => e.id === id)?.hubs || []; setForm((f) => ({ ...f, teacherId: id, hubId: hubs.length === 1 ? hubs[0].id : "", reviewerId: "" })); }} disabled={!!editing || !!teacherId} />
           {educators.length === 0 && <p style={hint}>{isSupervisor ? "No educators are assigned to you yet — the admin assigns them on the educator form." : "No educators in this workspace yet."}</p>}
         </div>
 
-        <div>
-          <label htmlFor="qa-hub" style={label}>Hub <span style={{ fontWeight: 500, color: T.inkFaint }}>(optional)</span></label>
-          <select id="qa-hub" value={form.hubId} onChange={(e) => set("hubId")(e.target.value)} style={input} disabled={!educator}>
-            <option value="">{educator?.hubs?.length ? "Not tied to a hub" : "No hubs"}</option>
-            {(educator?.hubs || []).map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-          <p style={hint}>The hub sees its announced visits and a summary of each report.</p>
-        </div>
+        {educator && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <span style={label}>Where <span style={{ fontWeight: 500, color: T.inkFaint }}>— {educator.name.split(" ")[0]}&rsquo;s hubs</span></span>
+            {(educator.hubs || []).length === 0 ? (
+              <p style={{ ...hint, marginTop: 0 }}>They aren&rsquo;t linked to a hub yet — the visit isn&rsquo;t tied to one.</p>
+            ) : (
+              <div role="radiogroup" aria-label="Hub" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {educator.hubs.map((h) => (
+                  <button key={h.id} type="button" role="radio" aria-checked={form.hubId === h.id} onClick={() => set("hubId")(h.id)} style={chip(form.hubId === h.id)}>{h.name}</button>
+                ))}
+                <button type="button" role="radio" aria-checked={!form.hubId} onClick={() => set("hubId")("")} style={chip(!form.hubId)}>Not tied to a hub</button>
+              </div>
+            )}
+            <p style={hint}>The hub sees its announced visits and a summary of each report.</p>
+          </div>
+        )}
 
-        <div>
+        <div style={{ gridColumn: "1 / -1" }}>
           <label htmlFor="qa-template" style={label}>Template</label>
           <select id="qa-template" value={form.templateId} onChange={(e) => set("templateId")(e.target.value)} style={input} disabled={templateLocked}>
             <option value="">Choose a template…</option>
@@ -95,9 +106,21 @@ export default function VisitDialog({ mode = "visit", visit = null, schedule = n
           {templates.length === 0 && <p style={hint}>Make a template first (Templates tab).</p>}
         </div>
 
+        {educator && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <span style={label}>{educator.name.split(" ")[0]}&rsquo;s timetable</span>
+            <EducatorTimetable
+              teacherId={form.teacherId}
+              hubId={form.hubId || null}
+              date={mode === "schedule" ? form.startDate : form.scheduledDate}
+              onPick={(e) => setForm((f) => ({ ...f, ...(mode === "schedule" ? { startDate: e.date } : { scheduledDate: e.date }), hubId: e.hubId && (educator.hubs || []).some((h) => h.id === e.hubId) ? e.hubId : f.hubId }))}
+            />
+          </div>
+        )}
+
         {!isSupervisor && (
           <div style={{ gridColumn: "1 / -1" }}>
-            <label htmlFor="qa-reviewer" style={label}>Done by</label>
+            <label htmlFor="qa-reviewer" style={label}>Who does the QA</label>
             <select id="qa-reviewer" value={form.reviewerId} onChange={(e) => set("reviewerId")(e.target.value)} style={input}>
               <option value="">{educator?.supervisorName ? `${educator.supervisorName} (their supervisor)` : "Choose who visits…"}</option>
               {reviewers.map((r) => <option key={r.id} value={r.id}>{r.name} — {r.kind === "supervisor" ? "Supervisor" : "Admin"}</option>)}

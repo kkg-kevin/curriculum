@@ -16,6 +16,8 @@ export const qaApi = {
 
   educators: () => api.get(`${BASE}/educators`).then(data),
   reviewers: () => api.get(`${BASE}/reviewers`).then(data),
+  // An educator's timetable and what's coming up — to plan a visit around.
+  educatorSchedule: (id) => api.get(`${BASE}/educators/${id}/schedule`).then(data),
 
   schedules: (params) => api.get(`${BASE}/schedules`, { params }).then(data),
   createSchedule: (body) => api.post(`${BASE}/schedules`, body).then(data),

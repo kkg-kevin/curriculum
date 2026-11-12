@@ -17,7 +17,8 @@ const PATH_MODULES = [
   ["/pathway-subscriptions", "pathway-subscriptions"],
   ["/teachers", "teachers"],
   ["/classes", "classes"],
-  ["/events", ["competitions", "bootcamps"]],
+  ["/events/general", "general-events"],
+  ["/events", ["competitions", "bootcamps", "general-events"]],
   ["/courses", "courses"],
   ["/assessments", "assessments"],
   // /billing itself also holds Educator Claims (see BillingPage.jsx's BillingHome); its

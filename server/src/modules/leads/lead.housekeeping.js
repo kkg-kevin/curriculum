@@ -74,7 +74,14 @@ async function processEnquiries({ now = new Date(), settings = null } = {}) {
   const counts = { waiting: 0, reminded: 0, autoClosed: 0, anonymised: 0 };
   const leads = await db("leads").whereNull("anonymisedAt").select("*");
   const lastMessages = new Map((await db("lead_messages").select("leadId").max({ last: "createdAt" }).groupBy("leadId")).map((r) => [r.leadId, r.last]));
-  const idleDays = (lead) => (now.getTime() - lastActivity(lead, lastMessages.get(lead.id)).getTime()) / DAY_MS;
+  // An event registration's enquiry (general events) only starts counting once the event is over —
+  // it isn't closed for "no activity" while the person is still waiting to come.
+  const eventIds = [...new Set(leads.map((l) => l.generalEventId).filter(Boolean))];
+  const { endsAt } = require("../general-events/general-event.rules");
+  const eventEnds = new Map(eventIds.length
+    ? (await db("general_events").whereIn("id", eventIds).select("id", "startDate", "startTime", "endDate", "endTime")).map((e) => [e.id, endsAt(e)?.getTime() || 0])
+    : []);
+  const idleDays = (lead) => (now.getTime() - Math.max(lastActivity(lead, lastMessages.get(lead.id)).getTime(), eventEnds.get(lead.generalEventId) || 0)) / DAY_MS;
 
   // 2. Auto-close (before the reminder, so a lead closed now isn't counted as waiting).
   if (rules.autoCloseOn) {
@@ -121,6 +128,12 @@ async function processEnquiries({ now = new Date(), settings = null } = {}) {
       if (lead.status !== "closed" || !isPlain(lead) || lead.bootcampId || idleDays(lead) < rules.anonymiseMonths * 30.44) continue;
       await db("lead_messages").where({ leadId: lead.id }).del();
       await db("leads").where({ id: lead.id }).update({ name: REMOVED_NAME, email: null, phone: null, learnerName: null, learnerDateOfBirth: null, message: null, anonymisedAt: now, updatedAt: now });
+      // An event registration's own copy of the same details goes too (it stays counted).
+      if (lead.generalEventId) {
+        await db("general_event_registrations").where({ leadId: lead.id }).update({
+          name: REMOVED_NAME, email: `removed-${lead.id}@invalid`, phone: "-", organisation: null, childrenAges: null, visitSource: null, updatedAt: now,
+        });
+      }
       counts.anonymised += 1;
     }
   }

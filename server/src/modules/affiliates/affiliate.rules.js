@@ -36,7 +36,13 @@ const DEFAULT_SETTINGS = {
   // Affiliates who sign in as Affiliate (not a parent or educator here) are also emailed when a
   // family signs up, they earn or a payout is decided, each email with a button to their account.
   emailOutsiders: true,
+  // Teams (12 Nov 2026): a manager (level 1) earns a share on top of what the affiliates under them
+  // earn — `teamRate` percent of what the family paid ("payment") or of the affiliate's own
+  // commission ("commission"). Never taken out of the affiliate's commission.
+  teamRate: 2,
+  teamBasis: "payment",
 };
+const TEAM_BASES = ["payment", "commission"];
 
 const money = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const clamp = (n, min, max, fallback) => {
@@ -64,7 +70,65 @@ function normaliseSettings(raw) {
     requireApproval: s.requireApproval === undefined ? DEFAULT_SETTINGS.requireApproval : Boolean(s.requireApproval),
     publicApplications: s.publicApplications === undefined ? DEFAULT_SETTINGS.publicApplications : Boolean(s.publicApplications),
     emailOutsiders: s.emailOutsiders === undefined ? DEFAULT_SETTINGS.emailOutsiders : Boolean(s.emailOutsiders),
+    teamRate: Math.round(clamp(s.teamRate, 0, 100, DEFAULT_SETTINGS.teamRate) * 100) / 100,
+    teamBasis: TEAM_BASES.includes(s.teamBasis) ? s.teamBasis : DEFAULT_SETTINGS.teamBasis,
   };
+}
+
+// An affiliate's own deal (affiliates.customRates), cleaned: only what's set is kept — a rate per
+// programme, the number of paid periods, and (a manager's) team rate. null = Settings for all.
+function normaliseCustomRates(raw) {
+  const r = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+  if (!r || typeof r !== "object") return null;
+  const out = {};
+  const rates = {};
+  for (const p of PROGRAMMES) {
+    const v = r.rates?.[p];
+    if (v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v))) rates[p] = Math.round(clamp(v, 0, 100, 0) * 100) / 100;
+  }
+  if (Object.keys(rates).length) out.rates = rates;
+  if (r.periods !== undefined && r.periods !== null && r.periods !== "" && Number.isFinite(Number(r.periods))) out.periods = Math.round(clamp(r.periods, 1, 60, 1));
+  if (r.teamRate !== undefined && r.teamRate !== null && r.teamRate !== "" && Number.isFinite(Number(r.teamRate))) out.teamRate = Math.round(clamp(r.teamRate, 0, 100, 0) * 100) / 100;
+  return Object.keys(out).length ? out : null;
+}
+
+// The settings as they apply to one affiliate: the workspace's, with their own deal on top.
+function effectiveSettings(settings, affiliate = null) {
+  const s = normaliseSettings(settings);
+  const custom = normaliseCustomRates(affiliate?.customRates);
+  if (!custom) return s;
+  return {
+    ...s,
+    rates: { ...s.rates, ...(custom.rates || {}) },
+    periods: custom.periods ?? s.periods,
+    teamRate: custom.teamRate ?? s.teamRate,
+  };
+}
+
+// A manager's share of one of their team's commissions, or null. `own` is the commission the
+// affiliate under them just earned ({ baseAmount, amount, periodNumber }); `manager` their manager.
+function teamShareFor({ settings, manager, own }) {
+  if (!manager || !own) return null;
+  const s = effectiveSettings(settings, manager);
+  const rate = s.teamRate;
+  if (!(rate > 0)) return null;
+  const base = s.teamBasis === "commission" ? money(own.amount) : money(own.baseAmount);
+  const amount = money((base * rate) / 100);
+  if (!(amount > 0)) return null;
+  return { periodNumber: own.periodNumber, baseAmount: base, ratePercent: rate, amount };
+}
+
+// Who may be under whom: two levels only. Returns a problem in words, or null.
+function teamProblem({ affiliate, isManager, managerId, manager, teamSize = 0 }) {
+  if (isManager && managerId) return "A manager can't be under another manager.";
+  if (!isManager && affiliate?.isManager && teamSize > 0) return `They manage ${teamSize} ${teamSize === 1 ? "affiliate" : "affiliates"} — move them to another manager (or on their own) first.`;
+  if (managerId) {
+    if (affiliate && managerId === affiliate.id) return "An affiliate can't be their own manager.";
+    if (!manager) return "That manager wasn't found.";
+    if (!manager.isManager) return `${manager.name} isn't a manager.`;
+    if (manager.managerId) return `${manager.name} is under a manager themselves.`;
+  }
+  return null;
 }
 
 // Codes are letters and digits, upper case, 4–20 long: "amina-24 " → "AMINA24".
@@ -153,7 +217,7 @@ function totals(commissions) {
 const firstNameOf = (name) => String(name || "").trim().split(/\s+/)[0] || "A family";
 
 module.exports = {
-  PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, DEFAULT_SETTINGS,
-  normaliseSettings, normaliseCode, suggestCode, phoneKey, emailKey, pickAttribution, isSelfReferral,
+  PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, DEFAULT_SETTINGS, TEAM_BASES,
+  normaliseSettings, normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, normaliseCode, suggestCode, phoneKey, emailKey, pickAttribution, isSelfReferral,
   commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
 };

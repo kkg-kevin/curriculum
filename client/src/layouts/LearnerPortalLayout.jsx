@@ -11,6 +11,7 @@ import FirstLoginDiagnosticGate from "../modules/learner-portal/components/First
 import { useLearnerPortalScope } from "../modules/learner-portal/hooks/useLearnerPortalScope";
 import { authApi } from "../modules/auth/services/authApi";
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
+import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -96,6 +97,8 @@ function LearnerPortal() {
 
         <Footer />
       </div>
+      {/* General events: the sign-in pop-up. */}
+      <GeneralEventPopup />
 
       <ConfirmPasswordModal
         isOpen={!!pendingChildId}

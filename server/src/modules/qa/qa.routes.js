@@ -23,6 +23,8 @@ router.put("/templates/:id/status", ctl.setTemplateStatus);
 
 router.get("/educators", ctl.educators);
 router.get("/reviewers", ctl.reviewers);
+// An educator's timetable and what's coming up, to plan a visit around.
+router.get("/educators/:id/schedule", ctl.educatorSchedule);
 
 router.route("/schedules").get(ctl.listSchedules).post(ctl.createSchedule);
 router.put("/schedules/:id", ctl.updateSchedule);

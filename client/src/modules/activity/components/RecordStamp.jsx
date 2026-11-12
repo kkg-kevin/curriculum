@@ -5,7 +5,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { Modal } from "../../checkins/shared";
 import { activityApi } from "../services/activityApi";
 import { useActivity } from "../hooks/useActivity";
-import { accountLabel, ago } from "../labels";
+import { ago } from "../labels";
+import RoleTag from "./RoleTag";
 import { canSeeRecordHistory } from "./RecordHistory";
 import ActivityEntry from "./ActivityEntry";
 
@@ -25,8 +26,8 @@ const C = { ink: "#111827", muted: "#6B7280", faint: "#9CA3AF", line: "#EEF1F5",
 function Who({ person }) {
   return (
     <>
-      <strong style={{ color: C.ink, fontWeight: 700 }}>{person.actorName || "Someone"}</strong>
-      {accountLabel(person) && <span style={{ color: C.faint }}> ({accountLabel(person)})</span>}
+      <strong style={{ color: C.ink, fontWeight: 700 }}>{person.actorName || "Someone"}</strong>{" "}
+      <RoleTag person={person} />
     </>
   );
 }
@@ -54,8 +55,9 @@ export function HistoryWindow({ type, id, title = "Who did what", onClose }) {
       {stamp?.people?.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
           {stamp.people.map((p) => (
-            <span key={p.actorUserId || p.actorName} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 999, background: "#F1F9FD", border: "1px solid #BFE3F7", fontSize: 12.5, color: C.navy }}>
+            <span key={`${p.actorUserId || p.actorName}-${p.actorRole}-${p.actorAccessRole || ""}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 999, background: "#F1F9FD", border: "1px solid #BFE3F7", fontSize: 12.5, color: C.navy }}>
               <strong>{p.actorName || "Someone"}</strong>
+              <RoleTag person={p} />
               <span style={{ color: C.muted }}>{p.count} change{p.count === 1 ? "" : "s"} · last {ago(p.lastAt)}</span>
             </span>
           ))}

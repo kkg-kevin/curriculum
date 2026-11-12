@@ -81,3 +81,44 @@ test("affiliates see a family's first name only", () => {
   assert.equal(firstNameOf("Peter Otieno"), "Peter");
   assert.equal(firstNameOf(""), "A family");
 });
+
+// ---- Teams and rates of their own (12 Nov 2026) ----
+const { normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, normaliseSettings: settingsOf } = require("../src/modules/affiliates/affiliate.rules");
+
+test("an affiliate's own deal overrides only what it sets", () => {
+  assert.equal(normaliseCustomRates(null), null);
+  assert.equal(normaliseCustomRates({ rates: { pathway: "" }, periods: "" }), null);
+  assert.deepEqual(normaliseCustomRates({ rates: { pathway: "15", shop: 150, nope: 5 }, periods: 0, teamRate: "3.5" }), { rates: { pathway: 15, shop: 100 }, periods: 1, teamRate: 3.5 });
+  const s = effectiveSettings({ rates: { pathway: 10, shop: 10 }, periods: 3 }, { customRates: JSON.stringify({ rates: { pathway: 15 }, periods: 6 }) });
+  assert.equal(s.rates.pathway, 15);
+  assert.equal(s.rates.shop, 10);
+  assert.equal(s.periods, 6);
+  assert.equal(effectiveSettings({}, { customRates: null }).rates.pathway, 10);
+});
+
+test("a custom rate changes what the affiliate earns", () => {
+  const s = effectiveSettings({}, { customRates: { rates: { bootcamp: 20 } } });
+  assert.equal(commissionFor({ settings: s, programme: "bootcamp", paidAmount: 5000, earnedSoFar: 0 }).amount, 1000);
+  const longer = effectiveSettings({}, { customRates: { periods: 5 } });
+  assert.equal(commissionFor({ settings: longer, programme: "pathway", paidAmount: 1000, earnedSoFar: 4 }).periodNumber, 5);
+  assert.equal(commissionFor({ settings: longer, programme: "pathway", paidAmount: 1000, earnedSoFar: 5 }), null);
+});
+
+test("a manager's team share: on what the family paid, or on the commission; their own rate wins", () => {
+  const own = { baseAmount: 10000, amount: 1000, periodNumber: 2 };
+  assert.deepEqual(teamShareFor({ settings: {}, manager: {}, own }), { periodNumber: 2, baseAmount: 10000, ratePercent: 2, amount: 200 });
+  assert.equal(teamShareFor({ settings: { teamBasis: "commission", teamRate: 20 }, manager: {}, own }).amount, 200);
+  assert.equal(teamShareFor({ settings: {}, manager: { customRates: { teamRate: 5 } }, own }).amount, 500);
+  assert.equal(teamShareFor({ settings: { teamRate: 0 }, manager: {}, own }), null);
+  assert.equal(teamShareFor({ settings: {}, manager: null, own }), null);
+  assert.equal(settingsOf({ teamBasis: "weird" }).teamBasis, "payment");
+});
+
+test("two levels only", () => {
+  const mgr = { id: "m", name: "Mary", isManager: true, managerId: null };
+  assert.equal(teamProblem({ affiliate: { id: "a" }, isManager: false, managerId: "m", manager: mgr }), null);
+  assert.match(teamProblem({ affiliate: { id: "a" }, isManager: true, managerId: "m", manager: mgr }), /can't be under another manager/);
+  assert.match(teamProblem({ affiliate: { id: "a" }, isManager: false, managerId: "x", manager: { ...mgr, isManager: false, name: "Ken" } }), /Ken isn't a manager/);
+  assert.match(teamProblem({ affiliate: { id: "m" }, isManager: false, managerId: "m", manager: mgr }), /own manager/);
+  assert.match(teamProblem({ affiliate: { id: "m", isManager: true }, isManager: false, managerId: null, teamSize: 2 }), /manage 2 affiliates/);
+});

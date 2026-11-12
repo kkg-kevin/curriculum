@@ -149,6 +149,11 @@ function summarise({ ctx, label, parentLabel, linkedLabel, body, requestBody }) 
   if (/^\/api\/sharing\/connections\/[^/]+\/accept$/.test(path)) return `Accepted a sharing request${body?.data?.admin?.name ? ` from ${body.data.admin.name}` : ""}`;
   if (path === "/api/sharing/connections" && action === "create") return `Sent a sharing request${body?.data?.admin?.email ? ` to ${body.data.admin.email}` : ""}`;
   if (path === "/api/attendance/mark") return "Marked attendance";
+  // General events, from the sign-in pop-up (modules/general-events/).
+  if (/^\/api\/my-events\/[^/]+\/hide$/.test(path)) return "Put off an event's pop-up (not now)";
+  if (/^\/api\/my-events\/[^/]+\/register$/.test(path)) return `Registered for an event${body?.data?.registration?.partySize > 1 ? ` (${body.data.registration.partySize} people)` : ""}`;
+  if (/^\/api\/my-events\/registrations\/[^/]+\/details$/.test(path)) return "Told us about themselves for an event";
+  if (/^\/api\/my-events\/registrations\/[^/]+\/cancel$/.test(path)) return "Cancelled their event registration";
   if (path === "/api/email-settings") {
     const named = (on) => Object.entries(requestBody?.types || {}).filter(([, value]) => value === on).map(([type]) => type.replace(/_/g, " ")).join(", ");
     return `Changed which emails the workspace sends${named(false) ? ` — switched off: ${named(false)}` : ""}${named(true) ? ` — switched on: ${named(true)}` : ""}`;

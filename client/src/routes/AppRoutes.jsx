@@ -84,6 +84,8 @@ import ProgramsListPage from "../modules/programs/pages/ProgramsListPage";
 import CreateCompetitionPage from "../modules/competitions/pages/CreateCompetitionPage";
 import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPage";
 import CreateBootcampPage from "../modules/bootcamps/pages/CreateBootcampPage";
+import GeneralEventFormPage from "../modules/general-events/pages/GeneralEventFormPage";
+import GeneralEventPage from "../modules/general-events/pages/GeneralEventPage";
 import BootcampViewPage from "../modules/bootcamps/pages/BootcampViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
@@ -196,6 +198,10 @@ export default function AppRoutes() {
           <Route path="competitions/create" element={<CreateCompetitionPage />} />
           <Route path="competitions/:id/view" element={<CompetitionViewPage />} />
           <Route path="competitions/:id/edit" element={<CreateCompetitionPage />} />
+          {/* General events — showcases, open days (modules/general-events/). */}
+          <Route path="general/create" element={<GeneralEventFormPage />} />
+          <Route path="general/:id" element={<GeneralEventPage />} />
+          <Route path="general/:id/edit" element={<GeneralEventFormPage />} />
           <Route path="bootcamps/create" element={<CreateBootcampPage />} />
           <Route path="bootcamps/:id/view" element={<BootcampViewPage />} />
           <Route path="bootcamps/:id/edit" element={<CreateBootcampPage />} />

@@ -14,6 +14,7 @@ const { adminIdsOf } = require("../../shared/utils/organisation");
 const {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, normaliseSettings, normaliseCode, suggestCode,
   emailKey, pickAttribution, isSelfReferral, commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
+  normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem,
 } = require("./affiliate.rules");
 
 // Affiliate marketing (6 Nov 2026) — see CLAUDE.md "Affiliates". How it fits together:
@@ -28,6 +29,12 @@ const {
 //      for a payout of everything available; an admin pays it (M-Pesa / bank / cash, a reference
 //      typed in) or applies it as credit on one of the affiliate's own invoices
 //      (BillingService.applyPayment, method "affiliate_credit" — never earning commission itself).
+//   Teams (12 Nov 2026): a manager (level 1, affiliates.isManager) earns, besides their own
+//      commissions, a team share each time an affiliate under them (affiliates.managerId) earns —
+//      a commission row of kind "team" (Settings' teamRate of what the family paid, or of the
+//      commission — on top, never out of the affiliate's share). Two levels only.
+//   Rates of their own: affiliates.customRates overrides Settings' rate per programme, the
+//      number of paid periods and (a manager's) team rate — effectiveSettings.
 // New tables, newer collation: no SQL joins to older tables — look things up separately.
 
 const A = "affiliates";
@@ -199,6 +206,8 @@ async function withStates(commissions) {
 // parent / educator portal), and when they last signed in (null: never yet).
 const shapeAffiliate = (a, login = null) => ({
   ...a,
+  isManager: Boolean(a.isManager),
+  customRates: normaliseCustomRates(a.customRates),
   link: linkFor(a.code),
   account: a.userId
     ? { email: login?.email || a.email, asAffiliate: signsInAsAffiliate(a), lastSignInAt: login?.lastSignInAt || null }
@@ -260,6 +269,47 @@ function cleanAffiliateInput(input, { partial = false } = {}) {
   if (input.payoutDetails !== undefined) out.payoutDetails = text(input.payoutDetails, 500);
   if (input.notes !== undefined) out.notes = input.notes == null ? null : String(input.notes).slice(0, 4000);
   return out;
+}
+
+// Staff's choices about an affiliate's level and deal: manager or not, the manager they're under,
+// their own rates. Checked against the two-level rule. Returns the columns to save.
+async function teamAndRateFields(req, affiliate, input) {
+  const out = {};
+  const isManager = input.isManager === undefined ? Boolean(affiliate?.isManager) : Boolean(input.isManager);
+  const managerId = input.managerId === undefined ? affiliate?.managerId || null : input.managerId || null;
+  if (input.isManager !== undefined || input.managerId !== undefined) {
+    const manager = managerId ? await db(A).where({ id: managerId, ownerAdminId: req.ownerAdminId }).first() : null;
+    const teamSize = affiliate ? Number((await db(A).where({ managerId: affiliate.id }).count("* as n"))[0].n) || 0 : 0;
+    const problem = teamProblem({ affiliate, isManager, managerId, manager: manager ? { ...manager, isManager: Boolean(manager.isManager) } : null, teamSize });
+    if (problem) fail(problem);
+    out.isManager = isManager;
+    out.managerId = managerId;
+  }
+  if (input.customRates !== undefined) out.customRates = toJson(normaliseCustomRates(input.customRates));
+  return out;
+}
+
+// "Mary added you to her team" — to the new member (bell), and "Ken joined your team" to the manager.
+async function tellTeam(affiliate, manager) {
+  if (!affiliate || !manager || affiliate.status !== "active") return;
+  if (manager.userId) {
+    await NotificationService.notifyPerson(manager.userId, {
+      type: "affiliate_team_joined",
+      title: `${affiliate.name} joined your team`,
+      message: `You now earn a share each time a family ${firstNameOf(affiliate.name)} refers pays.`,
+      payload: { route: portalRoute(manager) },
+      dedupeKey: `affiliate_team_joined:${affiliate.id}:${manager.id}`,
+    }).catch(() => {});
+  }
+  if (affiliate.userId) {
+    await NotificationService.notifyPerson(affiliate.userId, {
+      type: "affiliate_team_joined",
+      title: `You're in ${firstNameOf(manager.name)}'s team`,
+      message: `${manager.name} manages your team. Nothing changes for you — you earn exactly as before.`,
+      payload: { route: portalRoute(affiliate) },
+      dedupeKey: `affiliate_team_member:${affiliate.id}:${manager.id}`,
+    }).catch(() => {});
+  }
 }
 
 // The login an email already belongs to, linked while an affiliate waits for approval (so a parent
@@ -410,7 +460,7 @@ const AffiliateService = {
   // ---- 2. Commission (billing.paid-hooks.js, an invoice paid in full) -------------------------
   async onInvoicePaid(invoice) {
     if (!invoice?.id) return null;
-    if (await db(C).where({ invoiceId: invoice.id }).first()) return null;
+    if (await db(C).where({ invoiceId: invoice.id, kind: "own" }).first()) return null;
     // Which referred sign-up this invoice belongs to: a subscription's every period, else the
     // one-off sign-up whose invoice it is.
     let referral = null;
@@ -422,17 +472,19 @@ const AffiliateService = {
     const affiliate = await db(A).where({ id: referral.affiliateId }).first();
     if (!affiliate || affiliate.status === "suspended") return null;
 
-    const settings = await getSettings(referral.ownerAdminId);
+    const workspaceSettings = await getSettings(referral.ownerAdminId);
+    // Their own deal (custom rates / periods), else the workspace's.
+    const settings = effectiveSettings(workspaceSettings, affiliate);
     const payments = await db("billing_payments").where({ invoiceId: invoice.id, status: "successful" });
     const paidAmount = money(payments.filter((p) => p.paymentMethod !== CREDIT_METHOD).reduce((sum, p) => sum + Number(p.amount || 0), 0));
-    const earnedSoFar = Number((await db(C).where({ referralId: referral.id }).whereNot({ status: "cancelled" }).count("* as n"))[0].n) || 0;
+    const earnedSoFar = Number((await db(C).where({ referralId: referral.id, affiliateId: affiliate.id, kind: "own" }).whereNot({ status: "cancelled" }).count("* as n"))[0].n) || 0;
     const commission = commissionFor({ settings, programme: referral.programme, paidAmount, earnedSoFar });
     if (!commission) return null;
 
     // Never later than now (MySQL rounds a stored time to the nearest second, sometimes up).
     const paidAt = invoice.paidAt ? new Date(Math.min(new Date(invoice.paidAt).getTime(), Date.now())) : now();
     const row = {
-      id: generateId(), ownerAdminId: referral.ownerAdminId, affiliateId: affiliate.id, referralId: referral.id,
+      id: generateId(), ownerAdminId: referral.ownerAdminId, affiliateId: affiliate.id, referralId: referral.id, kind: "own",
       invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber || null, ...commission,
       currency: invoice.currency || "KES", status: "pending", availableAt: availableFrom(paidAt, settings.holdDays),
       createdAt: now(), updatedAt: now(),
@@ -454,6 +506,39 @@ const AffiliateService = {
       }).catch(() => {});
     }
     await emailAffiliate(affiliate, "commission", { commission: row, referral, programme: PROGRAMME_LABEL[referral.programme] });
+    await AffiliateService._teamShare({ affiliate, referral, own: row, settings: workspaceSettings, invoice });
+    return row;
+  },
+
+  // The manager's share of a team member's commission (on top of it), when the member is under an
+  // active manager. Waits as long as the commission does; cancelled with it.
+  async _teamShare({ affiliate, referral, own, settings, invoice }) {
+    if (!affiliate.managerId) return null;
+    const manager = await db(A).where({ id: affiliate.managerId, ownerAdminId: affiliate.ownerAdminId }).first();
+    if (!manager || !manager.isManager || manager.status !== "active") return null;
+    const share = teamShareFor({ settings, manager, own });
+    if (!share) return null;
+    const row = {
+      id: generateId(), ownerAdminId: own.ownerAdminId, affiliateId: manager.id, referralId: referral.id, kind: "team",
+      sourceCommissionId: own.id, fromAffiliateId: affiliate.id, invoiceId: invoice.id, invoiceNumber: own.invoiceNumber,
+      ...share, currency: own.currency, status: "pending", availableAt: own.availableAt, createdAt: now(), updatedAt: now(),
+    };
+    try {
+      await db(C).insert(row);
+    } catch (err) {
+      if (err.code === "ER_DUP_ENTRY") return null;
+      throw err;
+    }
+    if (manager.userId) {
+      await NotificationService.notifyPerson(manager.userId, {
+        type: "affiliate_team_commission",
+        title: `Your team earned you ${ksh(row.amount)}`,
+        message: `A family ${firstNameOf(affiliate.name)} referred paid for ${PROGRAMME_LABEL[referral.programme]}. It can be paid out from ${row.availableAt.toISOString().slice(0, 10)}.`,
+        payload: { route: portalRoute(manager) },
+        dedupeKey: `affiliate_team_commission:${row.id}`,
+      }).catch(() => {});
+    }
+    await emailAffiliate(manager, "teamCommission", { commission: row, member: affiliate, programme: PROGRAMME_LABEL[referral.programme] });
     return row;
   },
 
@@ -463,13 +548,18 @@ const AffiliateService = {
     const commissions = await withStates(await db(C).where({ ownerAdminId: req.ownerAdminId }));
     const referrals = await db(R).where({ ownerAdminId: req.ownerAdminId }).select("affiliateId", "status");
     const logins = await loginsById(affiliates.map((a) => a.userId));
+    const byId = new Map(affiliates.map((a) => [a.id, a]));
     return affiliates.map((a) => {
       const own = referrals.filter((r) => r.affiliateId === a.id);
+      const theirs = commissions.filter((c) => c.affiliateId === a.id);
       return {
         ...shapeAffiliate(a, logins.get(a.userId)),
         referrals: own.length,
         paidReferrals: own.filter((r) => r.status === "paid").length,
-        totals: totals(commissions.filter((c) => c.affiliateId === a.id)),
+        totals: totals(theirs),
+        teamEarned: money(theirs.filter((c) => c.kind === "team" && c.state !== "cancelled").reduce((sum, c) => sum + c.amount, 0)),
+        manager: a.managerId && byId.get(a.managerId) ? { id: a.managerId, name: byId.get(a.managerId).name } : null,
+        teamSize: affiliates.filter((x) => x.managerId === a.id).length,
       };
     });
   },
@@ -495,7 +585,9 @@ const AffiliateService = {
       .first("id");
     if (duplicate) fail("That person is already an affiliate.", 409);
     const kind = await kindOfLogin(existing);
+    const team = await teamAndRateFields(req, null, input);
     const row = {
+      ...team,
       id: generateId(), ownerAdminId: req.ownerAdminId, userId: existing?.id || null,
       name: data.name, email: data.email, phone: data.phone || null, kind, code,
       status: data.status || "active",
@@ -513,6 +605,7 @@ const AffiliateService = {
         await db(A).where({ id: row.id }).del();
         throw err;
       }
+      if (saved.managerId) await tellTeam(saved, await db(A).where({ id: saved.managerId }).first());
     }
     return shapeAffiliate(saved, (await loginsById([saved.userId])).get(saved.userId));
   },
@@ -523,7 +616,7 @@ const AffiliateService = {
   // affiliate still without a login — links / makes the login and welcomes them (once per login).
   async updateAffiliate(req, id, input) {
     const affiliate = await affiliateInWorkspace(req, id);
-    const data = cleanAffiliateInput(input, { partial: true });
+    const data = { ...cleanAffiliateInput(input, { partial: true }), ...(await teamAndRateFields(req, affiliate, input)) };
     if (input.code !== undefined) {
       data.code = normaliseCode(input.code);
       if (!data.code) fail("A code is 4–20 letters and numbers, e.g. AMINA24");
@@ -555,6 +648,10 @@ const AffiliateService = {
     if (releaseOld) await releaseLogin(releaseOld, id);
     let updated = await db(A).where({ id }).first();
     if (updated.status === "active" && (affiliate.status !== "active" || !updated.userId || emailChanged)) updated = await welcome(updated);
+    // Joined a team (put under a manager, or approved while already under one).
+    if (updated.managerId && updated.status === "active" && (updated.managerId !== affiliate.managerId || affiliate.status !== "active")) {
+      await tellTeam(updated, await db(A).where({ id: updated.managerId }).first());
+    }
     return shapeAffiliate(updated, (await loginsById([updated.userId])).get(updated.userId));
   },
 
@@ -565,6 +662,8 @@ const AffiliateService = {
     if (await db(R).where({ affiliateId: id }).first()) {
       fail("This affiliate has referrals, so their history is kept — suspend them instead.", 409);
     }
+    if (await db(A).where({ managerId: id }).first()) fail("They manage a team — move the affiliates under them first.", 409);
+    if (await db(C).where({ affiliateId: id }).first()) fail("They have earnings, so their history is kept — suspend them instead.", 409);
     await db(A).where({ id }).del();
     await releaseLogin(affiliate.userId);
   },
@@ -591,7 +690,7 @@ const AffiliateService = {
     const referrals = await q;
     const affiliates = await db(A).where({ ownerAdminId: req.ownerAdminId }).select("id", "name", "code");
     const byId = new Map(affiliates.map((a) => [a.id, a]));
-    const commissions = referrals.length ? await db(C).whereIn("referralId", referrals.map((r) => r.id)).whereNot({ status: "cancelled" }) : [];
+    const commissions = referrals.length ? await db(C).whereIn("referralId", referrals.map((r) => r.id)).where({ kind: "own" }).whereNot({ status: "cancelled" }) : [];
     return referrals.map((r) => ({
       ...r,
       programmeLabel: PROGRAMME_LABEL[r.programme],
@@ -624,7 +723,7 @@ const AffiliateService = {
     const refById = new Map(referrals.map((r) => [r.id, r]));
     return rows.map((c) => {
       const r = refById.get(c.referralId);
-      return { ...c, affiliate: byId.get(c.affiliateId) || null, programme: r?.programme, programmeLabel: PROGRAMME_LABEL[r?.programme], customerName: r?.customerName || null };
+      return { ...c, affiliate: byId.get(c.affiliateId) || null, fromAffiliate: c.fromAffiliateId ? byId.get(c.fromAffiliateId) || null : null, programme: r?.programme, programmeLabel: PROGRAMME_LABEL[r?.programme], customerName: r?.customerName || null };
     });
   },
 
@@ -634,6 +733,9 @@ const AffiliateService = {
     if (commission.status !== "pending") fail(commission.status === "paid" ? "It's already been paid out." : "It's already cancelled.");
     if (commission.payoutId) fail("It's in a payout request — reject that payout first.");
     await db(C).where({ id }).update({ status: "cancelled", note: note ? String(note).slice(0, 500) : null, updatedAt: now() });
+    // The manager's share of it goes too (unless it's already in a payout or paid).
+    await db(C).where({ sourceCommissionId: id, status: "pending" }).whereNull("payoutId")
+      .update({ status: "cancelled", note: "The commission it came from was cancelled", updatedAt: now() });
   },
 
   // ---- Payouts --------------------------------------------------------------------------------
@@ -782,7 +884,7 @@ const AffiliateService = {
   // What an affiliate sees of their own: the programme, their link and code, totals, families
   // (first names only — never contact details), commissions and payouts, and their own details.
   async _view(affiliate, kind) {
-    const settings = await getSettings(affiliate?.ownerAdminId || env.PUBLIC_CONTENT_ADMIN_ID);
+    const settings = effectiveSettings(await getSettings(affiliate?.ownerAdminId || env.PUBLIC_CONTENT_ADMIN_ID), affiliate);
     const programme = {
       enabled: settings.enabled, selfJoin: settings.selfJoin, requireApproval: settings.requireApproval,
       offer: offerLine(settings), holdDays: settings.holdDays, minimumPayout: settings.minimumPayout,
@@ -792,10 +894,31 @@ const AffiliateService = {
     const referrals = await db(R).where({ affiliateId: affiliate.id }).orderBy("createdAt", "desc").limit(500);
     const commissions = await withStates(await db(C).where({ affiliateId: affiliate.id }).orderBy("createdAt", "desc"));
     const payouts = await db(P).where({ affiliateId: affiliate.id }).orderBy("createdAt", "desc").limit(100);
-    const refById = new Map(referrals.map((r) => [r.id, r]));
+    // A manager's team (and the families behind their share — first names only, like their own).
+    const isManager = Boolean(affiliate.isManager);
+    const team = isManager ? await db(A).where({ managerId: affiliate.id }).orderBy("name") : [];
+    const teamRefs = team.length ? await db(R).whereIn("affiliateId", team.map((t) => t.id)).select("id", "affiliateId", "status", "programme", "customerName") : [];
+    const manager = affiliate.managerId ? await db(A).where({ id: affiliate.managerId }).first("name") : null;
+    const refById = new Map([...referrals, ...teamRefs].map((r) => [r.id, r]));
+    const teamById = new Map(team.map((t) => [t.id, t]));
+    const teamCommissions = commissions.filter((c) => c.kind === "team" && c.state !== "cancelled");
     return {
       kind,
-      programme,
+      programme: {
+        ...programme,
+        ...(isManager ? { teamRate: settings.teamRate, teamBasis: settings.teamBasis } : {}),
+      },
+      team: isManager ? {
+        recruitLink: websiteUrl() ? `${websiteUrl()}/become-an-affiliate?team=${encodeURIComponent(affiliate.code)}` : null,
+        earned: money(teamCommissions.reduce((sum, c) => sum + c.amount, 0)),
+        members: team.map((t) => ({
+          id: t.id, name: t.name, status: t.status, joinedAt: t.createdAt,
+          families: teamRefs.filter((r) => r.affiliateId === t.id).length,
+          payingFamilies: teamRefs.filter((r) => r.affiliateId === t.id && r.status === "paid").length,
+          earnedYou: money(teamCommissions.filter((c) => c.fromAffiliateId === t.id).reduce((sum, c) => sum + c.amount, 0)),
+        })),
+      } : null,
+      manager: manager ? { name: manager.name } : null,
       affiliate: {
         id: affiliate.id, name: affiliate.name, email: affiliate.email, phone: affiliate.phone, code: affiliate.code, status: affiliate.status,
         link: linkFor(affiliate.code), payoutMethod: affiliate.payoutMethod, payoutPhone: affiliate.payoutPhone, payoutDetails: affiliate.payoutDetails,
@@ -804,11 +927,12 @@ const AffiliateService = {
       totals: totals(commissions),
       referrals: referrals.map((r) => ({
         id: r.id, firstName: firstNameOf(r.customerName), programme: PROGRAMME_LABEL[r.programme], via: r.via, status: r.status, createdAt: r.createdAt,
-        earned: money(commissions.filter((c) => c.referralId === r.id && c.state !== "cancelled").reduce((sum, c) => sum + c.amount, 0)),
+        earned: money(commissions.filter((c) => c.referralId === r.id && c.kind !== "team" && c.state !== "cancelled").reduce((sum, c) => sum + c.amount, 0)),
       })),
       commissions: commissions.map((c) => ({
         id: c.id, amount: c.amount, state: c.state, availableAt: c.availableAt, createdAt: c.createdAt, periodNumber: c.periodNumber,
         firstName: firstNameOf(refById.get(c.referralId)?.customerName), programme: PROGRAMME_LABEL[refById.get(c.referralId)?.programme] || "",
+        team: c.kind === "team", from: c.kind === "team" ? teamById.get(c.fromAffiliateId)?.name || "Your team" : null,
       })),
       payouts: payouts.map((p) => ({ id: p.id, amount: money(p.amount), method: p.method, status: p.status, reference: p.status === "paid" ? p.reference : null, createdAt: p.createdAt, decidedAt: p.decidedAt, note: p.status === "rejected" ? p.note : null })),
     };
@@ -816,10 +940,14 @@ const AffiliateService = {
 
   // ---- The website: applying ---------------------------------------------------------------------
   // The "Become an affiliate" page: the offer, and whether it's taking applications.
-  async publicProgramme() {
+  async publicProgramme({ teamCode = null } = {}) {
     const ownerAdminId = env.PUBLIC_CONTENT_ADMIN_ID;
     const settings = await getSettings(ownerAdminId);
+    // A manager's recruit link (?team=CODE): whose team they'd join — the manager's first name only.
+    const code = normaliseCode(teamCode);
+    const manager = code && ownerAdminId ? await db(A).where({ code, ownerAdminId, status: "active" }).first("name", "isManager") : null;
     return {
+      team: manager?.isManager ? { managerName: firstNameOf(manager.name), code } : null,
       open: Boolean(ownerAdminId && settings.enabled && settings.publicApplications),
       offer: offerLine(settings), holdDays: settings.holdDays, minimumPayout: settings.minimumPayout,
       attributionDays: settings.attributionDays, requireApproval: settings.requireApproval,
@@ -844,6 +972,11 @@ const AffiliateService = {
       payoutMethod: data.payoutMethod, payoutPhone: data.payoutMethod === "mpesa" ? (data.payoutPhone || data.phone).trim().slice(0, 40) : null,
       payoutDetails: data.payoutMethod === "bank" ? String(data.payoutDetails || "").trim().slice(0, 500) || null : null,
       promotion: data.promotion ? String(data.promotion).slice(0, 2000) : null, source: "website", termsAcceptedAt: now(),
+      managerId: await (async () => {
+        const code = normaliseCode(data.teamCode);
+        const manager = code ? await db(A).where({ code, ownerAdminId, status: "active" }).first("id", "isManager", "managerId") : null;
+        return manager?.isManager && !manager.managerId ? manager.id : null;
+      })(),
       createdBy: null, createdAt: now(), updatedAt: now(),
     };
     await db(A).insert(row);
@@ -851,7 +984,7 @@ const AffiliateService = {
       await NotificationService._notify(ownerAdminId, {
         type: "affiliate_joined",
         title: "New affiliate application",
-        message: `${row.name} applied on the website to become an affiliate.`,
+        message: `${row.name} applied on the website to become an affiliate${row.managerId ? " — through a manager's recruit link, so they'll join that manager's team" : ""}.`,
         payload: { route: "/affiliates?tab=affiliates" },
         dedupeKey: `affiliate_joined:${row.id}`,
         ownerAdminId,
@@ -860,7 +993,8 @@ const AffiliateService = {
     } else {
       // No approval needed: their account straight away (an admin's email can't be one — staff
       // see them without a login and can change the email).
-      await welcome(row).catch((err) => console.error("[affiliates] could not set up an applicant's login:", err.message));
+      const welcomed = await welcome(row).catch((err) => { console.error("[affiliates] could not set up an applicant's login:", err.message); return row; });
+      if (welcomed.managerId) await tellTeam(welcomed, await db(A).where({ id: welcomed.managerId }).first());
     }
     return { status: "received" };
   },

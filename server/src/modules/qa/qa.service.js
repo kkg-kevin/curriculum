@@ -376,6 +376,103 @@ const QaService = {
     }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
   },
 
+  // An educator's timetable and what's coming up, to plan a visit around (the Plan a visit form):
+  //   weekly    their classes each week (a slot naming them, or naming nobody on a course they
+  //             teach — the same rule as their profile's hours), with hub, class, course and room
+  //   available the hours they've said they're free (teacher_availability_slots)
+  //   upcoming  the next `days` days: each class session (cancelled ones left out, moved ones on
+  //             their new day), other QA visits, and mentor sessions booked with them
+  async educatorSchedule(req, teacherId, { days = 28 } = {}) {
+    const ctx = contextOf(req);
+    requireReviewer(ctx);
+    await assertReviewable(ctx, teacherId);
+    const uniq = (list) => [...new Set(list.filter(Boolean))];
+    const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const links = await db("class_course_teacher_links").where({ teacherId });
+    const linkKeys = new Set(links.map((l) => `${l.classId}|${l.courseId}`));
+    const own = await db("timetable_slots").where({ teacherId });
+    const open = links.length ? (await db("timetable_slots").whereIn("classId", uniq(links.map((l) => l.classId))).whereNull("teacherId")).filter((sl) => linkKeys.has(`${sl.classId}|${sl.courseId}`)) : [];
+    const slots = [...own, ...open];
+    const classIds = uniq(slots.map((sl) => sl.classId));
+    const classes = classIds.length ? await db("classes").whereIn("id", classIds).select("id", "gradeName", "streamName", "schoolId", "status") : [];
+    const classById = new Map(classes.map((c) => [c.id, c]));
+    const hubIds = uniq(classes.map((c) => c.schoolId));
+    const hubs = hubIds.length ? await db("learning_hubs").whereIn("id", hubIds).where({ ownerAdminId: ctx.ownerAdminId }).select("id", "name") : [];
+    const hubById = new Map(hubs.map((h) => [h.id, h.name]));
+    const courseIds = uniq(slots.map((sl) => sl.courseId));
+    const courses = courseIds.length ? await db("courses").whereIn("id", courseIds).select("id", "name") : [];
+    const courseById = new Map(courses.map((c) => [c.id, c.name]));
+    const roomIds = uniq(slots.map((sl) => sl.roomId));
+    const rooms = roomIds.length ? await db("rooms").whereIn("id", roomIds).select("id", "name") : [];
+    const roomById = new Map(rooms.map((r) => [r.id, r.name]));
+    const className = (c) => [c?.gradeName, c?.streamName].filter(Boolean).join(" ") || "Class";
+
+    const weekly = slots
+      .filter((sl) => classById.get(sl.classId)?.status !== "inactive" && hubById.has(classById.get(sl.classId)?.schoolId))
+      .map((sl) => {
+        const c = classById.get(sl.classId);
+        return {
+          id: sl.id, classId: sl.classId, courseId: sl.courseId, dayOfWeek: sl.dayOfWeek,
+          startTime: String(sl.startTime).slice(0, 5), endTime: String(sl.endTime).slice(0, 5),
+          className: className(c), courseName: courseById.get(sl.courseId) || null,
+          hubId: c.schoolId, hubName: hubById.get(c.schoolId) || null, roomName: roomById.get(sl.roomId) || null,
+        };
+      })
+      .sort((a, b) => ((DAYS.indexOf(a.dayOfWeek) + 6) % 7) - ((DAYS.indexOf(b.dayOfWeek) + 6) % 7) || a.startTime.localeCompare(b.startTime));
+
+    const available = (await db("teacher_availability_slots").where({ teacherId }))
+      .map((a) => ({ dayOfWeek: a.dayOfWeek, startTime: String(a.startTime).slice(0, 5), endTime: String(a.endTime).slice(0, 5) }))
+      .sort((a, b) => ((DAYS.indexOf(a.dayOfWeek) + 6) % 7) - ((DAYS.indexOf(b.dayOfWeek) + 6) % 7) || a.startTime.localeCompare(b.startTime));
+
+    // The next few weeks, by the calendar engine itself (TimetableService.resolveCalendar: term
+    // breaks, each course's start date and its number of sessions, sessions shifted, merged or
+    // moved) — so a course that has finished, or a class on a break, shows nothing.
+    const TimetableService = require("../timetable/timetable.service");
+    const from = todayInKenya();
+    const span = Math.min(Math.max(Number(days) || 28, 7), 90);
+    const to = addDays(from, span - 1);
+    const lookAhead = addDays(from, 89);
+    const theirs = (e) => e.teacherId ? e.teacherId === teacherId : linkKeys.has(`${e.classId}|${e.courseId}`);
+    const calendar = (await Promise.all(classIds.map((classId) => TimetableService.resolveCalendar({ classId, from, to: lookAhead })
+      .then((r) => r.events).catch(() => [])))).flat().filter(theirs);
+    const upcoming = [];
+    const seen = new Set();
+    for (const e of calendar) {
+      if (e.date > to) continue;
+      const key = `${e.date}|${e.classId}|${e.courseId}|${e.startTime}`;
+      const w = weekly.find((x) => x.classId === e.classId && x.courseId === e.courseId);
+      const c = classById.get(e.classId);
+      if (seen.has(key)) {
+        const row = upcoming.find((u) => u.key === key);
+        if (row && e.sessionOrder != null) row.sessions.push(e.sessionOrder);
+        continue;
+      }
+      seen.add(key);
+      upcoming.push({
+        key, kind: "class", date: e.date, startTime: String(e.startTime).slice(0, 5), endTime: String(e.endTime).slice(0, 5),
+        title: `${courseById.get(e.courseId) || "Class"} · ${className(c)}${e.moved ? " (moved)" : ""}`,
+        sessions: e.sessionOrder != null ? [e.sessionOrder] : [], sessionTitle: e.sessionTitle || null,
+        hubId: c?.schoolId || w?.hubId || null, hubName: hubById.get(c?.schoolId) || w?.hubName || null, roomName: e.room || w?.roomName || null,
+      });
+    }
+    // Their week: only courses still running in the next three months.
+    const running = new Set(calendar.map((e) => `${e.classId}|${e.courseId}`));
+    const finished = weekly.filter((w) => !running.has(`${w.classId}|${w.courseId}`)).length;
+    weekly.splice(0, weekly.length, ...weekly.filter((w) => running.has(`${w.classId}|${w.courseId}`)));
+    const visits = await db("qa_visits").where({ teacherId, ownerAdminId: ctx.ownerAdminId, status: "open" }).whereBetween("scheduledDate", [from, to]).select("id", "scheduledDate", "visitType", "reviewerId", "hubId");
+    const reviewerNames = await namesFrom("users", visits.map((v) => v.reviewerId));
+    for (const v of visits) {
+      // A surprise visit stays a surprise — but whoever plans visits for this educator already sees it.
+      upcoming.push({ kind: "qa", date: dayKey(v.scheduledDate), title: `QA visit${v.visitType === "surprise" ? " (surprise)" : ""}${reviewerNames.get(v.reviewerId) ? ` · ${reviewerNames.get(v.reviewerId)}` : ""}`, hubId: v.hubId || null, hubName: hubById.get(v.hubId) || null, visitId: v.id });
+    }
+    const bookings = await db("mentor_bookings").where({ teacherId }).whereIn("status", ["held", "confirmed"]).whereBetween("date", [from, to]).select("date", "startTime", "endTime", "mode", "hubName", "courseName");
+    for (const b of bookings) {
+      upcoming.push({ kind: "mentor", date: dayKey(b.date), startTime: String(b.startTime).slice(0, 5), endTime: String(b.endTime).slice(0, 5), title: `Mentor session${b.courseName ? ` · ${b.courseName}` : ""}`, hubName: b.mode === "online" ? "Online" : b.hubName || null });
+    }
+    upcoming.sort((a, b) => a.date.localeCompare(b.date) || String(a.startTime || "").localeCompare(String(b.startTime || "")));
+    return { from, to, weekly, available, upcoming, finished };
+  },
+
   async reviewers(req) {
     const ctx = contextOf(req);
     requireReviewer(ctx);

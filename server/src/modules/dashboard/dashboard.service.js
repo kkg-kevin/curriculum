@@ -87,21 +87,95 @@ async function summary(req) {
 
   // ── Today ───────────────────────────────────────────────────────────────────────────────
   const items = [];
+  // Every class meeting today, by the calendar engine itself (term breaks, a course's start date,
+  // sessions shifted, merged or moved — TimetableService.resolveCalendar), with who teaches it,
+  // which session it is, the room, how many learners and whether attendance is in. Feeds the
+  // "Today across your hubs" widget (out.day) — the Today card keeps everything else.
+  out.day = null;
   if (sees("timetable", "classes")) {
-    const classes = await db("classes").whereIn("schoolId", ids).where({ status: "active" }).select("id", "gradeName", "streamName", "schoolId");
+    const TimetableService = require("../timetable/timetable.service");
+    const classes = await db("classes").whereIn("schoolId", ids).where({ status: "active" }).select("id", "gradeName", "streamName", "schoolId", "meetingLink");
     const classById = new Map(classes.map((c) => [c.id, c]));
-    const slots = classes.length ? await db("timetable_slots").whereIn("classId", classes.map((c) => c.id)).where({ dayOfWeek: weekday }).select("classId", "courseId", "teacherId", "startTime", "endTime") : [];
-    // A session cancelled or moved off today is left out; one moved onto today is added.
     const classIds = classes.map((c) => c.id);
-    const skips = classIds.length ? await db("timetable_session_skips").whereIn("classId", classIds).where((w) => w.where({ date: today }).orWhere({ newDate: today })).select("classId", "courseId", "date", "newDate", "mode", "startTime", "endTime") : [];
-    const off = new Set(skips.filter((x) => String(x.date).slice(0, 10) === today).map((x) => `${x.classId}|${x.courseId || ""}`));
-    const live = slots.filter((s) => !off.has(`${s.classId}|${s.courseId || ""}`) && !off.has(`${s.classId}|`));
-    for (const x of skips.filter((y) => y.mode === "shift" && String(y.newDate || "").slice(0, 10) === today)) live.push({ classId: x.classId, courseId: x.courseId, startTime: x.startTime || null, endTime: x.endTime || null });
-    const courses = new Map((live.length ? await db("courses").whereIn("id", [...new Set(live.map((s) => s.courseId).filter(Boolean))]).select("id", "name") : []).map((c) => [c.id, c.name]));
-    for (const s of live) {
-      const cls = classById.get(s.classId);
-      items.push({ kind: "class", time: s.startTime, end: s.endTime, title: courses.get(s.courseId) || "Class", sub: [[cls?.gradeName, cls?.streamName].filter(Boolean).join(" "), hubName.get(cls?.schoolId)].filter(Boolean).join(" · "), path: `/classes/${s.classId}/view` });
+    // Only classes that could meet today: a slot on this weekday, or a session moved onto today.
+    const candidates = classIds.length ? [...new Set([
+      ...(await db("timetable_slots").whereIn("classId", classIds).where({ dayOfWeek: weekday }).pluck("classId")),
+      ...(await db("timetable_session_skips").whereIn("classId", classIds).where({ mode: "move", newDate: today }).pluck("classId")),
+    ])] : [];
+    const rawEvents = (await Promise.all(candidates.map((classId) => TimetableService.resolveCalendar({ classId, from: today, to: today })
+      .then((r) => r.events.filter((e) => e.date === today))
+      .catch(() => [])))).flat();
+    // Two sessions taught in one slot (a "merge") come as two events — one class, two sessions.
+    const grouped = new Map();
+    for (const e of rawEvents) {
+      const key = `${e.classId}|${e.courseId}|${e.startTime}`;
+      const g = grouped.get(key) || { ...e, sessions: [] };
+      if (e.sessionTitle || e.sessionOrder != null) g.sessions.push({ order: e.sessionOrder, title: e.sessionTitle || null });
+      grouped.set(key, g);
     }
+    const events = [...grouped.values()];
+    const hubRows = new Map((await db("learning_hubs").whereIn("id", ids).select("id", "name", "deliveryMode", "meetingLink", "isHomeLearning")).map((h) => [h.id, h]));
+    const courseIds = [...new Set(events.map((e) => e.courseId).filter(Boolean))];
+    const courseName = new Map((courseIds.length ? await db("courses").whereIn("id", courseIds).select("id", "name") : []).map((c) => [c.id, c.name]));
+    const eventClassIds = [...new Set(events.map((e) => e.classId))];
+    const links = eventClassIds.length ? await db("class_course_teacher_links").whereIn("classId", eventClassIds).select("classId", "courseId", "teacherId", "isPrimary") : [];
+    const teacherIdsToday = [...new Set([...events.map((e) => e.teacherId), ...links.map((l) => l.teacherId)].filter(Boolean))];
+    const teacherRow = new Map((teacherIdsToday.length ? await db("teachers").whereIn("id", teacherIdsToday).select("id", "firstName", "lastName", "photo") : []).map((t) => [t.id, t]));
+    const person = (id) => { const t = teacherRow.get(id); return t ? { id, name: [t.firstName, t.lastName].filter(Boolean).join(" ").trim() || "Educator", photo: t.photo || null } : null; };
+    const learnersIn = new Map((eventClassIds.length ? await db("learner_hub_links").whereIn("classId", eventClassIds).where({ status: "active" }).select("classId").count({ n: "*" }).groupBy("classId") : []).map((r) => [r.classId, Number(r.n)]));
+    const marks = eventClassIds.length ? await db("attendance").whereIn("classId", eventClassIds).where({ date: today }).select("classId", "status") : [];
+    const marked = new Map();
+    for (const m of marks) {
+      const x = marked.get(m.classId) || { marked: 0, present: 0 };
+      x.marked += 1;
+      if (m.status === "present" || m.status === "late") x.present += 1;
+      marked.set(m.classId, x);
+    }
+    const dayClasses = events.map((e) => {
+      const cls = classById.get(e.classId);
+      const hub = hubRows.get(cls?.schoolId);
+      // Who teaches it: the slot's educator, else the course's educators on that class (main first).
+      const ids2 = e.teacherId ? [e.teacherId] : links.filter((l) => l.classId === e.classId && l.courseId === e.courseId).sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary)).map((l) => l.teacherId);
+      return {
+        key: `${e.classId}|${e.courseId}|${e.startTime}`,
+        classId: e.classId, courseId: e.courseId,
+        className: [cls?.gradeName, cls?.streamName].filter(Boolean).join(" ") || "Class",
+        courseName: courseName.get(e.courseId) || "Course",
+        sessions: e.sessions.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+        startTime: String(e.startTime || "").slice(0, 5) || null, endTime: String(e.endTime || "").slice(0, 5) || null,
+        room: e.room || null, moved: !!e.moved, merged: !!e.merged,
+        hubId: cls?.schoolId || null, hubName: hub ? (hub.isHomeLearning ? "Home Learning" : hub.name) : null,
+        // virtual hub: online only; hybrid: in person, and online too.
+        online: hub?.deliveryMode === "virtual" ? "only" : hub?.deliveryMode === "hybrid" || e.meetingLink ? "also" : null,
+        educators: [...new Set(ids2)].map(person).filter(Boolean),
+        learners: learnersIn.get(e.classId) || 0,
+        attendance: marked.get(e.classId) || null,
+      };
+    }).sort((a, b) => String(a.startTime || "99").localeCompare(String(b.startTime || "99")) || String(a.hubName).localeCompare(String(b.hubName)));
+    // Who's where: each educator's stops today — their classes, mentor sessions and QA visits.
+    const people = new Map();
+    const stop = (p, s) => {
+      if (!p) return;
+      const row = people.get(p.id) || { ...p, stops: [] };
+      row.stops.push(s);
+      people.set(p.id, row);
+    };
+    for (const c of dayClasses) for (const p of c.educators) stop(p, { kind: "class", time: c.startTime, end: c.endTime, title: `${c.courseName} · ${c.className}`, hubName: c.online === "only" ? `${c.hubName || ""}${c.hubName ? " · " : ""}online` : c.hubName, room: c.room, path: `/classes/${c.classId}/view` });
+    if (sees("mentor-bookings")) {
+      const bookings = await db("mentor_bookings").where({ ownerAdminId: owner, date: today }).whereIn("status", ["confirmed", "completed", "no_show"]).select("id", "teacherId", "startTime", "endTime", "courseName", "sessionTitle", "mode", "hubName");
+      const extra = bookings.map((b) => b.teacherId).filter((id) => id && !teacherRow.has(id));
+      if (extra.length) (await db("teachers").whereIn("id", [...new Set(extra)]).select("id", "firstName", "lastName", "photo")).forEach((t) => teacherRow.set(t.id, t));
+      for (const b of bookings) stop(person(b.teacherId), { kind: "booking", time: String(b.startTime).slice(0, 5), end: String(b.endTime).slice(0, 5), title: `Mentor session · ${b.sessionTitle || b.courseName || "help"}`, hubName: b.mode === "online" ? "Online" : b.hubName, path: `/mentor-bookings/${b.id}` });
+    }
+    if (sees("qa")) {
+      const visits = await db("qa_visits").where({ ownerAdminId: owner, scheduledDate: today }).whereNot({ status: "cancelled" }).select("id", "teacherId", "hubId", "visitType");
+      const extra = visits.map((v) => v.teacherId).filter((id) => id && !teacherRow.has(id));
+      if (extra.length) (await db("teachers").whereIn("id", [...new Set(extra)]).select("id", "firstName", "lastName", "photo")).forEach((t) => teacherRow.set(t.id, t));
+      for (const v of visits) stop(person(v.teacherId), { kind: "qa", time: null, end: null, title: `QA visit${v.visitType === "surprise" ? " (surprise)" : ""}`, hubName: hubName.get(v.hubId) || null, path: `/qa/visits/${v.id}` });
+    }
+    const peopleList = [...people.values()].map((p) => ({ ...p, stops: p.stops.sort((a, b) => String(a.time || "99").localeCompare(String(b.time || "99"))) }))
+      .sort((a, b) => String(a.stops[0]?.time || "99").localeCompare(String(b.stops[0]?.time || "99")) || a.name.localeCompare(b.name));
+    out.day = { date: today, classes: dayClasses, people: peopleList };
   }
   if (sees("mentor-bookings")) {
     for (const b of await db("mentor_bookings").where({ ownerAdminId: owner, date: today }).whereIn("status", ["confirmed", "completed", "no_show"]).select("id", "startTime", "endTime", "sessionTitle", "courseName", "mode", "hubName")) {
@@ -126,6 +200,14 @@ async function summary(req) {
   if (sees("bootcamps")) {
     for (const b of await db("bootcamps").where({ ownerAdminId: owner }).where("startDate", "<=", today).where("endDate", ">=", today).select("id", "name")) {
       items.push({ kind: "bootcamp", time: null, title: `Bootcamp running · ${b.name}`, sub: null, path: `/bootcamps/${b.id}/view` });
+    }
+  }
+  if (sees("general-events")) {
+    const events = await db("general_events").where({ ownerAdminId: owner, status: "published" }).where("startDate", "<=", today)
+      .where((w) => w.where("endDate", ">=", today).orWhere((x) => x.whereNull("endDate").where("startDate", today))).select("id", "title", "startTime", "endTime", "capacity");
+    for (const e of events) {
+      const coming = Number((await db("general_event_registrations").where({ eventId: e.id, status: "registered" }).sum({ n: "partySize" }).first())?.n || 0);
+      items.push({ kind: "event", time: e.startTime, end: e.endTime, title: e.title, sub: `${coming} ${coming === 1 ? "person" : "people"} coming${e.capacity ? ` of ${e.capacity}` : ""}`, path: `/events/general/${e.id}?tab=checkin` });
     }
   }
   out.today = items.sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));

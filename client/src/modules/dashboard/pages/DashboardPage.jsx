@@ -12,6 +12,7 @@ import api from "../../../services/api";
 import { analyticsApi } from "../../reports/services/analyticsApi";
 import ActivityEntry from "../../activity/components/ActivityEntry";
 import CheckinsReminder from "../../checkins/components/CheckinsReminder";
+import TodayAcrossHubs from "../components/TodayAcrossHubs";
 import Avatar from "../../../components/ui/Avatar";
 import { BRAND, FONT, HERO_GRADIENT } from "../../../theme/brand";
 
@@ -22,7 +23,8 @@ import { BRAND, FONT, HERO_GRADIENT } from "../../../theme/brand";
 //   KPI cards     active learners, money in this month, owed, attendance — big number, change
 //                 against last month, a sparkline of the year
 //   money chart   collected month by month (12 months)        needs you   short labels, count badges
-//   today         a timeline of the day                         learning health   attendance and
+//   today across your hubs   every class today by hub, and who's where (TodayAcrossHubs)
+//   also today    the rest of the day: mentor sessions, check-ins, QA, events  learning health   attendance and
 //   programmes    icon tiles                                    on-time work, 12 months
 //   hubs          learners per hub (bars, the weakest attendance flagged)   growth   enquiry → paid
 //   recent activity                                             your workspace   icon tiles
@@ -56,7 +58,7 @@ const TONE = {
   waiting: { color: C.goldText, bg: C.goldTint, rank: 1 },
   info: { color: C.skyText, bg: C.skyTint, rank: 2 },
 };
-const TODAY_ICON = { class: FiBookOpen, booking: FiLifeBuoy, checkin: FiClipboard, meeting: FiMessageCircle, qa: FiShield, bootcamp: FiAward };
+const TODAY_ICON = { class: FiBookOpen, booking: FiLifeBuoy, checkin: FiClipboard, meeting: FiMessageCircle, qa: FiShield, bootcamp: FiAward, event: FiFlag };
 const PROGRAMME = {
   "home-learning": { icon: FiHeart, color: C.mid }, "tech-clubs": { icon: FiCpu, color: C.sky }, pathways: { icon: FiRepeat, color: C.navy },
   bootcamps: { icon: FiAward, color: C.gold }, bookings: { icon: FiLifeBuoy, color: C.mid },
@@ -200,8 +202,8 @@ function TodayTimeline({ items: raw }) {
   const shown = items.slice(0, 6);
   return (
     <section style={widget}>
-      <Head icon={FiCalendar} title="Today" action={<span style={{ fontSize: 12, fontWeight: 800, color: C.muted }}>{items.length} item{items.length === 1 ? "" : "s"}</span>} />
-      {!items.length ? <p style={{ margin: 0, fontSize: 13, color: C.muted }}>A quiet day — nothing on the timetable.</p> : (
+      <Head icon={FiCalendar} title="Also today" action={<span style={{ fontSize: 12, fontWeight: 800, color: C.muted }}>{items.length} item{items.length === 1 ? "" : "s"}</span>} />
+      {!items.length ? <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Nothing else on today — classes are under "Today across your hubs".</p> : (
         <div style={{ position: "relative", paddingLeft: 4 }}>
           <span aria-hidden style={{ position: "absolute", left: 15, top: 8, bottom: 8, width: 2, background: C.line, borderRadius: 2 }} />
           {shown.map((it, i) => {
@@ -426,7 +428,7 @@ export default function DashboardPage() {
   const spark = (key) => months.map((m) => ({ v: m[key] ?? null })).filter((p) => p.v != null);
   const moneySpark = (inc?.months || []).map((m) => ({ v: m.total }));
   const [fn, ...ln] = (d?.person?.name || "Admin").split(" ");
-  const onToday = d?.today?.length || 0;
+  const onToday = (d?.today?.length || 0) + (d?.day?.classes?.length || 0);
 
   const kpis = [
     counts.learners != null && { key: "learners", icon: FiUsers, label: "Active learners", value: counts.learners.toLocaleString("en-KE"), color: C.mid, featured: true, spark: spark("active"), delta: newL ? <DeltaPill value={newL.thisMonth - newL.lastMonth} onDark /> : null, sub: newL ? `${newL.thisMonth} new this month` : null, onOpen: () => navigate("/learners") },
@@ -512,6 +514,9 @@ export default function DashboardPage() {
 
       {/* KPI cards */}
       {rowKpis.length > 0 && <div className="db-kpis">{rowKpis.map(({ key, ...k }) => <Kpi key={key} {...k} />)}</div>}
+
+      {/* Every class today, by hub and by educator (classes moved here from the Today card). */}
+      {d?.day && <TodayAcrossHubs day={d.day} />}
 
       {/* Bento grid */}
       <div className="db-grid">

@@ -6,6 +6,7 @@ import Footer from "../components/ui/Footer";
 import StaffAccessGate from "../routes/StaffAccessGate";
 import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
+import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -55,6 +56,8 @@ function MainLayout() {
 
       {/* Hub check-ins with a report due — shown on sign-in to the Account Manager / Training Lead. */}
       <CheckinsDuePopup />
+      {/* General events: the sign-in pop-up (waits for the check-in pop-ups). */}
+      <GeneralEventPopup />
     </div>
   );
 }

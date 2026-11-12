@@ -79,9 +79,31 @@ export function tone(entry) {
   return { color: "#1D4ED8", background: "#DBEAFE", label: null };
 }
 
-const ACCOUNT_LABELS = { admin: "Owner", collaborator: "Staff", teacher: "Educator", school: "Hub", learner: "Learner / parent", curriculumAdmin: "Curriculum admin", affiliate: "Affiliate", visitor: "Website visitor" };
-// "Staff · Finance", "Educator", "Owner"
+const ACCOUNT_LABELS = { admin: "Admin", collaborator: "Staff", teacher: "Educator", school: "Learning hub", learner: "Learner / parent", curriculumAdmin: "Curriculum admin", affiliate: "Affiliate", supervisor: "Supervisor", totLearner: "TOT learner", visitor: "Website visitor" };
+// "Staff · Finance", "Educator", "Admin"
 export const accountLabel = (entry) => [ACCOUNT_LABELS[entry.actorRole] || entry.actorRole, entry.actorAccessRole].filter(Boolean).join(" · ");
+
+// The tag beside a person's name in "Who did what" and the Activity log (12 Nov 2026): what they
+// were acting as — Admin, a staff member's own role name (e.g. "CEO", "Finance"), Supervisor,
+// Educator, Parent (a learner-role login with an email) or Learner (a child's username login),
+// Learning hub, Curriculum admin, Affiliate. `tone` picks its colour (RoleTag).
+export function roleTagOf(entry) {
+  if (!entry) return null;
+  switch (entry.actorRole) {
+    case "admin": return { label: "Admin", tone: "admin" };
+    case "collaborator": return { label: entry.actorAccessRole || "Staff", tone: "staff" };
+    case "supervisor": return { label: "Supervisor", tone: "supervisor" };
+    case "teacher": return { label: "Educator", tone: "educator" };
+    case "school": return { label: "Learning hub", tone: "hub" };
+    // A child's username login is logged with its username where the email would be.
+    case "learner": return { label: String(entry.actorEmail || "").includes("@") ? "Parent" : "Learner", tone: "family" };
+    case "totLearner": return { label: "TOT learner", tone: "educator" };
+    case "curriculumAdmin": return { label: "Curriculum admin", tone: "admin" };
+    case "affiliate": return { label: "Affiliate", tone: "family" };
+    case "visitor": return { label: "Website visitor", tone: "family" };
+    default: return entry.actorRole ? { label: entry.actorRole, tone: "family" } : null;
+  }
+}
 
 export const timeOf = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 export const dayOf = (iso) => {

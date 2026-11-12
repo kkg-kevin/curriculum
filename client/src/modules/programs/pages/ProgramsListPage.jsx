@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiFlag, FiAward, FiAlertTriangle, FiEye, FiEyeOff, FiCalendar } from "react-icons/fi";
 import { useCompetitionsQuery } from "../../competitions/hooks/useCompetitions";
 import { useBootcampsQuery } from "../../bootcamps/hooks/useBootcamps";
 import TotBadge from "../../bootcamps/components/TotBadge";
 import GamesLibrarySection from "../games/components/GamesLibrarySection";
+import GeneralEventsSection from "../../general-events/components/GeneralEventsSection";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 const COMP_STATUS = {
   draft:  { bg: "#F3F4F6", fg: "#6B7280", label: "Draft" },
@@ -157,6 +159,7 @@ function filterAndSort(items, { publishedOnly, sort, isLive }) {
 
 export default function ProgramsListPage() {
   const navigate = useNavigate();
+  const { can } = usePermissions();
   // The sidebar's Events → Competitions / Bootcamps / Games open this page at that section (#…),
   // once its lists have loaded (their height moves everything below).
   const { hash } = useLocation();
@@ -209,10 +212,19 @@ export default function ProgramsListPage() {
               Events
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5, maxWidth: 560 }}>
-              Competitions and bootcamps — their dates, their registration windows, and the hubs that run them — plus the games that come with a bootcamp.
+              General events anyone can come to, competitions and bootcamps — their dates, their registration windows, and the hubs that run them — plus the games that come with a bootcamp.
             </p>
           </div>
           <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
+            {can("general-events", "create") && (
+              <button
+                type="button"
+                onClick={() => navigate("/events/general/create")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", backgroundColor: "rgba(255,255,255,0.14)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                <FiCalendar size={14} /> New Event
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate("/events/competitions/create")}
@@ -230,6 +242,11 @@ export default function ProgramsListPage() {
           </div>
         </div>
       </div>
+
+      {/* ── General events ───────────────────────────────────────── */}
+      {can("general-events", "view") && (
+        <div id="general" style={{ marginBottom: 32, scrollMarginTop: 16 }}><GeneralEventsSection /></div>
+      )}
 
       {/* ── Competitions ─────────────────────────────────────────── */}
       <div id="competitions" style={{ marginBottom: 32, scrollMarginTop: 16 }}>

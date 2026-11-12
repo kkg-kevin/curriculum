@@ -38,6 +38,7 @@ const ROOTS = {
   reports: { table: "reports", noun: "report", module: "reports" },
   competitions: { table: "competitions", noun: "competition", module: "competitions" },
   bootcamps: { table: "bootcamps", noun: "bootcamp", module: "bootcamps" },
+  "general-events": { table: "general_events", noun: "event", module: "general-events" },
   billing: { table: "billing_invoices", noun: "invoice", module: "billing" },
   "hub-visits": { table: "hub_visits", noun: "hub visit", module: "hub-visits" },
   leads: { table: "leads", noun: "enquiry", module: "enquiries" },
@@ -121,6 +122,7 @@ const COLLECTIONS = {
     hubs: { table: "learning_hubs", noun: "learning hub" },
   },
   tot: { educators: { table: "teachers", noun: "educator" } },
+  "general-events": { registrations: { table: "general_event_registrations", noun: "registration" } },
   "educator-profiles": { requests: { table: "mentor_requests", noun: "mentor request" } },
   analytics: { followups: { table: "learner_followups", noun: "follow-up" } },
   qa: {
