@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import toast from "react-hot-toast";
 import {
-  FiArrowLeft, FiBarChart2, FiCalendar, FiCheck, FiCheckCircle, FiClock, FiCopy, FiDownload, FiEdit2, FiExternalLink, FiMail,
+  FiArrowLeft, FiBarChart2, FiCalendar, FiCamera, FiCheck, FiCheckCircle, FiClock, FiCopy, FiDownload, FiEdit2, FiExternalLink, FiMail,
   FiMapPin, FiMonitor, FiPlus, FiSearch, FiSend, FiTrash2, FiUserCheck, FiUserPlus, FiUsers, FiX, FiXCircle,
 } from "react-icons/fi";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
@@ -11,6 +11,7 @@ import { usePermissions } from "../../../hooks/usePermissions";
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import RecordStamp from "../../activity/components/RecordStamp";
+import TicketScanner from "../components/TicketScanner";
 import { errorOf, generalEventsApi } from "../services/generalEventsApi";
 import { useEventMutation, useEventRegistrations, useGeneralEvent } from "../hooks/useGeneralEvents";
 import { EVENTS_CSS, REG_STATUS, SOURCE_LABEL, StatePill, btn, hintStyle, inputStyle, labelStyle, plural, shortDate, shortDateTime } from "../shared";
@@ -169,7 +170,7 @@ function Registrations({ event, canEdit }) {
   };
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return regs.filter(FILTERS[filter][1]).filter((r) => !needle || `${r.name} ${r.email} ${r.phone}`.toLowerCase().includes(needle));
+    return regs.filter(FILTERS[filter][1]).filter((r) => !needle || `${r.name} ${r.email} ${r.phone} ${r.ticketCode || ""}`.toLowerCase().includes(needle));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regs, filter, q]);
   const live = regs.filter((r) => r.status !== "cancelled");
@@ -204,7 +205,7 @@ function Registrations({ event, canEdit }) {
       </div>
       <label style={{ position: "relative", display: "block" }}>
         <FiSearch size={15} style={{ position: "absolute", left: 12, top: 13, color: BRAND.muted }} />
-        <input style={{ ...inputStyle, paddingLeft: 36 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or phone" aria-label="Search registrations" />
+        <input style={{ ...inputStyle, paddingLeft: 36 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or ticket" aria-label="Search registrations" />
       </label>
       {isLoading ? <p style={hintStyle}>Loading…</p> : shown.length === 0 ? <p style={{ ...hintStyle, margin: 0 }}>{regs.length ? "No one matches." : "No one has registered yet."}</p> : (
         <div style={{ display: "grid", gap: 10 }}>
@@ -224,7 +225,7 @@ function Registrations({ event, canEdit }) {
                       <a href={`mailto:${r.email}`} style={{ color: BRAND.inkSoft }}>{r.email}</a> · <a href={`tel:${r.phone.replace(/\s+/g, "")}`} style={{ color: BRAND.inkSoft }}>{r.phone}</a>
                     </div>
                     <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 2 }}>
-                      {plural(r.partySize, "person", "people")} · {SOURCE_LABEL[r.source] || r.source} · {shortDateTime(r.createdAt)}{r.marketingConsent ? " · happy to hear from us" : ""}
+                      {r.status === "registered" && r.ticketCode ? <><span style={{ fontFamily: "Consolas, monospace", fontWeight: 700, color: BRAND.inkSoft }}>{r.ticketCode}</span> · </> : null}{plural(r.partySize, "person", "people")} · {SOURCE_LABEL[r.source] || r.source} · {shortDateTime(r.createdAt)}{r.marketingConsent ? " · happy to hear from us" : ""}
                     </div>
                   </div>
                   {canEdit && r.status !== "cancelled" && (
@@ -257,13 +258,15 @@ function Registrations({ event, canEdit }) {
 
 function CheckIn({ event, canEdit }) {
   const { data: regs = [] } = useEventRegistrations(event.id, { refetchInterval: 20000 });
-  const [q, setQ] = useState("");
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(params.get("ticket") || "");
   const [walkIn, setWalkIn] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const mark = useEventMutation(event.id, ({ regId, arrived }) => generalEventsApi.arrived(event.id, regId, arrived), null);
   const live = regs.filter((r) => r.status !== "cancelled");
   const needle = q.trim().toLowerCase();
   const shown = live
-    .filter((r) => !needle || `${r.name} ${r.email} ${r.phone}`.toLowerCase().includes(needle))
+    .filter((r) => !needle || `${r.name} ${r.email} ${r.phone} ${r.ticketCode || ""}`.toLowerCase().includes(needle))
     .sort((a, b) => Number(!!a.attendedAt) - Number(!!b.attendedAt) || a.name.localeCompare(b.name));
   const arrivedPeople = live.filter((r) => r.attendedAt).reduce((s, r) => s + r.partySize, 0);
   const expected = live.filter((r) => r.status === "registered").reduce((s, r) => s + r.partySize, 0);
@@ -275,11 +278,14 @@ function CheckIn({ event, canEdit }) {
           <div style={{ fontSize: 28, fontWeight: 900, color: BRAND.ink }}>{arrivedPeople} <span style={{ fontSize: 15, color: BRAND.muted, fontWeight: 700 }}>of {expected} people arrived</span></div>
           <div style={{ height: 8, borderRadius: 4, background: BRAND.track, marginTop: 6, width: "min(320px, 70vw)" }}><div style={{ height: 8, borderRadius: 4, background: BRAND.mid, width: `${expected ? Math.min(100, (arrivedPeople / expected) * 100) : 0}%` }} /></div>
         </div>
-        {canEdit && <button type="button" style={btn("gold", { minHeight: 46 })} onClick={() => setWalkIn(true)}><FiUserPlus size={16} /> Walk-in</button>}
+        <div className="ge-row">
+          <button type="button" style={btn("primary", { minHeight: 46 })} onClick={() => setScanning(true)}><FiCamera size={16} /> Scan tickets</button>
+          {canEdit && <button type="button" style={btn("gold", { minHeight: 46 })} onClick={() => setWalkIn(true)}><FiUserPlus size={16} /> Walk-in</button>}
+        </div>
       </div>
       <label style={{ position: "relative", display: "block" }}>
         <FiSearch size={16} style={{ position: "absolute", left: 14, top: 15, color: BRAND.muted }} />
-        <input style={{ ...inputStyle, padding: "13px 14px 13px 40px", fontSize: 16 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find someone by name or phone" aria-label="Find someone" />
+        <input style={{ ...inputStyle, padding: "13px 14px 13px 40px", fontSize: 16 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find someone by name, phone or ticket code" aria-label="Find someone" />
       </label>
       <div style={{ display: "grid", gap: 8 }}>
         {shown.length === 0 && <p style={{ ...hintStyle, margin: 0 }}>{live.length ? "No one matches — add them as a walk-in." : "No one registered yet."}</p>}
@@ -289,7 +295,7 @@ function CheckIn({ event, canEdit }) {
             <div key={r.id} style={{ ...card, padding: "12px 14px", display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", borderColor: here ? BRAND.skyBorder : BRAND.border, background: here ? BRAND.skyTint : "#fff" }}>
               <div style={{ minWidth: 0 }}>
                 <strong style={{ fontSize: 15, color: BRAND.ink }}>{r.name}</strong>
-                <div style={{ fontSize: 12.5, color: BRAND.muted }}>{plural(r.partySize, "person", "people")} · {r.phone}{r.status === "waitlisted" ? " · on the waiting list" : ""}</div>
+                <div style={{ fontSize: 12.5, color: BRAND.muted }}>{r.status === "registered" && r.ticketCode ? `${r.ticketCode} · ` : ""}{plural(r.partySize, "person", "people")} · {r.phone}{r.status === "waitlisted" ? " · on the waiting list" : ""}</div>
               </div>
               {canEdit && (
                 <button type="button" onClick={() => mark.mutate({ regId: r.id, arrived: !here })}
@@ -302,6 +308,7 @@ function CheckIn({ event, canEdit }) {
         })}
       </div>
       {walkIn && <AddPersonDialog eventId={event.id} walkIn onClose={() => setWalkIn(false)} />}
+      {scanning && <TicketScanner event={event} canLetIn={canEdit} onClose={() => setScanning(false)} />}
     </div>
   );
 }

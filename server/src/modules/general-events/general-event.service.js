@@ -10,9 +10,15 @@
 //   the person registered  their own page on the website (/events/registration/<token>): their
 //                    details, the optional "about you", add to calendar, cancel
 // Capacity counts people; when full, registrations wait on a list and move up as places free.
+// Tickets (13 Nov 2026): every registration has a code (ticketCode, "EV-7K3M9Q"); once it has a
+// place, its emails carry the ticket — the code and a QR image served by this API
+// (/api/public/event-registrations/<token>/ticket.png) holding the portal's /ticket/<code> — and so
+// does its website page (printable). At the door: Check-in → Scan tickets (the camera, same tab) or
+// the code typed; a ticket admits its whole party once (ticket / ticketCheckIn).
 // Events are free for now: a price is kept (priceAmount) but refused until paid tickets are built
 // (they'd raise an invoice per registration — general_event_registrations.invoiceId).
 const crypto = require("crypto");
+const QRCode = require("qrcode");
 const db = require("../../config/db");
 const env = require("../../config/env");
 const R = require("./general-event.rules");
@@ -38,6 +44,17 @@ const parseJson = (v, fallback = null) => {
 const rowEvent = (e) => (e ? { ...e, images: parseJson(e.images, []) || [], systemAudience: parseJson(e.systemAudience, null), highlights: parseJson(e.highlights, []) || [], registrationOpen: !!e.registrationOpen, waitlistOn: !!e.waitlistOn, askAboutYou: !!e.askAboutYou, isPublic: !!e.isPublic, websitePopup: !!e.websitePopup, systemPopup: !!e.systemPopup } : null);
 const rowReg = (r) => (r ? { ...r, childrenAges: parseJson(r.childrenAges, []) || [], interests: parseJson(r.interests, []) || [], visitSource: parseJson(r.visitSource, null), marketingConsent: !!r.marketingConsent } : null);
 const newToken = () => crypto.randomBytes(24).toString("base64url");
+// A ticket code no registration has (UNIQUE in the table too).
+async function freshTicketCode(trx = db) {
+  for (;;) {
+    const code = R.newTicketCode();
+    if (!(await trx(REGS).where({ ticketCode: code }).first("id"))) return code;
+  }
+}
+
+// The address a ticket's QR code opens: the portal's check-in for that ticket (staff signed in mark
+// the person arrived; anyone else is told to show it at the door).
+const ticketCheckInUrl = (code) => `${String(env.CLIENT_URL || "").replace(/\/+$/, "")}/ticket/${code}`;
 const lowerEmail = (e) => String(e || "").trim().toLowerCase();
 const now = () => new Date();
 
@@ -155,6 +172,8 @@ function ownView(reg) {
     detailsDone: Boolean(reg.detailsAt),
     marketingConsent: reg.marketingConsent,
     attended: Boolean(reg.attendedAt),
+    // The ticket is only theirs once they have a place.
+    ticketCode: reg.status === "registered" ? reg.ticketCode || null : null,
   };
 }
 
@@ -279,11 +298,11 @@ async function register(eventId, input) {
     };
     if (existing) {
       // Cancelled before, back again: the same row (and link), a fresh place in the queue.
-      await trx(REGS).where({ id: existing.id }).update({ ...record, createdAt: at });
+      await trx(REGS).where({ id: existing.id }).update({ ...record, ticketCode: existing.ticketCode || await freshTicketCode(trx), createdAt: at });
       return { event, registration: rowReg(await trx(REGS).where({ id: existing.id }).first()), already: false, returned: true };
     }
     const id = generateId();
-    await trx(REGS).insert({ id, eventId: event.id, ownerAdminId: event.ownerAdminId, token: newToken(), createdAt: at, ...record });
+    await trx(REGS).insert({ id, eventId: event.id, ownerAdminId: event.ownerAdminId, token: newToken(), ticketCode: await freshTicketCode(trx), createdAt: at, ...record });
     return { event, registration: rowReg(await trx(REGS).where({ id }).first()), already: false };
   });
 
@@ -562,6 +581,7 @@ function staffRegView(r) {
     detailsAt: r.detailsAt || null,
     visitSource: r.visitSource || null,
     referralCode: r.referralCode || null,
+    ticketCode: r.ticketCode || null,
   };
 }
 
@@ -708,6 +728,40 @@ const GeneralEventService = {
     if (!reg) throw fail(404, "Registration not found");
     await db(REGS).where({ id: regId }).update({ attendedAt: arrived ? reg.attendedAt || now() : null, checkedInBy: arrived ? req.user.id : null, updatedAt: now() });
     return staffRegView(rowReg(await db(REGS).where({ id: regId }).first()));
+  },
+
+  // A ticket scanned or typed at the door (the portal's /ticket/<code>, the Check-in tab): who it
+  // is, for which event, and whether it lets them in. Only this workspace's events.
+  async ticket(req, rawCode) {
+    const code = R.normaliseTicketCode(rawCode);
+    if (!code) throw fail(400, "That isn't a ticket code — it looks like EV-7K3M9Q.");
+    const reg = rowReg(await db(REGS).where({ ticketCode: code }).first());
+    const event = reg ? await findEvent(reg.eventId, req.ownerAdminId) : null;
+    if (!reg || !event) throw fail(404, `No ticket ${code} for your events.`);
+    return {
+      code,
+      ticket: R.ticketState(reg, event),
+      registration: staffRegView(reg),
+      event: { id: event.id, title: event.title, when: R.describeWhen(event), where: R.whereText(event, await hubNameOf(event)), state: R.eventState(event) },
+    };
+  },
+
+  // Let them in: a valid ticket not used yet is marked arrived (the whole party). A used one says
+  // when; a waiting-list, cancelled or cancelled-event ticket is refused.
+  async ticketCheckIn(req, rawCode) {
+    const found = await this.ticket(req, rawCode);
+    if (!found.ticket.valid) throw fail(409, `Ticket ${found.code}: ${found.ticket.label}.`, { code: "TICKET_NOT_VALID" });
+    if (found.ticket.used) return { ...found, justCheckedIn: false };
+    await this.markArrived(req, found.event.id, found.registration.id, true);
+    return { ...(await this.ticket(req, found.code)), justCheckedIn: true };
+  },
+
+  // The QR code (PNG) on a ticket — for the emails (mail apps need an image address) and the
+  // website's registration page. It holds the check-in address, nothing private.
+  async ticketPng(token) {
+    const reg = await this.byToken(token);
+    if (!reg.ticketCode) throw fail(404, "No ticket");
+    return QRCode.toBuffer(ticketCheckInUrl(reg.ticketCode), { type: "png", width: 360, margin: 2, errorCorrectionLevel: "M", color: { dark: "#14283c", light: "#ffffff" } });
   },
 
   // An email to a group of the people registered: everyone, registered, waiting, came, didn't come.

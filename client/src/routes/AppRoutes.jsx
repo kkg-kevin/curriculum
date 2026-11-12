@@ -86,6 +86,7 @@ import CompetitionViewPage from "../modules/competitions/pages/CompetitionViewPa
 import CreateBootcampPage from "../modules/bootcamps/pages/CreateBootcampPage";
 import GeneralEventFormPage from "../modules/general-events/pages/GeneralEventFormPage";
 import GeneralEventPage from "../modules/general-events/pages/GeneralEventPage";
+import TicketPage from "../modules/general-events/pages/TicketPage";
 import BootcampViewPage from "../modules/bootcamps/pages/BootcampViewPage";
 import LearnersPage from "../modules/learners/pages/LearnersPage";
 import AdminBulkImportPage from "../modules/learners/pages/AdminBulkImportPage";
@@ -176,6 +177,9 @@ export default function AppRoutes() {
       {/* Unauthenticated too — where the QR on a course certificate leads, for anyone checking
           that it is genuine. */}
       <Route path="/certificates/verify/:token" element={<VerifyCertificatePage />} />
+      {/* A general event's ticket QR code leads here — staff signed in check the person in, anyone
+          else is told to show it at the door (modules/general-events/pages/TicketPage.jsx). */}
+      <Route path="/ticket/:code" element={<TicketPage />} />
       {/* Unauthenticated too — the "choose which emails you get" link in an email's footer. */}
       <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 

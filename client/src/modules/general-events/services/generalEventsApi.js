@@ -21,6 +21,9 @@ export const generalEventsApi = {
   arrived: (id, regId, arrived) => api.post(`${BASE}/${id}/registrations/${regId}/arrived`, { arrived }).then(data),
   message: (id, body) => api.post(`${BASE}/${id}/message`, body).then(data),
   invite: (id, audience) => api.post(`${BASE}/${id}/invite`, { audience }).then(data),
+  // A ticket at the door (scanned QR → /ticket/:code, or typed in Check-in).
+  ticket: (code) => api.get(`${BASE}/tickets/${encodeURIComponent(code)}`).then(data),
+  ticketCheckIn: (code) => api.post(`${BASE}/tickets/${encodeURIComponent(code)}/check-in`).then(data),
 };
 
 export const myEventsApi = {

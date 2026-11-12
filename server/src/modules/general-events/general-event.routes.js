@@ -83,6 +83,9 @@ router.use(authorize("admin"));
 router.get("/", asyncHandler(async (req, res) => ok(res, await Service.list(req.ownerAdminId))));
 router.get("/options", asyncHandler(async (req, res) => ok(res, await Service.options(req.ownerAdminId))));
 router.post("/", asyncHandler(async (req, res) => ok(res, await Service.create(req, eventSchema.parse(req.body || {})), 201)));
+// Tickets at the door: look one up (scanned QR or a typed code), and let them in.
+router.get("/tickets/:code", asyncHandler(async (req, res) => ok(res, await Service.ticket(req, req.params.code))));
+router.post("/tickets/:code/check-in", asyncHandler(async (req, res) => ok(res, await Service.ticketCheckIn(req, req.params.code))));
 router.get("/:id", asyncHandler(async (req, res) => ok(res, await Service.get(req.ownerAdminId, req.params.id))));
 router.put("/:id", asyncHandler(async (req, res) => ok(res, await Service.update(req, req.params.id, eventSchema.parse(req.body || {})))));
 router.delete("/:id", asyncHandler(async (req, res) => {
@@ -178,6 +181,14 @@ publicRouter.post("/events/:slug/registrations", limiter, asyncHandler(async (re
 // The registration's own page — whoever has the link from the email (or just registered).
 publicRouter.get("/event-registrations/:token", asyncHandler(async (req, res) => ok(res, await Service.tokenView(req.params.token))));
 publicRouter.put("/event-registrations/:token/details", limiter, asyncHandler(async (req, res) => ok(res, await Service.tokenDetails(req.params.token, detailsSchema.parse(req.body || {})))));
+// The ticket's QR code, for the emails and the registration page (a mail app fetches it by address).
+publicRouter.get("/event-registrations/:token/ticket.png", asyncHandler(async (req, res) => {
+  const png = await Service.ticketPng(req.params.token);
+  res.set("Content-Type", "image/png");
+  res.set("Cache-Control", "public, max-age=86400");
+  res.set("Cross-Origin-Resource-Policy", "cross-origin");
+  res.send(png);
+}));
 publicRouter.post("/event-registrations/:token/cancel", limiter, asyncHandler(async (req, res) => ok(res, await Service.tokenCancel(req.params.token))));
 
 module.exports = { router, mineRouter, publicRouter };

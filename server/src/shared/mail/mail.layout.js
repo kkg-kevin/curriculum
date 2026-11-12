@@ -101,6 +101,7 @@ const socialLinks = () => String(env.MAIL_SOCIAL_LINKS || "").split(",").map((pa
 //   preview?: string               the line a mail app shows next to the subject
 //   person?: { name, photo?, caption? }      who the email is about (a learner)
 //   highlight?: { label, value, note? }      the one figure that matters (an amount, a new level)
+//   ticket?: { code, title?, holder?, admits?, qrUrl?, note?, label? }   an entry ticket (general events)
 //   rows?: [[label, value]]        a small summary table (an invoice's number, total, due date)
 //   button?: { label, url },
 //   afterParagraphs?: [string]     shown under the button
@@ -112,7 +113,7 @@ const socialLinks = () => String(env.MAIL_SOCIAL_LINKS || "").split(",").map((pa
 // }
 function renderEmail({
   heading, greeting, paragraphs = [], tone: toneName, icon, eyebrow, preview, person, highlight, rows = [], button,
-  afterParagraphs = [], sender, supportEmail, footerNote, footerLink, brandName,
+  afterParagraphs = [], sender, supportEmail, footerNote, footerLink, brandName, ticket,
 }) {
   const brand = brandName || env.MAIL_BRAND_NAME;
   const tone = TONES[toneName] || TONES.brand;
@@ -146,6 +147,19 @@ function renderEmail({
             `<tr><td style="padding:10px 14px;font-size:12.5px;color:#6B7280;${i ? "border-top:1px solid #F3F4F6;" : ""}">${escapeHtml(label)}</td><td align="right" style="padding:10px 14px;font-size:13.5px;font-weight:700;color:#111827;${i ? "border-top:1px solid #F3F4F6;" : ""}">${escapeHtml(value)}</td></tr>`
         )
         .join("")}</table>`
+    : "";
+
+  // An entry ticket (general events): its QR code to scan at the door, and the code itself in big
+  // letters for when the image is blocked or the phone is flat — either one gets them in.
+  const ticketHtml = ticket?.code
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 18px;border:2px dashed #B9C7D6;border-radius:14px;border-collapse:separate;"><tr><td align="center" style="padding:18px 16px 16px;">`
+      + `<div style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#6B7280;">${escapeHtml(ticket.label || "Your ticket")}</div>`
+      + (ticket.title ? `<div style="margin-top:4px;font-size:16px;font-weight:800;color:#111827;line-height:1.3;">${escapeHtml(ticket.title)}</div>` : "")
+      + (ticket.qrUrl ? `<img src="${escapeHtml(ticket.qrUrl)}" width="168" height="168" alt="Ticket QR code ${escapeHtml(ticket.code)}" style="display:block;margin:12px auto 6px;border:0;width:168px;height:168px;font-family:${FONT};font-size:13px;color:#6B7280;" />` : "")
+      + `<div style="margin-top:${ticket.qrUrl ? 4 : 12}px;font-family:'SFMono-Regular',Consolas,'Courier New',monospace;font-size:24px;font-weight:800;letter-spacing:0.12em;color:#14283c;">${escapeHtml(ticket.code)}</div>`
+      + `<div style="margin-top:6px;font-size:13px;color:#374151;">${escapeHtml([ticket.holder, ticket.admits ? `Admits ${ticket.admits}` : null].filter(Boolean).join(" · "))}</div>`
+      + (ticket.note ? `<div style="margin-top:8px;font-size:12px;color:#6B7280;line-height:1.5;">${escapeHtml(ticket.note)}</div>` : "")
+      + `</td></tr></table>`
     : "";
 
   // The fallback is a short link, not the address spelled out: an invoice or reset link is long
@@ -185,7 +199,7 @@ function renderEmail({
 <tr><td class="df-pad" style="padding:20px 28px;border-bottom:1px solid #F3F4F6;">${headerHtml}</td></tr>
 <tr><td class="df-pad" style="padding:26px 28px 12px;">
 ${badgeHtml}<h1 style="margin:0 0 16px;font-size:21px;line-height:1.3;font-weight:800;color:#111827;">${escapeHtml(heading)}</h1>
-${personHtml}${greeting ? p(greeting) : ""}${paragraphs.map(p).join("")}${highlightHtml}${rowsHtml}${buttonHtml}${afterParagraphs.map(p).join("")}
+${personHtml}${greeting ? p(greeting) : ""}${paragraphs.map(p).join("")}${highlightHtml}${ticketHtml}${rowsHtml}${buttonHtml}${afterParagraphs.map(p).join("")}
 </td></tr>
 <tr><td class="df-pad" style="padding:18px 28px 22px;background-color:#F9FAFB;border-top:1px solid #F3F4F6;font-size:11.5px;line-height:1.6;color:#9CA3AF;">${footerHtml}</td></tr>
 </table></td></tr></table></body></html>`;
@@ -197,6 +211,7 @@ ${personHtml}${greeting ? p(greeting) : ""}${paragraphs.map(p).join("")}${highli
     ...(greeting ? [greeting, ""] : []),
     ...paragraphs.flatMap((line) => [line, ""]),
     ...(highlight?.value ? [`${highlight.label ? `${highlight.label}: ` : ""}${highlight.value}${highlight.note ? ` (${highlight.note})` : ""}`, ""] : []),
+    ...(ticket?.code ? [`${ticket.label || "Your ticket"}: ${ticket.code}${ticket.admits ? ` (admits ${ticket.admits})` : ""}${ticket.holder ? ` - ${ticket.holder}` : ""}`, ...(ticket.note ? [ticket.note] : []), ""] : []),
     ...(rows.length ? [...rows.map(([label, value]) => `${label}: ${value}`), ""] : []),
     ...(button ? [`${button.label}: ${button.url}`, ""] : []),
     ...afterParagraphs.flatMap((line) => [line, ""]),
