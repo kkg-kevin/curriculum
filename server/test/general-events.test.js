@@ -130,3 +130,14 @@ test("when and where, in words", () => {
   assert.equal(R.isFree(event()), true);
   assert.equal(R.isFree(event({ priceAmount: "500.00" })), false);
 });
+
+test("the event page's ages and what to expect", () => {
+  assert.equal(R.agesText({ ageMin: 6, ageMax: 14 }), "For ages 6–14");
+  assert.equal(R.agesText({ ageMin: 8 }), "For ages 8 and up");
+  assert.equal(R.agesText({ ageMax: 12 }), "Up to age 12");
+  assert.equal(R.agesText({ ageMin: 7, ageMax: 7 }), "For age 7");
+  assert.equal(R.agesText({}), null);
+  assert.deepEqual(R.highlightsOf({ kind: "workshop", highlights: [" Build a robot ", "", "Take it home"] }), ["Build a robot", "Take it home"]);
+  assert.equal(R.highlightsOf({ kind: "open_day", highlights: [] }), R.DEFAULT_HIGHLIGHTS.open_day);
+  assert.equal(R.highlightsOf({ kind: "nope" }), R.DEFAULT_HIGHLIGHTS.other);
+});
