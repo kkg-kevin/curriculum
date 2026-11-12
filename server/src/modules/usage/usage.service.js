@@ -329,6 +329,15 @@ const CHECKS = {
     ],
   },
 
+  // A general event with registrations is cancelled, never deleted (the people are kept).
+  generalEvent: {
+    name: "general_events",
+    alternative: "cancel it instead — everyone registered is told, and their details are kept",
+    uses: (id) => [
+      usage("registrations", ["registration", "registrations"], db("general_event_registrations").where({ eventId: id }), { table: "general_event_registrations" }),
+    ],
+  },
+
   game: {
     name: "event_games",
     alternative: null,
@@ -402,6 +411,7 @@ const OWNER = {
   accessRole: (id) => db("access_roles").where({ id }).first("ownerAdminId"),
   bootcamp: (id) => db("bootcamps").where({ id }).first("ownerAdminId"),
   game: (id) => db("event_games").where({ id }).first("ownerAdminId"),
+  generalEvent: (id) => db("general_events").where({ id }).first("ownerAdminId"),
   supervisor: (id) => db("users").where({ id }).first("invitedByAdminId as ownerAdminId"),
   qaTemplate: (id) => db("qa_templates").where({ id }).first("ownerAdminId"),
   checkinTemplate: (id) => db("checkin_templates").where({ id }).first("ownerAdminId"),

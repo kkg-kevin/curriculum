@@ -1,32 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { FiChevronDown } from "react-icons/fi";
+import { FiChevronRight } from "react-icons/fi";
 import LogoutButton from "./LogoutButton";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../branding";
 import { useAuth } from "../../context/AuthContext";
 import { isStaff } from "../../hooks/usePermissions";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../hooks/useSidebarHover";
-import { readLocal, writeLocal } from "../../utils/safeStorage";
 import { isCurrent, navFor } from "../../navigation/adminNav";
 
-// The admin app's sidebar — a tree (navigation/adminNav.js): Dashboard, then sections that fold
-// (Teaching & learning, People, Programmes, Finance, Quality & insights), each with its items; an
-// item with sub-pages opens to show them; Settings pinned at the bottom.
-//   - The section and item holding the current page open by themselves; what's folded is remembered
-//     in this browser (safeStorage — never throws when storage is blocked).
-//   - Desktop: an icon rail (section dividers + item icons) that opens while hovered; an item with
-//     sub-pages links to its own page there. Phone: the same tree in the drawer.
+// The admin app's sidebar — a tree (navigation/adminNav.js): Dashboard, then sections (Teaching &
+// learning, People, Programmes, Finance, Quality & insights), each with its items; Settings pinned
+// at the bottom. No dropdowns (12 Nov 2026): an item with sub-pages links to its own page, and its
+// sub-pages are one hover away in the flyout (desktop) or listed under it (phone drawer).
+//   - Desktop: an icon rail (section dividers + item icons) that opens while hovered.
 //   - Staff see only what their role allows (navFor), exactly as before.
+//   - Desktop hover flyout: pointing at an item with sub-pages opens a second panel beside the
+//     sidebar listing them. It's rendered through a portal but stays in the sidebar's React tree,
+//     so moving the pointer onto it keeps the sidebar open.
 
 const NAVY = "#25476a";
 const GOLD = "#feb139";
-const CLOSED_SECTIONS_KEY = "adminNav.closedSections";
-const OPEN_ITEMS_KEY = "adminNav.openItems";
-
-const readSet = (key) => {
-  try { return new Set(JSON.parse(readLocal(key) || "[]")); } catch { return new Set(); }
-};
-const writeSet = (key, set) => writeLocal(key, JSON.stringify([...set]));
 
 const itemCurrent = (item, location) => (item.children
   ? item.children.some((c) => isCurrent(c, location, { siblings: item.children }))
@@ -64,11 +58,11 @@ function LeafLink({ item, location, collapsed, onNavigate, depth = 0, siblings }
   );
 }
 
-function ParentItem({ item, location, collapsed, open, onToggle, onNavigate }) {
+function ParentItem({ item, location, collapsed, mobile, onNavigate, onHover, onLeave }) {
   const Icon = item.icon;
   const current = itemCurrent(item, location);
   if (collapsed) {
-    // The icon rail: the item's own page (hovering opens the full tree).
+    // The icon rail: the item's own page (hovering opens the full sidebar).
     return (
       <Link to={item.path} title={item.name} aria-current={current ? "page" : undefined} className="adm-nav-link"
         style={{ display: "flex", justifyContent: "center", padding: 11, margin: "0 0 3px", borderRadius: 12, color: current ? NAVY : "#fff", backgroundColor: current ? GOLD : "transparent" }}>
@@ -76,27 +70,32 @@ function ParentItem({ item, location, collapsed, open, onToggle, onNavigate }) {
       </Link>
     );
   }
-  const listId = `adm-sub-${item.name.replace(/\W+/g, "-").toLowerCase()}`;
   return (
     <div style={{ margin: "0 0 3px" }}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={listId}
+      <Link
+        to={item.path}
+        onClick={onNavigate}
+        onMouseEnter={onHover ? (e) => onHover(e.currentTarget) : undefined}
+        onMouseLeave={onLeave}
+        aria-current={current ? "page" : undefined}
+        aria-haspopup={mobile ? undefined : "menu"}
+        data-active={current || undefined}
         className="adm-nav-link"
         style={{
-          width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: "none", borderRadius: 12,
-          background: current && !open ? "rgba(254,177,57,0.16)" : "transparent",
-          color: current ? GOLD : "#fff", fontSize: 14.5, fontWeight: current ? 700 : 500, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
+          display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, textDecoration: "none",
+          backgroundColor: current ? GOLD : "transparent",
+          color: current ? NAVY : "#fff", fontSize: 14.5, fontWeight: current ? 700 : 500,
+          transition: "background-color 0.15s ease, color 0.15s ease",
         }}
       >
         {Icon && <Icon size={18} style={{ flexShrink: 0 }} />}
         <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
-        <FiChevronDown size={15} style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease", opacity: 0.8 }} />
-      </button>
-      {open && (
-        <div id={listId} style={{ margin: "2px 0 6px 23px", paddingLeft: 10, borderLeft: "1.5px solid rgba(255,255,255,0.16)" }}>
+        {/* Points at the flyout of its pages (desktop). */}
+        {!mobile && <FiChevronRight size={15} style={{ flexShrink: 0, opacity: 0.65 }} />}
+      </Link>
+      {/* Phones have no hover: the pages show under the item. */}
+      {mobile && (
+        <div style={{ margin: "2px 0 6px 23px", paddingLeft: 10, borderLeft: "1.5px solid rgba(255,255,255,0.16)" }}>
           {item.children.map((child) => (
             <LeafLink key={child.path + child.name} item={child} location={location} onNavigate={onNavigate} depth={1} siblings={item.children} />
           ))}
@@ -106,40 +105,60 @@ function ParentItem({ item, location, collapsed, open, onToggle, onNavigate }) {
   );
 }
 
-function Section({ section, location, collapsed, closed, onToggleSection, openItems, onToggleItem, onNavigate }) {
-  const listId = `adm-sec-${section.key}`;
-  const hasCurrent = section.items.some((i) => itemCurrent(i, location));
+function Section({ section, location, collapsed, mobile, onNavigate, onFly, onFlyLeave }) {
   return (
     <div style={{ marginTop: collapsed ? 6 : 14 }}>
       {collapsed ? (
         <div aria-hidden="true" style={{ height: 1, margin: "8px 10px 10px", background: "rgba(255,255,255,0.15)" }} />
       ) : (
-        <button
-          type="button"
-          onClick={onToggleSection}
-          aria-expanded={!closed}
-          aria-controls={listId}
-          className="adm-nav-section"
-          style={{
-            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-            padding: "6px 14px", margin: "0 0 4px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit",
-            color: hasCurrent && closed ? GOLD : "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
-          }}
-        >
-          <span>{section.label}</span>
-          <FiChevronDown size={13} style={{ transform: closed ? "rotate(-90deg)" : "none", transition: "transform 0.15s ease" }} />
-        </button>
+        <p style={{ margin: "0 0 4px", padding: "6px 14px", color: "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>{section.label}</p>
       )}
-      {(collapsed || !closed) && (
-        <div id={listId}>
-          {section.items.map((item) => (item.children ? (
-            <ParentItem key={item.name} item={item} location={location} collapsed={collapsed} open={openItems.has(item.name)} onToggle={() => onToggleItem(item.name)} onNavigate={onNavigate} />
-          ) : (
-            <LeafLink key={item.name} item={item} location={location} collapsed={collapsed} onNavigate={onNavigate} />
-          )))}
-        </div>
-      )}
+      <div>
+        {section.items.map((item) => (item.children ? (
+          <ParentItem key={item.name} item={item} location={location} collapsed={collapsed} mobile={mobile} onNavigate={onNavigate}
+            onHover={onFly ? (el) => onFly({ id: `item:${item.name}`, title: item.name, items: item.children, parent: item }, el) : undefined}
+            onLeave={onFlyLeave} />
+        ) : (
+          <LeafLink key={item.name} item={item} location={location} collapsed={collapsed} onNavigate={onNavigate} />
+        )))}
+      </div>
     </div>
+  );
+}
+
+// The second panel: a section's items (each with its sub-pages) or an item's sub-pages.
+const FLY_WIDTH = 248;
+function Flyout({ fly, location, onEnter, onLeave, onNavigate }) {
+  const rows = fly.items.length + fly.items.reduce((n, i) => n + (i.children?.length || 0), 0) + (fly.parent ? 1 : 0);
+  const estimate = 56 + rows * 38;
+  const top = Math.max(8, Math.min(fly.top - 8, window.innerHeight - estimate - 12));
+  const link = (item, siblings, depth) => {
+    const active = item.children ? itemCurrent(item, location) : isCurrent(item, location, { siblings });
+    const Icon = item.icon;
+    return (
+      <Link key={item.path + item.name} to={item.path} onClick={onNavigate} aria-current={active ? "page" : undefined} className="adm-fly-link"
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: depth ? "7px 12px 7px 36px" : "9px 12px", borderRadius: 10, textDecoration: "none",
+          fontSize: depth ? 13 : 14, fontWeight: active ? 700 : depth ? 500 : 600, color: active ? GOLD : depth ? "rgba(255,255,255,0.78)" : "#fff",
+          background: active ? "rgba(254,177,57,0.14)" : "transparent" }}>
+        {Icon && !depth && <Icon size={16} style={{ flexShrink: 0, opacity: 0.9 }} />}
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
+      </Link>
+    );
+  };
+  return createPortal(
+    <div role="menu" aria-label={fly.title} onMouseEnter={onEnter} onMouseLeave={onLeave} className="no-print"
+      style={{ position: "fixed", left: SIDEBAR_WIDTH - 6, top, width: FLY_WIDTH, maxHeight: "calc(100vh - 16px)", overflowY: "auto", zIndex: 1301,
+        background: "#1f3d5c", color: "#fff", borderRadius: "0 16px 16px 0", padding: "12px 10px 10px 16px",
+        boxShadow: "12px 8px 36px rgba(0,0,0,0.28)", fontFamily: "Inter, sans-serif", animation: "admFlyIn 120ms ease-out" }}>
+      <p style={{ margin: "2px 4px 8px", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.58)" }}>{fly.title}</p>
+      {fly.parent ? fly.items.map((c) => link(c, fly.items, 0)) : fly.items.map((item) => (
+        <div key={item.name}>
+          {link(item, [], 0)}
+          {item.children?.map((c) => link(c, item.children, 1))}
+        </div>
+      ))}
+    </div>,
+    document.body,
   );
 }
 
@@ -153,39 +172,21 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
   const isCollapsed = !isMobile && !expanded;
   const onNavigate = isMobile ? onClose : undefined;
 
-  const [closedSections, setClosedSections] = useState(() => readSet(CLOSED_SECTIONS_KEY));
-  const [openItems, setOpenItems] = useState(() => readSet(OPEN_ITEMS_KEY));
-
-  // The page being shown: its section unfolds and its item opens (and stays so).
-  useEffect(() => {
-    for (const section of nav.sections) {
-      const item = section.items.find((i) => itemCurrent(i, location));
-      if (!item) continue;
-      setClosedSections((prev) => {
-        if (!prev.has(section.key)) return prev;
-        const next = new Set(prev); next.delete(section.key); writeSet(CLOSED_SECTIONS_KEY, next); return next;
-      });
-      if (item.children) {
-        setOpenItems((prev) => {
-          if (prev.has(item.name)) return prev;
-          const next = new Set(prev); next.add(item.name); writeSet(OPEN_ITEMS_KEY, next); return next;
-        });
-      }
-    }
-  }, [location.pathname, location.search, location.hash, nav]);
-
-  const toggleSection = (key) => setClosedSections((prev) => {
-    const next = new Set(prev);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    writeSet(CLOSED_SECTIONS_KEY, next);
-    return next;
-  });
-  const toggleItem = (name) => setOpenItems((prev) => {
-    const next = new Set(prev);
-    if (next.has(name)) next.delete(name); else next.add(name);
-    writeSet(OPEN_ITEMS_KEY, next);
-    return next;
-  });
+  // The hover flyout (desktop only): what it shows and where. A short delay before opening stops
+  // it flashing while the pointer passes down the list; a short one before closing lets the
+  // pointer cross onto it.
+  const [fly, setFly] = useState(null);
+  const flyTimer = useRef(null);
+  const openFly = (payload, el) => {
+    clearTimeout(flyTimer.current);
+    const top = el.getBoundingClientRect().top;
+    flyTimer.current = setTimeout(() => setFly({ ...payload, top }), fly ? 60 : 160);
+  };
+  const leaveFly = () => { clearTimeout(flyTimer.current); flyTimer.current = setTimeout(() => setFly(null), 220); };
+  const keepFly = () => clearTimeout(flyTimer.current);
+  useEffect(() => () => clearTimeout(flyTimer.current), []);
+  useEffect(() => { if (isCollapsed || isMobile) setFly(null); }, [isCollapsed, isMobile]);
+  useEffect(() => { setFly(null); }, [location.pathname, location.search, location.hash]);
 
   // Keep the current page's link in view when the list is long.
   const navRef = useRef(null);
@@ -226,7 +227,11 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
           .adm-nav-link:focus-visible, .adm-nav-section:focus-visible { outline: 2px solid ${GOLD}; outline-offset: 2px; }
           .adm-nav-section:hover { color: #fff !important; }
           .adm-nav-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.25) transparent; }
+          .adm-fly-link:not([aria-current="page"]):hover { background-color: rgba(255,255,255,0.09) !important; color: #fff !important; }
+          .adm-fly-link:focus-visible { outline: 2px solid ${GOLD}; outline-offset: 1px; }
+          @keyframes admFlyIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
         `}</style>
+        {fly && !isCollapsed && !isMobile && <Flyout fly={fly} location={location} onEnter={keepFly} onLeave={leaveFly} />}
 
         <div
           style={{
@@ -256,11 +261,10 @@ function Sidebar({ isMobile = false, isMobileOpen = false, onClose = () => {} })
               section={section}
               location={location}
               collapsed={isCollapsed}
-              closed={closedSections.has(section.key)}
-              onToggleSection={() => toggleSection(section.key)}
-              openItems={openItems}
-              onToggleItem={toggleItem}
+              mobile={isMobile}
               onNavigate={onNavigate}
+              onFly={isMobile || isCollapsed ? undefined : openFly}
+              onFlyLeave={isMobile || isCollapsed ? undefined : leaveFly}
             />
           ))}
         </nav>

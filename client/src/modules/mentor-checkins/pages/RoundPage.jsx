@@ -7,6 +7,7 @@ import TimePickerDialog from "../components/TimePickerDialog";
 import { CheckinStyles, FORMAT_LABEL, Modal, Pill, T, btn, card, childNames, font, formatDate, hint, input, label, safeMeetingLink, shortDay, stateFor, useMentorBase } from "../shared";
 import RecordStamp from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const WEEKDAY_SHORT = { monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun" };
 
 // Changing the link (online) or the place (in person) after publishing.
@@ -84,7 +85,7 @@ export default function RoundPage() {
               <button type="button" className="ci-btn" onClick={() => setWhereOpen(true)} style={btn("secondary", { size: "sm" })}><FiEdit2 size={13} /> {round.format === "online" ? "Change link" : "Change place"}</button>
               <button
                 type="button" className="ci-btn" disabled={cancelRound.isPending}
-                onClick={() => { if (window.confirm(`Cancel the check-ins still to come for ${round.className}? Every family and educator is told. Reports already written stay.`)) cancelRound.mutate(); }}
+                onClick={async () => { if (await askConfirm({ title: `Cancel the check-ins still to come for ${round.className}?`, message: "Every family and educator is told. Reports already written stay.", confirmLabel: "Cancel check-ins", cancelLabel: "Keep them", tone: "danger" })) cancelRound.mutate(); }}
                 style={btn("danger", { size: "sm", disabled: cancelRound.isPending })}
               >
                 <FiSlash size={13} /> Cancel all
@@ -129,7 +130,7 @@ export default function RoundPage() {
               {can.canManage && live && (
                 <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
                   <button type="button" className="ci-btn" onClick={() => setMoving(m)} style={btn("secondary", { size: "sm" })}><FiMove size={13} /> Move</button>
-                  <button type="button" className="ci-btn" disabled={cancelOne.isPending} onClick={() => { if (window.confirm(`Cancel the check-in with ${m.parentName}? They're told.`)) cancelOne.mutate(m.id); }} style={btn("danger", { size: "sm", disabled: cancelOne.isPending })}>Cancel</button>
+                  <button type="button" className="ci-btn" disabled={cancelOne.isPending} onClick={async () => { if (await askConfirm({ title: `Cancel the check-in with ${m.parentName}?`, message: "They're told.", confirmLabel: "Cancel check-in", cancelLabel: "Keep it", tone: "danger" })) cancelOne.mutate(m.id); }} style={btn("danger", { size: "sm", disabled: cancelOne.isPending })}>Cancel</button>
                 </div>
               )}
             </div>

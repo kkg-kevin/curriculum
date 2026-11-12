@@ -129,6 +129,14 @@ const LeadService = {
   async _resolveReference(referenceId) {
     if (!referenceId) return null;
 
+    // 0. a general event (an event registration's enquiry — modules/general-events/).
+    try {
+      const event = await require("../../config/db")("general_events").where({ id: referenceId }).first("id", "title", "slug");
+      if (event) return { referenceType: "event", referenceName: event.title, referenceSlug: event.slug, eventId: event.id };
+    } catch {
+      /* fall through */
+    }
+
     // 1. operational pathways owned by the designated public-content admin.
     if (env.PUBLIC_CONTENT_ADMIN_ID) {
       try {

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
-import { accountLabel, areaLabel, browserOf, timeOf, tone } from "../labels";
+import { areaLabel, browserOf, timeOf, tone } from "../labels";
+import RoleTag from "./RoleTag";
 
 // One line of the activity log: when, who, what. Opens to show exactly what changed (before →
-// after) and where it was done from. `compact` drops the person's account type and the area tag,
+// after) and where it was done from. `compact` drops the area tag,
 // for a record's own History panel where space is tight and the area is already known.
 export default function ActivityEntry({ entry, compact = false, showDate = false }) {
   const [open, setOpen] = useState(false);
@@ -23,11 +24,11 @@ export default function ActivityEntry({ entry, compact = false, showDate = false
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 13.5, color: "#111827", lineHeight: 1.45 }}>
             <strong style={{ fontWeight: 700 }}>{entry.actorName || "Unknown"}</strong>{" "}
+            <RoleTag person={entry} style={{ marginRight: 4 }} />{" "}
             <span style={{ color: "#374151" }}>{entry.summary ? entry.summary[0].toLowerCase() + entry.summary.slice(1) : ""}</span>
           </span>
           <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 4 }}>
             {t.label && <span style={{ fontSize: 10.5, fontWeight: 800, color: t.color, background: t.background, borderRadius: 999, padding: "2px 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>{t.label}</span>}
-            {!compact && <span style={{ fontSize: 11.5, color: "#6B7280" }}>{accountLabel(entry)}</span>}
             {!compact && entry.module && <span style={{ fontSize: 11, fontWeight: 600, color: "#6B7280", background: "#F3F4F6", borderRadius: 999, padding: "1px 8px" }}>{areaLabel(entry.module)}</span>}
             {changes.length > 0 && <span style={{ fontSize: 11.5, color: "#25476a", fontWeight: 600 }}>{changes.length} {changes.length === 1 ? "change" : "changes"}</span>}
           </span>

@@ -31,6 +31,7 @@ const RECORDS = {
   teachers: ["/api/teachers/", "/api/educator-profiles/", "/api/tot/educators/"],
   learners: ["/api/learners/"],
   bootcamps: ["/api/bootcamps/"],
+  general_events: ["/api/general-events/"],
   competitions: ["/api/competitions/"],
   qa_visits: ["/api/qa/visits/"],
   checkin_sessions: ["/api/checkins/sessions/"],
@@ -152,13 +153,14 @@ const AuditLogModel = {
 // successful changes only, from this workspace's log.
 AuditLogModel.stamp = async function stamp(ownerAdminId, recordType, recordId) {
   const changes = () => withinRecord(db(TABLE).where({ ownerAdminId, outcome: "success" }).whereNotIn("action", NOT_CHANGES), recordType, recordId);
-  const who = ["actorUserId", "actorName", "actorRole", "actorAccessRole", "createdAt"];
+  const who = ["actorUserId", "actorName", "actorEmail", "actorRole", "actorAccessRole", "createdAt"];
   const created = await db(TABLE).where({ ownerAdminId, outcome: "success", action: "create", entityType: recordType, entityId: recordId })
     .orderBy("createdAt", "asc").first(who);
   const last = await changes().whereNot((w) => w.where({ action: "create", entityType: recordType, entityId: recordId }))
     .orderBy("createdAt", "desc").first([...who, "action", "summary"]);
+  // Each person once per role they acted in (the tag: Admin, a staff role like "CEO", Educator…).
   const people = await changes().groupBy("actorUserId", "actorName", "actorRole", "actorAccessRole")
-    .select("actorUserId", "actorName", "actorRole", "actorAccessRole")
+    .select("actorUserId", "actorName", "actorRole", "actorAccessRole").max({ actorEmail: "actorEmail" })
     .count({ count: "*" }).max({ lastAt: "createdAt" })
     .orderBy("count", "desc").limit(8);
   const total = Number((await changes().count({ n: "*" }).first())?.n || 0);

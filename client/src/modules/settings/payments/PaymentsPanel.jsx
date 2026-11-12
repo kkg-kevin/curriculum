@@ -4,6 +4,7 @@ import {
 } from "./paymentSettingsApi";
 import { SettingsSection, Field, FieldGrid, SubHeading, StatusDot, LoadState } from "../components/SettingsLayout";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const hint = { margin: 0, fontSize: 12, color: "#6B7280", lineHeight: 1.5 };
 
 const EMPTY = {
@@ -61,12 +62,12 @@ export default function PaymentsPanel() {
     for (const field of SECRETS) if (!body[field]) delete body[field];
     save(body, { onSuccess: () => setForm((f) => ({ ...f, ...Object.fromEntries(SECRETS.map((s) => [s, ""])) })) });
   };
-  const registerUrls = () => {
+  const registerUrls = async () => {
     const production = account?.environment === "production";
-    const message = production
-      ? `Register these URLs for Paybill ${account.shortcode}?\n\nIn production Safaricom keeps the FIRST URLs registered for a Paybill. Changing them later means asking Safaricom to delete them.\n\nConfirmation: ${account.urls.confirmation}`
-      : `Register the Paybill URLs for ${account.shortcode} (sandbox)?`;
-    if (window.confirm(message)) register();
+    const ok = await askConfirm(production
+      ? { title: `Register these URLs for Paybill ${account.shortcode}?`, message: `In production Safaricom keeps the FIRST URLs registered for a Paybill. Changing them later means asking Safaricom to delete them.\n\nConfirmation: ${account.urls.confirmation}`, confirmLabel: "Register URLs" }
+      : { title: `Register the Paybill URLs for ${account.shortcode}?`, message: "This is the sandbox.", confirmLabel: "Register URLs" });
+    if (ok) register();
   };
 
   if (isLoading || isError || !data) return <LoadState isLoading={isLoading} isError={isError || (!isLoading && !data)} what="Payment settings" />;
@@ -95,7 +96,7 @@ export default function PaymentsPanel() {
               <button type="button" className="stg-btn-secondary" disabled={test.isPending} onClick={() => test.mutate()}>{test.isPending ? "Testing…" : "Test the keys"}</button>
               <button type="button" className="stg-btn-secondary" disabled={registering || !account.ready.prompts} onClick={registerUrls}>{registering ? "Registering…" : account.c2bRegisteredAt ? "Register URLs again" : "Register Paybill URLs"}</button>
               <button type="button" className="stg-btn-secondary" disabled={removing} style={{ marginLeft: "auto", color: "#B91C1C" }}
-                onClick={() => { if (window.confirm("Stop using your own Paybill and forget its keys? Payments already recorded stay. New invoices go back to this server's Paybill.")) remove(); }}>
+                onClick={async () => { if (await askConfirm({ title: "Stop using your own Paybill?", message: "Its keys are forgotten. Payments already recorded stay. New invoices go back to this server's Paybill.", confirmLabel: "Stop using it", tone: "danger" })) remove(); }}>
                 {removing ? "Removing…" : "Remove"}
               </button>
             </>

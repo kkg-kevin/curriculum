@@ -28,6 +28,9 @@ const MODULES = [
   { key: "pathway-subscriptions", label: "Pathway subscriptions", group: "Programmes" },
   { key: "competitions", label: "Competitions", group: "Programmes", legacy: true },
   { key: "bootcamps", label: "Bootcamps", group: "Programmes", legacy: true },
+  // General events: events anyone can come to (showcases, open days), who registered, check-in on
+  // the day, messages and invitations. Everyone signed in sees the pop-up whatever their role.
+  { key: "general-events", label: "General events (showcases, open days)", group: "Programmes" },
   { key: "reports", label: "Reports", group: "Teaching", legacy: true },
   { key: "notifications", label: "Notifications", group: "Workspace", legacy: true },
   { key: "settings", label: "Settings", group: "Workspace", legacy: true },
@@ -88,6 +91,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/certificates": "reports",
   "/api/competitions": "competitions",
   "/api/bootcamps": "bootcamps",
+  "/api/general-events": "general-events",
   "/api/notifications": "notifications",
   "/api/home-learning": "home-learning",
   "/api/tech-clubs": "tech-clubs",
@@ -103,6 +107,8 @@ const PATH_PREFIX_TO_MODULE = {
   // The booking rates sit on Settings → Educator Pay (first match wins — before the bookings).
   "/api/mentor-bookings/settings": "claims-approval",
   "/api/mentor-bookings": "mentor-bookings",
+  // The dashboard: open to every staff role (CATALOG_READERS below); its sections follow the role.
+  "/api/dashboard": "dashboard",
   // The workspace's mentor standards are a setting.
   "/api/mentor-standards": "settings",
   // The TOT learners list sits on the Learners page (first match wins — before "/api/tot").
@@ -129,6 +135,9 @@ const CATALOG_READERS = {
   // to read the claims they are approving.
   "/api/claims": ["claims-approval"],
 };
+// Every staff role may open the dashboard — viewing any module is enough (dashboard.service.js
+// then leaves out the sections their role can't view).
+CATALOG_READERS["/api/dashboard"] = MODULES.map((m) => m.key);
 // The educator form offers a supervisor to pick — so the list of supervisors can also be read by
 // anyone who can view Educators.
 const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;

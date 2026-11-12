@@ -196,7 +196,7 @@ export default function MentorCheckinsPopup() {
     : lead.kind === "write" ? "Share how the child is doing and what you agreed — the parent reads it and approves it." : "One family at a time. Have the child's latest report to hand.";
 
   return createPortal(
-    <div role="presentation" className="mcp-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget && !picking) close(); }} style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,22,40,0.62)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: FONT }}>
+    <div role="presentation" data-signin-popup="" className="mcp-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget && !picking) close(); }} style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,22,40,0.62)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: FONT }}>
       <style>{CSS}</style>
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="mcp-title" className="mcp-card" style={{ width: "100%", maxWidth: 760, maxHeight: "94vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 26, overflow: "hidden", boxShadow: "0 40px 90px rgba(10,22,40,0.45)", outline: "none" }}>
 

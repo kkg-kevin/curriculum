@@ -8,6 +8,7 @@ import { formatDay, formatKsh, outlookLine, pricePer } from "../../../utils/bill
 import { periodLabel, pricesOf } from "../../home-learning/services/homeLearningApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Pathway subscriptions (modules/pathway-subscriptions): the families paying for a website pathway
 // by the week, month, quarter or year. Each card: the family, the pathway and plan, the children
 // on it, whether their courses are open and until when, what's owed and the next invoice.
@@ -146,9 +147,9 @@ export default function PathwaySubscriptionsPage() {
     onSuccess: (counts) => { refresh(); toast.success(counts?.invoices ? `${counts.invoices} invoice${counts.invoices === 1 ? "" : "s"} raised` : "Nothing is due yet"); },
     onError: (err) => toast.error(errorOf(err, "Couldn't raise invoices")),
   });
-  const onAction = (kind, sub, extra) => {
-    if (kind === "cancelled" && !window.confirm(`Cancel ${sub.guardianName}'s ${sub.pathwayName} subscription? Their courses lock now and unpaid invoices are cancelled. Progress is kept.`)) return;
-    if (kind === "paused" && !window.confirm(`Pause ${sub.guardianName}'s ${sub.pathwayName} subscription? Their courses lock now and billing stops until you switch it back on.`)) return;
+  const onAction = async (kind, sub, extra) => {
+    if (kind === "cancelled" && !(await askConfirm({ title: `Cancel ${sub.guardianName}'s ${sub.pathwayName} subscription?`, message: "Their courses lock now and unpaid invoices are cancelled. Progress is kept.", confirmLabel: "Cancel subscription", cancelLabel: "Keep it", tone: "danger" }))) return;
+    if (kind === "paused" && !(await askConfirm({ title: `Pause ${sub.guardianName}'s ${sub.pathwayName} subscription?`, message: "Their courses lock now and billing stops until you switch it back on.", confirmLabel: "Pause" }))) return;
     action.mutate({ kind, sub, extra });
   };
 

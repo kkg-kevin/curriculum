@@ -23,9 +23,13 @@ export default function AffiliateSidebar({ isMobile = false, isMobileOpen = fals
 
       <aside
         {...handlers}
+        aria-hidden={isMobile && !isMobileOpen ? true : undefined}
+        inert={isMobile && !isMobileOpen}
         style={{
           width: isMobile ? "min(86vw, 300px)" : isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
-          height: "100vh",
+          // Top to bottom of the VISIBLE screen (not 100vh, which a phone's browser toolbar covers,
+          // hiding Sign out).
+          bottom: 0,
           backgroundColor: "#25476a",
           color: "#fff",
           position: "fixed",

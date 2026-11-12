@@ -5,6 +5,7 @@ import { Toggle } from "../../../components/ui/EmailNotificationSettings";
 import { SettingsPage as SettingsLayoutPage, SettingsSection, FooterNote, LoadState } from "../../settings/components/SettingsLayout";
 import { leadApi } from "../services/leadApi";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // Settings → Enquiries (server: leads/lead.housekeeping.js, run daily by `npm run
 // enquiries:process`). Nothing deletes an enquiry: a reminder about ones still New, closing ones
 // nobody has touched for a long time (they can be reopened), and — off until switched on —
@@ -50,9 +51,9 @@ export default function EnquirySettingsPanel() {
   const number = (key, min, max, width = 72) => (
     <input className="stg-input" type="number" min={min} max={max} value={form[key]} onChange={(e) => set(key)(e.target.value)} style={{ width }} aria-label={key} />
   );
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (form.anonymiseOn && !data.anonymiseOn && !window.confirm(`Closed enquiries untouched for ${form.anonymiseMonths} months will lose their name, email, phone, child's name, message and replies — for good. Switch this on?`)) return;
+    if (form.anonymiseOn && !data.anonymiseOn && !(await askConfirm({ title: "Switch on removing personal details?", message: `Closed enquiries untouched for ${form.anonymiseMonths} months will lose their name, email, phone, child's name, message and replies — for good.`, confirmLabel: "Switch it on", tone: "danger" }))) return;
     save.mutate(Object.fromEntries(keys.map((k) => [k, typeof form[k] === "boolean" ? form[k] : Number(form[k])])));
   };
 

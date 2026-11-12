@@ -29,6 +29,7 @@ module.exports = {
   }),
 
   educators: asyncHandler(async (req, res) => ok(res, await QaService.listEducators(req))),
+  educatorSchedule: asyncHandler(async (req, res) => ok(res, await QaService.educatorSchedule(req, req.params.id, { days: req.query.days }))),
   reviewers: asyncHandler(async (req, res) => ok(res, await QaService.reviewers(req))),
 
   listSchedules: asyncHandler(async (req, res) => ok(res, await QaService.listSchedules(req, req.query))),

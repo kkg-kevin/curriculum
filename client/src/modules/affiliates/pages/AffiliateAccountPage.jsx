@@ -16,6 +16,22 @@ const label = { display: "grid", gap: 6, fontSize: 12.5, fontWeight: 700, color:
 const primary = (disabled) => ({ alignSelf: "flex-start", padding: "10px 16px", borderRadius: 10, border: "none", background: BRAND.navy, color: "#fff", fontSize: 13.5, fontWeight: 800, fontFamily: FONT, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.55 : 1 });
 const STATUS = { active: ["Active", "good"], pending: ["Waiting for approval", "waiting"], suspended: ["Paused", "neutral"] };
 
+// Fits the device: on a phone the cards stack edge to edge with less padding, fields are 16px (so
+// iPhones don't zoom in when one is tapped) and buttons thumb-sized.
+const PAGE_CSS = `
+  .af-account { font-family: ${FONT}; display: grid; gap: 16px; width: 100%; min-width: 0; }
+  .af-account h1 { margin: 0; font-size: 26px; font-weight: 900; color: ${BRAND.ink}; letter-spacing: -0.5px; }
+  .af-account__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+  @media (max-width: 640px) {
+    .af-account { gap: 12px; }
+    .af-account h1 { font-size: 22px; }
+    .af-account__cards { grid-template-columns: 100%; gap: 12px; }
+    .af-account__cards > form, .af-account__cards > section { padding: 16px !important; }
+    .af-account input { font-size: 16px !important; min-height: 44px; }
+    .af-account button { min-height: 44px; }
+  }
+`;
+
 function DetailsCard({ affiliate }) {
   const qc = useQueryClient();
   const { updateUser } = useAuth();
@@ -96,12 +112,13 @@ export default function AffiliateAccountPage() {
   if (isLoading) return <p style={{ fontFamily: FONT, color: BRAND.muted }}>Loading…</p>;
   if (error) return <p style={{ fontFamily: FONT, color: BRAND.danger }}>{errorOf(error)}</p>;
   return (
-    <div style={{ fontFamily: FONT, display: "grid", gap: 16, width: "100%" }}>
+    <div className="af-account">
+      <style>{PAGE_CSS}</style>
       <div>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: BRAND.ink, letterSpacing: "-0.5px" }}>My Account</h1>
+        <h1>My Account</h1>
         <p style={{ margin: "4px 0 0", fontSize: 13.5, color: BRAND.muted }}>Your details and your password. How you&rsquo;re paid is on Refer &amp; Earn.</p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 16, alignItems: "start" }}>
+      <div className="af-account__cards">
         {data.affiliate ? <DetailsCard affiliate={data.affiliate} /> : <section style={{ ...card, padding: 20, color: BRAND.muted, fontSize: 13.5 }}>You&rsquo;re no longer in the referral programme.</section>}
         <PasswordCard />
       </div>

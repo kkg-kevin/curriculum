@@ -8,6 +8,7 @@ import { useSchoolPortalScope } from "../modules/school-portal/hooks/useSchoolPo
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import { useAuth } from "../context/AuthContext";
 import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
+import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -67,6 +68,8 @@ function SchoolPortalLayout() {
       </div>
 
       <CheckinsDuePopup />
+      {/* General events: the sign-in pop-up (waits for the check-in pop-ups). */}
+      <GeneralEventPopup />
     </div>
   );
 }

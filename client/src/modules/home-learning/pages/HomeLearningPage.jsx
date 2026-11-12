@@ -12,6 +12,7 @@ import { HouseholdFields } from "../components/HouseholdFields";
 import { errorMessage, inputStyle, labelStyle, panelStyle, primaryButton, statusFilterOptions } from "../components/ui";
 import { Segmented } from "../../../components/ui/TabBar";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 const EMPTY_HOUSEHOLD = { guardianName: "", guardianEmail: "", guardianPhone: "", county: "", subCounty: "", town: "", addressLine: "", landmark: "", mapUrl: "", locationPhotos: [], packageId: "", childCount: "", billingPeriod: "", status: "pending", startDate: "", notes: "", portalPassword: "", fromLearnerId: "" };
 const STATUS_FILTERS = ["all", "active", "pending", "paused", "cancelled"];
 
@@ -130,8 +131,8 @@ export default function HomeLearningPage() {
       enrollmentMutation.mutate(data, { onSuccess: done });
     },
     createLearner: (data, done) => createLearnerMutation.mutate(data, { onSuccess: done }),
-    removeLearner: ({ householdId, learnerId, name }) => {
-      if (window.confirm(`Remove ${name} from this household? Their records are kept and they can be re-added later.`)) removeMutation.mutate({ householdId, learnerId });
+    removeLearner: async ({ householdId, learnerId, name }) => {
+      if (await askConfirm({ title: `Remove ${name} from this household?`, message: "Their records are kept and they can be re-added later.", confirmLabel: "Remove", tone: "danger" })) removeMutation.mutate({ householdId, learnerId });
     },
     invoice: (data) => invoiceMutation.mutate(data),
     approveSignup: (id, data, done) => approveSignupMutation.mutate({ id, data }, { onSuccess: done }),

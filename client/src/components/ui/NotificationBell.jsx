@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiBell, FiAward, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2, FiStar, FiAlertTriangle } from "react-icons/fi";
+import { FiBell, FiAward, FiCalendar, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2, FiStar, FiAlertTriangle } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 import EmailNotificationSettings from "./EmailNotificationSettings";
 
@@ -25,6 +25,9 @@ const ICONS = {
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
   payment_reminder: { Icon: FiFileText, color: "#B45309" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
+  general_event_invite: { Icon: FiCalendar, color: "#B45309" },
+  general_event_registrations: { Icon: FiCalendar, color: "#2e7db5" },
+  general_event_ended: { Icon: FiCalendar, color: "#25476a" },
   enquiries_waiting: { Icon: FiMail, color: "#B45309" },
   share_request: { Icon: FiShare2, color: "#25476a" },
   share_accepted: { Icon: FiShare2, color: "#059669" },
@@ -78,6 +81,12 @@ function resolveNotificationPath(n) {
       return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
     case "enquiries_waiting":
       return "/enquiries?status=new";
+    // General events: an invitation opens the sign-in pop-up on that event (?event=); the admins'
+    // notices open the event's page.
+    case "general_event_invite":
+    case "general_event_registrations":
+    case "general_event_ended":
+      return p.route || "/events#general";
     case "lead_submitted":
       // The admin Enquiries page — ?lead= scrolls to and highlights the row (see EnquiriesListPage).
       return p.leadId ? `/enquiries?lead=${p.leadId}` : (p.route || "/enquiries");
@@ -146,6 +155,8 @@ function resolveNotificationPath(n) {
       return p.route || "/mentor-checkins";
     case "affiliate_referral":
     case "affiliate_commission":
+    case "affiliate_team_commission":
+    case "affiliate_team_joined":
     case "affiliate_approved":
     case "affiliate_payout_paid":
     case "affiliate_payout_rejected":

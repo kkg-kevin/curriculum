@@ -8,6 +8,7 @@ import {
 import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
+import { askConfirm } from "../../../components/ui/AskDialog";
 // One family's membership of one club — the club counterpart of Home Learning's HouseholdCard,
 // with the same look. Children are placed in one of the club's classes instead of getting their
 // own curriculum and grade.
@@ -92,8 +93,8 @@ function SignupBanner({ membership, canApprove, canDecline, actions, pending }) 
       </div>
       {!approving && <div style={{ display: "flex", gap: 8 }}>
         {canApprove && <button type="button" onClick={() => setApproving(true)} style={{ ...primaryButton, padding: "8px 14px", fontSize: 13 }}>Approve payment</button>}
-        {canDecline && <button type="button" disabled={pending.declining} onClick={() => {
-          if (window.confirm("Decline this sign-up? Its invoice is cancelled and the family's accounts are removed (they can sign up again later).")) actions.declineSignup(membership.id);
+        {canDecline && <button type="button" disabled={pending.declining} onClick={async () => {
+          if (await askConfirm({ title: "Decline this sign-up?", message: "Its invoice is cancelled and the family's accounts are removed (they can sign up again later).", confirmLabel: "Decline sign-up", tone: "danger" })) actions.declineSignup(membership.id);
         }} style={{ ...secondaryButton, color: "#B91C1C" }}>{pending.declining ? "Declining…" : "Decline"}</button>}
       </div>}
     </div>
@@ -143,8 +144,8 @@ function ChildRow({ membership, child, classes, actions, pending, canRestore }) 
         ? <button type="button" disabled={!canRestore || pending.child} title={canRestore ? "" : "No free places in this package"} onClick={() => actions.restoreChild(membership.id, child.learnerId)} style={secondaryButton}>Add back</button>
         : <>
           <button type="button" onClick={() => { setClassId(child.classId || ""); setPlacing(true); }} style={child.classId ? secondaryButton : { ...secondaryButton, borderColor: "#B45309", color: "#B45309" }}><FiBookOpen /> {child.classId ? "Move class" : "Place child"}</button>
-          <button type="button" onClick={() => {
-            if (window.confirm(`Remove ${name} from this membership? They're taken out of their class; their records are kept and they can be added back.`)) actions.removeChild(membership.id, child.learnerId);
+          <button type="button" onClick={async () => {
+            if (await askConfirm({ title: `Remove ${name} from this membership?`, message: "They're taken out of their class; their records are kept and they can be added back.", confirmLabel: "Remove", tone: "danger" })) actions.removeChild(membership.id, child.learnerId);
           }} style={{ ...secondaryButton, color: "#B91C1C" }}>Remove</button>
         </>}
     </div>}

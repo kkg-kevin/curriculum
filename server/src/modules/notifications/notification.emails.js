@@ -42,6 +42,10 @@ const SUMMARY_ROLES = ["admin", "school"];
 // Mentor bookings (modules/mentor-bookings/): families and mentors.
 const BOOKING_PARENT_ROLES = ["learner"];
 const BOOKING_BOTH_ROLES = ["learner", "teacher"];
+// General events (modules/general-events/): an invitation to anyone signed in; the admins hear
+// that people are registering, and when it's over.
+const EVENT_INVITE_ROLES = ["admin", "collaborator", "curriculumAdmin", "teacher", "school", "learner", "supervisor", "affiliate"];
+const EVENT_ADMIN_ROLES = ["admin", "collaborator"];
 const routeOr = (p, fallback) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : fallback);
 
 // `path` mirrors NotificationBell.jsx's resolveNotificationPath on the client — where the
@@ -300,6 +304,9 @@ const EMAIL_TYPES = {
     look: { tone: "warning", icon: "alert", eyebrow: "Learner needs support" },
     path: (p) => routeOr(p, "/teacher-portal"),
   },
+  general_event_invite: { label: "You're invited to an event", roles: EVENT_INVITE_ROLES, default: true, look: { tone: "celebrate", icon: "star", eyebrow: "You're invited" }, path: (p) => routeOr(p, "/") },
+  general_event_registrations: { label: "People are registering for an event (once a day)", roles: EVENT_ADMIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Events" }, path: (p) => routeOr(p, "/events#general") },
+  general_event_ended: { label: "An event is over — time to say thank you", roles: EVENT_ADMIN_ROLES, default: true, look: { tone: "info", icon: "envelope", eyebrow: "Events" }, path: (p) => routeOr(p, "/events#general") },
   // Not a notification: the Monday summary of Reports & Analytics (analytics.weekly.js), listed
   // here so the workspace and each person can switch it off like any other email.
   analytics_weekly: {
@@ -393,6 +400,8 @@ const groupFor = (roles) => {
   if (roles === SUMMARY_ROLES) return "Weekly summary (you and your hubs)";
   if (roles === MENTOR_CHECKIN_PARENT_ROLES || roles === MENTOR_CHECKIN_EDUCATOR_ROLES || roles === MENTOR_CHECKIN_BOTH_ROLES) return "Parent–mentor check-ins";
   if (roles === BOOKING_PARENT_ROLES || roles === BOOKING_BOTH_ROLES) return "Mentor sessions (families and mentors)";
+  if (roles === EVENT_INVITE_ROLES) return "Events (everyone)";
+  if (roles === EVENT_ADMIN_ROLES) return "Events (you and your staff)";
   return "You (the admin)";
 };
 

@@ -75,6 +75,15 @@ const affiliateSchema = z.object({
   payoutPhone: z.string().trim().max(40).optional().nullable(),
   payoutDetails: z.string().trim().max(500).optional().nullable(),
   notes: z.string().max(4000).optional().nullable(),
+  // Teams and their own deal (12 Nov 2026): a manager (level 1), the manager they're under, and
+  // rates of their own — left out = unchanged; a rate left empty follows Settings.
+  isManager: z.boolean().optional(),
+  managerId: z.string().trim().max(36).optional().nullable(),
+  customRates: z.object({
+    rates: z.record(z.string(), z.union([z.number(), z.string(), z.null()])).optional(),
+    periods: z.union([z.number(), z.string(), z.null()]).optional(),
+    teamRate: z.union([z.number(), z.string(), z.null()]).optional(),
+  }).optional().nullable(),
 });
 router.get("/", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listAffiliates(req))));
 // Search this workspace's people who already have a login (parents, educators, hub logins, staff).
@@ -102,7 +111,7 @@ const limiter = rateLimit({
 // Is a typed code real? Only yes / no, never whose it is.
 publicRouter.get("/referral-codes/:code", asyncHandler(async (req, res) => ok(res, await AffiliateService.checkCode(req.params.code))));
 // The "Become an affiliate" page: the offer and whether applications are open.
-publicRouter.get("/affiliate-programme", asyncHandler(async (req, res) => ok(res, await AffiliateService.publicProgramme())));
+publicRouter.get("/affiliate-programme", asyncHandler(async (req, res) => ok(res, await AffiliateService.publicProgramme({ teamCode: req.query.team ? String(req.query.team) : null }))));
 // An application (people who aren't users). Honeypot `hp_field`; terms must be accepted.
 const applicationSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(150),
@@ -112,6 +121,8 @@ const applicationSchema = z.object({
   payoutMethod: z.enum(["mpesa", "bank"]),
   payoutPhone: z.string().trim().max(40).optional().nullable(),
   payoutDetails: z.string().trim().max(500).optional().nullable(),
+  // A manager's recruit link (?team=CODE): they join that manager's team once approved.
+  teamCode: z.string().trim().max(40).optional().nullable(),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Please agree to the affiliate terms" }) }),
   hp_field: z.string().max(200).optional().nullable(),
 }).superRefine((d, ctx) => {

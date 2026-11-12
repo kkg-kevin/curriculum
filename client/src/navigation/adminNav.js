@@ -75,10 +75,11 @@ export const ADMIN_SECTIONS = [
         ],
       },
       {
-        name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps"],
+        name: "Events", path: "/events", icon: FiAward, module: ["competitions", "bootcamps", "general-events"],
         // One page with three sections (ProgramsListPage scrolls to #…); a bootcamp's or a
         // competition's own pages light up their sub-page.
         children: [
+          { name: "General events", path: "/events#general", module: "general-events", match: (l) => l.hash === "#general" || l.pathname.startsWith("/events/general") },
           { name: "Bootcamps", path: "/events#bootcamps", module: "bootcamps", match: (l) => l.hash === "#bootcamps" || l.pathname.startsWith("/events/bootcamps") },
           { name: "Competitions", path: "/events#competitions", module: "competitions", match: (l) => l.hash === "#competitions" || l.pathname.startsWith("/events/competitions") },
           { name: "Games", path: "/events#games", module: "bootcamps", match: (l) => l.hash === "#games" },

@@ -9,6 +9,7 @@ import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../th
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
+import { askConfirm, askText } from "../../../components/ui/AskDialog";
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
 // of what those families pay. Every active affiliate signs in: a parent or educator with their own
 // login (Refer & earn in their portal), anyone else as Affiliate (the affiliate portal — a login made
@@ -141,8 +142,85 @@ function PersonSearch({ picked, onPick }) {
   );
 }
 
+// Level and deal (12 Nov 2026): on their own, under a manager, or a manager (level 1); and the
+// workspace's rates (Settings) or rates of their own — an empty box follows Settings.
+function LevelAndRates({ affiliate, value, onChange }) {
+  const { data: all = [] } = useQuery({ queryKey: ["affiliates", "list"], queryFn: affiliatesApi.list });
+  const { data: settings } = useQuery({ queryKey: ["affiliates", "settings"], queryFn: affiliatesApi.settings });
+  const managers = all.filter((a) => a.isManager && a.id !== affiliate?.id && !a.managerId);
+  const teamSize = affiliate ? all.filter((a) => a.managerId === affiliate.id).length : 0;
+  const level = value.isManager ? "manager" : value.managerId ? "member" : "solo";
+  const setLevel = (l) => onChange({ ...value, isManager: l === "manager", managerId: l === "member" ? value.managerId || managers[0]?.id || "" : null });
+  const rates = value.customRates || {};
+  const setRate = (k, v) => onChange({ ...value, customRates: { ...rates, rates: { ...(rates.rates || {}), [k]: v } } });
+  const opt = (key, text, disabled = false) => (
+    <button type="button" role="radio" aria-checked={level === key} disabled={disabled} onClick={() => setLevel(key)}
+      style={{ flex: "1 1 150px", padding: "9px 10px", borderRadius: 10, border: `1.5px solid ${level === key ? BRAND.navy : BRAND.border}`, background: level === key ? BRAND.navy : "#fff", color: level === key ? "#fff" : BRAND.inkSoft, fontSize: 12.5, fontWeight: 800, fontFamily: FONT, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1 }}>
+      {text}
+    </button>
+  );
+  return (
+    <section style={{ display: "grid", gap: 10, padding: 14, borderRadius: 12, border: `1px solid ${BRAND.line}`, background: "#FBFCFE" }}>
+      <h3 style={cardHeading}><FiUsers size={13} /> Level and rates</h3>
+      <div role="radiogroup" aria-label="Level" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {opt("solo", "On their own")}
+        {opt("member", "Under a manager", managers.length === 0 || teamSize > 0)}
+        {opt("manager", "Manager (level 1)")}
+      </div>
+      <p style={{ margin: 0, fontSize: 12, color: BRAND.muted, lineHeight: 1.5 }}>
+        {level === "manager"
+          ? `A manager keeps their own link and commissions, and also earns a share (${settings ? `${settings.teamRate}% of what ${settings.teamBasis === "commission" ? "their team earns" : "the family pays"}` : "set in Settings"}, unless set below) each time a family brought by someone in their team pays. They get a recruit link for their team.${teamSize ? ` They manage ${teamSize} now.` : ""}`
+          : level === "member" ? "They earn exactly as before; their manager's share comes on top, never out of theirs."
+            : managers.length === 0 ? "Make someone a manager first to put affiliates under them." : "Not in anyone's team."}
+      </p>
+      {level === "member" && (
+        <label style={label}>Their manager
+          <select style={input} value={value.managerId || ""} onChange={(e) => onChange({ ...value, managerId: e.target.value })}>
+            {managers.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
+          </select>
+        </label>
+      )}
+      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5, fontWeight: 700, color: BRAND.inkSoft, cursor: "pointer" }}>
+        <input type="checkbox" checked={Boolean(value.custom)} onChange={(e) => onChange({ ...value, custom: e.target.checked })} />
+        Rates of their own (a deal agreed with them) — otherwise Settings&rsquo; rates
+      </label>
+      {value.custom && settings && (
+        <>
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))" }}>
+            {PROGRAMMES.map(([key, name]) => (
+              <label key={key} style={label}>{name}
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" min={0} max={100} step="0.5" style={{ ...input, flex: 1, minWidth: 0 }} value={rates.rates?.[key] ?? ""} placeholder={`${settings.rates[key]} (Settings)`} onChange={(e) => setRate(key, e.target.value)} /> %
+                </span>
+              </label>
+            ))}
+          </div>
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
+            <label style={label}>Paid periods that earn
+              <input type="number" min={1} max={60} style={input} value={rates.periods ?? ""} placeholder={`${settings.periods} (Settings)`} onChange={(e) => onChange({ ...value, customRates: { ...rates, periods: e.target.value } })} />
+            </label>
+            {level === "manager" && (
+              <label style={label}>Their team share
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="number" min={0} max={100} step="0.5" style={{ ...input, flex: 1, minWidth: 0 }} value={rates.teamRate ?? ""} placeholder={`${settings.teamRate} (Settings)`} onChange={(e) => onChange({ ...value, customRates: { ...rates, teamRate: e.target.value } })} /> %
+                </span>
+              </label>
+            )}
+          </div>
+          <p style={{ margin: 0, fontSize: 12, color: BRAND.muted }}>An empty box follows Settings — and changes when Settings do. New rates count from the next payment; what&rsquo;s already earned stays.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 function AffiliateDialog({ affiliate, onClose }) {
   const qc = useQueryClient();
+  const [team, setTeam] = useState(() => ({
+    isManager: Boolean(affiliate?.isManager), managerId: affiliate?.managerId || null,
+    custom: Boolean(affiliate?.customRates), customRates: affiliate?.customRates || {},
+  }));
+  const teamBody = { isManager: team.isManager, managerId: team.managerId || null, customRates: team.custom ? team.customRates : null };
   const [form, setForm] = useState(() => ({
     name: affiliate?.name || "", email: affiliate?.email || "", phone: affiliate?.phone || "",
     code: affiliate?.code || "", status: affiliate?.status || "active", payoutMethod: affiliate?.payoutMethod || "credit",
@@ -159,11 +237,11 @@ function AffiliateDialog({ affiliate, onClose }) {
   const usingExisting = !affiliate && who === "existing";
   const save = useMutation({
     mutationFn: () => {
-      if (affiliate) return affiliatesApi.update(affiliate.id, form);
+      if (affiliate) return affiliatesApi.update(affiliate.id, { ...form, ...teamBody });
       const { name, email, phone, ...rest } = form;
       return usingExisting
-        ? affiliatesApi.create({ ...rest, userId: picked.userId, code: form.code || undefined })
-        : affiliatesApi.create({ ...form, code: form.code || undefined });
+        ? affiliatesApi.create({ ...rest, ...teamBody, userId: picked.userId, code: form.code || undefined })
+        : affiliatesApi.create({ ...form, ...teamBody, code: form.code || undefined });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success(affiliate ? "Saved" : "Affiliate added"); onClose(); },
     onError: (err) => toast.error(errorOf(err)),
@@ -219,6 +297,7 @@ function AffiliateDialog({ affiliate, onClose }) {
           {form.payoutMethod === "mpesa" && <label style={label}>M-Pesa number<input style={input} value={form.payoutPhone} onChange={set("payoutPhone")} /></label>}
           {form.payoutMethod === "bank" && <label style={label}>Bank details<input style={input} value={form.payoutDetails} onChange={set("payoutDetails")} placeholder="Bank, account name and number" /></label>}
         </div>
+        <LevelAndRates affiliate={affiliate} value={team} onChange={setTeam} />
         {affiliate?.promotion && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>How they said they&rsquo;d share us: &ldquo;{affiliate.promotion}&rdquo;</p>}
         <label style={label}>Notes (only staff see these)<textarea style={{ ...input, minHeight: 64, resize: "vertical" }} value={form.notes} onChange={set("notes")} /></label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -264,6 +343,13 @@ function AffiliatesTab({ onEdit }) {
             <strong style={{ color: BRAND.ink }}>{a.name}</strong> <HistoryButton type="affiliates" id={a.id} label={a.name} iconOnly style={{ marginLeft: 4, verticalAlign: "middle" }} />
             <div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{KIND[a.kind]}{a.email ? ` · ${a.email}` : ""}{a.phone ? ` · ${a.phone}` : ""}</div>
             <AccountLine a={a} />
+            {(a.isManager || a.manager || a.customRates) && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "5px 0 2px" }}>
+                {a.isManager && <span style={pill("strong")}>Manager · {a.teamSize} in team{a.teamEarned > 0 ? ` · ${formatKsh(a.teamEarned)} from team` : ""}</span>}
+                {a.manager && <span style={pill("info")}>Team: {a.manager.name}</span>}
+                {a.customRates && <span style={pill("waiting")} title={JSON.stringify(a.customRates)}>Own rates</span>}
+              </div>
+            )}
             <div style={{ fontSize: 12, color: BRAND.faint }}>{SOURCE[a.source] || ""}{a.termsAcceptedAt ? ` · agreed to the terms ${formatDay(a.termsAcceptedAt)}` : ""}</div>
             {a.promotion && <div style={{ fontSize: 12, color: BRAND.inkSoft, marginTop: 4 }} title={a.promotion}>&ldquo;{a.promotion.length > 140 ? `${a.promotion.slice(0, 140)}…` : a.promotion}&rdquo;</div>}
           </td>
@@ -285,14 +371,14 @@ function AffiliatesTab({ onEdit }) {
               {a.status !== "pending" && (!a.account || a.account.asAffiliate) && (
                 <button type="button" style={btn} disabled={act.isPending}
                   title="Emails them how to sign in, with a link to set (or reset) their password — the link goes only to their email"
-                  onClick={() => window.confirm(`Email ${a.name} how to sign in, with a link to set their password?`) && act.mutate({ kind: "sign-in", a })}>
+                  onClick={async () => (await askConfirm({ title: `Email ${a.name} their sign-in details?`, message: "They get an email with how to sign in and a link to set their password.", confirmLabel: "Send email" })) && act.mutate({ kind: "sign-in", a })}>
                   <FiMail size={12} /> Email sign-in details
                 </button>
               )}
               <button type="button" style={btn} onClick={() => onEdit(a)}>Edit</button>
               {a.status === "active" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "suspended", a })}>Suspend</button>}
               {a.status === "suspended" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "active", a })}>Reactivate</button>}
-              {a.referrals === 0 && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={() => window.confirm(`Delete ${a.name}?`) && act.mutate({ kind: "delete", a })}>Delete</button>}
+              {a.referrals === 0 && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={async () => (await askConfirm({ title: `Delete ${a.name}?`, message: "They stop being an affiliate and their code no longer works.", confirmLabel: "Delete", tone: "danger" })) && act.mutate({ kind: "delete", a })}>Delete</button>}
             </div>
           </td>
         </tr>
@@ -307,7 +393,7 @@ function ReferralsTab() {
   const qc = useQueryClient();
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "referrals"], queryFn: () => affiliatesApi.referrals() });
   const cancel = useMutation({
-    mutationFn: (r) => affiliatesApi.cancelReferral(r.id, window.prompt("Why? (optional)") || undefined),
+    mutationFn: ({ r, why }) => affiliatesApi.cancelReferral(r.id, why || undefined),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Referral cancelled"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -323,7 +409,7 @@ function ReferralsTab() {
           <td style={td}>{r.via === "code" ? "Typed the code" : "Came by the link"}{r.landingPage && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.landingPage}</div>}</td>
           <td style={td}><span style={pill(r.status === "paid" ? "good" : r.status === "cancelled" ? "danger" : "waiting")}>{r.status === "paid" ? "Paying" : r.status === "cancelled" ? "Cancelled" : "Not paid yet"}</span></td>
           <td style={td}>{formatKsh(r.earned)}{r.payments > 0 && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.payments} {r.payments === 1 ? "payment" : "payments"}</div>}</td>
-          <td style={{ ...td, textAlign: "right" }}>{r.status !== "cancelled" && <button type="button" style={btn} onClick={() => window.confirm("Cancel this referral? It stops earning, and commissions not yet paid out are cancelled.") && cancel.mutate(r)}>Cancel</button>}</td>
+          <td style={{ ...td, textAlign: "right" }}>{r.status !== "cancelled" && <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Cancel this referral?", message: "It stops earning, and commissions not yet paid out are cancelled.", label: "Why?", confirmLabel: "Cancel referral", cancelLabel: "Keep it", tone: "danger" }); if (why !== null) cancel.mutate({ r, why }); }}>Cancel</button>}</td>
         </tr>
       ))}
     </Table>
@@ -336,7 +422,7 @@ function CommissionsTab() {
   const [state, setState] = useState("");
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "commissions"], queryFn: () => affiliatesApi.commissions() });
   const cancel = useMutation({
-    mutationFn: (c) => affiliatesApi.cancelCommission(c.id, window.prompt("Why? (optional)") || undefined),
+    mutationFn: ({ c, why }) => affiliatesApi.cancelCommission(c.id, why || undefined),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Commission cancelled"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -351,13 +437,13 @@ function CommissionsTab() {
           {shown.map((c) => (
             <tr key={c.id}>
               <td style={td}>{formatDay(c.createdAt)}</td>
-              <td style={td}>{c.affiliate?.name || "—"}</td>
+              <td style={td}>{c.affiliate?.name || "—"}{c.kind === "team" && <div style={{ fontSize: 12, color: BRAND.mid, fontWeight: 700 }}>Team share · from {c.fromAffiliate?.name || "their team"}</div>}</td>
               <td style={td}>{c.customerName || "—"}<div style={{ fontSize: 12, color: BRAND.muted }}>{c.programmeLabel}</div></td>
               <td style={td}>{c.invoiceNumber || "—"}{RECURRING.has(c.programme) && <div style={{ fontSize: 12, color: BRAND.muted }}>Payment {c.periodNumber}</div>}</td>
               <td style={td}>{formatKsh(c.baseAmount)} × {c.ratePercent}%</td>
               <td style={td}><strong style={{ color: BRAND.ink }}>{formatKsh(c.amount)}</strong></td>
               <td style={td}><span style={pill(STATE[c.state][1])}>{STATE[c.state][0]}</span>{c.state === "waiting" && <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 3 }}>from {formatDay(c.availableAt)}</div>}{c.note && <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 3 }}>{c.note}</div>}</td>
-              <td style={{ ...td, textAlign: "right" }}>{["waiting", "available"].includes(c.state) && <button type="button" style={btn} onClick={() => window.confirm("Cancel this commission?") && cancel.mutate(c)}>Cancel</button>}</td>
+              <td style={{ ...td, textAlign: "right" }}>{["waiting", "available"].includes(c.state) && <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Cancel this commission?", message: "The affiliate won't be paid it.", label: "Why?", confirmLabel: "Cancel commission", cancelLabel: "Keep it", tone: "danger" }); if (why !== null) cancel.mutate({ c, why }); }}>Cancel</button>}</td>
             </tr>
           ))}
         </Table>
@@ -415,7 +501,7 @@ function PayoutsTab() {
   const [paying, setPaying] = useState(null);
   const { data: rows = [], isLoading } = useQuery({ queryKey: ["affiliates", "payouts"], queryFn: () => affiliatesApi.payouts() });
   const reject = useMutation({
-    mutationFn: (p) => affiliatesApi.reject(p.id, window.prompt("Why? (the affiliate sees this)") || null),
+    mutationFn: ({ p, why }) => affiliatesApi.reject(p.id, why || null),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); toast.success("Rejected — its commissions are available again"); },
     onError: (err) => toast.error(errorOf(err)),
   });
@@ -437,7 +523,7 @@ function PayoutsTab() {
                 {p.status === "requested" && (
                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                     <button type="button" style={primary} onClick={() => setPaying(p)}>Mark paid</button>
-                    <button type="button" style={btn} onClick={() => reject.mutate(p)}>Reject</button>
+                    <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Reject this payout?", message: "Its commissions become available again.", label: "Why? The affiliate sees this", confirmLabel: "Reject payout", tone: "danger" }); if (why !== null) reject.mutate({ p, why }); }}>Reject</button>
                   </div>
                 )}
               </td>
@@ -497,6 +583,22 @@ function SettingsTab() {
             </div>
           ))}
         </div>
+      </section>
+      <section style={{ ...card, padding: 18, display: "grid", gap: 10 }}>
+        <h3 style={cardHeading}><FiUsers size={13} /> Teams (managers)</h3>
+        <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>A manager earns this on top of what each affiliate in their team earns — never taken out of the affiliate&rsquo;s share. Any manager can have their own (Edit → Level and rates).</p>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
+          <label style={label}>Manager&rsquo;s share (%)<input min={0} max={100} step="0.5" {...num("teamRate")} /></label>
+          <label style={label}>Of
+            <select style={input} value={form.teamBasis} onChange={(e) => set("teamBasis", e.target.value)}>
+              <option value="payment">What the family paid</option>
+              <option value="commission">What the affiliate earned</option>
+            </select>
+          </label>
+        </div>
+        <p style={{ margin: 0, fontSize: 12, color: BRAND.muted }}>
+          E.g. a family pays KSh 10,000 and the affiliate earns {form.rates.bootcamp || 10}% (KSh {((10000 * (Number(form.rates.bootcamp) || 10)) / 100).toLocaleString()}): the manager gets {form.teamRate || 0}% of {form.teamBasis === "commission" ? `that commission — KSh ${Math.round((10000 * (Number(form.rates.bootcamp) || 10) / 100) * (Number(form.teamRate) || 0) / 100).toLocaleString()}` : `KSh 10,000 — KSh ${Math.round(10000 * (Number(form.teamRate) || 0) / 100).toLocaleString()}`}.
+        </p>
       </section>
       <section style={{ ...card, padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         <label style={label}>Paid periods that earn (subscriptions)<input min={1} max={60} {...num("periods")} /></label>

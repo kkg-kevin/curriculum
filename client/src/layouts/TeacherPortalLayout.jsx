@@ -8,6 +8,7 @@ import { useTeacherPortalScope, HUB_STORAGE_KEY } from "../modules/teacher-porta
 import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
 import MentorCheckinsPopup from "../modules/mentor-checkins/components/MentorCheckinsPopup";
+import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -77,6 +78,8 @@ function TeacherPortalLayout() {
       {/* An educator named on a hub as its Account Manager / Training Lead: their reports due. */}
       <CheckinsDuePopup />
       <MentorCheckinsPopup />
+      {/* General events: the sign-in pop-up (waits for the check-in pop-ups). */}
+      <GeneralEventPopup />
 
       <style>{`
         .teacher-shell {

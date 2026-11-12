@@ -44,7 +44,7 @@ const STATUS_COLORS = {
   closed: { bg: "#DCFCE7", fg: "#166534" },
 };
 
-const SOURCE_LABELS = { enroll: "Enrol interest", contact: "Contact form", diagnostic: "Diagnostic result" };
+const SOURCE_LABELS = { enroll: "Enrol interest", contact: "Contact form", diagnostic: "Diagnostic result", event: "Event registration" };
 
 const INTEREST_LABELS = {
   bootcamp: "A bootcamp",
@@ -77,7 +77,7 @@ function describeVisit(visit) {
   return { from, landingPage: visit.landingPage, campaign };
 }
 
-const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item", home_learning_package: "Home Learning package" };
+const REFERENCE_TYPE_LABELS = { bootcamp: "Bootcamp", project: "Project", pathway: "Pathway", store_item: "Store item", home_learning_package: "Home Learning package", event: "Event" };
 
 function StatusBadge({ status }) {
   const c = STATUS_COLORS[status] || STATUS_COLORS.new;
@@ -317,7 +317,10 @@ function LeadRow({ lead, highlighted, rowRef }) {
           {lead.reference && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12, color: "#2e7db5" }}>
               <LinkIcon sx={{ fontSize: 14 }} />
-              Enquired from: <strong>{lead.reference.referenceName}</strong>
+              {lead.reference.referenceType === "event" ? "Registered for:" : "Enquired from:"}{" "}
+              {lead.reference.referenceType === "event" && lead.reference.eventId
+                ? <Link to={`/events/general/${lead.reference.eventId}?tab=registrations`} style={{ color: "#2e7db5", fontWeight: 800 }}>{lead.reference.referenceName}</Link>
+                : <strong>{lead.reference.referenceName}</strong>}
               <span style={{ color: "#9CA3AF" }}>({REFERENCE_TYPE_LABELS[lead.reference.referenceType] || lead.reference.referenceType})</span>
             </div>
           )}
