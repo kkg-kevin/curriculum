@@ -102,6 +102,97 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## This release (12 Nov 2026) — General events, affiliate teams, QA planned by timetable, today across hubs, a Store project page that sells
+
+**Portal and backend** from `curriculum` (branch `modules`) at `eb89c8bc`; **website** from `curriculum-web`
+(branch `new`) at `8a24475`. Includes the 12 Nov commit `860ab95f`, which was never bundled. If the 11 Nov release
+below isn't up yet, these files replace it: do its database checks too.
+
+### Upload in this order
+
+0. **Take a database backup** — three new migrations, one of them changes a UNIQUE key on `affiliate_commissions`.
+1. **Backend** — `backend-deploy.zip` (732 files, 181 migrations), then Restart. Three new migrations, applied on
+   Restart:
+   - `20261112100000` — general events: new tables `general_events`, `general_event_registrations`,
+     `general_event_popup_states`; `leads.source` takes `event` and `leads.generalEventId`.
+   - `20261112130000` — affiliate teams and own rates: `affiliates.isManager`, `managerId`, `customRates`;
+     `affiliate_commissions.kind`, `sourceCommissionId`, `fromAffiliateId`; its UNIQUE key is now (invoiceId,
+     affiliateId).
+   - `20261113090000` — event page fields: `general_events.ageMin`, `ageMax`, `highlights`.
+
+   Check: `SHOW TABLES LIKE 'general_event%';` (3 rows), `SHOW COLUMNS FROM affiliates LIKE 'isManager';` and
+   `SHOW COLUMNS FROM general_events LIKE 'highlights';` (1 row each). If any is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Cp6v3SeU.js`). After the backend.
+3. **Website** — `digifunzi-co-ke-dist.zip` to https://digifunzi.co.ke (entry `index-DHZK-nIR.js`, 27 pages). Unzip over the old files. After the backend: the website's Events pages need it.
+
+No new environment variable or npm package. No new cron job: event reminders and "the day after" notices run inside
+the existing hourly `npm run checkins:process` (`npm run events:process` does only the events, if you ever want it
+on its own).
+
+**After the backend is up, ask for one more website build.** The deployed API didn't have events yet, so this
+website build leaves `/events` and each event's page to load in the browser (they work; search engines just don't
+get them pre-rendered and they're not in the sitemap yet). Rebuilding the website once the backend is live fixes that.
+
+**Sign-in from shared networks (Starlink, a school's network).** The app itself never blocked any network. This
+release stops the general request limit from also counting sign-ins (they have their own per-account limit), so
+many people behind one address can't use up each other's attempts, and the portal now says plainly when a network
+stopped the request before it reached Digifunzi. Two things to do on the host:
+- `TRUST_PROXY` is still unset, so every visitor looks like one address to the limits and the activity log. Run
+  this first — `SELECT ip, COUNT(*) AS entries, COUNT(DISTINCT actorUserId) AS people FROM audit_log WHERE
+  createdAt >= NOW() - INTERVAL 1 DAY GROUP BY ip ORDER BY entries DESC LIMIT 20;` — if one or two addresses carry
+  nearly everyone, set `TRUST_PROXY=1` on the Node app and Restart.
+- If a Starlink user still can't reach the site at all, the block is in the host's security filters (Imunify360 /
+  ModSecurity / cPHulk on cPanel): ask the host to check their address against those logs.
+
+### What changed
+
+**General events** (Events → General events): showcases, open days, talks — anyone can come, and every
+registration from outside is also an enquiry. Kind, description, photos, Kenyan date and times, at a hub / a venue
+/ online / both, optional bootcamp, capacity with a waiting list, how many each person may bring, ages and "What to
+expect". Draft → published → cancelled (everyone is emailed). Tabs: Overview (figures, where people came from, who
+they are), Registrations (add, give a place, cancel, spreadsheet), Check-in (phone-first, walk-ins), Messages &
+invites (email a group; invite the linked bootcamp's families; notify the workspace). Registering needs name, phone
+and email; free for now. Emails: confirmation, waiting list, a place opened up, reminders 2 days before and on the
+morning, cancelled. **Pop-ups**: on the website (after a few seconds, once a visit) and on sign-in for everyone in
+the system (audience chosen per event; "Not now" = 3 days).
+
+**Website**: an **Events** page (the next event featured with a countdown, then upcoming and past) and each event's
+page (the form beside the details, what to expect, why come, questions answered, share links, a register bar on
+phones); the registration's own page (countdown, calendar, join link for online events, cancel). **Store projects**:
+the page leads with what the child will build, shows "You'll also need" with the Store's price and **Add to cart
+too**, a value line (steps, cost a step, yours for life), "After you buy" and the questions parents ask.
+
+**Affiliates — two levels.** Make an affiliate a **manager** and put others in their team: the manager keeps their
+own link and earnings and also gets a **team share** (Settings → Teams: 2% of what the family paid by default, or a
+share of the member's commission) — never taken from the member. A manager's **recruit link** puts people who apply
+into their team. Any affiliate can have **rates of their own** (an agreed deal); anything left out follows Settings.
+
+**QA → Plan a visit** goes in the order it's decided: educator → their hubs (chips) → template → **their
+timetable** (weekly classes, free hours, the real sessions of the next 4 weeks, other visits) → who does it →
+announced / surprise → date.
+
+**Dashboard → Today across your hubs**: every class meeting today (time, course, session, class, room, educators,
+learners, online, attendance in or not), by hub or **Who's where** (each educator's stops). The old Today card is
+now **Also today**.
+
+**Role tags in "who did what"**: every person on the stamp, History and the Activity page carries a tag — Admin, a
+staff member's role name (e.g. CEO), Supervisor, Educator, Parent, Learning hub…
+
+**Parent–mentor check-ins**: the educator can write the report before the planned day (families often turn up at
+the hub early) and the parent can approve it straight away.
+
+### Verify
+
+1. **Events → General events → New**: publish one; it shows on the website's Events page and, signed in, in the
+   pop-up. Register from the website — the confirmation email arrives and **Enquiries** shows "Registered for".
+2. **Affiliates**: Edit one → Level and rates → Manager; put another under them — the list shows "Manager · 1 in
+   team".
+3. **QA → Plan a visit**: pick an educator — their hubs show as chips and their timetable appears.
+4. **Dashboard**: "Today across your hubs" lists today's classes.
+5. A Store project's page on the website: "You'll also need" → **Add to cart too** adds the item.
+
+---
+
 ## This release (11 Nov 2026) — Mentor bookings, who did what inside every record, a real dashboard, a sidebar without dropdowns
 
 **Portal and backend** from `curriculum` (branch `modules`) at `dc0a3208`; **website** from `curriculum-web`
