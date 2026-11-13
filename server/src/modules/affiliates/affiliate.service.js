@@ -470,14 +470,16 @@ const AffiliateService = {
     if (!referral) referral = await db(R).where({ invoiceId: invoice.id }).first();
     if (!referral || referral.status === "cancelled") return null;
     const affiliate = await db(A).where({ id: referral.affiliateId }).first();
-    if (!affiliate || affiliate.status === "suspended") return null;
+    if (!affiliate || ["suspended", "removed"].includes(affiliate.status)) return null;
 
     const workspaceSettings = await getSettings(referral.ownerAdminId);
     // Their own deal (custom rates / periods), else the workspace's.
     const settings = effectiveSettings(workspaceSettings, affiliate);
     const payments = await db("billing_payments").where({ invoiceId: invoice.id, status: "successful" });
     const paidAmount = money(payments.filter((p) => p.paymentMethod !== CREDIT_METHOD).reduce((sum, p) => sum + Number(p.amount || 0), 0));
-    const earnedSoFar = Number((await db(C).where({ referralId: referral.id, affiliateId: affiliate.id, kind: "own" }).whereNot({ status: "cancelled" }).count("* as n"))[0].n) || 0;
+    // Counted per family (referral), whoever earned them — a referral handed to another affiliate
+    // (modules/removals/) carries on from the periods already paid, never starts again.
+    const earnedSoFar = Number((await db(C).where({ referralId: referral.id, kind: "own" }).whereNot({ status: "cancelled" }).count("* as n"))[0].n) || 0;
     const commission = commissionFor({ settings, programme: referral.programme, paidAmount, earnedSoFar });
     if (!commission) return null;
 
@@ -616,6 +618,7 @@ const AffiliateService = {
   // affiliate still without a login — links / makes the login and welcomes them (once per login).
   async updateAffiliate(req, id, input) {
     const affiliate = await affiliateInWorkspace(req, id);
+    if (affiliate.status === "removed") fail("This affiliate has been removed — their record is kept for history only", 409);
     const data = { ...cleanAffiliateInput(input, { partial: true }), ...(await teamAndRateFields(req, affiliate, input)) };
     if (input.code !== undefined) {
       data.code = normaliseCode(input.code);
@@ -741,7 +744,9 @@ const AffiliateService = {
   // ---- Payouts --------------------------------------------------------------------------------
   // Everything the affiliate has available goes into one payout request.
   async _requestPayout(affiliate, { requestedBy, enforceMinimum }) {
-    if (affiliate.status !== "active") fail("Only an active affiliate can be paid out.");
+    // Staff may still pay out a suspended affiliate what they earned (e.g. before removing them).
+    const staffPayout = !enforceMinimum && affiliate.status === "suspended";
+    if (affiliate.status !== "active" && !staffPayout) fail("Only an active affiliate can be paid out.");
     const settings = await getSettings(affiliate.ownerAdminId);
     const available = (await withStates(await db(C).where({ affiliateId: affiliate.id, status: "pending" }).whereNull("payoutId")))
       .filter((c) => c.state === "available");
@@ -1071,3 +1076,4 @@ const AffiliateService = {
 };
 
 module.exports = AffiliateService;
+module.exports._releaseLogin = releaseLogin;

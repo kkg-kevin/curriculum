@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiChevronDown, FiChevronRight, FiCheckCircle, FiEdit2, FiMapPin, FiPauseCircle, FiSearch, FiTrash2 } from "react-icons/fi";
-import { useAllLearningHubsQuery, useDeleteLearningHub, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
+import { useAllLearningHubsQuery, useUpdateLearningHub } from "../../../learning-hubs/hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../../../learning-hubs/schemas/learningHub.schema";
 import ConfirmDialog from "../../../curriculum/components/ConfirmDialog";
-import { learningHubApi } from "../../../learning-hubs/services/learningHubApi";
+import RemovePersonDialog from "../../../removals/components/RemovePersonDialog";
 
 const ACCENT = "#25476a";
 
@@ -105,7 +105,6 @@ function ParentHubGroup({ hub, branchHubs, hubActions }) {
 export default function LearningHubsPanel() {
   const navigate = useNavigate();
   const { data: hubsData, isLoading: hubsLoading } = useAllLearningHubsQuery({ includeDrafts: true });
-  const { mutate: deleteHub } = useDeleteLearningHub();
   const { mutate: updateHub } = useUpdateLearningHub();
 
   const [deleteHubTarget, setDeleteHubTarget] = useState(null);
@@ -226,22 +225,9 @@ export default function LearningHubsPanel() {
         onCancel={() => setStatusTarget(null)}
       />
 
-      <ConfirmDialog
-        isOpen={!!deleteHubTarget}
-        title="Delete Learning Hub"
-        message={
-          (childrenByParent.get(deleteHubTarget?.id) || []).length > 0
-            ? `"${deleteHubTarget?.name}" will be permanently deleted. Its branch hubs will become standalone (not deleted). This cannot be undone.`
-            : `"${deleteHubTarget?.name}" will be permanently deleted. This cannot be undone.`
-        }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        onConfirm={() => { deleteHub(deleteHubTarget.id); setDeleteHubTarget(null); }}
-        usageCheck={() => learningHubApi.checkRemove(deleteHubTarget.id)}
-        onAlternative={deleteHubTarget?.status === "active" ? () => { setStatusTarget(deleteHubTarget); setDeleteHubTarget(null); } : undefined}
-        onCancel={() => setDeleteHubTarget(null)}
-      />
+      {/* Deactivate → hand its work to another hub → delete (modules/removals/). */}
+      <RemovePersonDialog open={!!deleteHubTarget} kind="hub" id={deleteHubTarget?.id} name={deleteHubTarget?.name}
+        onClose={() => setDeleteHubTarget(null)} onRemoved={() => setDeleteHubTarget(null)} />
     </div>
   );
 }

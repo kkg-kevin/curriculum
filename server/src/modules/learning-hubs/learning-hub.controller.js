@@ -140,7 +140,8 @@ const getAllLearningHubs = asyncHandler(async (req, res) => {
     filters.ownerAdminId = req.ownerAdminId;
     filters.includeDrafts = true;
   }
-  const records = await LearningHubService.getAllLearningHubs(filters);
+  // A removed hub (modules/removals/) is kept for its history only — never in the hub lists.
+  const records = (await LearningHubService.getAllLearningHubs(filters)).filter((h) => h.status !== "removed" || filters.status === "removed");
   res.json({ success: true, data: records, count: records.length });
 });
 

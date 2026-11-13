@@ -55,6 +55,10 @@ const TeacherService = {
   },
 
   async updateTeacher(id, data) {
+    // A removed educator (modules/removals/) is kept only for their history — never changed again.
+    if ((await TeacherModel.findById(id))?.status === "removed") {
+      throw Object.assign(new Error("This educator has been removed — their record is kept for history only"), { statusCode: 409 });
+    }
     const teacher = await TeacherModel.update(id, data);
     if (!teacher) {
       const err = new Error("Teacher not found");

@@ -38,6 +38,8 @@ import ReportsOverview from "../../learner-portal/components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import LearnerStaffBar from "../components/staff/LearnerStaffBar";
 import LearnerLoginDialog from "../components/staff/LearnerLoginDialog";
+import MoveToHomeLearningDialog from "../components/staff/MoveToHomeLearningDialog";
+import { usePermissions } from "../../../hooks/usePermissions";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
 import ParentTab from "../components/staff/ParentTab";
@@ -99,6 +101,11 @@ export default function LearnerPage() {
   const [preview, setPreview] = useState(false);
   // The child's login window (username, password, set a new one) — LearnerLoginDialog.
   const [loginOpen, setLoginOpen] = useState(false);
+  // Move to Home Learning (a bootcamp or hub learner) — MoveToHomeLearningDialog. Admins and staff
+  // who can add households and edit learners; never the hub portal.
+  const [moveOpen, setMoveOpen] = useState(false);
+  const { can } = usePermissions();
+  const canMoveToHomeLearning = isAdmin && can("home-learning", "create") && can("learners", "edit");
   const [activeTab, setActiveTab] = useState("Overview");
   // The tab row — the Guardian card's "Parent's login…" link scrolls to it.
   const tabsRef = useRef(null);
@@ -160,6 +167,7 @@ export default function LearnerPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       {loginOpen && <LearnerLoginDialog learner={learner} onClose={() => setLoginOpen(false)} />}
+      <MoveToHomeLearningDialog open={moveOpen} learnerId={id} onClose={() => setMoveOpen(false)} onMoved={() => setMoveOpen(false)} />
       <LearnerStaffBar
         learner={learner}
         onBack={() => navigate(listPath)}
@@ -172,6 +180,7 @@ export default function LearnerPage() {
         onOpenLogin={canManage ? () => setLoginOpen(true) : undefined}
         onRemove={canManage && (!isSchool || schoolHubId) ? () => setConfirmRemove(true) : undefined}
         removeLabel={isSchool ? "Remove from hub" : "Remove"}
+        onMoveToHomeLearning={canMoveToHomeLearning && !isEducatorTrainee ? () => setMoveOpen(true) : undefined}
       />
 
       {preview && (

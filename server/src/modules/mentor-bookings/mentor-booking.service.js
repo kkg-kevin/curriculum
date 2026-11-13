@@ -127,7 +127,7 @@ async function learnerWorkspaces(learnerId) {
 // The workspace a learner may book this mentor in — a published, active educator of one of the
 // learner's workspaces (the same mentors Find a mentor lists). Fails otherwise.
 async function bookableWorkspace(learnerId, teacher) {
-  if (!teacher || teacher.status === "inactive" || teacher.status === "in_training") fail("This mentor can't be booked", 404);
+  if (!teacher || ["inactive", "removed"].includes(teacher.status) || teacher.status === "in_training") fail("This mentor can't be booked", 404);
   if (!teacher.profilePublic) fail("This mentor hasn't published their profile, so they can't be booked yet", 404);
   for (const owner of await learnerWorkspaces(learnerId)) {
     if ((await workspaceTeacherIds(owner)).includes(teacher.id)) return owner;
@@ -571,6 +571,36 @@ const MentorBookingService = {
     if (b.status === "confirmed") await Notify.cancelled(fresh, { ...(await peopleOf(fresh)), by, refund });
     if (refund > 0) await Notify.refundDue(fresh, refund);
     return (await decorate([fresh], ctx))[0];
+  },
+
+  // Staff hand a booking still to come to another mentor (removing an educator — modules/removals/):
+  // same time, place and price; the new mentor's pay is theirs when it's held. Refused when the new
+  // mentor can't teach or is busy then (their classes, parent check-ins, other bookings — the
+  // UNIQUE (teacherId, slotKey) catches two at once). The family and both mentors hear.
+  async reassignMentor(req, id, toTeacherId) {
+    const ctx = await contextOf(req);
+    if (ctx.kind !== "manager" || !ctx.canManage) fail("Not allowed", 403);
+    const b = await load(ctx, id);
+    if (!R.ACTIVE.includes(b.status)) fail("Only a booking still to come can change mentor", 409);
+    if (b.teacherId === toTeacherId) return b;
+    const to = await teacherById(toTeacherId);
+    const cantTeach = require("../teachers/teacher.validation").cantTeachReason(to);
+    if (!to) fail("Mentor not found", 404);
+    if (cantTeach) fail(cantTeach, 409);
+    const date = String(b.date).slice(0, 10);
+    if (R.isBusy({ date, startTime: b.startTime, endTime: b.endTime }, await busyFor(toTeacherId, null, date, date))) {
+      fail(`${fullName(to)} is busy then (${date}, ${b.startTime})`, 409);
+    }
+    const before = await peopleOf(b);
+    try {
+      await db(B).where({ id }).update({ teacherId: toTeacherId, updatedAt: new Date() });
+    } catch (err) {
+      if (err.code === "ER_DUP_ENTRY") fail(`${fullName(to)} already has a session then`, 409);
+      throw err;
+    }
+    const fresh = shapeRow(await db(B).where({ id }).first());
+    await Notify.mentorChanged(fresh, { ...(await peopleOf(fresh)), previousMentorUserId: before.mentorUserId });
+    return fresh;
   },
 
   // After it: held (completed) or the learner didn't come (no_show), with a note for the family.

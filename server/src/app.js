@@ -420,6 +420,9 @@ app.use("/api/affiliates", protect, attachOwnRecords, affiliateRoutes);
 // General events (Events → General events): admins and staff run them; everyone signed in gets the
 // sign-in pop-up and registers from it (/api/my-events). See modules/general-events/.
 app.use("/api/general-events", protect, attachOwnRecords, generalEventRoutes);
+// Removing a person — deactivate → hand over their work → delete (educators, learning hubs,
+// supervisors, affiliates). See modules/removals/.
+app.use("/api/removals", protect, attachOwnRecords, require("./modules/removals/removal.routes"));
 app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
 
 app.use(notFound);

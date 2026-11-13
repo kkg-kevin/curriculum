@@ -603,7 +603,7 @@ const GeneralEventService = {
   // What the event form picks from.
   async options(ownerAdminId) {
     const [hubs, bootcamps] = await Promise.all([
-      db("learning_hubs").where({ ownerAdminId }).whereNot({ status: "inactive" }).orderBy("name").select("id", "name", "address", "mapLink", "isHomeLearning"),
+      db("learning_hubs").where({ ownerAdminId }).whereNotIn("status", ["inactive", "removed"]).orderBy("name").select("id", "name", "address", "mapLink", "isHomeLearning"),
       db("bootcamps").where({ ownerAdminId }).orderBy("startDate", "desc").select("id", "name", "startDate", "endDate"),
     ]);
     return {

@@ -82,7 +82,7 @@ function computeAmount({ pricingModel, rate, hours }) {
 }
 
 async function ownHubIds(req) {
-  const hubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  const hubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true });
   return new Set(hubs.map((h) => h.id));
 }
 

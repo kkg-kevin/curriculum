@@ -73,6 +73,10 @@ const LearningHubService = {
 
   async updateLearningHub(id, data) {
     const before = await LearningHubModel.findById(id);
+    // A removed hub (modules/removals/) is kept only for its history — never changed again.
+    if (before?.status === "removed") {
+      throw Object.assign(new Error("This learning hub has been removed — its record is kept for history only"), { statusCode: 409 });
+    }
     // The Home Learning hub must stay a top-level, class-based ("school") hub — its per-child
     // classes and the Home Learning page depend on it. Name, description etc. stay editable.
     if (before?.isHomeLearning) {

@@ -255,6 +255,24 @@ const AuthService = {
     return sanitize(await UserModel.update(user.id, patch));
   },
 
+  // Same as dropRole, for removing a person who has history (modules/removals/): with no role left
+  // the login is RETIRED instead of deleted — kept, switched off, its email and username cleared
+  // (free for someone new) and out of every workspace — so the names on what they did (check-in
+  // reports, tasks done, QA visits reviewed) still read as them. Returns the updated login, or null
+  // when retired.
+  async retireRole(user, role) {
+    if (!user) return null;
+    const patch = withoutRole(user, role);
+    if (patch) return sanitize(await UserModel.update(user.id, patch));
+    await UserSessionModel.deleteByUserId(user.id);
+    await db("users").where({ id: user.id }).update({
+      // Not a real hash of anything — nothing can ever match it.
+      email: null, username: null, passwordHash: `retired:${crypto.randomBytes(24).toString("hex")}`, extraRoles: JSON.stringify([]),
+      invitedByAdminId: null, deactivatedAt: user.deactivatedAt || new Date(), removedAt: new Date(), updatedAt: new Date(),
+    });
+    return null;
+  },
+
   // Mints/resets a learner's OWN dedicated portal login — distinct from setOrCreatePassword
   // above, which is always the GUARDIAN's account. Keyed by username instead of email, and the
   // resulting User row never has an email at all. Same existing-row conflict shape as

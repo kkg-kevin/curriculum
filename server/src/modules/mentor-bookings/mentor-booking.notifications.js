@@ -73,6 +73,34 @@ const MentorBookingNotifications = {
     ]);
   },
 
+  // Staff gave it to another mentor (the first one left): the family, the new mentor, the old one.
+  mentorChanged(b, { parentUserIds, mentorUserId, previousMentorUserId, childName, mentorName }) {
+    const stamp = `${b.teacherId}`;
+    return Promise.all([
+      sendAll(parentUserIds, {
+        type: "mentor_booking_confirmed",
+        title: `New mentor for ${childName || "your child"}'s session`,
+        message: `${mentorName || "Another mentor"} will now take ${childName || "your child"} through ${about(b)} ${where(b)} on ${when(b)} — same time, nothing to pay again.`,
+        payload: { route: `${PARENT}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_mentor_changed:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+      send(mentorUserId, {
+        type: "mentor_booking_confirmed",
+        title: `New session: ${childName || "a learner"}, ${when(b)}`,
+        message: `You're taking over a session: ${childName || "a learner"} needs help with ${about(b)}${b.topic ? ` — "${String(b.topic).slice(0, 140)}"` : ""}. ${b.minutes} minutes, ${where(b)}.`,
+        payload: { route: `${MENTOR}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_mentor_changed:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+      previousMentorUserId && previousMentorUserId !== mentorUserId ? send(previousMentorUserId, {
+        type: "mentor_booking_cancelled",
+        title: `Session on ${when(b)} handed over`,
+        message: `The session on ${when(b)} has been given to ${mentorName || "another mentor"}.`,
+        payload: { route: MENTOR, bookingId: b.id },
+        dedupeKey: `mentor_booking_handed_over:${b.id}:${stamp}`,
+      }, b.ownerAdminId) : null,
+    ]);
+  },
+
   // The day of it: the family and the mentor.
   today(b, { parentUserIds, mentorUserId, childName, mentorName }) {
     const stamp = String(b.date).slice(0, 10);

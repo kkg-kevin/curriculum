@@ -13,7 +13,7 @@ function fail(message, statusCode = 400) {
 
 const isSupervisor = (user) => Boolean(user) && rolesOf(user).includes("supervisor");
 
-const publicShape = (user, educators = 0) => ({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt, educators });
+const publicShape = (user, educators = 0) => ({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt, educators, deactivated: Boolean(user.deactivatedAt) });
 
 const SupervisorService = {
   async list(ownerAdminId) {

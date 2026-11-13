@@ -13,6 +13,9 @@ router.get("/learner/:learnerId", authorize("learner"), controller.getForLearner
 router.get("/family", authorize("learner"), controller.getFamily);
 router.post("/family/:householdId/children", authorize("learner"), controller.addFamilyChild);
 router.post("/", authorize("admin"), controller.create);
+// Move a learner already in the system (a bootcamp, a hub) into Home Learning — home-learning.move.js.
+router.get("/move/:learnerId", authorize("admin"), controller.moveOptions);
+router.post("/move/:learnerId", authorize("admin"), controller.moveLearner);
 router.post("/invoices", authorize("admin"), controller.generateDueInvoices);
 router.put("/:id", authorize("admin"), controller.update);
 router.post("/:id/learners", authorize("admin"), controller.setEnrollment);

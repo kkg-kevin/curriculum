@@ -64,7 +64,7 @@ async function mentorsForLearner(learner, settingsCache = new Map()) {
     for (const t of teaching) {
       const teacher = await db("teachers").where({ id: t.teacherId }).first("id", "firstName", "lastName", "photo", "status");
       const course = await db("courses").where({ id: t.courseId }).first("id", "name");
-      if (!teacher || !course || teacher.status === "inactive") continue;
+      if (!teacher || !course || ["inactive", "removed"].includes(teacher.status)) continue;
       const finalReport = await db("reports").where({ learnerId: learner.id, classId: cls.id, courseId: course.id, status: "published" }).whereNull("sessionId").first("id");
       const stage = finalReport ? "end" : "mid";
       const eligible = stage === "end" || attended >= settings.minSessions;
@@ -99,7 +99,7 @@ async function mentorsForLearner(learner, settingsCache = new Map()) {
     if (!settings.enabled) continue;
     const teacher = await db("teachers").where({ id: b.teacherId }).first("id", "firstName", "lastName", "photo", "status");
     const course = await db("courses").where({ id: b.courseId }).first("id", "name");
-    if (!teacher || !course || teacher.status === "inactive") continue;
+    if (!teacher || !course || ["inactive", "removed"].includes(teacher.status)) continue;
     const sessions = booked.filter((x) => x.teacherId === b.teacherId && x.courseId === b.courseId).length;
     const review = await db("mentor_reviews").where({ learnerId: learner.id, teacherId: teacher.id, courseId: course.id, stage: "end" }).first();
     rows.push({

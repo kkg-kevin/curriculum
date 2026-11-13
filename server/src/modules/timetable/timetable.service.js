@@ -659,3 +659,4 @@ const TimetableService = {
 // room.service.js's getBusyRoomIds can reuse the exact same overlap rule instead of duplicating it.
 module.exports = TimetableService;
 module.exports.timesOverlap = timesOverlap;
+module.exports.hasConflict = hasConflict;

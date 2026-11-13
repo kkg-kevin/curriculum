@@ -44,6 +44,22 @@ const update = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.update(req.ownerAdminId, req.params.id, req.body) });
 });
 
+// Moving a learner from another programme (a bootcamp, a hub) into Home Learning — home-learning.move.js.
+// Staff also need Learners → Edit, since the places the child leaves are changed too.
+const assertCanMove = (req) => {
+  const isStaff = req.user.actualRole === "collaborator";
+  if (isStaff && !require("../access/access.service").can(req.user.permissions, "learners", "edit")) {
+    throw Object.assign(new Error("Your role doesn't allow you to edit Learners."), { statusCode: 403 });
+  }
+};
+const moveOptions = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await require("./home-learning.move").options(req, req.params.learnerId) });
+});
+const moveLearner = asyncHandler(async (req, res) => {
+  assertCanMove(req);
+  res.status(201).json({ success: true, data: await require("./home-learning.move").move(req, req.params.learnerId, req.body || {}) });
+});
+
 const setEnrollment = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: await HomeLearningService.setEnrollment(req.ownerAdminId, req.params.id, req.body) });
 });
@@ -99,7 +115,7 @@ const getForEducator = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
+  list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment, moveOptions, moveLearner,
   generateInvoice, generateDueInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
   getFamily, addFamilyChild,
 };

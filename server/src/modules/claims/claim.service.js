@@ -85,11 +85,12 @@ function hoursBetween(startTime, endTime) {
 }
 
 // The supervisor an educator's claims go to — null when they have none, or when the account they
-// point at is gone or no longer a supervisor.
+// point at is gone, switched off (deactivated — their claims go to the admin) or no longer a
+// supervisor.
 async function supervisorOf(teacher) {
   if (!teacher?.supervisorId) return null;
   const user = await UserModel.findById(teacher.supervisorId);
-  return user && rolesOf(user).includes("supervisor") ? { id: user.id, name: user.name } : null;
+  return user && !user.deactivatedAt && rolesOf(user).includes("supervisor") ? { id: user.id, name: user.name } : null;
 }
 
 const classLabel = (cls) => [cls?.gradeName, cls?.streamName].filter(Boolean).join(" ").trim() || null;
@@ -530,7 +531,7 @@ const ClaimService = {
     });
 
     const coEducatorIds = links.filter((l) => l.teacherId !== teacherId).map((l) => l.teacherId);
-    const coEducators = coEducatorIds.length ? (await TeacherModel.findAll({ ids: coEducatorIds })).map((t) => teacherName(t)) : [];
+    const coEducators = coEducatorIds.length ? (await TeacherModel.findAll({ ids: coEducatorIds, includeRemoved: true })).map((t) => teacherName(t)) : [];
 
     return {
       ...describeCourse({ link, cls, course, hub }),

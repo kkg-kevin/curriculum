@@ -501,7 +501,7 @@ const BillingService = {
       // A batch has its own hubId but findBatches' filter takes one exact value at a time — an
       // admin can own more than one hub, so fetch per-hub and merge (same shape as
       // listInvoices' own admin branch above).
-      const ownHubIds = (await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id);
+      const ownHubIds = (await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true })).map((h) => h.id);
       const perHub = await Promise.all(ownHubIds.map((hubId) => BillingModel.findBatches({ hubId })));
       return perHub.flat();
     }
@@ -592,7 +592,7 @@ const BillingService = {
     // resolves the admin's own hub ids first and filters in JS, same as learning-hub.model.js's
     // county filter does for a JSON-nested field that SQL can't filter directly.
     if (req.user.role === "admin") {
-      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true })).map((h) => h.id));
       invoices = invoices.filter((invoice) => ownHubIds.has(invoice.hubId));
     }
     const cache = { hubs: new Map(), learners: new Map() };
@@ -791,7 +791,7 @@ const BillingService = {
     // Same tenant-boundary reasoning as listInvoices above — hubId inherits ownerAdminId
     // transitively, and an admin can own more than one hub, so filter in JS after the fact.
     if (req.user.role === "admin") {
-      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true })).map((h) => h.id));
       invoices = invoices.filter((invoice) => ownHubIds.has(invoice.hubId));
     }
     const invoiceById = new Map(invoices.map((inv) => [inv.id, inv]));
@@ -846,7 +846,7 @@ const BillingService = {
     if (hubId) filters.hubId = hubId;
     let invoices = (await BillingModel.findInvoices(filters)).filter((inv) => RECEIVABLE_STATUSES.includes(inv.status));
     if (req.user.role === "admin" && payerType === "user") {
-      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).map((h) => h.id));
+      const ownHubIds = new Set((await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true })).map((h) => h.id));
       invoices = invoices.filter((inv) => ownHubIds.has(inv.hubId));
     }
     const payments = (await BillingModel.findPaymentsByInvoiceIds(invoices.map((inv) => inv.id))).filter((p) => p.status === "successful");
@@ -911,7 +911,7 @@ const BillingService = {
     if (req.user.role !== "admin") throw forbidden("Only the platform administrator can view customers");
     // The Home Learning hub is never a paying customer — its families are billed per household
     // from the Home Learning page — so it's left out of the customer list.
-    const allHubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    const allHubs = await LearningHubService.getAllLearningHubs({ ownerAdminId: req.ownerAdminId, includeDrafts: true, includeRemoved: true });
     const hubs = allHubs.filter((h) => !h.isHomeLearning);
     const hubIds = new Set(hubs.map((h) => h.id));
     const ownHubIds = new Set(allHubs.map((h) => h.id));

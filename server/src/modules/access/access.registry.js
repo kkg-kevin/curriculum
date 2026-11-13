@@ -118,6 +118,11 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/mentor-reviews": "teachers",
   // The educator performance profile — part of an educator's record.
   "/api/educator-profiles": "teachers",
+  // Removing a person (modules/removals/) is part of that kind's own page.
+  "/api/removals/teacher": "teachers",
+  "/api/removals/hub": "learning-hubs",
+  "/api/removals/supervisor": "claims-approval",
+  "/api/removals/affiliate": "affiliates",
 };
 
 // Settings catalogs are shared reference data: reading one (to pick from it) is also allowed by
@@ -207,6 +212,10 @@ const ACTION_OVERRIDES = [
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
+  // Moving a learner into Home Learning makes a household (home-learning.move.js).
+  { method: "POST", pattern: /^\/api\/home-learning\/move\/[^/]+$/, module: "home-learning", action: "create" },
+  // …and removing one the long way (modules/removals/).
+  { method: "DELETE", pattern: /^\/api\/removals\/supervisor\/[^/]+$/, module: "claims-approval", action: "edit" },
   // Scheduling another run of a bootcamp makes a new bootcamp (a copy with new dates).
   { method: "POST", pattern: /^\/api\/bootcamps\/[^/]+\/runs$/, module: "bootcamps", action: "create" },
   // Hub check-ins: a staff member needs "checkins-manage" for all of it; the schedules map their

@@ -58,6 +58,8 @@ const ROOTS = {
   analytics: { table: null, noun: "analytics", module: "reports" },
   "payment-settings": { table: null, noun: "payment settings", module: "settings" },
   "certificate-settings": { table: null, noun: "certificate settings", module: "settings" },
+  // Removing a person: deactivate → transfer → delete (modules/removals/).
+  removals: { table: null, noun: "removal", module: "people" },
   "admin-tools": { table: null, noun: "workspace", module: "people" },
   access: { table: null, noun: "workspace", module: "people" },
   sharing: { table: null, noun: "workspace", module: "people" },
@@ -131,7 +133,14 @@ const COLLECTIONS = {
     visits: { table: "qa_visits", noun: "QA visit" },
   },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
+  "home-learning": { move: { table: "learners", noun: "learner" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },
+  removals: {
+    teacher: { table: "teachers", noun: "educator" },
+    hub: { table: "learning_hubs", noun: "learning hub" },
+    supervisor: { table: "users", noun: "supervisor" },
+    affiliate: { table: "affiliates", noun: "affiliate" },
+  },
 };
 
 // "<thing>/links[/<id>]" attaches or detaches an existing record — the id is that record's.
