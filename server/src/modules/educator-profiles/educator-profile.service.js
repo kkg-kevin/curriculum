@@ -221,7 +221,7 @@ const EducatorProfileService = {
   // The public profile by its link — only while published (and the educator isn't inactive).
   async publicProfile(slug) {
     const teacher = await db("teachers").where({ profileSlug: String(slug || "").slice(0, 90), profilePublic: true }).first(PROFILE_FIELDS);
-    if (!teacher || teacher.status === "inactive") fail("This profile isn't available", 404);
+    if (!teacher || ["inactive", "removed"].includes(teacher.status)) fail("This profile isn't available", 404);
     return publicView(teacher, await getStats(teacher.id));
   },
 
@@ -235,7 +235,7 @@ const EducatorProfileService = {
     const ids = new Set();
     for (const o of owners.filter(Boolean)) (await workspaceTeacherIds(o)).forEach((id) => ids.add(id));
     if (!ids.size) return [];
-    const teachers = await db("teachers").whereIn("id", [...ids]).where({ profilePublic: true }).whereNot("status", "inactive").select(PROFILE_FIELDS);
+    const teachers = await db("teachers").whereIn("id", [...ids]).where({ profilePublic: true }).whereNotIn("status", ["inactive", "removed"]).select(PROFILE_FIELDS);
     const cards = [];
     for (const t of teachers) {
       const v = publicView(t, await getStats(t.id));

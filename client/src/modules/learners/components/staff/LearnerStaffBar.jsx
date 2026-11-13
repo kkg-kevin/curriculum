@@ -1,4 +1,4 @@
-import { FiEye, FiEyeOff, FiEdit3, FiTrash2, FiPower, FiKey } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiEdit3, FiTrash2, FiPower, FiKey, FiHome } from "react-icons/fi";
 import { T, cardStyle } from "../../../learner-portal/components/profile/theme";
 
 const buttonStyle = (tone, disabled) => {
@@ -23,7 +23,7 @@ const buttonStyle = (tone, disabled) => {
 export default function LearnerStaffBar({
   learner, onBack, preview, onTogglePreview,
   accountStatus, onToggleAccount, accountTogglePending,
-  onOpenFullForm, onOpenLogin, onRemove, removeLabel,
+  onOpenFullForm, onOpenLogin, onRemove, removeLabel, onMoveToHomeLearning,
 }) {
   const active = accountStatus === "active";
   // A website sign-up stays switched off until its invoice is paid.
@@ -53,6 +53,11 @@ export default function LearnerStaffBar({
         {!preview && onOpenLogin && (
           <button type="button" onClick={onOpenLogin} style={buttonStyle("plain")}>
             <FiKey size={14} /> Login
+          </button>
+        )}
+        {!preview && onMoveToHomeLearning && (
+          <button type="button" onClick={onMoveToHomeLearning} style={buttonStyle("plain")}>
+            <FiHome size={14} /> Move to Home Learning
           </button>
         )}
         {!preview && onOpenFullForm && (

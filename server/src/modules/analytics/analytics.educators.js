@@ -18,7 +18,7 @@ async function getEducators(scope) {
   const linked = !scope.filters.classId && scope.hubIds.length ? await db("teacher_hub_links").whereIn("hubId", scope.hubIds).distinct("teacherId").pluck("teacherId") : [];
   const ids = [...new Set([...teaching, ...linked])];
   // TOT learners only (in training, not teaching yet) are learners here, not educators (tot/tot.people.js).
-  const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNot("status", "inactive").select("id", "firstName", "lastName", "photo", "status", "profilePublic", "createdAt")) : [];
+  const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNotIn("status", ["inactive", "removed"]).select("id", "firstName", "lastName", "photo", "status", "profilePublic", "createdAt")) : [];
   // The workspace's mentor standards (Settings → Mentor standards) — every educator measured against them.
   const settings = await MentorStandards.getSettings(scope.ownerAdminId);
   const educators = [];

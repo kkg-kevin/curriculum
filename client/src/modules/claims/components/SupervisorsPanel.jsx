@@ -1,10 +1,9 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { FiKey, FiTrash2, FiUserPlus } from "react-icons/fi";
-import { useCreateSupervisor, useRemoveSupervisor, useSupervisors, useUpdateSupervisor } from "../hooks/useClaims";
+import { useCreateSupervisor, useSupervisors, useUpdateSupervisor } from "../hooks/useClaims";
 import { T, ghostButton, inputStyle, primaryButton } from "../shared";
-import { claimsApi } from "../services/claimsApi";
-import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
+import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 
 const label = { display: "block", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: T.ink };
@@ -19,11 +18,10 @@ export default function SupervisorsPanel({ heading = false }) {
   const { data: supervisors = [], isLoading } = useSupervisors();
   const create = useCreateSupervisor();
   const update = useUpdateSupervisor();
-  const remove = useRemoveSupervisor();
   const [form, setForm] = useState(EMPTY);
   const [resetting, setResetting] = useState(null); // { id, password }
   const [removeTarget, setRemoveTarget] = useState(null);
-  const busy = create.isPending || update.isPending || remove.isPending;
+  const busy = create.isPending || update.isPending;
 
   const failed = (err, fallback) => toast.error(err.errors?.[0]?.message || err.message || fallback);
   // The password is needed only for a new login — the server asks for one if the email has none.
@@ -51,15 +49,6 @@ export default function SupervisorsPanel({ heading = false }) {
     }
   };
 
-  const onRemove = async (supervisor) => {
-    setRemoveTarget(null);
-    try {
-      await remove.mutateAsync(supervisor.id);
-      toast.success("Supervisor removed");
-    } catch (err) {
-      failed(err, "Could not remove the supervisor");
-    }
-  };
 
   return (
     <div>
@@ -82,7 +71,10 @@ export default function SupervisorsPanel({ heading = false }) {
             <div key={supervisor.id} style={{ padding: "11px 14px", borderTop: index ? "1px solid #F1F5F9" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{supervisor.name}</p>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {supervisor.name}
+                    {supervisor.deactivated && <span style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: "#F3F4F6", color: "#4B5563", border: "1px solid #E5E7EB" }}>Deactivated</span>}
+                  </p>
                   <p style={{ margin: "1px 0 0", fontSize: 12, color: T.inkMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{supervisor.email} · {supervisor.educators} {supervisor.educators === 1 ? "educator" : "educators"}</p>
                 </div>
                 <HistoryButton type="users" id={supervisor.id} label={supervisor.name} iconOnly />
@@ -121,15 +113,9 @@ export default function SupervisorsPanel({ heading = false }) {
           <button type="submit" disabled={!valid || busy} style={primaryButton(!valid || busy)}><FiUserPlus size={15} /> {create.isPending ? "Creating…" : "Create supervisor"}</button>
         </div>
       </form>
-      <ConfirmDialog
-        isOpen={!!removeTarget}
-        title="Remove supervisor"
-        message={`${removeTarget?.name} will be removed and will no longer be able to sign in as a supervisor.`}
-        confirmLabel="Remove" cancelLabel="Cancel" variant="danger"
-        onConfirm={() => onRemove(removeTarget)}
-        onCancel={() => setRemoveTarget(null)}
-        usageCheck={() => claimsApi.checkRemoveSupervisor(removeTarget.id)}
-      />
+      {/* Deactivate → hand their educators, claims and QA visits to another supervisor → delete (modules/removals/). */}
+      <RemovePersonDialog open={!!removeTarget} kind="supervisor" id={removeTarget?.id} name={removeTarget?.name}
+        onClose={() => setRemoveTarget(null)} onRemoved={() => setRemoveTarget(null)} />
     </div>
   );
 }

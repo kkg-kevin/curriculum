@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle as CheckCircleIcon, Delete as DeleteIcon, Edit as EditIcon, EventSeat as EventSeatIcon, LocationOn as LocationOnIcon, MenuBook as MenuBookIcon, MoreVert as MoreVertIcon, PauseCircle as PauseCircleIcon, School as SchoolIcon, StarBorder as StarBorderIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
-import { useDeleteLearningHub, useUpdateLearningHub } from "../hooks/useLearningHub";
+import { useUpdateLearningHub } from "../hooks/useLearningHub";
 import { LEARNING_HUB_TYPES } from "../schemas/learningHub.schema";
-import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { learningHubApi } from "../services/learningHubApi";
+import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 import { usePermissions } from "../../../hooks/usePermissions";
 
 const ACCENT = "#25476a";
@@ -39,7 +38,6 @@ export function LearningHubCard({ hub, curriculaMap }) {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const canEdit = can("learning-hubs", "edit");
-  const { mutate: deleteLearningHub, isPending: isDeleting } = useDeleteLearningHub();
   const { mutate: updateLearningHub } = useUpdateLearningHub();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -80,7 +78,7 @@ export function LearningHubCard({ hub, curriculaMap }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto" }}
+      style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: 1 }}
     >
       {hub.photos?.length > 0 && (
         <div style={{ height: 110, overflow: "hidden" }}>
@@ -183,18 +181,9 @@ export function LearningHubCard({ hub, curriculaMap }) {
         document.body
       )}
 
-      <ConfirmDialog
-        isOpen={confirmOpen}
-        title="Delete Learning Hub"
-        message={`"${hub.name}" will be permanently deleted.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        onConfirm={() => { setConfirmOpen(false); deleteLearningHub(hub.id); }}
-        usageCheck={() => learningHubApi.checkRemove(hub.id)}
-        onAlternative={hub.status === "active" ? () => { setConfirmOpen(false); updateLearningHub({ id: hub.id, data: { status: "inactive" } }); } : undefined}
-        onCancel={() => setConfirmOpen(false)}
-      />
+      {/* Deactivate → hand its work to another hub → delete (modules/removals/). */}
+      <RemovePersonDialog open={confirmOpen} kind="hub" id={hub.id} name={hub.name}
+        onClose={() => setConfirmOpen(false)} onRemoved={() => setConfirmOpen(false)} />
     </div>
   );
 }

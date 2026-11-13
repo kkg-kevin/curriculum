@@ -89,7 +89,7 @@ async function workspacePeople(ownerAdminId) {
     .where((w) => w.whereIn("createdByAdminId", owners).orWhereIn("id", db("teacher_hub_links").whereIn("hubId", hubIds.length ? hubIds : ["__none__"]).select("teacherId")))
     .whereNotNull("email")
     .select("email", "status");
-  const emails = [...new Set(teachers.filter((t) => (t.status || "active") !== "inactive").map((t) => String(t.email).toLowerCase()))];
+  const emails = [...new Set(teachers.filter((t) => !["inactive", "removed"].includes(t.status || "active")).map((t) => String(t.email).toLowerCase()))];
   const [admins, educators] = await Promise.all([
     adminIds.length ? db("users").whereIn("id", adminIds).whereNull("deactivatedAt").select("id", "name", "email") : [],
     emails.length ? db("users").whereIn(db.raw("LOWER(email)"), emails).whereNot({ role: "admin" }).whereNull("deactivatedAt").select("id", "name", "email") : [],
@@ -131,7 +131,7 @@ async function participantOptions(ownerAdminId, hubId) {
   const teacherRows = await db("teachers").whereIn("id", db("teacher_hub_links").where({ hubId }).select("teacherId"))
     .whereNotNull("email").select("firstName", "lastName", "email", "status");
   // Not inactive, and not still in training (a TOT learner isn't one of the hub's mentors yet).
-  const teacherByEmail = new Map(teacherRows.filter((t) => !["inactive", "in_training"].includes(t.status || "active")).map((t) => [lower(t.email), t]));
+  const teacherByEmail = new Map(teacherRows.filter((t) => !["inactive", "in_training", "removed"].includes(t.status || "active")).map((t) => [lower(t.email), t]));
   const mentorUsers = teacherByEmail.size ? await live(db("users").whereIn(db.raw("LOWER(email)"), [...teacherByEmail.keys()])).whereNot({ role: "admin" }).select("id", "name", "email") : [];
   const mentors = mentorUsers.map((u) => {
     const t = teacherByEmail.get(lower(u.email));

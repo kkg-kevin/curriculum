@@ -8,6 +8,7 @@ import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
+import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
@@ -34,7 +35,8 @@ const th = { textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: 
 const td = { padding: "11px 12px", fontSize: 13, color: BRAND.inkSoft, borderBottom: `1px solid ${BRAND.line}`, verticalAlign: "top" };
 const KIND = { parent: "Parent", educator: "Educator", other: "Affiliate" };
 const SOURCE = { admin: "Added by staff", portal: "Joined from their portal", website: "Applied on the website" };
-const STATUS_TONE = { active: "good", pending: "waiting", suspended: "neutral" };
+const STATUS_TONE = { active: "good", pending: "waiting", suspended: "neutral", removed: "neutral" };
+const STATUS_WORD = { pending: "To approve", active: "Active", suspended: "Suspended", removed: "Removed" };
 const STATE = {
   waiting: ["Waiting", "neutral"], available: ["Available", "good"], requested: ["In a payout", "waiting"], paid: ["Paid", "strong"], cancelled: ["Cancelled", "danger"],
 };
@@ -321,7 +323,12 @@ function AccountLine({ a }) {
 
 function AffiliatesTab({ onEdit }) {
   const qc = useQueryClient();
-  const { data: affiliates = [], isLoading } = useQuery({ queryKey: ["affiliates", "list"], queryFn: affiliatesApi.list });
+  const { data: all = [], isLoading } = useQuery({ queryKey: ["affiliates", "list"], queryFn: affiliatesApi.list });
+  // Removed affiliates (modules/removals/) are kept for their history — shown only when asked.
+  const [showRemoved, setShowRemoved] = useState(false);
+  const [removing, setRemoving] = useState(null);
+  const removedCount = all.filter((a) => a.status === "removed").length;
+  const affiliates = showRemoved ? all : all.filter((a) => a.status !== "removed");
   const act = useMutation({
     mutationFn: ({ kind, a }) => (kind === "payout" ? affiliatesApi.createPayout(a.id)
       : kind === "delete" ? affiliatesApi.remove(a.id)
@@ -336,6 +343,11 @@ function AffiliatesTab({ onEdit }) {
   if (isLoading) return <p style={{ color: BRAND.muted }}>Loading…</p>;
   return (
     <>
+    {removedCount > 0 && (
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: BRAND.inkSoft, margin: "0 0 10px", cursor: "pointer" }}>
+        <input type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} /> Show removed ({removedCount})
+      </label>
+    )}
     <Table head={["Affiliate", "Code & link", "Status", "Referrals", "Earned", "Available", ""]} empty={affiliates.length ? null : "No affiliates yet — add one, or let parents and educators join from their portal (Settings)."}>
       {affiliates.map((a) => (
         <tr key={a.id}>
@@ -360,30 +372,33 @@ function AffiliatesTab({ onEdit }) {
               {a.link && <button type="button" style={{ ...btn, padding: "4px 8px" }} onClick={() => copy(a.link, "Link copied")} title={a.link}><FiLink size={12} /> Link</button>}
             </div>
           </td>
-          <td style={td}><span style={pill(STATUS_TONE[a.status])}>{a.status === "pending" ? "To approve" : a.status === "active" ? "Active" : "Suspended"}</span></td>
+          <td style={td}><span style={pill(STATUS_TONE[a.status])}>{STATUS_WORD[a.status] || a.status}</span></td>
           <td style={td}>{a.paidReferrals} paid / {a.referrals}</td>
           <td style={td}>{formatKsh(a.totals.earned)}<div style={{ fontSize: 12, color: BRAND.muted }}>{formatKsh(a.totals.paid)} paid out</div></td>
           <td style={td}>{formatKsh(a.totals.available)}{a.totals.waiting > 0 && <div style={{ fontSize: 12, color: BRAND.muted }}>+ {formatKsh(a.totals.waiting)} waiting</div>}</td>
           <td style={{ ...td, textAlign: "right" }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
               {a.status === "pending" && <button type="button" style={primary} onClick={() => act.mutate({ kind: "active", a })}>Approve</button>}
-              {a.status === "active" && a.totals.available > 0 && <button type="button" style={btn} onClick={() => act.mutate({ kind: "payout", a })}>Pay out {formatKsh(a.totals.available)}</button>}
-              {a.status !== "pending" && (!a.account || a.account.asAffiliate) && (
+              {["active", "suspended"].includes(a.status) && a.totals.available > 0 && <button type="button" style={btn} onClick={() => act.mutate({ kind: "payout", a })}>Pay out {formatKsh(a.totals.available)}</button>}
+              {!["pending", "removed"].includes(a.status) && (!a.account || a.account.asAffiliate) && (
                 <button type="button" style={btn} disabled={act.isPending}
                   title="Emails them how to sign in, with a link to set (or reset) their password — the link goes only to their email"
                   onClick={async () => (await askConfirm({ title: `Email ${a.name} their sign-in details?`, message: "They get an email with how to sign in and a link to set their password.", confirmLabel: "Send email" })) && act.mutate({ kind: "sign-in", a })}>
                   <FiMail size={12} /> Email sign-in details
                 </button>
               )}
-              <button type="button" style={btn} onClick={() => onEdit(a)}>Edit</button>
+              {a.status !== "removed" && <button type="button" style={btn} onClick={() => onEdit(a)}>Edit</button>}
               {a.status === "active" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "suspended", a })}>Suspend</button>}
               {a.status === "suspended" && <button type="button" style={btn} onClick={() => act.mutate({ kind: "active", a })}>Reactivate</button>}
-              {a.referrals === 0 && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={async () => (await askConfirm({ title: `Delete ${a.name}?`, message: "They stop being an affiliate and their code no longer works.", confirmLabel: "Delete", tone: "danger" })) && act.mutate({ kind: "delete", a })}>Delete</button>}
+              {a.status !== "removed" && <button type="button" style={{ ...btn, color: BRAND.danger }} onClick={() => setRemoving(a)}>Remove</button>}
             </div>
           </td>
         </tr>
       ))}
     </Table>
+    {/* Suspend → hand their families and team to another affiliate → delete (modules/removals/). */}
+    <RemovePersonDialog open={!!removing} kind="affiliate" id={removing?.id} name={removing?.name}
+      onClose={() => setRemoving(null)} onRemoved={() => { setRemoving(null); qc.invalidateQueries({ queryKey: ["affiliates"] }); }} />
     </>
   );
 }

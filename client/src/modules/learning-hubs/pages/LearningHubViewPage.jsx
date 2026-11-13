@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AccessTime as AccessTimeIcon, BorderColor as BorderColorIcon, Business as BusinessIcon, CalendarToday as CalendarTodayIcon, Chair as ChairIcon, Coffee as CoffeeIcon, Email as EmailIcon, EventSeat as EventSeatIcon, LocalParking as LocalParkingIcon, LocationOn as LocationOnIcon, LocalOffer as LocalOfferIcon, MeetingRoom as MeetingRoomIcon, Park as ParkIcon, PeopleAlt as PeopleAltIcon, Person as PersonIcon, Phone as PhoneIcon, Power as PowerIcon, Restaurant as RestaurantIcon, School as SchoolIcon, Videocam as VideocamIcon, Wc as WcIcon, Wifi as WifiIcon, WarningAmber as WarningAmberIcon } from "@mui/icons-material";
-import { useLearningHubQuery, useLearningHubCurriculaQuery, useDeleteLearningHub, useUpdateLearningHubStatus, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
+import { useLearningHubQuery, useLearningHubCurriculaQuery, useUpdateLearningHubStatus, useHubTeachersQuery, useAllLearningHubsQuery } from "../hooks/useLearningHub";
 import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { classApi } from "../../classes/services/classApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import { LEARNING_HUB_TYPES, AMENITY_OPTIONS, PRICING_MODELS } from "../schemas/learningHub.schema";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { learningHubApi } from "../services/learningHubApi";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { usePermissions } from "../../../hooks/usePermissions";
 import RecordStamp from "../../activity/components/RecordStamp";
+import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 
 const TEAL = "#38aae1";
 
@@ -135,7 +135,6 @@ export default function LearningHubViewPage() {
   const { data: hub, isLoading, isError } = useLearningHubQuery(id);
   const { data: curriculum } = useCurriculumQuery(hub?.curriculumId);
   const { data: curriculumLinks = [] } = useLearningHubCurriculaQuery(id);
-  const { mutate: deleteLearningHub } = useDeleteLearningHub();
   const { mutate: updateHubStatus, isPending: statusPending } = useUpdateLearningHubStatus();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmStatusToggle, setConfirmStatusToggle] = useState(false);
@@ -183,7 +182,9 @@ export default function LearningHubViewPage() {
     : hub.status === "draft"
     ? { bg: "#fff8e6", color: "#b8860b", border: "#fcd97a" }
     : { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
-  const statusLabel = hub.status === "active" ? "Active" : hub.status === "draft" ? "Draft" : "Inactive";
+  const statusLabel = hub.status === "active" ? "Active" : hub.status === "draft" ? "Draft" : hub.status === "removed" ? "Removed" : "Inactive";
+  // Removed (modules/removals/): kept only for its invoices and other history — read only.
+  const removed = hub.status === "removed";
 
   // A draft hub is promoted to active by editing it, not by this toggle — the toggle is only
   // meaningful once a hub is live. `deactivating` is the direction of the pending action.
@@ -229,10 +230,10 @@ export default function LearningHubViewPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: "10px", flexShrink: 0, flexWrap: "wrap" }}>
-            {canEdit && <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            {canEdit && !removed && <button type="button" onClick={() => navigate(`/settings/learning-hubs/${id}/edit`)} style={{ padding: "10px 20px", backgroundColor: "rgba(255,255,255,0.15)", color: "#ffffff", border: "1.5px solid rgba(255,255,255,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Edit
             </button>}
-            {canToggleStatus && canEdit && (
+            {canToggleStatus && canEdit && !removed && (
               <button
                 type="button"
                 onClick={() => setConfirmStatusToggle(true)}
@@ -242,13 +243,19 @@ export default function LearningHubViewPage() {
                 {deactivating ? "Deactivate Hub" : "Activate Hub"}
               </button>
             )}
-            {canDelete && <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+            {canDelete && !removed && <button type="button" onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", backgroundColor: "rgba(239,68,68,0.2)", color: "#FCA5A5", border: "1.5px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
               Delete
             </button>}
           </div>
         </div>
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
+      {removed && (
+        <div role="status" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 16px", borderRadius: 14, background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#374151", fontSize: 13.5, lineHeight: 1.5, margin: "12px 0" }}>
+          <WarningAmberIcon fontSize="small" style={{ flexShrink: 0 }} />
+          <div><strong>Removed{hub.removedAt ? ` on ${new Date(hub.removedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}` : ""}.</strong> This hub is kept only for its history — its invoices and receipts are still in Billing. It can't be changed.</div>
+        </div>
+      )}
       <RecordStamp type="learning_hubs" id={id} style={{ marginBottom: 20 }} />
 
       {/* Photo gallery */}
@@ -676,20 +683,14 @@ export default function LearningHubViewPage() {
         )}
       </div>
 
-      <ConfirmDialog
-        isOpen={confirmDelete}
-        title="Delete Learning Hub"
-        message={`"${hub.name}" will be permanently deleted. This cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        onConfirm={() => {
-          setConfirmDelete(false);
-          deleteLearningHub(id, { onSuccess: () => navigate("/learning-hubs") });
-        }}
-        usageCheck={() => learningHubApi.checkRemove(id)}
-        onAlternative={hub.status === "active" ? () => { setConfirmDelete(false); setConfirmStatusToggle(true); } : undefined}
-        onCancel={() => setConfirmDelete(false)}
+      {/* Deactivate → hand its classes, learners, rooms… to another hub → delete (modules/removals/). */}
+      <RemovePersonDialog
+        open={confirmDelete}
+        kind="hub"
+        id={id}
+        name={hub.name}
+        onClose={() => setConfirmDelete(false)}
+        onRemoved={() => { setConfirmDelete(false); navigate("/learning-hubs"); }}
       />
 
       <ConfirmDialog

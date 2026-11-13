@@ -126,11 +126,14 @@ function resolveGrade(curriculum, gradeId) {
 
 // An educator is in this admin's workspace when linked to any of the admin's hubs — the Home
 // Learning hub included, so a freelance home tutor only needs to be created against that hub.
-async function assertOwnEducator(ownerAdminId, educatorId) {
+// `currentId`: the child's educator already — kept as they are even when inactive (only a NEW
+// educator must be able to teach).
+async function assertOwnEducator(ownerAdminId, educatorId, currentId = null) {
   if (!educatorId) return null;
   const educator = await TeacherModel.findById(educatorId);
   if (!educator) fail("Educator not found", 404);
-  if (!require("../teachers/teacher.validation").canTeach(educator)) fail("This educator is still in training — make them Active on their page first.", 400);
+  const cantTeach = require("../teachers/teacher.validation").cantTeachReason(educator);
+  if (cantTeach && educatorId !== currentId) fail(cantTeach, 400);
   const ownHubIds = new Set((await LearningHubModel.findAll({ ownerAdminId, includeDrafts: true })).map((hub) => hub.id));
   const links = await TeacherHubLinkModel.findByTeacherId(educatorId);
   if (!links.some((link) => ownHubIds.has(link.hubId))) fail("This educator is not available in your workspace", 404);
@@ -465,11 +468,10 @@ const HomeLearningService = {
     if (!(await learnerInWorkspace(ownerAdminId, learner.id))) fail("This learner is not available in your workspace", 404);
     const curriculum = await assertOwnCurriculum(ownerAdminId, data.curriculumId);
     const grade = resolveGrade(curriculum, data.gradeId);
-    await assertOwnEducator(ownerAdminId, data.educatorId);
-
     // A child has one Home Learning enrollment row overall (unique learnerId). A row left behind
     // by removal from another of this admin's households is moved here; anything else is a clash.
     const [prior] = await HouseholdModel.findEnrollmentsByLearner(learner.id);
+    await assertOwnEducator(ownerAdminId, data.educatorId, prior?.educatorId || null);
     if (prior && prior.householdId !== householdId) {
       if (prior.ownerAdminId !== ownerAdminId || prior.status !== "removed") fail("This learner is already linked to a Home Learning household");
     }
@@ -622,5 +624,8 @@ const HomeLearningService = {
 };
 
 module.exports = HomeLearningService;
+// For home-learning.move.js (moving a learner from another programme into Home Learning) — the same
+// checks a household's own forms run.
+module.exports.internal = { assertOwnCurriculum, resolveGrade, assertOwnEducator, learnerInWorkspace, ensureHomeHub };
 // For home-learning-signup.service.js (a website sign-up's first invoice) and billing/package-billing.js.
 module.exports.raiseHouseholdInvoice = raiseHouseholdInvoice;

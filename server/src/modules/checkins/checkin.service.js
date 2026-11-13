@@ -886,4 +886,4 @@ const CheckinService = {
 };
 
 module.exports = CheckinService;
-module.exports._internal = { sessionRowsFor, generateAll, sendDueNotices, sendTaskDueNotices };
+module.exports._internal = { sessionRowsFor, generateAll, sendDueNotices, sendTaskDueNotices, syncParticipants, participantsOfSchedule };

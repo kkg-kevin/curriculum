@@ -17,7 +17,8 @@ async function workspaceHubs(req) {
     return [req.ownSchool];
   }
   if (!req.ownerAdminId) throw forbidden();
-  return LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+  // A removed hub (modules/removals/) has nothing left to report on — not offered.
+  return (await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).filter((h) => h.status !== "removed");
 }
 
 async function resolveScope(req) {

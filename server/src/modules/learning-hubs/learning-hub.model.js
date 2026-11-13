@@ -20,9 +20,14 @@ const LearningHubModel = {
   // a different way (e.g. "school" via `email`, above) and have no ownerAdminId of their own to
   // pass. Admin-facing controllers must always pass it explicitly for an admin-role request —
   // see learning-hub.controller.js's getAllLearningHubs.
-  async findAll({ status, county, curriculumId, parentHubId, email, hubType, includeDrafts, ownerAdminId } = {}) {
+  async findAll({ status, county, curriculumId, parentHubId, email, hubType, includeDrafts, includeRemoved = false, ownerAdminId } = {}) {
     let query = db(TABLE);
     if (status) query = query.where({ status });
+    // A removed hub (modules/removals/ — a tombstone kept for its invoices, reports and other
+    // history) still counts as the workspace's wherever "every hub it owns" is asked for
+    // (includeDrafts — the ownership checks, so its history stays reachable) or includeRemoved;
+    // lists people pick from leave it out (the hub list endpoint drops it too).
+    if (!status && !includeRemoved && !includeDrafts) query = query.whereNot({ status: "removed" });
     // Drafts are staged records still being set up in Settings — hidden from every listing by
     // default so they don't leak into pickers/dashboards until an admin activates them. Callers
     // that need to see them (Settings' own management view, a school viewing its own record)

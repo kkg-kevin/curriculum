@@ -15,10 +15,13 @@ const TeacherModel = {
     return createRecord(db, TABLE, stringifyJsonFields(data, JSON_FIELDS));
   },
 
-  async findAll({ ids, status, subject, email } = {}) {
+  // A removed educator (modules/removals/ — a tombstone kept for their history) is left out of every
+  // list, unless `includeRemoved` (names on history).
+  async findAll({ ids, status, subject, email, includeRemoved = false } = {}) {
     let query = db(TABLE);
     if (ids) query = query.whereIn("id", ids);
     if (status) query = query.where({ status });
+    else if (!includeRemoved) query = query.whereNot({ status: "removed" });
     if (email) query = query.whereRaw("LOWER(email) = ?", [email.toLowerCase()]);
 
     let rows = await query.orderBy("createdAt", "desc");
@@ -33,7 +36,7 @@ const TeacherModel = {
   // an admin still reaches a teacher that isn't linked to any of their hubs yet.
   async findIdsCreatedByAdmin(adminId) {
     if (!adminId) return [];
-    const rows = await db(TABLE).where({ createdByAdminId: adminId }).select("id");
+    const rows = await db(TABLE).where({ createdByAdminId: adminId }).whereNot({ status: "removed" }).select("id");
     return rows.map((r) => r.id);
   },
 

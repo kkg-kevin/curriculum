@@ -4,7 +4,14 @@ const { AVAILABILITY_DAYS } = require("../timetable/timetable.validation");
 // "in_training" — joined through a website TOT bootcamp, not teaching yet: signs in and learns,
 // but can't be given a class or Home Learning family until made active (canTeach below).
 const TEACHER_STATUSES = ["active", "inactive", "on_leave", "in_training"];
-const canTeach = (teacher) => (teacher?.status || "active") !== "in_training";
+// Inactive or removed (modules/removals/) educators can't be given new work either — the reason is
+// what the refusal says.
+const cantTeachReason = (teacher) => ({
+  in_training: "This educator is still in training — make them Active on their page first.",
+  inactive: "This educator is inactive — make them Active on their page first.",
+  removed: "This educator has been removed.",
+})[teacher?.status || "active"] || null;
+const canTeach = (teacher) => !cantTeachReason(teacher);
 
 // How an educator is employed, and so how they're paid (see modules/claims/): full time is a tag
 // only — full-time educators don't claim; part time claims on one or more of PAY_RATE_TYPES, each
@@ -81,7 +88,7 @@ const createAvailabilitySlotSchema = baseAvailabilitySchema.refine((d) => d.star
 const updateAvailabilitySlotSchema = baseAvailabilitySchema.partial();
 
 module.exports = {
-  createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, TEACHER_STATUSES, canTeach,
+  createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, TEACHER_STATUSES, canTeach, cantTeachReason,
   EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS,
   createAvailabilitySlotSchema, updateAvailabilitySlotSchema,
 };

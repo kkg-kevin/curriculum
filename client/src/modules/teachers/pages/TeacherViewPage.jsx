@@ -2,7 +2,7 @@
 import { FiAlertTriangle, FiAward, FiBookOpen, FiCalendar, FiChevronDown, FiChevronUp, FiHome, FiMail, FiPhone, FiShield, FiTarget, FiTrendingUp } from "react-icons/fi";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useTeacherQuery, useDeleteTeacher, useUpdateTeacherStatus, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
+import { useTeacherQuery, useUpdateTeacherStatus, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
 import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
@@ -14,7 +14,6 @@ import { useCurriculumCurrentCourses } from "../../curriculum/hooks/useCurriculu
 import { useAuth } from "../../../context/AuthContext";
 import { teachersListPath, teacherPath, classPath, classCreatePath, schoolViewPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
-import { teacherApi } from "../services/teacherApi";
 import EducatorQaSection from "../../qa/components/EducatorQaSection";
 import TotTrainingCard from "../../tot/components/TotTrainingCard";
 import ParentFeedbackSection from "../../mentor-reviews/components/ParentFeedbackSection";
@@ -25,6 +24,7 @@ import StandardsCard from "../../mentor-standards/StandardsCard";
 import { Tabs } from "../../../components/ui/TabBar";
 import { usePermissions } from "../../../hooks/usePermissions";
 import RecordStamp from "../../activity/components/RecordStamp";
+import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 
 const ACCENT = "#25476a";
 
@@ -154,8 +154,9 @@ const STATUS_STYLES = {
   inactive: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
   on_leave: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A" },
   in_training: { bg: "#dff2fb", color: "#1f6f99", border: "#a8d5ee" },
+  removed: { bg: "#F3F4F6", color: "#4B5563", border: "#E5E7EB" },
 };
-const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave", in_training: "In training" };
+const STATUS_LABELS = { active: "Active", inactive: "Inactive", on_leave: "On Leave", in_training: "In training", removed: "Removed" };
 
 function Avatar({ firstName, lastName, photo, size = 64 }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
@@ -245,7 +246,6 @@ export default function TeacherViewPage() {
   const { data: profile } = useEducatorProfile(id, { enabled: profileAllowed });
   const { data: hubs = [] } = useTeacherHubsQuery(id);
   const { data: availabilitySlots = [] } = useTeacherAvailability(id);
-  const { mutate: deleteTeacher } = useDeleteTeacher();
   const { mutate: updateTeacherStatus, isPending: statusPending } = useUpdateTeacherStatus();
   const { mutate: linkHub, isPending: isLinking } = useLinkTeacherHub();
   const { mutate: unlinkHub } = useUnlinkTeacherHub();
@@ -297,6 +297,8 @@ export default function TeacherViewPage() {
   // A website TOT sign-up waits "in training" until made active (then it can be given classes).
   const inTraining = teacher.status === "in_training";
   const willActivate = teacher.status === "inactive" || inTraining;
+  // Removed (modules/removals/): kept only for the history that names them — read only.
+  const removed = teacher.status === "removed";
 
   // The page's tabs (?tab=): what's there depends on what this viewer can see.
   const hubView = profile?.view === "hub";
@@ -349,7 +351,7 @@ export default function TeacherViewPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
+            {!removed && <div style={{ display: "flex", gap: "8px", flexShrink: 0, flexWrap: "wrap" }}>
               <button type="button" onClick={() => navigate(teacherPath(user?.role, id, "edit"))} style={{ ...heroBtn, backgroundColor: "#feb139", color: "#25476a", border: "none", boxShadow: "0 2px 8px rgba(254,177,57,0.35)" }}>
                 Edit educator
               </button>
@@ -361,10 +363,19 @@ export default function TeacherViewPage() {
               <button type="button" onClick={() => setConfirmDelete(true)} style={{ ...heroBtn, backgroundColor: "transparent", color: "#FECACA", border: "1.5px solid rgba(254,202,202,0.45)" }}>
                 {isSchool ? "Remove from hub" : "Remove"}
               </button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
+
+      {removed && (
+        <div role="status" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 16px", borderRadius: 14, background: "#F3F4F6", border: "1px solid #E5E7EB", color: "#374151", fontSize: 13.5, lineHeight: 1.5 }}>
+          <FiAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+          <div>
+            <strong>Removed{teacher.removedAt ? ` on ${fmtDay(teacher.removedAt)}` : ""}.</strong> This record is kept only for their history — claims, QA reports, parent reviews and the work they marked still show their name. It can't be changed.
+          </div>
+        </div>
+      )}
 
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="teachers" id={id} />
@@ -480,27 +491,27 @@ export default function TeacherViewPage() {
         </div>
       </div>
 
+      <RemovePersonDialog
+        open={confirmDelete && !isSchool}
+        kind="teacher"
+        id={id}
+        name={`${teacher.firstName} ${teacher.lastName}`.trim()}
+        onClose={() => setConfirmDelete(false)}
+        onRemoved={() => { setConfirmDelete(false); navigate(teachersListPath("admin")); }}
+      />
+
+      {/* A hub only takes the educator off its own hub; admins remove them with RemovePersonDialog above. */}
       <ConfirmDialog
-        isOpen={confirmDelete}
-        title={isSchool ? "Remove from Hub" : "Remove Educator"}
-        message={
-          isSchool
-            ? `"${teacher.firstName} ${teacher.lastName}" will be removed from this hub. Their account and any other hub assignments are unaffected.`
-            : `"${teacher.firstName} ${teacher.lastName}" will be permanently removed. This cannot be undone.`
-        }
+        isOpen={confirmDelete && isSchool}
+        title="Remove from Hub"
+        message={`"${teacher.firstName} ${teacher.lastName}" will be removed from this hub. Their account and any other hub assignments are unaffected.`}
         confirmLabel="Remove"
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={() => {
           setConfirmDelete(false);
-          if (isSchool) {
-            unlinkHub({ teacherId: id, hubId: ownSchoolId }, { onSuccess: () => navigate(teachersListPath("school", ownSchoolId)) });
-          } else {
-            deleteTeacher(id, { onSuccess: () => navigate(teachersListPath("admin")) });
-          }
+          unlinkHub({ teacherId: id, hubId: ownSchoolId }, { onSuccess: () => navigate(teachersListPath("school", ownSchoolId)) });
         }}
-        usageCheck={isSchool ? undefined : () => teacherApi.checkRemove(id)}
-        onAlternative={!isSchool && teacher.status !== "inactive" ? () => { setConfirmDelete(false); updateTeacherStatus({ id, status: "inactive" }); } : undefined}
         onCancel={() => setConfirmDelete(false)}
       />
 

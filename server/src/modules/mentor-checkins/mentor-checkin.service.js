@@ -119,7 +119,7 @@ async function classPeople(ownerAdminId, classId) {
   const { cls, hub } = await loadClass(ownerAdminId, classId);
   const teacherIds = await db("class_course_teacher_links").where({ classId }).distinct("teacherId").pluck("teacherId");
   const teachers = teacherIds.length ? await db("teachers").whereIn("id", teacherIds).select("id", "firstName", "lastName", "email", "status") : [];
-  const activeTeachers = teachers.filter((t) => (t.status || "active") !== "inactive");
+  const activeTeachers = teachers.filter((t) => !["inactive", "removed"].includes(t.status || "active"));
   const teacherEmails = activeTeachers.map((t) => lower(t.email)).filter(Boolean);
   const teacherLogins = teacherEmails.length ? await db("users").whereIn(db.raw("LOWER(email)"), teacherEmails).whereNull("deactivatedAt").select("email", "role", "extraRoles") : [];
   const withLogin = new Set(teacherLogins.filter((u) => rolesOf(u).includes("teacher")).map((u) => lower(u.email)));

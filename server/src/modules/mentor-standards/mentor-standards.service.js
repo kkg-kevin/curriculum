@@ -110,7 +110,7 @@ const MentorStandardsService = {
     const { getStats } = require("../educator-profiles/educator-profile.stats");
     // TOT learners only (in training) aren't mentors yet — never measured or reported below (tot/tot.people.js).
     const { withoutTotOnly } = require("../tot/tot.people");
-    const teachers = await withoutTotOnly(await db("teachers").whereNot("status", "inactive").select("id", "firstName", "lastName", "createdAt", "createdByAdminId", "supervisorId"));
+    const teachers = await withoutTotOnly(await db("teachers").whereNotIn("status", ["inactive", "removed"]).select("id", "firstName", "lastName", "createdAt", "createdByAdminId", "supervisorId"));
     let done = 0;
     for (const t of teachers) {
       try { await MentorStandardsService.snapshotAndNotify(t, await getStats(t.id)); done += 1; } catch (err) { console.error(`[mentor-standards] ${t.id}: ${err.message}`); }

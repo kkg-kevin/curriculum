@@ -309,7 +309,7 @@ async function getStats(teacherId, { fresh = false } = {}) {
 }
 
 async function refreshAll() {
-  const ids = await db("teachers").whereNot("status", "inactive").pluck("id");
+  const ids = await db("teachers").whereNotIn("status", ["inactive", "removed"]).pluck("id");
   let done = 0;
   for (const id of ids) {
     try { await computeStats(id); done += 1; } catch (err) { console.error(`[educator-stats] ${id}: ${err.message}`); }
