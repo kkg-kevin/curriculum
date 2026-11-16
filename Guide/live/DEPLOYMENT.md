@@ -102,6 +102,157 @@ the frontend needs a second, separately-built zip.
 
 ---
 
+## Before every redeploy: back up the database
+
+Every release starts here, even when its notes say "no migration": take a full backup of the Live database (the `DB_NAME` of https://dcf-api.digifunzi.com) and keep it
+in **`Guide/live/backup/`** on this computer. If an upload goes wrong, that file puts the data back exactly as it was.
+
+1. cPanel → **phpMyAdmin** → pick the database on the left.
+2. **Export** → Export method **Custom** → Format **SQL** → Output: **Save output to a file**, Compression
+   **gzipped** → leave every table ticked → **Export** (structure and data).
+3. Save the file as `live-YYYY-MM-DD-before-<release>.sql.gz` (for example
+   `live-2026-11-12-before-event-tickets.sql.gz`) into `Guide/live/backup/`.
+4. Check it isn't tiny: a backup of a database in use is several MB. Open the folder and look at the size.
+5. Only then upload the backend.
+
+(cPanel → **Backup** → "Download a MySQL Database Backup" gives the same file in one click, where the host
+offers it.)
+
+The backup folders are ignored by git (`Guide/.gitignore`): a backup holds every learner's and parent's
+details and password hashes, so it must never go to GitHub with the bundles. Keep the last few and delete
+older ones; copy one somewhere safe off this computer (an encrypted drive) now and then.
+
+**To restore** (only if a release broke the data): phpMyAdmin → the database → **Import** → choose the
+`.sql.gz` → Go. It replaces the tables with the backup's — anything entered after the backup is lost, so stop
+the app first (cPanel → Setup Node.js App → Stop) and tell people.
+
+---
+
+## This release (16 Nov 2026) — Move a learner between programmes, teacher observations without issuing, a Projects tab, project milestones that count
+
+**Portal and backend** from `curriculum` (branch `modules`) at `e73c81c7` (with `8d8b9b2b` before it). **Website: no change** since
+13 Nov — the website zip in this folder is the 13 Nov one; upload it only if that release isn't up yet. If the 13 Nov release below isn't up yet,
+these files include it: follow its steps too.
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database — one new migration.
+1. **Backend** — `backend-deploy.zip` (751 files, 184 migrations). No new npm package — **Stop App → Start App**; the start
+   applies one new migration:
+   - `20261116090000` — moves between programmes: `learner_transfers` gets `fromProgramme`, `toProgramme`, `fromRecordId`,
+     `toRecordId`, `fromLabel`, `toLabel`; its two hub columns may be empty (a pathway plan has no hub); `createdAt` keeps
+     milliseconds. Earlier transfer rows are labelled hub → hub (or → Home Learning). Nothing is removed.
+
+   Check: `SHOW COLUMNS FROM learner_transfers LIKE 'toProgramme';` (1 row). If it's missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CxjSz6H0.js`). After the backend.
+3. **One-off, once:** Run JS script → `projects:recount-milestones` (it only lists what it would change), then again with
+   `-- --apply` in the arguments box. It puts right projects marked before today whose milestones carry points (their
+   milestone marks weren't added to the score) and rebuilds those learners' session reports. Sends nothing; safe to run
+   again. A course report already published keeps its figures until it's published again.
+
+No new cron job, environment variable or npm package.
+
+### What changed
+
+**Move learner** (Learners → a learner → **Move learner**, top bar; admins, and staff who can edit learners) — replaces
+"Move to Home Learning". Opens on **Where they are now**: every place they hold with its class, curriculum, stage,
+educators, admission number, package, price and how far it's invoiced, and what they're learning on each pathway. Then
+**where to**: a hub class, a bootcamp run (its invoice optional), Home Learning, a Tech Club or a pathway plan — the
+family's household / membership / subscription with a free place, or a new one billed from a day you choose (today or
+later, to cover time already paid elsewhere). The places they leave are ended, never deleted; a household, membership or
+subscription left with no child can be stopped in the same step. Their work, reports, certificates, attendance and
+invoices stay theirs; unpaid invoices are only shown. Every move is listed under **Moves** on the learner's History tab.
+The hub card's **Transfer** now ends the old hub place (kept as Transferred) instead of deleting it.
+
+**Teacher Observation is recorded, not issued** — on the educator's Assessments page an observation shows **Observe
+[class]**: it opens the observation sheet straight away (nothing is sent to learners). Record each learner, add a note per
+item if you like, **Submit observation** — the learner is told their teacher's feedback is ready and reads it like a
+report (What your teacher saw, From the teacher), and their session report includes it.
+
+**Projects** — a **Projects** tab on the learner profile (learner, parent and staff): each project's brief, instructions,
+what to hand in, milestones marked so far with the educator's notes, the work handed in and, once marked, the full
+feedback. Project **milestones now count**: their marks are part of the project's score; a milestone can be tagged to
+competency indicators in the builder (Deliverables & Milestones); session and course reports list each project's
+milestones with the notes; the learner is told when a milestone is marked; a project with only milestones to mark is
+marked by its last milestone.
+
+**Also:** Learners and Educators lists have **Cards / List / Table** views (remembered per page; the table sorts); a
+general event has an **About them** tab — every registration's answers (who they are, children's ages, interests, how
+they heard of us, where they found it, happy to hear from us) as a table filtered by any answer, with a spreadsheet; the
+Overview's bars open it filtered. The admin sidebar is back to folding sections with dropdowns.
+
+### Verify
+
+1. Learners → a **test** learner in a class → **Move learner**: Where they are now lists their class with its details;
+   choose Tech Club (a club, a package, billing from today) → Move. The Tech Clubs page shows them; History → Moves lists it.
+2. As an educator, Assessments → a session's Teacher Observation → **Observe [class]** → a learner → Record observation →
+   Submit. That learner's Assessments list shows it as feedback.
+3. Events → a general event → **About them**: the table shows the registrations' answers; a filter narrows it.
+
+---
+
+## This release (13 Nov 2026) — Removing a person the safe way, and moving a learner into Home Learning
+
+**Portal and backend** from `curriculum` (branch `modules`) at `044c39d4`; **website** from `curriculum-web` (branch `new`)
+at `bd22450` — the same website code as yesterday, rebuilt now that the API has events, so `/events` and each event's
+page are pre-rendered and in the sitemap (28 pages). If the "12 Nov 2026, later" release below isn't up yet, these
+files include it: follow its steps too (its install of the `qrcode` package — Stop App → Run NPM Install → Start App).
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database — one new migration.
+1. **Backend** — `backend-deploy.zip` (743 files, 183 migrations). No new npm package (if the 12 Nov later release is
+   already up) — **Stop App → Start App** is enough; the start applies one new migration:
+   - `20261113140000` — removing a person: `teachers.status` and `learning_hubs.status` take `removed`;
+     `removedAt`, `removedBy`, `removedEmail` on `teachers` and `learning_hubs`; `removedAt`, `removedBy` on
+     `affiliates`; `users.removedAt`. Nothing existing changes.
+
+   Check: `SHOW COLUMNS FROM teachers LIKE 'removedAt';` and `SHOW COLUMNS FROM users LIKE 'removedAt';` (1 row
+   each). If either is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-vtJK8Hng.js`). After the backend.
+3. **Website** — `digifunzi-co-ke-dist.zip` to https://digifunzi.co.ke (entry `index-B0b5lS7U.js`, 28 pages). Unzip over the old files.
+
+No new cron job, environment variable or npm package.
+
+### What changed
+
+**Removing an educator, learning hub, supervisor or affiliate** — their Remove / Delete button opens one window
+that goes step by step:
+1. **Deactivate** — the educator / hub goes inactive, the affiliate is suspended, the supervisor's login is switched
+   off (unless it's also someone else's login — then only the Supervisor role comes off at the end).
+2. **Hand over** what they still look after to someone of the same role — "Give everything to …", and any row to
+   someone else. Educators: classes and courses, timetable, Home Learning children, hubs they lead check-ins for,
+   open check-in tasks, parent check-ins and mentor sessions still to come (a session can be cancelled instead —
+   refund due). Supervisors: their educators, claims waiting, QA visits and schedules (or nobody — admins approve).
+   Affiliates: the families they brought and their team; unpaid commissions and asked-for payouts must be paid out
+   or cancelled first (staff can now pay out a suspended affiliate). Learning hubs: classes with their learners and
+   educators, rooms, branches, bootcamp / competition runs, Tech Club and pathway subscriptions, enquiries; mentor
+   sessions in its spaces, desk fees owed, events there and draft invoices must be sorted out first. Anything that
+   can't move says why (a timetable clash, no login yet, a class of that name already there) and stays.
+3. **Delete** — only once nothing is left. Someone with history (claims, QA reports, reviews, invoices, paid
+   commissions…) is kept in the background as **Removed**: gone from every list, read only, their name still on
+   their history, their login closed and their email free for someone new. A removed hub's invoices still open
+   and can still be paid in Billing. Someone with no history is deleted as before.
+
+**Move to Home Learning** — Learners → a learner → **Move to Home Learning** (top bar): the family's household (same
+parent email, with a free place) or a new one with the parent's details from the child's record, the child's
+curriculum, grade and educator, and the places they leave (a bootcamp class is ticked) ended — kept as inactive and
+recorded as a transfer, never deleted. Reports, work, attendance, certificates and invoices stay the child's. Unpaid
+invoices are only shown — they stay owed and the usual pause for unpaid invoices still applies.
+
+**Also:** an inactive educator can't be given a new class or Home Learning child; a deactivated supervisor no longer
+receives claims (they go to the admin); an affiliate's commission periods count per family, so a family handed to
+another affiliate carries on where it was.
+
+### Verify
+
+1. Educators → a **test** educator with a class → **Remove**: Deactivate → choose another educator → Hand over →
+   Delete. The class now shows the other educator; the test educator is gone from the list.
+2. Learners → a **test** learner in a bootcamp → **Move to Home Learning** → a new household (package), curriculum
+   and grade → Move. Home Learning shows the child; on the learner page their bootcamp place is inactive.
+
+---
+
 ## This release (12 Nov 2026, later) — Event tickets: a QR code in the email, scanned at the door
 
 **Portal and backend** from `curriculum` (branch `modules`) at `88638cd0`; **website** from `curriculum-web`
@@ -112,7 +263,8 @@ follow its steps too (its three migrations, its checks, and the extra website bu
 
 0. **Take a database backup** — one new migration.
 1. **Backend** — `backend-deploy.zip` (733 files, 182 migrations). **New npm package `qrcode`**: after
-   uploading, cPanel → Setup Node.js App → the API → **Run NPM Install**, then Restart. One new migration,
+   uploading, cPanel → Setup Node.js App → the API → **Stop App** → **Run NPM Install** → **Start App** (installing
+   while the app runs fails "without a diagnostic" — not enough memory). One new migration,
    applied on Restart:
    - `20261113100000` — event tickets: `general_event_registrations.ticketCode` (UNIQUE); everyone already
      registered is given a code.
