@@ -4,8 +4,9 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import toast from "react-hot-toast";
 import {
   FiArrowLeft, FiBarChart2, FiCalendar, FiCamera, FiCheck, FiCheckCircle, FiClock, FiCopy, FiDownload, FiEdit2, FiExternalLink, FiMail,
-  FiMapPin, FiMonitor, FiPlus, FiSearch, FiSend, FiTrash2, FiUserCheck, FiUserPlus, FiUsers, FiX, FiXCircle,
+  FiMapPin, FiMonitor, FiPieChart, FiPlus, FiSearch, FiSend, FiTrash2, FiUserCheck, FiUserPlus, FiUsers, FiX, FiXCircle,
 } from "react-icons/fi";
+import AboutThemTab, { AGE_BANDS } from "../components/AboutThemTab";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
@@ -23,6 +24,8 @@ import { EVENTS_CSS, REG_STATUS, SOURCE_LABEL, StatePill, btn, hintStyle, inputS
 const TABS = [
   { key: "overview", label: "Overview", icon: FiBarChart2 },
   { key: "registrations", label: "Registrations", icon: FiUsers },
+  // What they told us — who they are, ages, interests, how they heard (AboutThemTab).
+  { key: "about", label: "About them", icon: FiPieChart },
   { key: "checkin", label: "Check-in", icon: FiUserCheck },
   { key: "messages", label: "Messages & invites", icon: FiMail },
 ];
@@ -40,24 +43,33 @@ function Kpi({ icon: Icon, label, value, note, tone = BRAND.navy }) {
   );
 }
 
-function Bars({ title, rows, empty = "No answers yet" }) {
+// `onPick(key)`, when given: each answer opens the About them tab showing who gave it.
+function Bars({ title, rows, empty = "No answers yet", onPick }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <section style={{ ...card, padding: 18, display: "grid", gap: 10, alignContent: "start" }}>
       <h3 style={cardHeading}>{title}</h3>
-      {rows.length === 0 || rows.every((r) => !r.count) ? <p style={{ margin: 0, ...hintStyle }}>{empty}</p> : rows.map((r) => (
-        <div key={r.label} style={{ display: "grid", gap: 4 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, color: BRAND.inkSoft }}><span>{r.label}</span><strong>{r.count}</strong></div>
-          <div style={{ height: 8, borderRadius: 4, background: BRAND.track }}><div style={{ height: 8, borderRadius: 4, width: `${(r.count / max) * 100}%`, background: BRAND.mid }} /></div>
-        </div>
-      ))}
+      {rows.length === 0 || rows.every((r) => !r.count) ? <p style={{ margin: 0, ...hintStyle }}>{empty}</p> : rows.map((r) => {
+        const body = (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, color: BRAND.inkSoft }}><span>{r.label}</span><strong>{r.count}</strong></div>
+            <div style={{ height: 8, borderRadius: 4, background: BRAND.track }}><div style={{ height: 8, borderRadius: 4, width: `${(r.count / max) * 100}%`, background: BRAND.mid }} /></div>
+          </>
+        );
+        return onPick && r.count > 0 && r.key != null ? (
+          <button key={r.label} type="button" title={`See who said “${r.label}”`} onClick={() => onPick(r.key)}
+            style={{ all: "unset", display: "grid", gap: 4, cursor: "pointer", borderRadius: 6 }}>{body}</button>
+        ) : (
+          <div key={r.label} style={{ display: "grid", gap: 4 }}>{body}</div>
+        );
+      })}
     </section>
   );
 }
 
-const labelled = (counts, labels) => Object.entries(counts || {}).map(([k, count]) => ({ label: labels?.[k] || k, count })).sort((a, b) => b.count - a.count);
+const labelled = (counts, labels) => Object.entries(counts || {}).map(([k, count]) => ({ key: k, label: labels?.[k] || k, count })).sort((a, b) => b.count - a.count);
 
-function Overview({ event }) {
+function Overview({ event, onPick }) {
   const s = event.stats;
   const q = event.public.questions;
   const capacityNote = s.capacity ? `${Math.max(0, s.capacity - s.people)} of ${s.capacity} places left` : "No limit";
@@ -87,13 +99,14 @@ function Overview({ event }) {
         )}
       </section>
       <div className="ge-grid-3">
-        <Bars title="Where they found it" rows={s.visitSources} empty="Nobody yet" />
+        <Bars title="Where they found it" rows={s.visitSources.map((v) => ({ ...v, key: v.label }))} empty="Nobody yet" onPick={(k) => onPick("where", k)} />
         <Bars title="How they registered" rows={labelled(s.sources, SOURCE_LABEL)} empty="Nobody yet" />
-        <Bars title="Who they are" rows={labelled(s.personTypes, q.personTypes)} />
-        <Bars title="Interested in" rows={labelled(s.interests, q.interests)} />
-        <Bars title="Children's ages" rows={s.ages} />
-        <Bars title="Heard about us" rows={labelled(s.heardFrom, q.heardFrom)} />
+        <Bars title="Who they are" rows={labelled(s.personTypes, q.personTypes)} onPick={(k) => onPick("who", k)} />
+        <Bars title="Interested in" rows={labelled(s.interests, q.interests)} onPick={(k) => onPick("interest", k)} />
+        <Bars title="Children's ages" rows={s.ages.map((a, i) => ({ ...a, key: AGE_BANDS[i] ? `${AGE_BANDS[i][0]}-${AGE_BANDS[i][1]}` : null }))} onPick={(k) => onPick("age", k)} />
+        <Bars title="Heard about us" rows={labelled(s.heardFrom, q.heardFrom)} onPick={(k) => onPick("heard", k)} />
       </div>
+      <p style={{ ...hintStyle, margin: 0 }}>Tap an answer to see who gave it — or open <strong>About them</strong> for everyone&apos;s answers.</p>
       <RecordStamp type="general_events" id={event.id} />
     </div>
   );
@@ -451,8 +464,9 @@ export default function GeneralEventPage() {
           </button>
         ))}
       </div>
-      {tab === "overview" && <Overview event={event} />}
+      {tab === "overview" && <Overview event={event} onPick={(key, value) => setParams({ tab: "about", [key]: value }, { replace: false })} />}
       {tab === "registrations" && <Registrations event={event} canEdit={canEdit} />}
+      {tab === "about" && <AboutThemTab event={event} />}
       {tab === "checkin" && <CheckIn event={event} canEdit={canEdit} />}
       {tab === "messages" && <Messages event={event} canEdit={canEdit} />}
 

@@ -17,7 +17,7 @@ const ClassGroupModel = require("../../classes/groups/class-group.model");
 const TeacherModel = require("../../teachers/teacher.model");
 const UserModel = require("../../auth/user.model");
 const NotificationService = require("../../notifications/notification.service");
-const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown, unansweredWrittenItems, questionList } = require("./grading.utils");
+const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown, milestoneEarned, nothingButMilestonesToMark, unansweredWrittenItems, questionList } = require("./grading.utils");
 const { reissueBlockerFrom } = require("./reissue.rules");
 const db = require("../../../config/db");
 
@@ -1173,8 +1173,10 @@ const AssessmentSubmissionService = {
     // Revoked for them: give it back before marking.
     await assertNotRevoked(await AssessmentIssueModel.findById(submission.issueId), submission.learnerId);
     const assessment = await loadAssessmentOrThrow(submission.assessmentId);
-    const totalScore = (submission.autoScore || 0) + (Number(manualScore) || 0);
-    const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback);
+    // A project's milestone marks are part of its score (and of the skills they're tagged to) —
+    // its maximum always counted them (computeMaxScore); the score now does too (16 Nov 2026).
+    const totalScore = Math.round(((submission.autoScore || 0) + (Number(manualScore) || 0) + milestoneEarned(assessment, submission.milestoneProgress)) * 10) / 10;
+    const indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, itemFeedback, submission.milestoneProgress);
 
     const now = new Date();
     const updates = {
@@ -1227,22 +1229,51 @@ const AssessmentSubmissionService = {
 
     const submission = await AssessmentSubmissionService.getOrCreateSubmission({ issueId, learnerId });
     const now = new Date();
-    // Clamped to the milestone's own points — same "can't exceed what it's worth" guarantee
-    // MarksInputs already enforces client-side, re-asserted here since this is a genuine write
-    // boundary a client could otherwise bypass.
+    // Clamped to what the milestone is worth (its points, or its indicators' marks when tagged) —
+    // same "can't exceed what it's worth" guarantee MarksInputs already enforces client-side,
+    // re-asserted here since this is a genuine write boundary a client could otherwise bypass.
+    const worth = require("../assessment.utils").computeEntryMarks(milestone);
     const entry = {
       milestoneId,
-      marks: Math.max(0, Math.min(Number(marks) || 0, Number(milestone.points) || 0)),
+      marks: Math.max(0, Math.min(Number(marks) || 0, worth)),
       feedback: feedback || "",
       gradedAt: now,
       gradedBy,
     };
+    const first = !(submission.milestoneProgress || []).some((e) => e.milestoneId === milestoneId);
     const nextProgress = [...(submission.milestoneProgress || []).filter((e) => e.milestoneId !== milestoneId), entry];
     const updates = { milestoneProgress: nextProgress };
-    const updated = await AssessmentSubmissionModel.update(submission.id, updates);
+    // Already marked: its score and skills move with the milestone (16 Nov 2026), and its report is
+    // rebuilt below.
+    if (submission.status === "graded") {
+      updates.totalScore = Math.round(((submission.autoScore || 0) + (Number(submission.manualScore) || 0) + milestoneEarned(assessment, nextProgress)) * 10) / 10;
+      updates.indicatorBreakdown = computeIndicatorBreakdown(assessment, submission.autoItemResults, submission.itemFeedback, nextProgress);
+    }
+    let updated = await AssessmentSubmissionModel.update(submission.id, updates);
     // Group-mode: every member shares one project attempt, so a milestone graded for one
     // representative applies to the whole group — same fan-out grade()/submit() already use.
     await fanOutToGroup(submission, updates);
+
+    // The learner hears about it (once per milestone; a correction updates what they see quietly).
+    if (first) {
+      await NotificationService.notifyLearner(submission.learnerId, {
+        type: "project_milestone_marked",
+        title: "Milestone marked",
+        message: `Your teacher marked "${milestone.name}" in "${assessment.name}".${entry.feedback ? " They left you a note." : ""}`,
+        payload: { assessmentId: assessment.id, submissionId: submission.id, issueId, learnerId: submission.learnerId },
+        dedupeKey: `project_milestone:${submission.id}:${milestoneId}`,
+      }).catch(() => {});
+    }
+
+    if (submission.status === "graded") {
+      await refreshSessionReport(updated);
+    } else if (nothingButMilestonesToMark(assessment) && (assessment.milestones || []).every((m) => nextProgress.some((p) => p.milestoneId === m.id))) {
+      // Every milestone marked and nothing else to mark: the project is marked — released, its
+      // session report rebuilt and the session able to finish, as any final mark does.
+      updated = await AssessmentSubmissionService.grade(submission.id, {
+        itemFeedback: submission.itemFeedback || [], overallFeedback: submission.overallFeedback || "", manualScore: 0, gradedBy,
+      });
+    }
     return updated;
   },
 

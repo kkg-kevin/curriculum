@@ -442,7 +442,9 @@ const CourseService = {
 
     const totalMarks =
       (assessment.items  || []).reduce((sum, i) => sum + computeEntryMarks(i), 0) +
-      (assessment.rubric || []).reduce((sum, r) => sum + computeEntryMarks(r), 0);
+      (assessment.rubric || []).reduce((sum, r) => sum + computeEntryMarks(r), 0) +
+      // A project's milestones count in its total, as they do in its marked score.
+      (assessment.milestones || []).reduce((sum, m) => sum + computeEntryMarks(m), 0);
 
     const evidenceTypes = await EvidenceTypeModel.findByCurriculumId(curriculumId);
     const evidenceType = evidenceTypes.find((e) => e.category === assessment.type);

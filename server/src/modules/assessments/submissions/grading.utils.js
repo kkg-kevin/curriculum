@@ -152,7 +152,29 @@ function computeMaxScore(assessment) {
 // (itemFeedbackSchema's indicatorMarks — see GradingPanel.jsx); if a submission was graded
 // before that existed, or a teacher skipped the split, this falls back to apportioning the
 // flat marks proportionally by each indicator's tagged share rather than losing the entry.
-function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
+// A project's milestones (16 Nov 2026) count like everything else: their marks are part of the
+// project's score (milestoneEarned), and a milestone tagged to indicators feeds them by the share of
+// its marks earned (`milestoneProgress` — gradeMilestone's entries). A milestone not marked by the
+// time the project is marked earns nothing, as an unmarked rubric criterion would.
+function milestoneEarned(assessment, milestoneProgress) {
+  const byId = new Map((milestoneProgress || []).map((p) => [p.milestoneId, p]));
+  const earned = (assessment?.milestones || []).reduce((sum, m) => {
+    const p = byId.get(m.id);
+    return sum + (p ? Math.min(Math.max(Number(p.marks) || 0, 0), computeEntryMarks(m)) : 0);
+  }, 0);
+  return roundMarks(earned);
+}
+
+// A project whose milestones are all there is to mark (no rubric, no question a teacher marks): once
+// every milestone is marked, the project is marked (gradeMilestone finishes it), so its session can
+// be done without a separate "final mark".
+function nothingButMilestonesToMark(assessment) {
+  if (assessment?.type !== "project" || !(assessment.milestones || []).length) return false;
+  if ((assessment.rubric || []).length) return false;
+  return !(assessment.items || []).some((item) => !isAutoGradableItem(item));
+}
+
+function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback, milestoneProgress = []) {
   const autoByItem = new Map((autoItemResults || []).map((r) => [r.itemId, r]));
   const feedbackByKey = new Map((itemFeedback || []).map((f) => [f.itemId, f]));
   const totals = new Map();
@@ -194,6 +216,16 @@ function computeIndicatorBreakdown(assessment, autoItemResults, itemFeedback) {
   // Observation indicators — every kind, a note included — score through the exact same
   // applyEntry path as items/rubric.
   (assessment.indicators || []).forEach((ind) => applyEntry(ind, ind.id));
+  // Project milestones: the share of each milestone's marks earned, across its tagged indicators.
+  const progressById = new Map((milestoneProgress || []).map((p) => [p.milestoneId, p]));
+  (assessment.milestones || []).forEach((m) => {
+    const indicatorMarks = m.indicatorMarks || [];
+    if (!indicatorMarks.length) return;
+    const possible = computeEntryMarks(m);
+    const earned = Math.min(Math.max(Number(progressById.get(m.id)?.marks) || 0, 0), possible);
+    const ratio = possible > 0 ? earned / possible : 0;
+    indicatorMarks.forEach(({ indicatorId, marks }) => add(indicatorId, (Number(marks) || 0) * ratio, Number(marks) || 0));
+  });
 
   return [...totals.entries()].map(([indicatorId, { marksEarned, marksPossible }]) => ({
     indicatorId,
@@ -265,4 +297,6 @@ module.exports = {
   computeAutoScore,
   computeMaxScore,
   computeIndicatorBreakdown,
+  milestoneEarned,
+  nothingButMilestonesToMark,
 };

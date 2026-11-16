@@ -31,7 +31,7 @@ const GROUPS = [
   { key: "checkins", label: "Hub check-ins", icon: FiClipboard, match: (t) => t.startsWith("checkin_") },
   { key: "quality", label: "Quality reviews", icon: FiShield, match: (t) => t.startsWith("qa_") },
   { key: "feedback", label: "Feedback & your profile", icon: FiHeart, match: (t) => t.startsWith("mentor_review") || t.startsWith("educator_profile") || t === "mentor_requested" },
-  { key: "learning", label: "Learning & reports", icon: FiAward, match: (t) => ["session_report_published", "certificate_issued", "level_up", "assessment_graded", "account_activated", "assessment_reissued"].includes(t) },
+  { key: "learning", label: "Learning & reports", icon: FiAward, match: (t) => ["session_report_published", "certificate_issued", "level_up", "assessment_graded", "account_activated", "assessment_reissued", "project_milestone_marked"].includes(t) },
   { key: "training", label: "Training", icon: FiBookOpen, match: (t) => t.startsWith("tot_") },
   { key: "claims", label: "Claims & pay", icon: FiDollarSign, match: (t) => t.startsWith("claim_") },
   { key: "signups", label: "Sign-ups, orders & payments", icon: FiCreditCard, match: (t) => /^(home_learning|tech_club|store_order|payment_|bootcamp_)/.test(t) },

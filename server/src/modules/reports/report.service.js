@@ -7,6 +7,7 @@ const CourseModel = require("../courses/course.model");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
+const { computeEntryMarks } = require("../assessments/assessment.utils");
 const AssessmentRevocationModel = require("../assessments/submissions/assessment-revocation.model");
 const CountedWork = require("../assessments/submissions/counted-work");
 const AssessmentIssueModel = require("../assessments/submissions/assessment-issue.model");
@@ -159,6 +160,14 @@ async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId
       // in the report before; without it a report showed only a number, not what the teacher
       // actually said about the work.
       feedback: s.overallFeedback || "",
+      // A project's milestones (16 Nov 2026): each with its marks and the educator's note, in order.
+      ...(assessment?.type === "project" && (assessment.milestones || []).length ? {
+        milestones: [...assessment.milestones].sort((a, b) => (a.order || 0) - (b.order || 0)).map((m) => {
+          const p = (s.milestoneProgress || []).find((e) => e.milestoneId === m.id);
+          const max = computeEntryMarks(m);
+          return { id: m.id, name: m.name, marked: Boolean(p), marks: p ? Number(p.marks) || 0 : 0, max, percent: max > 0 && p ? Math.round(((Number(p.marks) || 0) / max) * 100) : 0, feedback: p?.feedback || "" };
+        }),
+      } : {}),
     };
   }));
 

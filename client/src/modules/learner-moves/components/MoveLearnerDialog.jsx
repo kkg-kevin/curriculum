@@ -228,6 +228,28 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
 
           {options && (
             <>
+              {/* Where they're at, first: each place with its details, and what they're learning now.
+                  Once a destination is chosen, each place can be left (ticked) or kept. */}
+              <Section title="Where they are now">
+                {options.learning?.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {options.learning.map((l, i) => (
+                      <span key={`${l.pathway}-${i}`} title={l.curriculum || undefined}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 999, background: BRAND.navyTint, border: `1px solid ${BRAND.navyBorder}`, fontSize: 12.5, color: BRAND.navy }}>
+                        <FiCompass size={13} /> <strong>{l.pathway}</strong>{l.stage ? ` · ${l.stage}` : ""}{l.course ? ` — now on ${l.course}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {options.places.length === 0 ? (
+                  <p style={muted}>Not in any programme or class here yet — the new place will be their only one.</p>
+                ) : options.places.map((p) => (
+                  <PlaceCard key={p.key} place={p} choosing={!!programme}
+                    leaving={endKeys.includes(p.key)} onLeave={(on) => toggle(endKeys, setEndKeys, p.key, on)}
+                    stopping={stopKeys.includes(p.key)} onStop={(on) => toggle(stopKeys, setStopKeys, p.key, on)} />
+                ))}
+              </Section>
+
               <Section title="Where to">
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(146px, 1fr))", gap: 8 }}>
                   {PROGRAMMES.map(({ key, icon: Icon, hint }) => {
@@ -453,34 +475,6 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
 
               {programme && (
                 <>
-                  <Section title="Where they are now">
-                    {options.places.length === 0 ? <p style={muted}>No other place — the new one will be their only one.</p> : options.places.map((p) => {
-                      const leaving = endKeys.includes(p.key);
-                      return (
-                        <div key={p.key} style={{ border: `1px solid ${leaving ? BRAND.skyBorder : BRAND.border}`, background: leaving ? BRAND.skyTint : "#fff", borderRadius: 12, marginBottom: 6, padding: "9px 12px" }}>
-                          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}>
-                            <input type="checkbox" checked={leaving} onChange={(e) => toggle(endKeys, setEndKeys, p.key, e.target.checked)} style={{ marginTop: 3 }} />
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: BRAND.ink }}>{p.label}{p.detail ? ` · ${p.detail}` : ""}</span>
-                              <span style={{ display: "block", fontSize: 12, color: BRAND.muted }}>
-                                {PROGRAMME_LABELS[p.programme]}{p.status !== "active" ? ` · ${p.status}` : ""} — {leaving ? "they leave it (kept on their record as ended)" : "they keep it"}
-                              </span>
-                            </span>
-                          </label>
-                          {leaving && p.leavesEmpty && (
-                            <label style={{ ...checkRow, margin: "8px 0 0 26px" }}>
-                              <input type="checkbox" checked={stopKeys.includes(p.key)} onChange={(e) => toggle(stopKeys, setStopKeys, p.key, e.target.checked)} />
-                              <span>Also stop this {CONTAINER[p.programme]} — no child is left on it, so it isn&apos;t billed for nobody{p.programme === "pathway" ? ". Their courses stay open to the end of the period already paid" : ""}</span>
-                            </label>
-                          )}
-                          {leaving && !p.leavesEmpty && CONTAINER[p.programme] && (
-                            <p style={{ ...muted, margin: "6px 0 0 26px" }}>Others stay on this {CONTAINER[p.programme]}; its package and price don&apos;t change.</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Section>
-
                   <Section title="What stays with them">
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       <Keep icon={FiCheck} n={options.keeps.markedWork} one="piece of marked work" many="pieces of marked work" />
@@ -513,6 +507,59 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
       </form>
     </div>,
     document.body,
+  );
+}
+
+const STATUS_WORDS = { active: "Active", inactive: "Inactive", paused: "Paused", pending: "Waiting for payment", completed: "Completed", graduated: "Graduated" };
+
+// One place they hold: what it is, its details (class, curriculum, stage, educators, package, price,
+// how far it's invoiced…), and — once a destination is chosen — whether they leave it.
+function PlaceCard({ place: p, choosing, leaving, onLeave, stopping, onStop }) {
+  const ProgIcon = PROGRAMMES.find((x) => x.key === p.programme)?.icon || FiMapPin;
+  const on = choosing && leaving;
+  return (
+    <div style={{ border: `1px solid ${on ? BRAND.skyBorder : BRAND.border}`, background: on ? BRAND.skyTint : "#fff", borderRadius: 12, marginBottom: 8, padding: "11px 13px" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        {choosing ? (
+          <input type="checkbox" aria-label={`Leave ${p.label}`} checked={leaving} onChange={(e) => onLeave(e.target.checked)} style={{ marginTop: 3, cursor: "pointer" }} />
+        ) : (
+          <span style={{ width: 26, height: 26, borderRadius: 8, display: "grid", placeItems: "center", background: BRAND.navyTint, color: BRAND.navy, flexShrink: 0 }}><ProgIcon size={14} /></span>
+        )}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 800, color: BRAND.ink }}>{p.label}{p.detail ? ` · ${p.detail}` : ""}</span>
+            <span style={{ padding: "1px 8px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: BRAND.greyTint, color: BRAND.greyText, border: `1px solid ${BRAND.border}` }}>{PROGRAMME_LABELS[p.programme]}</span>
+            {p.status !== "active" && (
+              <span style={{ padding: "1px 8px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: BRAND.goldTint, color: BRAND.goldText, border: `1px solid ${BRAND.goldBorder}` }}>{STATUS_WORDS[p.status] || p.status}</span>
+            )}
+          </div>
+          {p.facts?.length > 0 && (
+            <dl style={{ margin: "8px 0 0", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "6px 14px" }}>
+              {p.facts.map((f) => (
+                <div key={f.label} style={{ minWidth: 0 }}>
+                  <dt style={{ fontSize: 10.5, fontWeight: 800, color: BRAND.faint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{f.label}</dt>
+                  <dd style={{ margin: "1px 0 0", fontSize: 12.5, color: BRAND.inkSoft, overflowWrap: "anywhere" }}>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {choosing && (
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: BRAND.muted }}>
+              {leaving ? "They leave it — kept on their record as ended." : "They keep it."}
+            </p>
+          )}
+          {on && p.leavesEmpty && (
+            <label style={{ ...checkRow, marginTop: 6 }}>
+              <input type="checkbox" checked={stopping} onChange={(e) => onStop(e.target.checked)} />
+              <span>Also stop this {CONTAINER[p.programme]} — no child is left on it, so it isn&apos;t billed for nobody{p.programme === "pathway" ? ". Their courses stay open to the end of the period already paid" : ""}</span>
+            </label>
+          )}
+          {on && !p.leavesEmpty && CONTAINER[p.programme] && (
+            <p style={{ ...muted, marginTop: 6 }}>Others stay on this {CONTAINER[p.programme]}; its package and price don&apos;t change.</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -5,7 +5,7 @@ import { FiClock, FiRefreshCw, FiSend } from "react-icons/fi";
 import { useIssuedForLearner, useStartSubmission, useSaveDraft, useSubmitAssessment, useDiagnosticForLearner, usePathwayDiagnosticsForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
-import { normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
+import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
 import AssessmentTaker, { unansweredWrittenItems, questionList } from "../../assessments/components/AssessmentTaker";
 import GroupPanel from "../../assessments/components/GroupPanel";
 import AssessmentResultView from "../components/AssessmentResultView";
@@ -21,7 +21,7 @@ function MilestonesCard({ milestones, progress }) {
   if (!milestones || milestones.length === 0) return null;
   const progressByMilestone = new Map((progress || []).map((p) => [p.milestoneId, p]));
   const gradedCount = progressByMilestone.size;
-  const totalPoints = milestones.reduce((sum, m) => sum + (Number(m.points) || 0), 0);
+  const totalPoints = Math.round(milestones.reduce((sum, m) => sum + entryMarks(m), 0) * 10) / 10;
   const earnedPoints = [...progressByMilestone.values()].reduce((sum, p) => sum + (Number(p.marks) || 0), 0);
   const allGraded = gradedCount === milestones.length;
   const sorted = [...milestones].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -40,7 +40,7 @@ function MilestonesCard({ milestones, progress }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{m.name}</p>
                 {p ? (
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>{p.marks}/{m.points}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#059669" }}>{p.marks}/{entryMarks(m)}</span>
                 ) : (
                   <span style={{ fontSize: 11, color: T.inkFaint, fontStyle: "italic" }}>Not yet graded</span>
                 )}

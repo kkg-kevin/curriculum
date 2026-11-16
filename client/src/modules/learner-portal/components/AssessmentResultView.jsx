@@ -276,7 +276,7 @@ export default function AssessmentResultView({
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {[...milestones].sort((a, b) => (a.order || 0) - (b.order || 0)).map((m) => {
           const p = progressBy.get(m.id);
-          const max = Number(m.points) || 0;
+          const max = Number(entryMarks(m)) || 0;
           const percent = p ? pct(Number(p.marks) || 0, max) : 0;
           const level = levelFor(percent);
           return (

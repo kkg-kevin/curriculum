@@ -4,6 +4,10 @@ import { FiUsers, FiCheck } from "react-icons/fi";
 import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRestoreForLearners } from "../../assessments/hooks/useAssessmentSubmission";
 import { T, STATUS_CONFIG, StatusBadge, reissueBlockerOf, fullName, ReissueDialog, RevokeDialog } from "../components/IssueLearnerDialogs";
 import GradingPanel from "../../assessments/components/GradingPanel";
+import { entryMarks, normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
+
+// Questions marked automatically (GradingPanel.jsx / grading.utils.js keep the same list).
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
 
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
@@ -38,7 +42,8 @@ function MilestoneRow({ milestone, progress, isSaving, onSave }) {
   const [editing, setEditing] = useState(!progress);
   const [marks, setMarks] = useState(progress?.marks ?? 0);
   const [feedback, setFeedback] = useState(progress?.feedback ?? "");
-  const max = Number(milestone.points) || 0;
+  // What it's worth: its points, or its indicators' marks once tagged.
+  const max = entryMarks(milestone);
 
   if (!editing) {
     return (
@@ -97,9 +102,11 @@ function MilestonesPanel({ assessment, submission, issueId, learnerId, onGraded 
 
   const progressByMilestone = new Map((submission?.milestoneProgress || []).map((p) => [p.milestoneId, p]));
   const gradedCount = progressByMilestone.size;
-  const totalPoints = milestones.reduce((sum, m) => sum + (Number(m.points) || 0), 0);
-  const earnedPoints = [...progressByMilestone.values()].reduce((sum, p) => sum + (Number(p.marks) || 0), 0);
+  const totalPoints = Math.round(milestones.reduce((sum, m) => sum + entryMarks(m), 0) * 10) / 10;
+  const earnedPoints = Math.round([...progressByMilestone.values()].reduce((sum, p) => sum + (Number(p.marks) || 0), 0) * 10) / 10;
   const allGraded = gradedCount === milestones.length;
+  // Only milestones to mark (no rubric, no question to mark): marking the last one marks the project.
+  const milestonesOnly = !(assessment.rubric || []).length && !(assessment.items || []).some((i) => !AUTO_GRADABLE_KINDS.includes(normalizeLegacyItem(i).kind));
 
   return (
     <div style={{ marginBottom: 16, padding: "14px 16px", border: `1.5px solid ${T.tintBorder}`, borderRadius: 12, backgroundColor: T.tintBg, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -120,9 +127,11 @@ function MilestonesPanel({ assessment, submission, issueId, learnerId, onGraded 
           }
         />
       ))}
-      {allGraded && (
-        <p style={{ margin: 0, fontSize: 11.5, color: T.accentMid }}>Every milestone is graded — the learner sees the full breakdown plus this overall total.</p>
-      )}
+      <p style={{ margin: 0, fontSize: 11.5, color: T.accentMid }}>
+        {allGraded
+          ? (milestonesOnly ? "Every milestone is marked — so is the project: the learner has their result and their session report." : "Every milestone is marked. Their marks count in the project's score — save the final mark below to finish it.")
+          : (milestonesOnly ? "Milestone marks count in the project's score. Marking the last one marks the project." : "Milestone marks count in the project's score, together with the final mark below.")}
+      </p>
     </div>
   );
 }

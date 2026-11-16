@@ -363,6 +363,13 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualItems = items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind));
 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
+  // A project's milestones, marked on their own (the roster's Milestones panel), count in the total.
+  const milestoneById = new Map((submission.milestoneProgress || []).map((p) => [p.milestoneId, p]));
+  const milestonesMarked = (assessment.milestones || []).filter((m) => milestoneById.has(m.id)).length;
+  const milestoneMarks = Math.round((assessment.milestones || []).reduce((sum, m) => {
+    const p = milestoneById.get(m.id);
+    return sum + (p ? Math.min(Number(p.marks) || 0, entryMarks(m)) : 0);
+  }, 0) * 10) / 10;
 
   const handleSave = () => {
     // A note kept on an item (an observation's, or one written elsewhere) goes back as it is.
@@ -454,7 +461,13 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>
-          Total: {(submission.autoScore || 0) + manualScore} / {submission.maxScore}
+          Total: {Math.round(((submission.autoScore || 0) + manualScore + milestoneMarks) * 10) / 10} / {submission.maxScore}
+          {/* A project's milestone marks count in its total (16 Nov 2026) — marked separately, above. */}
+          {(assessment.milestones || []).length > 0 && (
+            <span style={{ display: "block", fontSize: 11.5, fontWeight: 500, color: T.inkMuted }}>
+              Includes {milestoneMarks} from milestones ({milestonesMarked} of {assessment.milestones.length} marked)
+            </span>
+          )}
           {/* Submitting an observation sends it to the learner straight away, as their report. */}
           {isObservation && <span style={{ display: "block", fontSize: 11.5, fontWeight: 500, color: T.inkMuted }}>Submitting sends it to the learner as feedback in their reports.</span>}
         </p>
