@@ -286,7 +286,12 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
 
             {/* Sessions (course report) and assessments */}
             {[["Sessions in this course", view.sessionReports.map((x) => ({ key: x.sessionId, name: x.sessionTitle || "Session", percent: x.percent, level: x.level }))],
-              [isSession ? "This session’s work" : "Assessments", view.assessments.map((x) => ({ key: x.assessmentId, name: x.name, sub: x.gradedAt ? `Marked ${fmtDate(x.gradedAt)}` : null, percent: x.percent, level: x.level }))]]
+              [isSession ? "This session’s work" : "Assessments", view.assessments.map((x) => ({
+                key: x.assessmentId, name: x.name, percent: x.percent, level: x.level,
+                // A project's milestones, in a line under it (16 Nov 2026).
+                sub: [x.gradedAt ? `Marked ${fmtDate(x.gradedAt)}` : null,
+                  Array.isArray(x.milestones) && x.milestones.length ? `Milestones: ${x.milestones.map((m) => `${m.name} — ${m.marked ? `${m.percent}%` : "not marked"}`).join(" · ")}` : null].filter(Boolean).join(" · ") || null,
+              }))]]
               .filter(([, rows]) => rows.length > 0)
               .map(([label, rows]) => (
                 <div key={label} style={{ breakInside: "avoid" }}>

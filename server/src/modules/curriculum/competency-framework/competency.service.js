@@ -1019,6 +1019,8 @@ const CompetencyService = {
         ...(assessment.items || []),
         ...(assessment.rubric || []),
         ...(assessment.type === "observation" ? (assessment.indicators || []) : []),
+        // A project's milestones, tagged to indicators like rubric criteria (16 Nov 2026).
+        ...(assessment.milestones || []),
       ];
       scoredEntries.forEach((entry) => {
         (entry.indicatorMarks || []).forEach(({ indicatorId, marks }) => {

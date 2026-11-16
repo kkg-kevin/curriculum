@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FiArrowRight, FiChevronDown, FiChevronUp, FiHome, FiMessageCircle, FiStar, FiTarget, FiClock, FiCheckCircle, FiUser } from "react-icons/fi";
 import Avatar from "../../../components/ui/Avatar";
-import { LEVELS, buildReportView, marks } from "../utils/reportView";
+import { LEVELS, buildReportView, levelFor, marks } from "../utils/reportView";
 
 /*
  * A learner's report, laid out to be understood at a glance by a child or a parent:
@@ -324,16 +324,38 @@ function Work({ view, showMarks, onOpenAssessment, onOpenSessionReport }) {
           <CardTitle icon={<FiCheckCircle size={16} />}>{view.isSession ? "This session's work" : "Assessments"}</CardTitle>
           <div>
             {view.assessments.map((a) => (
-              <div key={a.assessmentId} style={row}>
-                <span style={{ flex: "1 1 180px", minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: T.ink }}>{a.name}</span>
-                  {a.gradedAt && <span style={{ fontSize: 12, color: T.faint }}>Marked {fmtDate(a.gradedAt)}{showMarks ? ` · ${marks(a.totalScore, a.maxScore)} marks` : ""}</span>}
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: T.ink }}>{a.percent}%</span>
-                  <LevelPill level={a.level} small />
-                  {a.issueId && onOpenAssessment && <button type="button" style={link} onClick={() => onOpenAssessment(a.issueId)}>See marked work <FiArrowRight size={13} /></button>}
-                </span>
+              <div key={a.assessmentId} style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span style={{ flex: "1 1 180px", minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: T.ink }}>{a.name}</span>
+                    {a.gradedAt && <span style={{ fontSize: 12, color: T.faint }}>Marked {fmtDate(a.gradedAt)}{showMarks ? ` · ${marks(a.totalScore, a.maxScore)} marks` : ""}</span>}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: T.ink }}>{a.percent}%</span>
+                    <LevelPill level={a.level} small />
+                    {a.issueId && onOpenAssessment && <button type="button" style={link} onClick={() => onOpenAssessment(a.issueId)}>See marked work <FiArrowRight size={13} /></button>}
+                  </span>
+                </div>
+                {/* A project's milestones (16 Nov 2026): each one's level and the educator's note. */}
+                {Array.isArray(a.milestones) && a.milestones.length > 0 && (
+                  <div style={{ margin: "10px 0 2px 0", padding: "10px 12px", borderRadius: 12, backgroundColor: "#FAFCFE", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: T.faint }}>Milestones</span>
+                    {a.milestones.map((m) => {
+                      const level = levelFor(m.percent);
+                      return (
+                        <div key={m.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <span style={{ flex: "1 1 160px", minWidth: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{m.name}</span>
+                            {m.marked
+                              ? <>{showMarks && <span style={{ fontSize: 12, color: T.faint }}>{marks(m.marks, m.max)}</span>}<LevelPill level={level} small /></>
+                              : <span style={{ fontSize: 12, color: T.faint, fontStyle: "italic" }}>Not marked</span>}
+                          </div>
+                          {m.feedback?.trim() && <span style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.45, whiteSpace: "pre-line" }}>“{m.feedback.trim()}”</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>

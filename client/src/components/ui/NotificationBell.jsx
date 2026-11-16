@@ -9,6 +9,7 @@ const ICONS = {
   assessment_graded: { Icon: FiCheckCircle, color: "#059669" },
   assessment_submitted: { Icon: FiUpload, color: "#25476a" },
   assessment_reissued: { Icon: FiFileText, color: "#D97706" },
+  project_milestone_marked: { Icon: FiCheck, color: "#2e7db5" },
   mentor_review_request: { Icon: FiStar, color: "#D97706" },
   mentor_review_concern: { Icon: FiAlertTriangle, color: "#DC2626" },
   educator_profile_review: { Icon: FiFileText, color: "#2e7db5" },
@@ -50,6 +51,7 @@ function resolveNotificationPath(n) {
   switch (n.type) {
     case "assessment_graded":
     case "assessment_reissued":
+    case "project_milestone_marked":
       return p.issueId ? `/learner-portal/assessments/${p.issueId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/assessments";
     case "assessment_submitted":
       // learnerId: the roster opens on whoever handed in.

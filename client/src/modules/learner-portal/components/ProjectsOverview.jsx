@@ -5,7 +5,7 @@ import { usePortalNavigate } from "../utils/usePortalNavigate";
 import { useIssuedForLearner } from "../../assessments/hooks/useAssessmentSubmission";
 import { useAssessmentCompetencies } from "../../assessments/hooks/useAssessment";
 import { useLearnerCompetencyScores } from "../../curriculum/hooks/useCompetencies";
-import { normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
+import { normalizeLegacyItem, entryMarks } from "../../assessments/schemas/assessment.schema";
 import RichContent, { isEmptyHtml } from "../../assessments/components/RichContent";
 import { levelFor } from "../../reports/utils/reportView";
 import AssessmentResultView, { Answer } from "./AssessmentResultView";
@@ -208,7 +208,7 @@ function MilestoneProgress({ milestones, progress }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {sorted.map((m) => {
           const p = byId.get(m.id);
-          const max = Number(m.points) || 0;
+          const max = Number(entryMarks(m)) || 0;
           const level = p ? levelFor(pct(Number(p.marks) || 0, max)) : null;
           return (
             <div key={m.id} style={{ padding: "10px 12px", borderRadius: 12, backgroundColor: "#fff", border: `1px solid ${T.border}` }}>

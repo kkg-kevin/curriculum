@@ -12,6 +12,7 @@ const { kenyaToday, learnerAge } = require("../../shared/utils/age");
 const R = require("./learner-move.rules");
 const { placesOf, endPlace, classLabel } = require("./learner-move.places");
 const { DESTINATIONS, pathwayRowsByCurriculum, dayOf, list } = require("./learner-move.destinations");
+const { describePlaces } = require("./learner-move.details");
 
 // Moving a learner between programmes (16 Nov 2026) — staff learner page → Move learner:
 //   1. where to: a hub class, a bootcamp run, Home Learning, a Tech Club or a pathway plan;
@@ -181,13 +182,17 @@ const LearnerMoveService = {
     const today = kenyaToday();
     const age = learnerAge(learner);
     const hubs = await hubsWithClasses(ownerAdminId);
+    // Where they're at: each place described in facts, and what they're learning now.
+    const places = await placesOf(ownerAdminId, learner.id);
+    const { details, learning } = await describePlaces(learner.id, places);
     return {
       today,
       learner: {
         id: learner.id, firstName: learner.firstName, lastName: learner.lastName, age, accountStatus: learner.accountStatus || "active",
         guardianName: learner.guardianName || "", guardianEmail: learner.guardianEmail || "", guardianPhone: learner.guardianPhone || "",
       },
-      places: await placesOf(ownerAdminId, learner.id),
+      places: places.map((p) => ({ ...p, facts: details[p.key] || [] })),
+      learning,
       keeps: await keepsOf(learner.id),
       openInvoices: await openInvoices(learner.id),
       allowed: allowedProgrammes(req),

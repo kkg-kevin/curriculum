@@ -142,6 +142,9 @@ const milestoneSchema = z.object({
   // (pure checklist), so grading one meant nothing beyond a description. Defaults to 0 so
   // existing authored milestones don't suddenly carry marks nobody intended.
   points:      markValue.optional().default(0),
+  // Marks tagged per competency indicator (16 Nov 2026), as rubric criteria have — once tagged, the
+  // milestone is worth their total and its marks feed those indicators (grading.utils.js).
+  indicatorMarks: indicatorMarksList.optional().default([]),
 });
 
 // Sellable-Project fields. Only meaningful when `type === "project"` and `saleStatus ===
