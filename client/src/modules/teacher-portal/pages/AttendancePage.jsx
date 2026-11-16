@@ -345,7 +345,8 @@ export default function AttendancePage() {
           {tab === "mark" ? (
             <>
               <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* Wraps on a phone: the date picker drops under the day rather than being squeezed. */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
                   <button type="button" onClick={goPrevDay} disabled={!canGoPrev} title={hasTimetableConfigured ? "Previous session day" : "Previous day"} style={{ width: 32, height: 32, borderRadius: 8, border: `1.5px solid ${T.border}`, backgroundColor: "#fff", color: canGoPrev ? T.inkMuted : "#D1D5DB", cursor: canGoPrev ? "pointer" : "not-allowed", fontSize: 14 }}>‹</button>
                   <div>
                     <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{formatDisplayDate(date)}</p>
@@ -357,7 +358,7 @@ export default function AttendancePage() {
                     value={date}
                     max={todayStr()}
                     onChange={(e) => setDate(e.target.value)}
-                    style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
+                    style={{ flex: "0 0 auto", minWidth: 150, padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", outline: "none" }}
                   />
                 </div>
                 {!locked && (

@@ -5,7 +5,7 @@ import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import HubSwitcher from "../components/ui/HubSwitcher";
 import { useTeacherPortalScope, HUB_STORAGE_KEY } from "../modules/teacher-portal/hooks/useTeacherPortalScope";
-import { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
+import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import CheckinsDuePopup from "../modules/checkins/components/CheckinsDuePopup";
 import MentorCheckinsPopup from "../modules/mentor-checkins/components/MentorCheckinsPopup";
 import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
@@ -53,11 +53,9 @@ function TeacherPortalLayout() {
         <Header isMobile={isMobile} onMenuClick={() => setSidebarOpen(true)} photo={teacher?.photo} />
 
         <main className="teacher-shell__main" style={{ padding: isMobile ? "20px 16px 24px" : "28px 32px 36px" }}>
-          {/* max-width caps content for readability at the full sidebar width — but that cap
-              would otherwise turn the rail's reclaimed space into dead empty margin on both
-              sides instead of usable width, so it widens by exactly the space the rail gives
-              back (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) on desktop. */}
-          <div className="teacher-shell__main-inner" style={!isMobile ? { maxWidth: 1480 + (SIDEBAR_WIDTH - SIDEBAR_COLLAPSED_WIDTH) } : undefined}>
+          {/* Pages run edge to edge on every screen (16 Nov 2026), as the admin app's do — no
+              width cap leaving empty margins on a wide screen. */}
+          <div className="teacher-shell__main-inner">
             {hasNoHubs ? (
               <div style={{ fontFamily: "Inter, sans-serif", textAlign: "center", padding: "60px 24px", backgroundColor: "#fff", borderRadius: 16, border: "1.5px solid #E5E7EB" }}>
                 <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 700, color: "#111827" }}>You haven't been assigned to a learning hub yet</h3>
@@ -103,8 +101,7 @@ function TeacherPortalLayout() {
         }
         .teacher-shell__main-inner {
           width: 100%;
-          max-width: 1480px;
-          margin: 0 auto;
+          min-width: 0;
         }
       `}</style>
     </div>

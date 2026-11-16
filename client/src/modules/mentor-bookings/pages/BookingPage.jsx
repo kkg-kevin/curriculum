@@ -128,7 +128,7 @@ export default function BookingPage() {
   const actionBtn = { padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 };
 
   return (
-    <div style={{ fontFamily: FONT, display: "flex", flexDirection: "column", gap: 16, maxWidth: 960 }}>
+    <div style={{ fontFamily: FONT, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
       <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "22px 26px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>

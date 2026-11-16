@@ -82,7 +82,7 @@ export default function VisitPage() {
   const onSave = (body, onError) => save.mutate(body, { onSuccess: () => setEditingReport(false), onError });
 
   return (
-    <div className="qa-page" style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0, maxWidth: 1080 }}>
+    <div className="qa-page" style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16, width: "100%", minWidth: 0 }}>
       <QaStyles />
       <QaPageStyles />
       <Link to={base} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: T.accentMid, textDecoration: "none", alignSelf: "flex-start" }}><FiArrowLeft size={14} /> {backLabel}</Link>

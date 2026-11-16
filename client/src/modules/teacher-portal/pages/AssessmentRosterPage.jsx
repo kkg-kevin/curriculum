@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FiUsers, FiCheck } from "react-icons/fi";
 import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRestoreForLearners } from "../../assessments/hooks/useAssessmentSubmission";
@@ -237,6 +237,11 @@ export default function AssessmentRosterPage() {
   // GradingPanel render immediately instead of waiting on a refetch. Cleared on every selection
   // change so switching rows never carries a started-but-abandoned submission into the wrong one.
   const [startedSubmission, setStartedSubmission] = useState(null);
+  // On a phone the marking sits under the whole roster: picking someone brings it into view.
+  const panelRef = useRef(null);
+  const showPanel = () => requestAnimationFrame(() => {
+    if (window.innerWidth < 900) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 
   if (isLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -253,8 +258,8 @@ export default function AssessmentRosterPage() {
   const isObservation = assessment.type === "observation";
   const hasMilestones = assessment.type === "project" && (assessment.milestones || []).length > 0;
 
-  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); setAttemptIndex(null); };
-  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); setAttemptIndex(null); };
+  const selectLearner = (id) => { setSelectedLearnerId(id); setSelectedGroupId(null); setStartedSubmission(null); setAttemptIndex(null); showPanel(); };
+  const selectGroup = (id) => { setSelectedGroupId(id); setSelectedLearnerId(null); setStartedSubmission(null); setAttemptIndex(null); showPanel(); };
 
   const selectedGroupRow = selectedGroupId ? groups.find((g) => g.group.id === selectedGroupId) : null;
   const selectedLearnerRow = selectedLearnerId ? roster.find((r) => r.learner.id === selectedLearnerId) : null;
@@ -360,7 +365,7 @@ export default function AssessmentRosterPage() {
           )}
         </div>
 
-        <div style={{ ...cardStyle, padding: "20px 22px", minHeight: 300 }}>
+        <div ref={panelRef} style={{ ...cardStyle, padding: "20px 22px", minHeight: 300, scrollMarginTop: 80, minWidth: 0 }}>
           {selectedLearnerRow?.revokedAt ? (
             // Revoked for this learner: nothing to mark until it's given back.
             <div style={{ textAlign: "center", padding: "50px 20px" }}>

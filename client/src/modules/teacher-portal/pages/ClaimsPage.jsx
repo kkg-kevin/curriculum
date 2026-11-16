@@ -156,7 +156,7 @@ export default function ClaimsPage({ embedded = false }) {
         <p style={{ margin: embedded ? 0 : "4px 0 0", fontSize: 13.5, color: T.inkMuted }}>Track payments for your teaching sessions, and request an advance or full payment for a course.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+      <div className="tp-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
         <StatCard icon={FiTrendingUp} tone={{ bg: T.tintBg, color: T.accent }} value={money(summary.totalValue)} label="Total claimable" sub={`${summary.courses} ${summary.courses === 1 ? "course" : "courses"} · ${money(summary.earned)} earned so far`} />
         <StatCard icon={FiAlertCircle} tone={{ bg: "#FFF7ED", color: "#EA580C" }} value={money(summary.inReview + summary.awaitingPayment)} label="Outstanding" sub={`${summary.inReviewCount} in review · ${summary.awaitingPaymentCount} approved, awaiting payment`} />
         <StatCard icon={FiCheckCircle} tone={{ bg: "#ECFDF5", color: "#16A34A" }} value={money(summary.paid)} label="Paid" sub={`${summary.paidCount} ${summary.paidCount === 1 ? "claim" : "claims"} · advances ${money(summary.advancePaid)}`} />

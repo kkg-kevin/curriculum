@@ -194,7 +194,7 @@ export default function CourseContentPage() {
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+          <div className="tp-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
             <StatTile icon={<FiBookOpen size={18} />} value={(courses || []).length} label="Courses assigned" />
             <StatTile icon={<FiLayers size={18} />} value={myClasses.length} label="Classes covered" />
             <StatTile icon={<FiUsers size={18} />} value={totalLearners} label="Total learners" />

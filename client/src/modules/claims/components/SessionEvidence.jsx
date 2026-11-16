@@ -134,7 +134,7 @@ export default function SessionEvidence({ course }) {
         <p style={{ margin: 0, padding: "34px 24px", textAlign: "center", fontSize: 13, color: T.inkMuted }}>No students are enrolled in this class.</p>
       ) : (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+          <table className="stack-table" style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
             <thead>
               <tr style={{ background: "#EEF4FA" }}>
                 {["Student", "Attendance", "Assignment", "Report"].map((heading, i) => (
@@ -155,11 +155,11 @@ export default function SessionEvidence({ course }) {
                         <span style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>{learner.firstName} {learner.lastName}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "11px 16px", textAlign: "center" }}>
+                    <td data-label="Attendance" style={{ padding: "11px 16px", textAlign: "center" }}>
                       {attendance ? <Chip config={attendance} /> : <Chip config={{ label: "Not marked", bg: "#F9FAFB", color: "#9CA3AF", Icon: FiMinus }} />}
                     </td>
-                    <td style={{ padding: "11px 16px", textAlign: "center" }}><Chip config={ASSIGNMENT[row.assignment]} /></td>
-                    <td style={{ padding: "11px 16px", textAlign: "center" }}><Chip config={REPORT[row.report]} /></td>
+                    <td data-label="Assignment" style={{ padding: "11px 16px", textAlign: "center" }}><Chip config={ASSIGNMENT[row.assignment]} /></td>
+                    <td data-label="Report" style={{ padding: "11px 16px", textAlign: "center" }}><Chip config={REPORT[row.report]} /></td>
                   </tr>
                 );
               })}

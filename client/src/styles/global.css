@@ -206,3 +206,59 @@ button {
 @media (max-width: 600px) {
   .people-view-label { display: none; }
 }
+
+/* Figure tiles on a phone (educator portal, 16 Nov 2026): two across instead of one full-width tile
+   each, the icon above the number so a narrow tile still reads. A lone last tile takes the row.
+   `.tp-kpis` on the grid; `.tp-hero-stats` on a hero's row of figure chips. The repeated class
+   outranks the card-grid rule above, which would otherwise put every tile on its own row. */
+@media (max-width: 640px) {
+  :is(main, body > div:not(#root)) .tp-kpis.tp-kpis.tp-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .tp-kpis > * {
+    min-width: 0;
+    padding: 12px 14px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .tp-kpis > * > :first-child:not(:only-child) {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 17px !important;
+  }
+  .tp-kpis > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .tp-hero-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+  .tp-hero-stats > * { min-width: 0; }
+  .tp-hero-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* A table that becomes one small card per row on a phone (`className="stack-table"`): the first
+   cell takes the row, the rest sit three across under it, each with its `data-label` above it. */
+@media (max-width: 640px) {
+  table.stack-table { min-width: 0 !important; }
+  table.stack-table thead { display: none; }
+  table.stack-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 8px;
+    padding: 12px 14px;
+  }
+  table.stack-table td { padding: 0 !important; text-align: left !important; min-width: 0; }
+  table.stack-table td:first-child { grid-column: 1 / -1; }
+  table.stack-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #8C94A3;
+  }
+}
