@@ -4,6 +4,7 @@ const AssessmentSubmissionService = require("./assessment-submission.service");
 const WebsiteDiagnosticService = require("./website-diagnostic.service");
 const LearnerActivityService = require("./learner-activity.service");
 const AssessmentModel = require("../assessment.model");
+const AssessmentIssueModel = require("./assessment-issue.model");
 const ClassModel = require("../../classes/class.model");
 const LearnerHubLinkModel = require("../../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../../classes/class-course-teacher-link.model");
@@ -29,6 +30,7 @@ const {
   submitAnswersSchema,
   gradeSubmissionSchema,
   startObservationSchema,
+  openObservationSchema,
   gradeMilestoneSchema,
   reissueSchema,
   learnersSchema,
@@ -128,6 +130,26 @@ const issueAssessment = asyncHandler(async (req, res) => {
   await assertClassAccess(req, cls);
   const issue = await AssessmentSubmissionService.issueAssessment({ ...data, issuedBy: req.ownTeacher?.id || req.user.id });
   res.status(201).json({ success: true, data: issue });
+});
+
+// A Teacher Observation is recorded on a session, never issued (16 Nov 2026): the teacher opens
+// the session's observation for their class and marks each learner straight away. Behind it is
+// still the class's issue row — reports, competencies and analytics count work through it — made
+// here quietly the first time (no due date, the whole class, nothing sent to learners), or the
+// one already there. Learners only see it once the teacher submits each one.
+const openObservation = asyncHandler(async (req, res) => {
+  const data = openObservationSchema.parse(req.body);
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const assessment = await AssessmentModel.findById(data.assessmentId);
+  if (assessment?.type !== "observation") {
+    const err = new Error("Only a Teacher Observation is recorded this way — other assessments are issued");
+    err.statusCode = 400;
+    throw err;
+  }
+  const existing = await AssessmentIssueModel.findOne({ assessmentId: data.assessmentId, sessionId: data.sessionId, classId: data.classId });
+  const issue = existing || await AssessmentSubmissionService.issueAssessment({ ...data, issuedBy: req.ownTeacher?.id || req.user.id, groupMode: false });
+  res.status(existing ? 200 : 201).json({ success: true, data: issue });
 });
 
 const getIssuesForClass = asyncHandler(async (req, res) => {
@@ -553,6 +575,7 @@ module.exports = {
   issueOnSessionComplete,
   getOrCreateSubmission,
   startObservationSubmission,
+  openObservation,
   gradeMilestone,
   saveDraft,
   submitAnswers,

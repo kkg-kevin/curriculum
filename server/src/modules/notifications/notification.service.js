@@ -152,10 +152,15 @@ const NotificationService = {
   async assessmentGraded(submission) {
     const assessment = await AssessmentModel.findById(submission.assessmentId);
     const percent = submission.maxScore > 0 ? Math.round((submission.totalScore / submission.maxScore) * 100) : null;
+    // A Teacher Observation was never something the learner did on their own: it reads as their
+    // teacher's feedback, ready to read (16 Nov 2026).
+    const observed = assessment?.type === "observation";
     await NotificationService.notifyLearner(submission.learnerId, {
       type: "assessment_graded",
-      title: "Assessment graded",
-      message: `"${assessment?.name || "Your assessment"}" has been graded${percent != null ? ` — ${percent}%` : ""}.`,
+      title: observed ? "Feedback from your teacher" : "Assessment graded",
+      message: observed
+        ? `Your teacher's observation "${assessment?.name || "of your work"}" is ready to read.`
+        : `"${assessment?.name || "Your assessment"}" has been graded${percent != null ? ` — ${percent}%` : ""}.`,
       // issueId/learnerId are what the learner-portal's assessment detail route
       // (/learner-portal/assessments/:issueId) and its "which sibling is active" switcher
       // actually key off — see NotificationBell.jsx's click handler.

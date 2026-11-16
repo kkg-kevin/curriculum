@@ -16,6 +16,7 @@ const {
   issueOnSessionComplete,
   getOrCreateSubmission,
   startObservationSubmission,
+  openObservation,
   gradeMilestone,
   saveDraft,
   submitAnswers,
@@ -45,6 +46,9 @@ router.get("/issues/:id/roster", authorize("admin", "school", "teacher", "superv
 // Teacher-initiated start of a Teacher Observation submission — the one assessment type with no
 // learner-facing "take" step, since the teacher records it directly (see
 // startObservationSubmission's comment in the controller). Rejects any other assessment type.
+// A session's Teacher Observation, opened for a class to mark straight away — never issued
+// (openObservation in the controller).
+router.post("/observations/open", authorize("admin", "school", "teacher"), openObservation);
 router.post("/issues/:id/start-observation", authorize("admin", "school", "teacher", "supervisor"), startObservationSubmission);
 // Grades one milestone of a project assessment — see gradeMilestone's comment in the
 // controller. Independent of the submission's own draft/submit/grade flow below.

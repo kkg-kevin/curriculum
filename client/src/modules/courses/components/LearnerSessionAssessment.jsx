@@ -21,6 +21,11 @@ export default function LearnerSessionAssessment({ assessment, sessionId }) {
   const row = rows.find((r) => r.issue?.sessionId === sessionId) || rows[0];
   const status = STATUS[row?.submission?.status];
   const questions = (assessment.items || []).length;
+  // A Teacher Observation isn't the learner's to do: their teacher records it in class, and it
+  // reaches them (on their list too) only once submitted — then it reads as feedback.
+  const observation = assessment.type === "observation";
+  const observed = observation && row?.submission?.status === "graded";
+  const shownStatus = observed ? { label: "Feedback ready", color: "#047857" } : status;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16, maxWidth: 760 }}>
@@ -31,12 +36,12 @@ export default function LearnerSessionAssessment({ assessment, sessionId }) {
         <div style={{ flex: 1, minWidth: 180 }}>
           <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#111827" }}>{assessment.name}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#6B7280" }}>
-            {TYPE_LABELS[assessment.type] || "Assessment"}{questions ? ` · ${questions} question${questions === 1 ? "" : "s"}` : ""}
+            {TYPE_LABELS[assessment.type] || "Assessment"}{!observation && questions ? ` · ${questions} question${questions === 1 ? "" : "s"}` : ""}
           </p>
         </div>
-        {status && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: status.color }}>
-            <FiCheckCircle size={13} /> {status.label}
+        {shownStatus && (!observation || observed) && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: shownStatus.color }}>
+            <FiCheckCircle size={13} /> {shownStatus.label}
           </span>
         )}
       </div>
@@ -49,6 +54,11 @@ export default function LearnerSessionAssessment({ assessment, sessionId }) {
         </div>
       )}
 
+      {observation && !observed ? (
+        <p style={{ margin: 0, padding: "12px 16px", borderRadius: 12, backgroundColor: "#F8FAFF", border: "1px solid #E5E7EB", fontSize: 13.5, color: "#374151", lineHeight: 1.5 }}>
+          Your teacher watches how you work in this session and writes it up. There&apos;s nothing for you to do — their feedback appears here and in your reports once they send it.
+        </p>
+      ) : (
       <div>
         <button
           type="button"
@@ -56,9 +66,10 @@ export default function LearnerSessionAssessment({ assessment, sessionId }) {
           onClick={() => navigate(row ? `/learner-portal/assessments/${row.issue.id}` : "/learner-portal/assessments")}
           style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, border: "none", backgroundColor: "#25476a", color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isLoading ? "wait" : "pointer" }}
         >
-          {row?.submission?.status === "graded" ? "See my results" : row?.submission?.status === "submitted" ? "View my answers" : row?.submission ? "Continue" : "Open assessment"} <FiArrowRight size={15} />
+          {observed ? "Read my teacher's feedback" : row?.submission?.status === "graded" ? "See my results" : row?.submission?.status === "submitted" ? "View my answers" : row?.submission ? "Continue" : "Open assessment"} <FiArrowRight size={15} />
         </button>
       </div>
+      )}
     </div>
   );
 }

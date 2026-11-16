@@ -7,7 +7,8 @@ import { learnerCreatePath } from "../../../routes/portalPaths";
 import { useLearningHubQuery as useSchoolQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learnerApi } from "../services/learnerApi";
 import { classApi } from "../../classes/services/classApi";
-import { LearnerCard } from "../components/LearnerCard";
+import { LearnerCard, LearnerListRow, LearnerTableRow, learnerTableColumns } from "../components/LearnerCard";
+import { PeopleList, PeopleTable, ViewSwitcher, useViewMode } from "../../../components/ui/PeopleViews";
 import BulkImportLearnersPanel from "../components/BulkImportLearnersPanel";
 import { formatClassName } from "../../classes/utils/classDisplay";
 import { useSearchLearners, useEnrollLearnerHub } from "../hooks/useLearners";
@@ -147,6 +148,8 @@ export default function SchoolLearnersPage() {
   const backPath  = user?.role === "school" ? "/school-portal" : "/learners";
   const backLabel = user?.role === "school" ? "Dashboard" : "Learners";
   const [statusFilter, setStatusFilter] = useState("");
+  // Cards, List or Table — remembered in this browser (components/ui/PeopleViews.jsx).
+  const [view, setView] = useViewMode("learners.hub");
   const [showAddExisting, setShowAddExisting] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
@@ -273,7 +276,7 @@ export default function SchoolLearnersPage() {
       </div>
 
       {/* Filter bar */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={selectStyle}>
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -290,6 +293,7 @@ export default function SchoolLearnersPage() {
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>
           {learnersLoading ? "Loading…" : `${learners.length} learner${learners.length !== 1 ? "s" : ""}`}
         </span>
+        <ViewSwitcher value={view} onChange={setView} />
       </div>
 
       {isLoading ? (
@@ -300,11 +304,17 @@ export default function SchoolLearnersPage() {
           <p style={{ margin: 0, fontSize: 14, color: "#6B7280", lineHeight: 1.6 }}>Enrol this school's first learner to get started.</p>
         </div>
       ) : (
+        view === "table" ? (
+          <PeopleTable columns={learnerTableColumns({ classMap })} rows={learners} renderRow={(l) => <LearnerTableRow key={l.id} learner={l} classMap={classMap} />} />
+        ) : view === "list" ? (
+          <PeopleList>{learners.map((l) => <LearnerListRow key={l.id} learner={l} classMap={classMap} />)}</PeopleList>
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {learners.map((l) => (
             <LearnerCard key={l.id} learner={l} classMap={classMap} />
           ))}
         </div>
+        )
       )}
     </div>
   );

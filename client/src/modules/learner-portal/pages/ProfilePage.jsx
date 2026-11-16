@@ -29,6 +29,7 @@ import ProgressArcCard from "../components/ProgressArcCard";
 import PathwayTabContent from "../components/profile/PathwayTabContent";
 import DiagnosticReportCard from "../components/profile/DiagnosticReportCard";
 import AssessmentsOverview from "../components/AssessmentsOverview";
+import ProjectsOverview from "../components/ProjectsOverview";
 import ReportsOverview from "../components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import { useMyCertificates, useMyCertificateProgress } from "../../certificates/hooks/useCertificates";
@@ -182,6 +183,8 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} /> : <NoClassNotice />)}
+
+      {activeTab === "Projects" && <ProjectsOverview classId={cls?.id} learner={learner} />}
 
       {activeTab === "Reports" && <ReportsOverview hubId={selectedHub?.id} />}
 

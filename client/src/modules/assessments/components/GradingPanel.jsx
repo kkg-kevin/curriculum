@@ -285,6 +285,15 @@ function ObservationRow({ index, indicator, feedback, indicatorNameById, onChang
       <div style={{ marginLeft: 20 }}>
         <MarksInputs entry={indicator} feedback={feedback} indicatorNameById={indicatorNameById} onChange={onChange} />
       </div>
+      {/* What the teacher saw, in a line — the learner reads it beside this item in their report. */}
+      <textarea
+        value={feedback.comment || ""}
+        onChange={(e) => onChange({ ...feedback, comment: e.target.value })}
+        placeholder="What you saw (optional) — the learner reads this beside this item"
+        maxLength={2000}
+        rows={2}
+        style={{ marginLeft: 20, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 12.5, fontFamily: "Inter, sans-serif", resize: "vertical", minHeight: 40 }}
+      />
     </div>
   );
 }
@@ -327,16 +336,16 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     const map = new Map();
     items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
+      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [], comment: existing?.comment ?? "" });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
       const existing = existingFeedback.get(key);
-      map.set(key, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
+      map.set(key, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [], comment: existing?.comment ?? "" });
     });
     scorableIndicators.forEach((ind) => {
       const existing = existingFeedback.get(ind.id);
-      map.set(ind.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [] });
+      map.set(ind.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [], comment: existing?.comment ?? "" });
     });
     return map;
   });
@@ -356,7 +365,8 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
 
   const handleSave = () => {
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [], indicatorMarks: f.indicatorMarks || [] }));
+    // A note kept on an item (an observation's, or one written elsewhere) goes back as it is.
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [], indicatorMarks: f.indicatorMarks || [], comment: f.comment || "" }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
@@ -437,7 +447,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
         <textarea
           value={overallFeedback}
           onChange={(e) => setOverallFeedback(e.target.value)}
-          placeholder="A note for the learner about their work overall…"
+          placeholder={isObservation ? "What you saw — the learner reads this as your feedback…" : "A note for the learner about their work overall…"}
           style={{ ...fieldStyle, width: "100%", minHeight: 80, resize: "vertical" }}
         />
       </div>
@@ -445,6 +455,8 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>
           Total: {(submission.autoScore || 0) + manualScore} / {submission.maxScore}
+          {/* Submitting an observation sends it to the learner straight away, as their report. */}
+          {isObservation && <span style={{ display: "block", fontSize: 11.5, fontWeight: 500, color: T.inkMuted }}>Submitting sends it to the learner as feedback in their reports.</span>}
         </p>
         <button
           type="button"
@@ -452,7 +464,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
           disabled={isSaving}
           style={{ padding: "10px 22px", backgroundColor: isSaving ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isSaving ? "not-allowed" : "pointer" }}
         >
-          {isSaving ? "Saving…" : submission.classId ? "Save Grade" : "Save & Release Grade"}
+          {isSaving ? "Saving…" : isObservation ? (submission.status === "graded" ? "Update observation" : "Submit observation") : submission.classId ? "Save Grade" : "Save & Release Grade"}
         </button>
       </div>
     </div>

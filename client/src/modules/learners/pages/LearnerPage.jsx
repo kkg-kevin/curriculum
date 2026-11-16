@@ -38,7 +38,9 @@ import ReportsOverview from "../../learner-portal/components/ReportsOverview";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import LearnerStaffBar from "../components/staff/LearnerStaffBar";
 import LearnerLoginDialog from "../components/staff/LearnerLoginDialog";
-import MoveToHomeLearningDialog from "../components/staff/MoveToHomeLearningDialog";
+import MoveLearnerDialog from "../../learner-moves/components/MoveLearnerDialog";
+import LearnerMoves from "../../learner-moves/components/LearnerMoves";
+import ProjectsOverview from "../../learner-portal/components/ProjectsOverview";
 import { usePermissions } from "../../../hooks/usePermissions";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
@@ -101,11 +103,12 @@ export default function LearnerPage() {
   const [preview, setPreview] = useState(false);
   // The child's login window (username, password, set a new one) — LearnerLoginDialog.
   const [loginOpen, setLoginOpen] = useState(false);
-  // Move to Home Learning (a bootcamp or hub learner) — MoveToHomeLearningDialog. Admins and staff
-  // who can add households and edit learners; never the hub portal.
+  // Move learner — to a hub class, a bootcamp run, Home Learning, a Tech Club or a pathway plan
+  // (MoveLearnerDialog, server modules/learner-moves/). Admins and staff who can edit learners (each
+  // programme also needs its own Create, shown in the dialog); never the hub portal.
   const [moveOpen, setMoveOpen] = useState(false);
   const { can } = usePermissions();
-  const canMoveToHomeLearning = isAdmin && can("home-learning", "create") && can("learners", "edit");
+  const canMove = isAdmin && can("learners", "edit");
   const [activeTab, setActiveTab] = useState("Overview");
   // The tab row — the Guardian card's "Parent's login…" link scrolls to it.
   const tabsRef = useRef(null);
@@ -167,7 +170,7 @@ export default function LearnerPage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       {loginOpen && <LearnerLoginDialog learner={learner} onClose={() => setLoginOpen(false)} />}
-      <MoveToHomeLearningDialog open={moveOpen} learnerId={id} onClose={() => setMoveOpen(false)} onMoved={() => setMoveOpen(false)} />
+      <MoveLearnerDialog open={moveOpen} learnerId={id} onClose={() => setMoveOpen(false)} onMoved={() => setMoveOpen(false)} />
       <LearnerStaffBar
         learner={learner}
         onBack={() => navigate(listPath)}
@@ -180,7 +183,7 @@ export default function LearnerPage() {
         onOpenLogin={canManage ? () => setLoginOpen(true) : undefined}
         onRemove={canManage && (!isSchool || schoolHubId) ? () => setConfirmRemove(true) : undefined}
         removeLabel={isSchool ? "Remove from hub" : "Remove"}
-        onMoveToHomeLearning={canMoveToHomeLearning && !isEducatorTrainee ? () => setMoveOpen(true) : undefined}
+        onMove={canMove && !isEducatorTrainee ? () => setMoveOpen(true) : undefined}
       />
 
       {preview && (
@@ -274,10 +277,13 @@ export default function LearnerPage() {
 
       {tab === "Assessments" && (cls ? <AssessmentsOverview classId={cls.id} staffLearnerId={id} /> : <NoClassNotice />)}
 
+      {tab === "Projects" && <ProjectsOverview classId={cls?.id} staffLearnerId={id} learner={learner} />}
+
       {tab === "Reports" && <ReportsOverview hubId={selectedHub?.id} staffLearnerId={id} learner={learner} cls={cls} />}
 
       {tab === "Parent" && <ParentTab learnerId={id} onEdit={manage ? () => setEditing("guardian") : undefined} />}
 
+      {tab === "History" && isAdmin && <LearnerMoves learnerId={id} />}
       {tab === "History" && <RecordHistory entityType="learners" entityId={id} defaultOpen />}
 
       {tab !== "History" && tab !== "Parent" && (

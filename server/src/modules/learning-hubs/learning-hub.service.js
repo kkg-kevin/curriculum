@@ -131,6 +131,9 @@ const LearningHubService = {
     // Learners
     const learnerLinks = await LearnerHubLinkModel.findByHubId(hubId);
     for (const link of learnerLinks) {
+      // A place already left (moved elsewhere — modules/learner-moves/) stays as it was, and its
+      // learner's account isn't this hub's to switch off.
+      if (link.status === "transferred") continue;
       if (link.status !== "inactive") {
         await LearnerHubLinkModel.update(link.id, { status: "inactive" });
       }
@@ -176,6 +179,8 @@ const LearningHubService = {
 
     const learnerLinks = await LearnerHubLinkModel.findByHubId(hubId);
     for (const link of learnerLinks) {
+      // Never brings back a place the learner has left (it's "transferred", not "inactive").
+      if (link.status === "transferred") continue;
       if (link.status === "inactive") {
         await LearnerHubLinkModel.update(link.id, { status: "active" });
       }

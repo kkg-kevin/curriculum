@@ -4,7 +4,8 @@ import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School 
 import { useAuth } from "../../../context/AuthContext";
 import { teacherCreatePath } from "../../../routes/portalPaths";
 import { useLearningHubQuery as useSchoolQuery, useHubTeachersQuery } from "../../learning-hubs/hooks/useLearningHub";
-import { TeacherCard } from "../components/TeacherCard";
+import { TeacherCard, TeacherListRow, TeacherTableRow, teacherTableColumns } from "../components/TeacherCard";
+import { PeopleList, PeopleTable, ViewSwitcher, useViewMode } from "../../../components/ui/PeopleViews";
 
 const GRAD_FROM = "#1a3550";
 const GRAD_TO   = "#38aae1";
@@ -18,6 +19,8 @@ export default function SchoolTeachersPage() {
   const backPath  = user?.role === "school" ? "/school-portal" : "/teachers";
   const backLabel = user?.role === "school" ? "Dashboard" : "Educators";
   const [statusFilter, setStatusFilter] = useState("");
+  // Cards, List or Table — remembered in this browser (components/ui/PeopleViews.jsx).
+  const [view, setView] = useViewMode("educators.hub");
 
   const { data: school, isLoading: schoolLoading } = useSchoolQuery(schoolId);
 
@@ -89,7 +92,7 @@ export default function SchoolTeachersPage() {
       </div>
 
       {/* Filter bar */}
-      <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <div style={{ backgroundColor: "#ffffff", borderRadius: 12, padding: "12px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={selectStyle}>
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -107,6 +110,7 @@ export default function SchoolTeachersPage() {
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>
           {teachersLoading ? "Loading…" : `${teachers.length} tech educator${teachers.length !== 1 ? "s" : ""}`}
         </span>
+        <ViewSwitcher value={view} onChange={setView} />
       </div>
 
       {teachersLoading ? (
@@ -117,11 +121,17 @@ export default function SchoolTeachersPage() {
           <p style={{ margin: 0, fontSize: 14, color: "#6B7280", lineHeight: 1.6 }}>Assign this school's first tech educator to get started.</p>
         </div>
       ) : (
+        view === "table" ? (
+          <PeopleTable columns={teacherTableColumns()} rows={teachers} renderRow={(t) => <TeacherTableRow key={t.id} teacher={t} />} />
+        ) : view === "list" ? (
+          <PeopleList>{teachers.map((t) => <TeacherListRow key={t.id} teacher={t} />)}</PeopleList>
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {teachers.map((t) => (
             <TeacherCard key={t.id} teacher={t} />
           ))}
         </div>
+        )
       )}
     </div>
   );

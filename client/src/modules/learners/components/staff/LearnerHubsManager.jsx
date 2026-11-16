@@ -115,7 +115,7 @@ function EnrollmentRow({ learnerId, learnerName, enrollment, isAdmin, onRequestU
       {isAdmin && transferOpen && (
         <div style={{ marginTop: 4, paddingTop: 10, borderTop: "1px dashed #E5E7EB", display: "flex", flexDirection: "column", gap: 8 }}>
           <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-            Enrolls the learner at the new hub, then removes this enrollment — their history at {enrollment.name} is kept as a transfer record.
+            Enrolls the learner at the new hub, then ends this enrollment (kept as Transferred) — their history at {enrollment.name} stays, and the move is in their History. To move them into another programme, use Move learner at the top.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <select
@@ -161,8 +161,8 @@ function EnrollmentRow({ learnerId, learnerName, enrollment, isAdmin, onRequestU
             lead={<>{learnerName} will move from <strong>{enrollment.name}</strong> to <strong>{targetHub?.name}</strong>.</>}
             points={[
               <>At {targetHub?.name}: {targetClass ? <>the class <strong>{classLabel(targetClass)}</strong></> : "the hub's first active class (you didn't pick one)"}, a new admission number, and a developmental stage set from their age.</>,
-              <>They leave {enrollment.name}{currentClass ? <> and the class <strong>{currentClass}</strong></> : ""} — that class's courses, assessments and timetable stop showing for them, and admission number {enrollment.admissionNumber || "—"} and their stage there are removed.</>,
-              "A transfer record is kept, and their marked work, reports and certificates stay on their record.",
+              <>They leave {enrollment.name}{currentClass ? <> and the class <strong>{currentClass}</strong></> : ""} — that class's courses, assessments and timetable stop showing for them. This enrollment stays on their record as Transferred, with admission number {enrollment.admissionNumber || "—"}.</>,
+              "The move is written to their History, and their marked work, reports and certificates stay on their record.",
             ]}
           />
         )}

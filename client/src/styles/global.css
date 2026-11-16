@@ -201,3 +201,8 @@ button {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* People lists' view switch (components/ui/PeopleViews.jsx): icons only on a phone. */
+@media (max-width: 600px) {
+  .people-view-label { display: none; }
+}

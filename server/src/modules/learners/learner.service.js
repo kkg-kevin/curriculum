@@ -615,15 +615,12 @@ const LearnerService = {
     return LearnerService.getLearnerHubs(learnerId);
   },
 
-  // Moves a learner from one hub to another in one action — enroll-at-new then unlink-old, the
-  // same two primitives enrollInHub/unenrollFromHub already expose separately, just ordered so a
-  // failure partway through never leaves the learner unenrolled everywhere (the new link is
-  // created first). The old hub-link is still a real unlink — hard-deleted exactly like
-  // unenrollFromHub always did, deliberately NOT kept alive with a "transferred" status, since
-  // dozens of existing call sites read learner_hub_links without filtering by status and would
-  // otherwise start showing a learner as still "in" a class/hub they've actually left.
-  // LearnerTransferModel is a separate, purely additive audit log instead, so the transfer's
-  // history survives the unlink.
+  // Moves a learner from one hub to another in one action (the hub card's Transfer; every other move
+  // between programmes is modules/learner-moves/). The new place is opened first, so a failure
+  // never leaves the learner nowhere; their link at the new hub is reused if they had one. The old
+  // place is ENDED, not deleted (16 Nov 2026): its link goes "transferred" and leaves its class —
+  // class rosters read links without looking at their status — so the hub and admission number
+  // they had stay on record, with the move itself in learner_transfers.
   async transferHub(learnerId, { fromHubId, toHubId, toClassId, transferredBy }) {
     if (fromHubId === toHubId) {
       const err = new Error("Learner is already at this hub");
@@ -631,19 +628,34 @@ const LearnerService = {
       throw err;
     }
     const fromLink = await LearnerHubLinkModel.findOne(learnerId, fromHubId);
-    if (!fromLink) {
+    if (!fromLink || fromLink.status === "transferred") {
       const err = new Error("This learner isn't enrolled at the hub being transferred from");
       err.statusCode = 404;
       throw err;
     }
-    await LearnerService.enrollInHub(learnerId, { hubId: toHubId, classId: toClassId || "", status: "active" });
+    if (await LearnerHubLinkModel.findOne(learnerId, toHubId)) {
+      await LearnerService.updateEnrollment(learnerId, toHubId, { ...(toClassId ? { classId: toClassId } : {}), status: "active" });
+    } else {
+      await LearnerService.enrollInHub(learnerId, { hubId: toHubId, classId: toClassId || "", status: "active" });
+    }
+    const toLink = await LearnerHubLinkModel.findOne(learnerId, toHubId);
+    const [fromHub, toHub] = await Promise.all([SchoolModel.findById(fromHubId), SchoolModel.findById(toHubId)]);
+    const [fromClass, toClass] = await Promise.all([
+      fromLink.classId ? ClassModel.findById(fromLink.classId) : null,
+      toLink?.classId ? ClassModel.findById(toLink.classId) : null,
+    ]);
+    const labelOf = (hub, cls) => [hub?.name, cls ? [cls.gradeName, cls.streamName].filter(Boolean).join(" · ") : null].filter(Boolean).join(" · ") || null;
+    const fromLabel = labelOf(fromHub, fromClass);
+    const toLabel = labelOf(toHub, toClass);
     await LearnerTransferModel.create({
       learnerId, fromHubId, toHubId,
-      fromClassId: fromLink.classId, toClassId: toClassId || null,
+      fromClassId: fromLink.classId, toClassId: toLink?.classId || null,
       fromAdmissionNumber: fromLink.admissionNumber,
       transferredBy: transferredBy || null,
+      fromProgramme: "hub", toProgramme: "hub", fromRecordId: fromHubId, toRecordId: toHubId,
+      fromLabel, toLabel, notes: `${fromLabel || "A hub"} → ${toLabel || "a hub"}`.slice(0, 500),
     });
-    await LearnerHubLinkModel.unlink(learnerId, fromHubId);
+    await LearnerHubLinkModel.update(fromLink.id, { status: "transferred", classId: null });
     return LearnerService.getLearnerHubs(learnerId);
   },
 

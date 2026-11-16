@@ -624,7 +624,7 @@ const HomeLearningService = {
 };
 
 module.exports = HomeLearningService;
-// For home-learning.move.js (moving a learner from another programme into Home Learning) — the same
+// For learner-moves/ (moving a learner from another programme into Home Learning) — the same
 // checks a household's own forms run.
 module.exports.internal = { assertOwnCurriculum, resolveGrade, assertOwnEducator, learnerInWorkspace, ensureHomeHub };
 // For home-learning-signup.service.js (a website sign-up's first invoice) and billing/package-billing.js.

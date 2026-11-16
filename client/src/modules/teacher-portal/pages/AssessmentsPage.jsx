@@ -12,7 +12,8 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { courseApi } from "../../courses/services/courseApi";
@@ -261,10 +262,44 @@ function IssueConfirmDialog({ item, cls, groupMode, existing = null, isIssuing, 
 // per-class Issue / roster button. Trimmed from the old per-course "AssessmentGroupCard": now
 // that the carousel shows one session at a time, an assessment only ever appears once per slide,
 // so the "N sessions" roll-up and the nested session-row list are gone.
+// A Teacher Observation is recorded on the session, never issued (16 Nov 2026): "Observe {class}"
+// opens the observation sheet for that class straight away (the server keeps the class's issue
+// row behind it, made quietly the first time). Each learner gets their observation, as feedback
+// to read, once the teacher submits it.
+function ObserveRow({ item, cls, issue }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [opening, setOpening] = useState(false);
+  const open = async (e) => {
+    e.stopPropagation();
+    if (issue) { navigate(`/teacher-portal/assessments/${issue.id}`); return; }
+    setOpening(true);
+    try {
+      const opened = await assessmentSubmissionApi.openObservation({ assessmentId: item.id, sessionId: item.sessionId, courseId: item.courseId, classId: cls.id });
+      queryClient.invalidateQueries();
+      navigate(`/teacher-portal/assessments/${opened.id}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Couldn't open the observation");
+      setOpening(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={open}
+      disabled={opening}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: issue ? T.tintBg : "#feb139", color: issue ? T.accent : "#25476a", border: issue ? `1.5px solid ${T.tintBorder}` : "none", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: opening ? "wait" : "pointer" }}
+    >
+      <VisibilityIcon sx={{ fontSize: 13 }} /> {opening ? "Opening…" : `Observe ${classLabel(cls)}`}
+    </button>
+  );
+}
+
 function SessionAssessmentCard({ assessment, sessionId, courseId, moduleName, eligibleClasses, issuesByKey, onIssue, issuingKey }) {
   const color = TYPE_COLORS[assessment.type] || T.accentLight;
   const modeColor = MODE_COLORS[assessment.mode] || T.inkMuted;
   const [groupMode, setGroupMode] = useState(assessment.mode === "group");
+  const isObservation = assessment.type === "observation";
 
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -285,10 +320,16 @@ function SessionAssessmentCard({ assessment, sessionId, courseId, moduleName, el
         </div>
       </div>
 
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: T.inkMuted, cursor: "pointer", alignSelf: "flex-start" }}>
-        <input type="checkbox" checked={groupMode} onChange={(e) => setGroupMode(e.target.checked)} />
-        Issue as a group assessment — one submission per group, shared mark
-      </label>
+      {isObservation ? (
+        <p style={{ margin: 0, fontSize: 12, color: T.inkMuted }}>
+          You record this observation for each learner during or after the session — nothing is issued to them. Each learner gets your feedback as a report once you submit theirs.
+        </p>
+      ) : (
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: T.inkMuted, cursor: "pointer", alignSelf: "flex-start" }}>
+          <input type="checkbox" checked={groupMode} onChange={(e) => setGroupMode(e.target.checked)} />
+          Issue as a group assessment — one submission per group, shared mark
+        </label>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {eligibleClasses.length === 0 ? (
@@ -304,7 +345,9 @@ function SessionAssessmentCard({ assessment, sessionId, courseId, moduleName, el
             sessionLabel: assessment.sessionLabel,
             moduleName,
           };
-          return (
+          return isObservation ? (
+            <ObserveRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} />
+          ) : (
             <IssueRow key={cls.id} item={item} cls={cls} issue={issuesByKey.get(key)} onIssue={(c, existing) => onIssue(item, c, existing ? !!existing.groupMode : groupMode, existing)} isIssuing={issuingKey === key} />
           );
         })}
