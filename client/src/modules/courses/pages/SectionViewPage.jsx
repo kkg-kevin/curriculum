@@ -434,7 +434,9 @@ export default function SectionViewPage() {
   // auth.service.js's setOrCreatePasswordByUsername) has no email at all, so fall back to
   // username to keep each such login's progress in its own bucket instead of a shared "guest" one.
   const progressKey = user?.email || user?.username;
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // On a phone the session list would sit above the lesson itself, so it starts hidden there
+  // ("Show Sessions" opens it); on a wider screen it sits beside the lesson as before.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 900);
   const { data: course } = useCourseQuery(id);
   const { data: sessions = [], isLoading } = useSessions(id);
   const { data: modules = [] } = useModules(id);

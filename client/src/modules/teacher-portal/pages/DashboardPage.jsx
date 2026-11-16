@@ -113,7 +113,7 @@ export default function DashboardPage() {
           </div>
 
           {teacher && myClasses.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <div className="tp-hero-stats" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
               <HeroPill icon={<AutoStoriesIcon fontSize="small" />} value={myClasses.length} label={`Class${myClasses.length === 1 ? "" : "es"} taught`} />
               <HeroPill icon={<PeopleAltIcon fontSize="small" />} value={totalLearners} label="Learners" />
               <HeroPill icon={<AssignmentTurnedInIcon fontSize="small" />} value={allMyCourses?.length ?? 0} label={`Course${(allMyCourses?.length ?? 0) === 1 ? "" : "s"} to deliver`} />

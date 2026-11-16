@@ -813,7 +813,7 @@ export default function AssessmentsPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <div className="tp-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <KpiTile icon={<DescriptionIcon fontSize="small" />} num={totalCount} label="Available" sub={`${courseCount} course${courseCount === 1 ? "" : "s"} involved`} />
         <KpiTile icon={<SendIcon fontSize="small" />} num={issuedCount} label="Issued" sub="Live for your class right now" />
         <KpiTile icon={<PersonIcon fontSize="small" />} num={individualCount} label="Individual" sub="Teacher-marked or learner work" />

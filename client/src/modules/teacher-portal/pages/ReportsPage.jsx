@@ -352,7 +352,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <div className="tp-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         <KpiTile icon={<HourglassEmptyIcon fontSize="small" />} num={readyCount} label="Ready to generate" sub="Every assessment graded" />
         <KpiTile icon={<DescriptionIcon fontSize="small" />} num={draftCount} label="Drafts" sub="Awaiting your review" />
         <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={publishedCount} label="Published" sub="Visible to learner & guardian" />
