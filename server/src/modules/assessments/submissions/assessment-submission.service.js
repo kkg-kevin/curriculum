@@ -289,6 +289,9 @@ async function assertNotRevoked(issue, learnerId) {
 // The learner's session report follows their marked work straight away (report.service.js's
 // refreshSessionReportsForAssessment) — for a group submission, every member's. Required lazily:
 // report.service.js requires this module. Never throws — marking must not fail because of it.
+// A Teacher Observation the teacher has submitted: marked and released to the learner.
+const isSubmittedObservation = (submission) => submission?.status === "graded" && !!submission.reportPublished;
+
 async function refreshSessionReport(submission) {
   try {
     if (!submission?.issueId) return;
@@ -870,12 +873,10 @@ const AssessmentSubmissionService = {
 
   // What a learner sees: every issue targeting their class, each merged with their own
   // submission (or a synthetic "not_started" placeholder if they haven't opened it yet).
-  // Teacher Observation assessments (type "observation") are excluded — they have no
-  // learner-facing "take" step at all, the teacher records the whole thing directly (see
-  // startObservationSubmission in the controller), so there's nothing here for a learner to
-  // open. Same exclusion shape getIssuedRowsForLearner already applies to standalone
-  // diagnostics; the score still reaches the learner once graded, via Reports (see
-  // report.service.js, which only cares about reportPublished, never assessment.type).
+  // A Teacher Observation (type "observation") is never the learner's to do — the teacher records
+  // it on a session without issuing it (openObservation in the controller) — so it only shows
+  // once the teacher has submitted it: a marked, released result the learner reads like a report
+  // (16 Nov 2026). Until then it isn't on their list at all.
   async getIssuedAssessmentsForLearner(classId, learnerId) {
     // An issue revoked for this learner alone (revokeForLearners) isn't theirs any more.
     const revoked = await AssessmentRevocationModel.revokedIssueIds(learnerId);
@@ -891,7 +892,7 @@ const AssessmentSubmissionService = {
         submission: submission || { status: "not_started" },
       };
     }));
-    return rows.filter((row) => !!row.assessment && row.assessment.type !== "observation");
+    return rows.filter((row) => !!row.assessment && (row.assessment.type !== "observation" || isSubmittedObservation(row.submission)));
   },
 
   // Roster view for the teacher grading a class: every enrolled learner, each merged with their

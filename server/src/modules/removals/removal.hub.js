@@ -67,7 +67,7 @@ async function holdings(ctx) {
     const learners = await count(db("learner_hub_links").where({ hubId: id, classId: c.id }));
     add("class", "Classes", c.id, classLabel(c), `${R.counted(learners, "learner", "learners")} move with it`);
   }
-  const loose = await count(db("learner_hub_links").where({ hubId: id }).where((w) => w.whereNull("classId").orWhere("classId", "")));
+  const loose = await count(db("learner_hub_links").where({ hubId: id }).whereNot({ status: "transferred" }).where((w) => w.whereNull("classId").orWhere("classId", "")));
   if (loose) add("looseLearners", "Learners", id, R.counted(loose, "learner not in a class", "learners not in a class"));
   const classIds = classes.map((c) => c.id);
   const teaching = classIds.length ? await db("class_course_teacher_links").whereIn("classId", classIds).distinct("teacherId").pluck("teacherId") : [];
@@ -141,6 +141,7 @@ async function moveLearnerLink(ctx, link, to, classId) {
   await db("learner_transfers").insert({
     id: generateId(), learnerId: link.learnerId, fromHubId: ctx.id, toHubId: to.id, fromClassId: link.classId || null, toClassId: classId || null,
     fromAdmissionNumber: link.admissionNumber || null, transferredBy: ctx.req.user.id, notes: `${ctx.person.name} was removed`, createdAt: new Date(),
+    fromProgramme: "hub", toProgramme: "hub", fromRecordId: ctx.id, toRecordId: to.id, fromLabel: String(ctx.person.name || "").slice(0, 200) || null, toLabel: String(to.name || "").slice(0, 200) || null,
   });
   await db("learners").where({ id: link.learnerId, accountStatus: "inactive" }).update({ accountStatus: "active", updatedAt: new Date() });
 }
@@ -174,7 +175,7 @@ const HANDLERS = {
 
   async looseLearners(ctx, item, toId) {
     const to = await targetHub(ctx, toId);
-    const links = await db("learner_hub_links").where({ hubId: ctx.id }).where((w) => w.whereNull("classId").orWhere("classId", ""));
+    const links = await db("learner_hub_links").where({ hubId: ctx.id }).whereNot({ status: "transferred" }).where((w) => w.whereNull("classId").orWhere("classId", ""));
     for (const link of links) await moveLearnerLink(ctx, link, to, null);
   },
 

@@ -387,3 +387,5 @@ module.exports = ClubService;
 module.exports.raiseMembershipInvoice = raiseMembershipInvoice;
 module.exports.syncMembershipChildren = syncMembershipChildren;
 module.exports.assertOwnClub = assertOwnClub;
+// Moving a learner into a club (modules/learner-moves/) prices a new membership the same way.
+module.exports.resolvePackagePrice = resolvePackagePrice;

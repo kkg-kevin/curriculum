@@ -28,6 +28,8 @@ const ROOTS = {
   "class-groups": { table: "class_groups", noun: "class group", module: "classes" },
   rooms: { table: "rooms", noun: "room", module: "classes" },
   learners: { table: "learners", noun: "learner", module: "learners" },
+  // Moving a learner between programmes (modules/learner-moves/): POST /api/learner-moves/<id>/move.
+  "learner-moves": { table: "learners", noun: "learner", module: "learners" },
   "home-learning": { table: "home_learning_households", noun: "household", module: "home-learning" },
   "tech-clubs": { table: "club_memberships", noun: "club membership", module: "tech-clubs" },
   courses: { table: "courses", noun: "course", module: "courses" },
@@ -133,7 +135,6 @@ const COLLECTIONS = {
     visits: { table: "qa_visits", noun: "QA visit" },
   },
   "tech-clubs": { children: { table: "learners", noun: "child" } },
-  "home-learning": { move: { table: "learners", noun: "learner" } },
   competitions: { hubs: { table: "competition_hubs", noun: "hub run" } },
   removals: {
     teacher: { table: "teachers", noun: "educator" },

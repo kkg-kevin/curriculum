@@ -1,11 +1,12 @@
-import { FiAward, FiBarChart2, FiClipboard, FiClock, FiCompass, FiHome, FiUsers } from "react-icons/fi";
+import { FiAward, FiBarChart2, FiClipboard, FiClock, FiCompass, FiHome, FiTool, FiUsers } from "react-icons/fi";
 import { T } from "./theme";
 
-export const PROFILE_TABS = ["Overview", "Competencies", "Pathway", "Assessments", "Reports"];
+// Projects (16 Nov 2026): the learner's projects as a portfolio — ProjectsOverview.
+export const PROFILE_TABS = ["Overview", "Competencies", "Pathway", "Assessments", "Projects", "Reports"];
 
 // An icon for each tab, so a young learner can find their way by sight. A tab without one (a
 // later addition) shows its name alone.
-const TAB_ICON = { Overview: FiHome, Competencies: FiAward, Pathway: FiCompass, Assessments: FiClipboard, Reports: FiBarChart2, Parent: FiUsers, History: FiClock };
+const TAB_ICON = { Overview: FiHome, Competencies: FiAward, Pathway: FiCompass, Assessments: FiClipboard, Projects: FiTool, Reports: FiBarChart2, Parent: FiUsers, History: FiClock };
 
 // Big, rounded pill buttons — easy to tap on a tablet or phone. The chosen one is filled.
 export default function ProfileTabs({ active, onChange, tabs = PROFILE_TABS }) {

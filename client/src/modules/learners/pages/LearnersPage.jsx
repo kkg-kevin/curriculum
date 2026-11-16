@@ -9,7 +9,8 @@ import { useAllLearnersQuery, useLearnerLogins, useSetLearnerLoginActive } from 
 import { FiBookOpen, FiKey, FiUser, FiUsers } from "react-icons/fi";
 import { Tabs } from "../../../components/ui/TabBar";
 import { learnerApi } from "../services/learnerApi";
-import { LearnerCard } from "../components/LearnerCard";
+import { LearnerCard, LearnerListRow, LearnerTableRow, learnerTableColumns } from "../components/LearnerCard";
+import { PeopleList, PeopleTable, ViewSwitcher, useViewMode } from "../../../components/ui/PeopleViews";
 import ParentsPanel from "../components/ParentsPanel";
 import TotLearnersPanel from "../../tot/components/TotLearnersPanel";
 import UsersTable from "../../settings/users/components/UsersTable";
@@ -128,6 +129,8 @@ export default function LearnersPage() {
   };
 
   const [search, setSearch] = useState("");
+  // Cards, List or Table — remembered in this browser (components/ui/PeopleViews.jsx).
+  const [view, setView] = useViewMode("learners.admin");
   // ?hub= — whose learners are open: a hub's id, "all" or "none" (no hub yet); without it the page
   // shows the hubs. ?schoolId= (older links, e.g. from a hub's own page) opens that hub too.
   const openHubId = searchParams.get("hub") || searchParams.get("schoolId") || "";
@@ -247,6 +250,7 @@ export default function LearnersPage() {
             : showLearners ? `${filteredLearners.length} learner${filteredLearners.length !== 1 ? "s" : ""}`
             : `${schools.length} hub${schools.length !== 1 ? "s" : ""} · ${learners.length} learner${learners.length !== 1 ? "s" : ""}`}
         </span>
+        {showLearners && <ViewSwitcher value={view} onChange={setView} />}
       </div>
 
       {!showLearners ? (
@@ -280,11 +284,17 @@ export default function LearnersPage() {
           </p>
         </div>
       ) : (
+        view === "table" ? (
+          <PeopleTable columns={learnerTableColumns()} rows={filteredLearners} renderRow={(learner) => <LearnerTableRow key={learner.id} learner={learner} />} />
+        ) : view === "list" ? (
+          <PeopleList>{filteredLearners.map((learner) => <LearnerListRow key={learner.id} learner={learner} />)}</PeopleList>
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {filteredLearners.map((learner) => (
             <LearnerCard key={learner.id} learner={learner} />
           ))}
         </div>
+        )
       )}
       </>)}
     </div>

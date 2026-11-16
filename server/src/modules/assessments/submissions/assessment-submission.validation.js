@@ -67,6 +67,14 @@ const gradeSubmissionSchema = z.object({
 
 // Teacher-initiated start of a Teacher Observation submission — see
 // startObservationSubmission in the controller.
+// Opening a session's Teacher Observation for a class — see openObservation in the controller.
+const openObservationSchema = z.object({
+  assessmentId: z.string().min(1).max(36),
+  sessionId:    z.string().min(1).max(36),
+  courseId:     z.string().min(1).max(36),
+  classId:      z.string().min(1).max(36),
+});
+
 const startObservationSchema = z.object({
   learnerId: z.string().min(1, "Learner is required"),
 });
@@ -98,6 +106,7 @@ module.exports = {
   submitAnswersSchema,
   gradeSubmissionSchema,
   startObservationSchema,
+  openObservationSchema,
   gradeMilestoneSchema,
   reissueSchema,
   learnersSchema,

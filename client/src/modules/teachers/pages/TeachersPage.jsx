@@ -5,7 +5,8 @@ import { CheckCircle as CheckCircleIcon, PauseCircle as PauseCircleIcon, School 
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { useAllTeachersQuery } from "../hooks/useTeacher";
-import { TeacherCard } from "../components/TeacherCard";
+import { TeacherCard, TeacherListRow, TeacherTableRow, teacherTableColumns } from "../components/TeacherCard";
+import { PeopleList, PeopleTable, ViewSwitcher, useViewMode } from "../../../components/ui/PeopleViews";
 
 const selectStyle = { padding: "8px 32px 8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" };
 const inputStyle  = { padding: "8px 12px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", backgroundColor: "#F9FAFB", color: "#374151", outline: "none", minWidth: 200 };
@@ -32,6 +33,8 @@ export default function TeachersPage() {
   const [search, setSearch] = useState("");
   const [hubFilter, setHubFilter] = useState(searchParams.get("schoolId") || "");
   const [statusFilter, setStatusFilter] = useState("");
+  // Cards, List or Table — remembered in this browser (components/ui/PeopleViews.jsx).
+  const [view, setView] = useViewMode("educators.admin");
 
   // Teachers can be assigned to any hub type, not just schools — so every active hub is a
   // valid filter option here.
@@ -142,6 +145,7 @@ export default function TeachersPage() {
         <span style={{ marginLeft: "auto", fontSize: 13, color: "#9CA3AF" }}>
           {teachersLoading ? "Loading…" : `${filteredTeachers.length} tech educator${filteredTeachers.length !== 1 ? "s" : ""}`}
         </span>
+        <ViewSwitcher value={view} onChange={setView} />
       </div>
 
       {isLoading ? (
@@ -158,11 +162,17 @@ export default function TeachersPage() {
           </p>
         </div>
       ) : (
+        view === "table" ? (
+          <PeopleTable columns={teacherTableColumns()} rows={filteredTeachers} renderRow={(teacher) => <TeacherTableRow key={teacher.id} teacher={teacher} />} />
+        ) : view === "list" ? (
+          <PeopleList>{filteredTeachers.map((teacher) => <TeacherListRow key={teacher.id} teacher={teacher} />)}</PeopleList>
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {filteredTeachers.map((teacher) => (
             <TeacherCard key={teacher.id} teacher={teacher} />
           ))}
         </div>
+        )
       )}
     </div>
   );

@@ -29,7 +29,7 @@ const RECORDS = {
   learning_hubs: ["/api/learning-hubs/"],
   classes: ["/api/classes/"],
   teachers: ["/api/teachers/", "/api/educator-profiles/", "/api/tot/educators/"],
-  learners: ["/api/learners/"],
+  learners: ["/api/learners/", "/api/learner-moves/"],
   bootcamps: ["/api/bootcamps/"],
   general_events: ["/api/general-events/"],
   competitions: ["/api/competitions/"],

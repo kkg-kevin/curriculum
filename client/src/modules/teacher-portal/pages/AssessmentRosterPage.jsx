@@ -387,10 +387,10 @@ export default function AssessmentRosterPage() {
           ) : isObservation && selectedSubmission.status === "not_started" ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: T.ink }}>
-                No observation recorded yet for {selectedGroupRow ? selectedGroupRow.group.name : `${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`}
+                Observe {selectedGroupRow ? selectedGroupRow.group.name : `${selectedLearnerRow.learner.firstName} ${selectedLearnerRow.learner.lastName}`}
               </h3>
               <p style={{ margin: "0 0 20px", fontSize: 13, color: T.inkMuted, maxWidth: 380, marginInline: "auto" }}>
-                This is recorded by you directly — there's nothing for {isGroupMode ? "the group" : "the learner"} to submit first.
+                Nothing was issued to {isGroupMode ? "the group" : "them"} — you record what you saw in this session. Once you submit it, they get your feedback in their reports.
               </p>
               <button
                 type="button"
@@ -398,7 +398,7 @@ export default function AssessmentRosterPage() {
                 disabled={starting}
                 style={{ padding: "12px 28px", backgroundColor: starting ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: starting ? "not-allowed" : "pointer" }}
               >
-                {starting ? "Starting…" : "Begin Observation"}
+                {starting ? "Opening…" : "Record observation"}
               </button>
             </div>
           ) : !isObservation && (selectedSubmission.status === "not_started" || selectedSubmission.status === "in_progress") ? (

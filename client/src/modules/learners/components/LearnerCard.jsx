@@ -8,6 +8,17 @@ import { learnerPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { learnerApi } from "../services/learnerApi";
 import { formatClassName } from "../../classes/utils/classDisplay";
+import { learnerAge } from "../../../utils/learnerAge";
+import { PersonAvatar, cellStyle, mutedText } from "../../../components/ui/PeopleViews";
+
+// A learner in a list of learners, three ways (components/ui/PeopleViews.jsx): LearnerCard (the
+// grid), LearnerListRow (List view) and LearnerTableRow (Table view, headed by
+// learnerTableColumns). All three share LearnerActions — the ⋮ menu (View, Edit, and for admins
+// Activate/Deactivate and Delete) — so every view can do the same things.
+//
+// `classMap` is only meaningful inside a single hub's own context (SchoolLearnersPage, where every
+// learner is merged with that hub's enrollment fields) — omit it on the cross-hub admin list, where
+// a learner may have several enrollments and no single class/status is well-defined.
 
 const ACCENT = "#25476a";
 
@@ -16,12 +27,13 @@ const STATUS_STYLES = {
   inactive:    { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB", label: "Inactive"    },
   transferred: { bg: "#e8f5fb", color: "#38aae1", border: "#a8d5ee", label: "Transferred" },
   graduated:   { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Graduated"   },
+  pending_payment: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", label: "Waiting for payment" },
 };
 
 function StatusBadge({ status, label }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.inactive;
   return (
-    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+    <span style={{ padding: "2px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", backgroundColor: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: "nowrap" }}>
       {label ? `${label}: ` : ""}{s.label}
     </span>
   );
@@ -38,23 +50,28 @@ function MenuButton({ icon, label, onClick, danger = false }) {
   );
 }
 
-// `classMap` is only meaningful when this card is rendered inside a single hub's own context
-// (e.g. SchoolLearnersPage, where every returned learner is merged with that hub's enrollment
-// fields) — omit it entirely on the cross-hub admin list, where a learner may have several
-// enrollments and no single class/status is well-defined for a compact card.
-export function LearnerCard({ learner, classMap }) {
+const fullName = (l) => `${l.firstName || ""} ${l.lastName || ""}`.trim();
+const capitalise = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+// Hub-specific admission number wins when there's that context (SchoolLearnersPage); otherwise the
+// learner's own permanent registration number, which is always there whatever the hub scope.
+const numberLine = (l) => l.admissionNumber || l.registrationNumber || (l.hubCount > 0 ? `${l.hubCount} hub${l.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled");
+const ageOf = (l) => learnerAge(l).age;
+const classNameOf = (l, classMap) => (classMap ? (formatClassName(classMap[l.classId]) || "Unassigned") : null);
+
+// The ⋮ menu and the dialogs it opens. `onBusy(true)` while a delete runs (the card fades).
+export function LearnerActions({ learner, onBusy }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { mutate: deleteLearner, isPending: isDeleting } = useDeleteLearner();
   const { mutate: updateAccountStatus } = useUpdateLearnerAccountStatus();
-  const [menuOpen, setMenuOpen]       = useState(false);
-  const [menuPos, setMenuPos]         = useState({ top: 0, right: 0 });
-  const [hovered, setHovered]         = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const triggerRef  = useRef(null);
+  const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
+  const accountStatus = learner.accountStatus || "active";
 
-  const gradeName = classMap ? (formatClassName(classMap[learner.classId]) || "Unassigned") : null;
+  useEffect(() => { onBusy?.(isDeleting); }, [isDeleting, onBusy]);
 
   const openMenu = () => {
     const rect = triggerRef.current.getBoundingClientRect();
@@ -63,92 +80,38 @@ export function LearnerCard({ learner, classMap }) {
   };
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen) return undefined;
     const onDown = (e) => {
-      if (!triggerRef.current?.contains(e.target) && !dropdownRef.current?.contains(e.target))
-        setMenuOpen(false);
+      if (!triggerRef.current?.contains(e.target) && !dropdownRef.current?.contains(e.target)) setMenuOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, [menuOpen]);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen) return undefined;
     const close = () => setMenuOpen(false);
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
   }, [menuOpen]);
 
-  const initials = `${learner.firstName?.[0] ?? ""}${learner.lastName?.[0] ?? ""}`.toUpperCase();
-  const accountStatus = learner.accountStatus || "active";
-
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: isDeleting ? 0.5 : 1, pointerEvents: isDeleting ? "none" : "auto" }}
-    >
-      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {learner.photo ? (
-              <img src={learner.photo} alt={`${learner.firstName} ${learner.lastName}`} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-            ) : (
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, #25476a, #2e7db5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                {initials || "?"}
-              </div>
-            )}
-            <div style={{ minWidth: 0 }}>
-              <h3
-                onClick={() => navigate(learnerPath(user?.role, learner.id, "view"))}
-                style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: hovered ? ACCENT : "#111827", cursor: "pointer", transition: "color 0.15s" }}
-              >
-                {learner.firstName} {learner.lastName}
-              </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>
-                {/* Hub-specific admission number wins when this card has that context (SchoolLearnersPage);
-                    otherwise fall back to the learner's own permanent registration number, which — unlike
-                    admissionNumber — is always present regardless of hub scope. */}
-                {learner.admissionNumber || learner.registrationNumber || (learner.hubCount > 0 ? `${learner.hubCount} hub${learner.hubCount !== 1 ? "s" : ""}` : "Not yet enrolled")}
-              </p>
-            </div>
-          </div>
-          <button
-            ref={triggerRef}
-            type="button"
-            onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
-            style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#e8f5fb" : "transparent", border: `1.5px solid ${menuOpen ? "#a8d5ee" : "transparent"}`, borderRadius: 8, cursor: "pointer", color: menuOpen ? ACCENT : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
-          {gradeName && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-              <ClassIcon fontSize="small" sx={{ color: ACCENT }} />
-              {gradeName}
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
-            <GroupsIcon fontSize="small" sx={{ color: ACCENT }} />
-            {learner.guardianName
-              ? learner.guardianName
-              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No guardian on file</span>}
-          </div>
-        </div>
-
-        <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {learner.accountStatus && <StatusBadge status={accountStatus} label="Account" />}
-          {learner.status && <StatusBadge status={learner.status} label={classMap ? "Enrollment" : "Status"} />}
-        </div>
-      </div>
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={`Actions for ${fullName(learner)}`}
+        onClick={(e) => { e.stopPropagation(); if (menuOpen) setMenuOpen(false); else openMenu(); }}
+        style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: menuOpen ? "#e8f5fb" : "transparent", border: `1.5px solid ${menuOpen ? "#a8d5ee" : "transparent"}`, borderRadius: 8, cursor: "pointer", color: menuOpen ? ACCENT : "#9CA3AF", transition: "all 0.15s", flexShrink: 0 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </button>
 
       {menuOpen && createPortal(
         <div ref={dropdownRef} style={{ position: "fixed", top: menuPos.top, right: menuPos.right, backgroundColor: "#ffffff", border: "1px solid #E5E7EB", borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,0.12)", zIndex: 9999, minWidth: 192, overflow: "hidden", padding: 6 }}>
           <div style={{ padding: "8px 10px 10px", borderBottom: "1px solid #F3F4F6", marginBottom: 4 }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#111827" }}>{learner.firstName} {learner.lastName}</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#111827" }}>{fullName(learner)}</p>
             <p style={{ margin: "1px 0 0", fontSize: 11, color: "#9CA3AF" }}>{learner.admissionNumber}</p>
           </div>
           {[
@@ -181,7 +144,7 @@ export function LearnerCard({ learner, classMap }) {
       <ConfirmDialog
         isOpen={confirmOpen}
         title="Delete Learner"
-        message={`"${learner.firstName} ${learner.lastName}" will be permanently deleted.`}
+        message={`"${fullName(learner)}" will be permanently deleted.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
@@ -190,6 +153,151 @@ export function LearnerCard({ learner, classMap }) {
         onAlternative={accountStatus === "active" ? () => { setConfirmOpen(false); updateAccountStatus({ id: learner.id, accountStatus: "inactive" }); } : undefined}
         onCancel={() => setConfirmOpen(false)}
       />
+    </>
+  );
+}
+
+function NameLink({ learner, hovered, size = 15 }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  return (
+    <button type="button" onClick={() => navigate(learnerPath(user?.role, learner.id, "view"))}
+      style={{ all: "unset", cursor: "pointer", fontSize: size, fontWeight: 700, color: hovered ? ACCENT : "#111827", transition: "color 0.15s", overflowWrap: "anywhere" }}>
+      {fullName(learner)}
+    </button>
+  );
+}
+
+export function LearnerCard({ learner, classMap }) {
+  const [hovered, setHovered] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const gradeName = classNameOf(learner, classMap);
+  const accountStatus = learner.accountStatus || "active";
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ backgroundColor: "#ffffff", borderRadius: 16, boxShadow: hovered ? "0 8px 24px rgba(37,71,106,0.10), 0 2px 6px rgba(0,0,0,0.05)" : "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "box-shadow 0.2s, transform 0.2s", transform: hovered ? "translateY(-2px)" : "translateY(0)", opacity: busy ? 0.5 : 1, pointerEvents: busy ? "none" : "auto" }}
+    >
+      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <PersonAvatar person={learner} size={44} />
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: "0 0 2px", fontSize: 15 }}><NameLink learner={learner} hovered={hovered} /></h3>
+              <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF" }}>{numberLine(learner)}</p>
+            </div>
+          </div>
+          <LearnerActions learner={learner} onBusy={setBusy} />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid #F3F4F6", paddingTop: 10 }}>
+          {gradeName && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+              <ClassIcon fontSize="small" sx={{ color: ACCENT }} />
+              {gradeName}
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6B7280" }}>
+            <GroupsIcon fontSize="small" sx={{ color: ACCENT }} />
+            {learner.guardianName
+              ? learner.guardianName
+              : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No guardian on file</span>}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {learner.accountStatus && <StatusBadge status={accountStatus} label="Account" />}
+          {learner.status && <StatusBadge status={learner.status} label={classMap ? "Enrollment" : "Status"} />}
+        </div>
+      </div>
     </div>
+  );
+}
+
+// List view: one row — who they are, their class (hub view), age, the parent, and status.
+export function LearnerListRow({ learner, classMap }) {
+  const [hovered, setHovered] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const gradeName = classNameOf(learner, classMap);
+  const age = ageOf(learner);
+  const facts = [gradeName, age != null ? `Age ${age}` : null, capitalise(learner.gender)].filter(Boolean);
+
+  return (
+    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "12px 16px", borderBottom: "1px solid #F3F4F6", backgroundColor: hovered ? "#FAFCFE" : "#fff", opacity: busy ? 0.5 : 1, pointerEvents: busy ? "none" : "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "2 1 220px", minWidth: 0 }}>
+        <PersonAvatar person={learner} size={36} />
+        <div style={{ minWidth: 0 }}>
+          <NameLink learner={learner} hovered={hovered} size={14} />
+          <p style={{ margin: "1px 0 0", fontSize: 12, color: "#9CA3AF" }}>{numberLine(learner)}</p>
+        </div>
+      </div>
+      <div style={{ flex: "1 1 160px", minWidth: 0, fontSize: 13, color: "#6B7280" }}>
+        {facts.length ? facts.join(" · ") : <span style={mutedText}>—</span>}
+      </div>
+      <div style={{ flex: "1.4 1 200px", minWidth: 0, fontSize: 13, color: "#6B7280" }}>
+        {learner.guardianName
+          ? <>{learner.guardianName}{learner.guardianPhone ? <span style={mutedText}> · {learner.guardianPhone}</span> : null}</>
+          : <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>No guardian on file</span>}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: "1 1 150px", justifyContent: "flex-start" }}>
+        {learner.accountStatus && <StatusBadge status={learner.accountStatus || "active"} />}
+        {classMap && learner.status && learner.status !== "active" && <StatusBadge status={learner.status} label="Enrollment" />}
+      </div>
+      <LearnerActions learner={learner} onBusy={setBusy} />
+    </div>
+  );
+}
+
+// Table view's columns — the hub's own view (classMap) shows the class and the enrollment there;
+// the workspace-wide view how many hubs and when they joined.
+export function learnerTableColumns({ classMap } = {}) {
+  return [
+    { key: "name", label: "Learner", sortValue: (l) => fullName(l).toLowerCase() },
+    ...(classMap ? [{ key: "class", label: "Class", sortValue: (l) => classNameOf(l, classMap) }] : []),
+    { key: "age", label: "Age", sortValue: (l) => ageOf(l), align: "right" },
+    { key: "gender", label: "Gender", sortValue: (l) => genderOf(l) },
+    { key: "parent", label: "Parent / guardian", sortValue: (l) => (l.guardianName || "").toLowerCase() },
+    { key: "phone", label: "Parent's phone" },
+    ...(classMap ? [] : [{ key: "hubs", label: "Hubs", sortValue: (l) => Number(l.hubCount || 0), align: "right" }]),
+    { key: "account", label: "Account", sortValue: (l) => l.accountStatus || "active" },
+    ...(classMap ? [{ key: "enrollment", label: "Enrollment", sortValue: (l) => l.status || "" }] : []),
+    ...(classMap ? [] : [{ key: "joined", label: "Added", sortValue: (l) => (l.createdAt ? new Date(l.createdAt).getTime() : null) }]),
+    { key: "actions", label: "", width: 44 },
+  ];
+}
+
+function genderOf(l) {
+  return capitalise(l.gender || "");
+}
+
+export function LearnerTableRow({ learner, classMap }) {
+  const [busy, setBusy] = useState(false);
+  const age = ageOf(learner);
+  const dash = <span style={mutedText}>—</span>;
+  return (
+    <tr style={{ opacity: busy ? 0.5 : 1 }}>
+      <td style={cellStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 180 }}>
+          <PersonAvatar person={learner} size={30} />
+          <div style={{ minWidth: 0 }}>
+            <NameLink learner={learner} size={13.5} />
+            <div style={{ fontSize: 11.5, color: "#9CA3AF" }}>{numberLine(learner)}</div>
+          </div>
+        </div>
+      </td>
+      {classMap && <td style={{ ...cellStyle, whiteSpace: "nowrap" }}>{classNameOf(learner, classMap)}</td>}
+      <td style={{ ...cellStyle, textAlign: "right" }}>{age ?? dash}</td>
+      <td style={cellStyle}>{genderOf(learner) || dash}</td>
+      <td style={cellStyle}>{learner.guardianName || dash}</td>
+      <td style={{ ...cellStyle, whiteSpace: "nowrap" }}>{learner.guardianPhone || dash}</td>
+      {!classMap && <td style={{ ...cellStyle, textAlign: "right" }}>{Number(learner.hubCount || 0)}</td>}
+      <td style={cellStyle}><StatusBadge status={learner.accountStatus || "active"} /></td>
+      {classMap && <td style={cellStyle}>{learner.status ? <StatusBadge status={learner.status} /> : dash}</td>}
+      {!classMap && <td style={{ ...cellStyle, whiteSpace: "nowrap" }}>{learner.createdAt ? new Date(learner.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : dash}</td>}
+      <td style={{ ...cellStyle, width: 44 }}><LearnerActions learner={learner} onBusy={setBusy} /></td>
+    </tr>
   );
 }

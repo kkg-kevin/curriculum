@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { FiArrowRight, FiCheckCircle, FiClipboard, FiClock, FiFileText, FiFlag, FiMessageCircle, FiStar, FiTarget } from "react-icons/fi";
+import { FiArrowRight, FiCheckCircle, FiClipboard, FiClock, FiEye, FiFileText, FiFlag, FiMessageCircle, FiStar, FiTarget } from "react-icons/fi";
 import RichContent from "../../assessments/components/RichContent";
 import { entryMarks, canDoLevelFor } from "../../assessments/schemas/assessment.schema";
 import {
@@ -37,7 +37,8 @@ const RESULT = {
 };
 const resultFor = (earned, possible) => (possible > 0 && earned >= possible ? RESULT.full : earned > 0 ? RESULT.part : RESULT.none);
 
-function Answer({ response }) {
+// Also used by the profile's Projects tab (ProjectsOverview) for work handed in before it's marked.
+export function Answer({ response }) {
   if (response == null || response === "" || (Array.isArray(response) && !response.length)) {
     return <em style={{ color: T.faint }}>No answer given</em>;
   }
@@ -124,6 +125,10 @@ export default function AssessmentResultView({
 }) {
   const assessment = row.assessment;
   const survey = assessment?.type === "survey";
+  // A Teacher Observation: nothing the learner handed in — what their teacher saw in the session,
+  // item by item, with the teacher's note on each (16 Nov 2026).
+  const observation = assessment?.type === "observation";
+  const observed = observation ? (assessment.indicators || []) : [];
   const rubric = assessment?.rubric || [];
   const deliverables = assessment?.deliverables || [];
   const v = useMemo(() => voice(audience, firstName), [audience, firstName]);
@@ -193,6 +198,34 @@ export default function AssessmentResultView({
           <QuestionRow key={item.id} number={i + 1} item={item} survey={survey}
             response={answersByItem.get(item.id)} autoResult={autoByItem.get(item.id)} feedback={feedbackByKey.get(item.id)} />
         ))}
+      </div>
+    </div>
+  );
+
+  const observedCard = observed.length > 0 && (
+    <div className="rv-o4" style={card}>
+      <CardTitle icon={<FiEye size={16} />}>{audience === "learner" ? "What your teacher saw" : `What the teacher saw`}</CardTitle>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {observed.map((ind) => {
+          const fb = feedbackByKey.get(ind.id);
+          const max = Number(entryMarks(ind)) || 0;
+          const p = pct(Number(fb?.marks || 0), max);
+          const level = levelFor(p);
+          return (
+            <div key={ind.id} style={{ padding: "12px 14px", borderRadius: 14, border: `1px solid ${T.border}`, backgroundColor: "#FBFCFE" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: T.ink, minWidth: 0, flex: 1 }}><RichContent html={ind.text} /></div>
+                {max > 0 && <LevelPill level={level} small />}
+              </div>
+              {max > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 9 }}>
+                  <Bar percent={p} color={level.fill} />
+                </div>
+              )}
+              <TeacherNote text={fb?.comment} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -293,7 +326,7 @@ export default function AssessmentResultView({
         <div className="rv-hero">
           <Ring percent={view.percent} color={view.level.fill} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.faint }}>How this assessment went</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.faint }}>{observation ? (audience === "learner" ? "Your teacher’s observation" : "The teacher’s observation") : "How this assessment went"}</p>
             <div style={{ margin: "6px 0 8px" }}>
               <span style={{ fontSize: 26, fontWeight: 900, color: view.level.color, lineHeight: 1.1 }}>{view.level.label}</span>
             </div>
@@ -327,6 +360,7 @@ export default function AssessmentResultView({
             </div>
           </div>
         )}
+        {observedCard}
         {questions}
         {milestonesCard}
         {handedIn}

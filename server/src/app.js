@@ -423,6 +423,9 @@ app.use("/api/general-events", protect, attachOwnRecords, generalEventRoutes);
 // Removing a person — deactivate → hand over their work → delete (educators, learning hubs,
 // supervisors, affiliates). See modules/removals/.
 app.use("/api/removals", protect, attachOwnRecords, require("./modules/removals/removal.routes"));
+// Moving a learner between programmes: a hub class, a bootcamp run, Home Learning, a Tech Club or
+// a pathway plan. See modules/learner-moves/.
+app.use("/api/learner-moves", protect, attachOwnRecords, require("./modules/learner-moves/learner-move.routes"));
 app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
 
 app.use(notFound);
