@@ -336,6 +336,30 @@ const MentorReviewService = {
 
   feedbackForEducator,
 
+  // A supervisor's educators, each with their feedback summary and open concerns (17 Nov 2026) —
+  // the supervisor portal's Parent feedback page and its dashboard count. Each educator's figures
+  // come from feedbackForEducator (named, as the supervisor already sees them on the educator page).
+  async forSupervisor(req) {
+    const teachers = await db("teachers").where({ supervisorId: req.user.id }).whereNot({ status: "removed" })
+      .orderBy([{ column: "firstName" }, { column: "lastName" }]).select("id", "firstName", "lastName", "photo");
+    const educators = [];
+    for (const t of teachers) {
+      const f = await feedbackForEducator(req, t.id);
+      const reviews = f.reviews || [];
+      educators.push({
+        teacherId: t.id, name: fullName(t), photo: t.photo || null,
+        count: f.count || 0, average: f.average ?? null, openConcerns: f.openConcerns || 0,
+        lastReviewAt: reviews[0]?.createdAt || null,
+        concerns: reviews.filter((r) => r.concern && !r.concernResolvedAt).map((r) => ({
+          id: r.id, concernText: r.concernText, reviewer: r.reviewer, learner: r.learner.name, course: r.course, hub: r.hub, createdAt: r.createdAt,
+        })),
+      });
+    }
+    const concerns = educators.flatMap((e) => e.concerns.map((c) => ({ ...c, teacherId: e.teacherId, teacherName: e.name })))
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return { educators, concerns, openConcerns: concerns.length };
+  },
+
   // The signed-in educator's own feedback — anonymous, from 3 reviews.
   async mine(req) {
     if (!req.ownTeacher) return { mode: "own", count: 0, enough: false, needed: ANONYMOUS_MIN_REVIEWS };

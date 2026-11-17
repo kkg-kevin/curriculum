@@ -32,6 +32,13 @@ export const claimsApi = {
   listSupervisors: () => api.get(`${BASE}/supervisors`).then((r) => r.data.data),
   createSupervisor: (data) => api.post(`${BASE}/supervisors`, data).then((r) => r.data.data),
   updateSupervisor: (id, data) => api.put(`${BASE}/supervisors/${id}`, data).then((r) => r.data.data),
+  // People -> Supervisors (17 Nov 2026): one supervisor's page, the educators to choose from, and
+  // setting exactly which educators are theirs.
+  getSupervisor: (id) => api.get(`${BASE}/supervisors/${id}`).then((r) => r.data.data),
+  // People already here (educators who sign in, staff) who could be made a supervisor.
+  supervisorCandidates: () => api.get(`${BASE}/supervisors/candidates`).then((r) => r.data.data),
+  supervisorEducatorOptions: () => api.get(`${BASE}/supervisors/educator-options`).then((r) => r.data.data),
+  setSupervisorEducators: (id, teacherIds) => api.put(`${BASE}/supervisors/${id}/educators`, { teacherIds }).then((r) => r.data.data),
 
   getSettings: () => api.get(`${BASE}/settings`).then((r) => r.data.data),
   updateSettings: (data) => api.put(`${BASE}/settings`, data).then((r) => r.data.data),

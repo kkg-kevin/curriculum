@@ -42,7 +42,32 @@ function ReportView({ meeting }) {
 //   educator  the report (template items, how the child is doing, what was agreed), from the day
 //             on — correctable until the parent approves it; or Mark missed.
 //   manager   all of that, plus Move and Cancel.
-//   hub / supervisor  when and where it stands only.
+//   supervisor  when and where it stands, and the report (read only).
+//   hub       when and where it stands only.
+// Who and where a report is about (17 Nov 2026) — the learner, the parent, the mentors, the hub,
+// the class and the check-in's day, at the top of the report so it can be told apart at a glance
+// (and when printed or forwarded).
+function ReportIdentity({ m }) {
+  const items = [
+    [(m.learners || []).length === 1 ? "Learner" : "Learners", (m.learners || []).map((l) => l.name).join(", ") || "—"],
+    ["Parent", m.parentName || "—"],
+    [(m.educatorNames || []).length === 1 ? "Mentor" : "Mentors", (m.educatorNames || []).join(", ") || "—"],
+    ["Hub", m.hubName || "—"],
+    ["Class", m.className || "—"],
+    ["Check-in", `${formatDate(m.date)} · ${m.startTime}–${m.endTime}`],
+  ];
+  return (
+    <dl style={{ display: "flex", flexWrap: "wrap", gap: "10px 22px", margin: "0 0 14px", padding: "12px 14px", borderRadius: 12, background: "#F8FAFC", border: "1px solid #EEF1F5" }}>
+      {items.map(([k, v]) => (
+        <div key={k} style={{ minWidth: 0, flex: "1 1 150px" }}>
+          <dt style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>{k}</dt>
+          <dd style={{ margin: "2px 0 0", fontSize: 13.5, fontWeight: 700, color: T.ink, overflowWrap: "anywhere" }}>{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export default function MeetingPage() {
   const { id } = useParams();
   const base = useMentorBase();
@@ -130,8 +155,8 @@ export default function MeetingPage() {
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="mentor_checkin_meetings" id={id} />
 
-      {/* The report — not for the hub or a supervisor. */}
-      {(viewer === "parent" || viewer === "educator" || viewer === "manager") && m.state !== "cancelled" && (
+      {/* The report — not for the hub; a supervisor reads it. */}
+      {(viewer === "parent" || viewer === "educator" || viewer === "manager" || viewer === "supervisor") && m.state !== "cancelled" && (
         <section style={{ ...card, padding: "18px 20px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             <div style={{ minWidth: 0 }}>
@@ -144,6 +169,8 @@ export default function MeetingPage() {
               {can.canUndoMissed && <button type="button" className="ci-btn" disabled={missed.isPending} onClick={() => missed.mutate(false)} style={btn("secondary")}><FiRotateCcw size={14} /> Not missed after all</button>}
             </div>
           </div>
+
+          <ReportIdentity m={m} />
 
           {m.state === "upcoming" && (
             <p style={{ ...hint, fontSize: 13 }}>

@@ -51,6 +51,8 @@ export default function CheckinsPage() {
         <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, maxWidth: 620 }}>
           {participantViewer
             ? "The hub check-ins you've been asked to take part in — when they are, the link to join an online one, and each report once it's written."
+            : user?.role === "supervisor"
+            ? "Regular check-ins on how the hubs your educators work at are running, and each report once it's written: the highs, the lows and the resolutions."
             : hubViewer
             ? "Regular check-ins on how your hub is running, with your Account Manager and Training Lead. After each one they write a report: the highs, the lows and the resolutions."
             : "Regular check-ins on how each hub is running. When one is due, write its report: the template's items if its schedule has one, then the highs, the lows and the resolutions."}

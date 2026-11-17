@@ -17,7 +17,8 @@ router.use((req, res, next) => {
   const readingSessions = req.method === "GET" && /^\/sessions(\/[^/]+)?$/.test(req.path);
   // Educators and parents: the check-ins they take part in, and the pop-up (6 Nov 2026).
   const taking = (role === "teacher" || role === "learner") && (dueOnly || readingSessions);
-  if (role === "admin" || (role === "school" && (hubLead || readingSessions)) || taking) return next();
+  // A supervisor (17 Nov 2026): the check-ins of the hubs their educators work at, read only.
+  if (role === "admin" || (role === "school" && (hubLead || readingSessions)) || taking || (role === "supervisor" && readingSessions)) return next();
   next(Object.assign(new Error("You do not have permission to perform this action"), { statusCode: 403 }));
 });
 

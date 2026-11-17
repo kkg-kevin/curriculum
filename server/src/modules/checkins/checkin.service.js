@@ -1,7 +1,7 @@
 const db = require("../../config/db");
 const CheckinModel = require("./checkin.model");
 const CheckinNotifications = require("./checkin.notifications");
-const { contextOf, assignedHubIds, isAssignedTo, workspacePeople, participantOptions, isParticipant } = require("./checkin.access");
+const { contextOf, contextForReading, hubsOf, assignedHubIds, isAssignedTo, workspacePeople, participantOptions, isParticipant } = require("./checkin.access");
 const { todayInKenya, addDays, occurrenceDates } = require("./checkin.dates");
 const { sessionState, reportProblems, taskState } = require("./checkin.rules");
 // Templates and their answers follow quality assurance's rules exactly.
@@ -244,7 +244,7 @@ async function loadSession(ctx, id, { forUpdate = false, connection = db } = {})
   if (await isParticipant(session.id, ctx.userId)) return session;
   if (ctx.isParticipantOnly || session.ownerAdminId !== ctx.ownerAdminId) fail("Check-in not found", 404);
   if (ctx.isHub) {
-    if (session.hubId !== ctx.hubId) fail("Check-in not found", 404);
+    if (!hubsOf(ctx).includes(session.hubId)) fail("Check-in not found", 404);
     return session;
   }
   if (!ctx.isManager && !isAssignedTo(ctx, session)) {
@@ -652,9 +652,9 @@ const CheckinService = {
   // ---- Check-ins ----
 
   async listSessions(req, filters) {
-    const ctx = contextOf(req);
+    const ctx = await contextForReading(req);
     const today = todayInKenya();
-    if (ctx.isHub && !(ctx.hubId && ctx.ownerAdminId)) {
+    if (ctx.isHub && !(hubsOf(ctx).length && ctx.ownerAdminId)) {
       return { sessions: [], total: 0, page: filters.page, limit: filters.limit, counts: { due: 0, upcoming: 0, reported: 0 }, today };
     }
     let q;
@@ -672,7 +672,7 @@ const CheckinService = {
     // The hub itself: its own check-ins, whatever the scope. "mine": the ones I'm on. "all":
     // everything I'm allowed to see (managers: every hub).
     if (ctx.isParticipantOnly) { /* already only theirs */ }
-    else if (ctx.isHub) q = q.where({ hubId: ctx.hubId });
+    else if (ctx.isHub) q = q.whereIn("hubId", hubsOf(ctx));
     else if (filters.scope === "mine") q = q.where(mine(ctx));
     else if (!ctx.isManager) {
       const hubs = await assignedHubIds(ctx);
@@ -729,11 +729,11 @@ const CheckinService = {
   // One check-in, its report, and the hub's last few reports before it. Someone only taking part
   // sees this check-in alone: no earlier reports, and the people as numbers per group.
   async getSession(req, id) {
-    const ctx = contextOf(req);
+    const ctx = await contextForReading(req);
     if (!ctx.ownerAdminId && !ctx.isParticipantOnly) fail("Check-in not found", 404);
     const session = await loadSession(ctx, id);
     await keepCurrent(session.ownerAdminId);
-    const fullView = ctx.isManager || isAssignedTo(ctx, session) || (ctx.isHub && session.hubId === ctx.hubId)
+    const fullView = ctx.isManager || isAssignedTo(ctx, session) || (ctx.isHub && hubsOf(ctx).includes(session.hubId))
       || (!ctx.isParticipantOnly && session.ownerAdminId === ctx.ownerAdminId && (await assignedHubIds(ctx)).includes(session.hubId));
     const today = todayInKenya();
     const [view] = await decorateSessions([session], today);

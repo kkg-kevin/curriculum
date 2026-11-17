@@ -73,6 +73,10 @@ const CreateLearningHubPage = lazyPage(() => import("../modules/settings/learnin
 const EditLearningHubPage = lazyPage(() => import("../modules/settings/learning-hubs/pages/EditLearningHubPage"));
 const TeachersPage = lazyPage(() => import("../modules/teachers/pages/TeachersPage"));
 const SchoolTeachersPage = lazyPage(() => import("../modules/teachers/pages/SchoolTeachersPage"));
+// People → Supervisors (modules/supervisors): the list, Add supervisor, one supervisor.
+const SupervisorsPage = lazyPage(() => import("../modules/supervisors/pages/SupervisorsPage"));
+const NewSupervisorPage = lazyPage(() => import("../modules/supervisors/pages/NewSupervisorPage"));
+const SupervisorPage = lazyPage(() => import("../modules/supervisors/pages/SupervisorPage"));
 const CreateTeacherPage = lazyPage(() => import("../modules/teachers/pages/CreateTeacherPage"));
 const EditTeacherPage = lazyPage(() => import("../modules/teachers/pages/EditTeacherPage"));
 const TeacherViewPage = lazyPage(() => import("../modules/teachers/pages/TeacherViewPage"));
@@ -136,6 +140,9 @@ const AdminClaimPage = lazyPage(() => import("../modules/claims/pages/Supervisor
 const ClaimInvoicesPage = lazyPage(() => import("../modules/claims/pages/ClaimInvoicesPage"));
 const SupervisorEducatorsPage = lazyPage(() => import("../modules/claims/pages/SupervisorEducatorsPage"));
 const SupervisorProfilePage = lazyPage(() => import("../modules/claims/pages/SupervisorProfilePage"));
+const SupervisorFeedbackPage = lazyPage(() => import("../modules/mentor-reviews/pages/SupervisorFeedbackPage"));
+const SupervisorInsightsPage = lazyPage(() => import("../modules/claims/pages/SupervisorInsightsPage"));
+const TeamActivityPage = lazyPage(() => import("../modules/supervisor-portal/pages/TeamActivityPage"));
 const AdminProfilePage = lazyPage(() => import("../modules/profile/pages/AdminProfilePage"));
 const InvoiceDetailPage = lazyPage(() => import("../modules/billing/pages/InvoiceDetailPage"));
 const ReceiptsListPage = lazyPage(() => import("../modules/billing/pages/ReceiptsListPage"));
@@ -342,6 +349,11 @@ export default function AppRoutes() {
           {/* Training of trainers: work to mark from educators with no supervisor (modules/tot). */}
           <Route path="training" element={<TotMarkingPage />} />
         </Route>
+        <Route path="supervisors">
+          <Route index element={<SupervisorsPage />} />
+          <Route path="new" element={<NewSupervisorPage />} />
+          <Route path=":id" element={<SupervisorPage />} />
+        </Route>
         <Route path="classes">
           <Route index element={<ClassesPage />} />
           <Route path="create" element={<CreateClassPage />} />
@@ -426,6 +438,13 @@ export default function AppRoutes() {
           <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
           <Route path="mentor-checkins/rounds/:id" element={<MentorRoundPage />} />
           <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />
+          {/* 17 Nov 2026: their educators' parent feedback, and Team insights (analytics for their classes). */}
+          <Route path="feedback" element={<SupervisorFeedbackPage />} />
+          {/* Hub check-ins of the hubs their educators work at — read only (modules/checkins). */}
+          <Route path="checkins" element={<CheckinsPage />} />
+          <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
+          <Route path="insights" element={<SupervisorInsightsPage />} />
+          <Route path="activity" element={<TeamActivityPage />} />
           <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>
       </Route>

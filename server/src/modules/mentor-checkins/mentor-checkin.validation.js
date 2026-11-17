@@ -47,7 +47,7 @@ const roundUpdateSchema = z.object({
 });
 
 const listMeetingsSchema = z.object({
-  view: z.enum(["coming", "todo", "done", "all"]).optional().default("coming"),
+  view: z.enum(["coming", "todo", "done", "reports", "all"]).optional().default("coming"),
   roundId: z.string().max(36).optional(),
 });
 

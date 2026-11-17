@@ -16,7 +16,10 @@ async function getEducators(scope) {
   if (!classIds.length && !scope.hubIds.length) return { educators: [] };
   const teaching = classIds.length ? await db("class_course_teacher_links").whereIn("classId", classIds).distinct("teacherId").pluck("teacherId") : [];
   const linked = !scope.filters.classId && scope.hubIds.length ? await db("teacher_hub_links").whereIn("hubId", scope.hubIds).distinct("teacherId").pluck("teacherId") : [];
-  const ids = [...new Set([...teaching, ...linked])];
+  // A supervisor's Team insights: only their own educators (not everyone else teaching their classes).
+  const ids = scope.supervisedEducatorIds
+    ? scope.supervisedEducatorIds.filter((id) => !scope.filters.classId || teaching.includes(id))
+    : [...new Set([...teaching, ...linked])];
   // TOT learners only (in training, not teaching yet) are learners here, not educators (tot/tot.people.js).
   const teachers = ids.length ? await withoutTotOnly(await db("teachers").whereIn("id", ids).whereNotIn("status", ["inactive", "removed"]).select("id", "firstName", "lastName", "photo", "status", "profilePublic", "createdAt")) : [];
   // The workspace's mentor standards (Settings → Mentor standards) — every educator measured against them.

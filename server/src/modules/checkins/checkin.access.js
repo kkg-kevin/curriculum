@@ -162,4 +162,19 @@ async function isParticipant(sessionId, userId) {
   return Boolean(await db("checkin_participants").where({ sessionId, userId }).first("id"));
 }
 
-module.exports = { contextOf, assignedHubIds, isAssignedTo, workspacePeople, participantOptions, isParticipant };
+// For reading check-ins (the list and one check-in): as contextOf, plus a supervisor (17 Nov 2026) —
+// like a hub's own login, read only, across every hub their educators work at.
+async function contextForReading(req) {
+  if (req.user.role === "supervisor") {
+    const { supervisedHubIds, supervisorWorkspace } = require("../supervisor-portal/supervisor.scope");
+    return {
+      userId: req.user.id, ownerAdminId: await supervisorWorkspace(req), isHub: true, hubId: null,
+      hubIds: await supervisedHubIds(req.user.id), isSupervisor: true, isStaff: false, isManager: false, canManageSchedules: false,
+    };
+  }
+  return contextOf(req);
+}
+// The hubs a hub-like reader covers: the hub login's one, or a supervisor's several.
+const hubsOf = (ctx) => ctx.hubIds || (ctx.hubId ? [ctx.hubId] : []);
+
+module.exports = { contextOf, contextForReading, hubsOf, assignedHubIds, isAssignedTo, workspacePeople, participantOptions, isParticipant };

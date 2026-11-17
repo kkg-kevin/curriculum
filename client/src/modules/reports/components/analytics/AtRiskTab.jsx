@@ -108,7 +108,9 @@ function FollowUpDialog({ learner, labelOf, isHub, onClose }) {
   );
 }
 
-export default function AtRiskTab({ data, links, isHub }) {
+export default function AtRiskTab({ data, links, isHub, level }) {
+  // A supervisor reads the list (and who followed up); following up is the admins' and hubs'.
+  const canFollowUp = level !== "supervisor";
   const [only, setOnly] = useState("");
   const [hideDone, setHideDone] = useState(false);
   const [following, setFollowing] = useState(null);
@@ -146,7 +148,7 @@ export default function AtRiskTab({ data, links, isHub }) {
           </label>
         </span>}
         columns={[
-          { key: "name", label: "Learner", render: (x) => <button type="button" className="an-link" onClick={() => links.learner(x.learnerId)}>{x.name}</button>, csv: (x) => x.name },
+          { key: "name", label: "Learner", render: (x) => (links.learner ? <button type="button" className="an-link" onClick={() => links.learner(x.learnerId)}>{x.name}</button> : x.name), csv: (x) => x.name },
           { key: "className", label: "Class", render: (x) => [x.className, !isHub ? x.hubName : null].filter(Boolean).join(" · ") || "–", csv: (x) => [x.className, x.hubName].filter(Boolean).join(" · ") },
           {
             key: "flags", label: "Why",
@@ -174,10 +176,12 @@ export default function AtRiskTab({ data, links, isHub }) {
                     <FiCheck size={11} aria-hidden /> {ACTION_LABEL[x.followUp.action] || "Followed up"} · {fmtDate(x.followUp.at)}
                   </span>
                 )}
-                <button type="button" onClick={() => setFollowing(x)}
-                  style={{ padding: "5px 11px", borderRadius: 8, border: `1px solid ${x.followUp ? T.border : T.navy}`, background: x.followUp ? "#fff" : T.navy, color: x.followUp ? T.navy : "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {x.followUp ? "Again" : "Follow up"}
-                </button>
+                {canFollowUp && (
+                  <button type="button" onClick={() => setFollowing(x)}
+                    style={{ padding: "5px 11px", borderRadius: 8, border: `1px solid ${x.followUp ? T.border : T.navy}`, background: x.followUp ? "#fff" : T.navy, color: x.followUp ? T.navy : "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {x.followUp ? "Again" : "Follow up"}
+                  </button>
+                )}
               </span>
             ),
             csv: (x) => (x.followUp ? `${ACTION_LABEL[x.followUp.action]} ${String(x.followUp.at).slice(0, 10)}` : ""),

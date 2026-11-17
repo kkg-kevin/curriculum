@@ -13,7 +13,7 @@ const { can } = require("../access/access.service");
 //   hub         the hub's own login (hub portal): its classes' schedules — times and where each
 //               stands, never the reports.
 //   supervisor  (supervisor portal) the schedules of rounds with one of their educators
-//               (teachers.supervisorId) — never the reports.
+//               (teachers.supervisorId), and (17 Nov 2026) those check-ins' reports, read only.
 //
 // Every list and record is checked per record in mentor-checkin.service.js against this.
 
@@ -33,7 +33,7 @@ async function contextOf(req) {
   }
   if (role === "supervisor") {
     const teacherIds = await db("teachers").where({ supervisorId: req.user.id }).pluck("id");
-    return { ...base, kind: "supervisor", ownerAdminId: req.user.invitedByAdminId || null, teacherIds };
+    return { ...base, kind: "supervisor", ownerAdminId: req.user.invitedByAdminId || null, teacherIds, canSeeReports: true };
   }
   if (role === "school" && !req.user.hubLead) {
     return { ...base, kind: "hub", hubIds: (req.ownSchools || (req.ownSchool ? [req.ownSchool] : [])).map((h) => h.id), hubId: req.ownSchool?.id || null };
@@ -66,7 +66,8 @@ function meetingAccess(ctx, round, meeting) {
   if (!ctx || !round || !meeting) return null;
   if (ctx.kind === "parent") return meeting.parentUserId === ctx.userId ? { report: true, asParent: true } : null;
   if (!canSeeRound(ctx, round)) return null;
-  return { report: ctx.kind === "manager" || ctx.kind === "educator", asEducator: ctx.kind === "educator", asManager: ctx.kind === "manager" };
+  // A supervisor reads their educators' reports (never writes, moves or cancels); a hub never sees them.
+  return { report: ["manager", "educator", "supervisor"].includes(ctx.kind), asEducator: ctx.kind === "educator", asManager: ctx.kind === "manager" };
 }
 
 module.exports = { contextOf, canSeeRound, meetingAccess };

@@ -11,6 +11,8 @@ export const mentorReviewApi = {
   // The signed-in educator's own feedback — anonymous, from 3 reviews.
   me: () => api.get(`${BASE}/me`).then(data),
   // An educator's feedback: named (admins, staff, their supervisor) or averages (their hub).
+  // A supervisor's educators with their feedback summaries and open concerns.
+  supervisor: () => api.get(`${BASE}/supervisor`).then(data),
   forEducator: (teacherId) => api.get(`${BASE}/educators/${teacherId}`).then(data),
   setHidden: (id, hidden) => api.patch(`${BASE}/${id}/hidden`, { hidden }).then(data),
   setFeatured: (id, featured) => api.patch(`${BASE}/${id}/featured`, { featured }).then(data),

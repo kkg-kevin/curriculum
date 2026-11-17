@@ -170,7 +170,7 @@ function ClassRow({ row, isHub }) {
 
 const PAGE = 15;
 
-export default function CoverageTab({ data, isHub }) {
+export default function CoverageTab({ data, isHub, level }) {
   const navigate = useNavigate();
   const [status, setStatus] = useState("all");
   const [showAll, setShowAll] = useState(false);
@@ -240,7 +240,7 @@ export default function CoverageTab({ data, isHub }) {
           title="Assessments that need an evidence type"
           subtitle="These can't be counted toward a minimum until someone chooses which evidence type they are. Open one and pick it under “Counts as”."
           columns={[
-            { key: "name", label: "Assessment", render: (r) => (isHub ? r.name : <button type="button" className="an-link" onClick={() => navigate(`/assessments/${r.assessmentId}/edit`)}>{r.name}</button>), csv: (r) => r.name },
+            { key: "name", label: "Assessment", render: (r) => (isHub || level === "supervisor" ? r.name : <button type="button" className="an-link" onClick={() => navigate(`/assessments/${r.assessmentId}/edit`)}>{r.name}</button>), csv: (r) => r.name },
             { key: "type", label: "Type" },
             { key: "curriculumName", label: "Curriculum" },
             { key: "reason", label: "Why" },

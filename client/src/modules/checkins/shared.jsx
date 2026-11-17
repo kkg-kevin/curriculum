@@ -14,6 +14,7 @@ export function checkinsBaseFor(pathname) {
   if (pathname.startsWith("/school-portal")) return "/school-portal/checkins";
   if (pathname.startsWith("/teacher-portal")) return "/teacher-portal/checkins";
   if (pathname.startsWith("/parent")) return "/parent/checkins";
+  if (pathname.startsWith("/supervisor-portal")) return "/supervisor-portal/checkins";
   return "/checkins";
 }
 export function useCheckinsBase() {
@@ -100,7 +101,8 @@ export const TASK_STATE = {
 
 // The hub's own login in the hub portal (not as its Account Manager / Training Lead): it reads its
 // own check-ins and their reports, and writes nothing.
-export const isHubViewer = (user) => user?.role === "school" && !user?.hubLead;
+// A supervisor (17 Nov 2026) reads the same way, across the hubs their educators work at.
+export const isHubViewer = (user) => (user?.role === "school" && !user?.hubLead) || user?.role === "supervisor";
 // An educator (teacher portal) or a parent: they see the check-ins they take part in, nothing else.
 export const isParticipantViewer = (user) => (user?.role === "teacher" && !user?.hubLead) || (user?.role === "learner" && !user?.username);
 

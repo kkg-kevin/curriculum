@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims, getMyBookingEarnings, submitBookingsClaim,
-  getClaim, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,
+  getClaim, getSupervisor, supervisorEducatorOptions, supervisorCandidates, setSupervisorEducators, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,
   listSupervisors, createSupervisor, updateSupervisor, removeSupervisor,
 } = require("./claim.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -29,6 +29,12 @@ router.get("/settings", authorize("admin"), getSettings);
 router.put("/settings", authorize("admin"), updateSettings);
 
 router.get("/supervisors", authorize("admin"), listSupervisors);
+// People -> Supervisors (17 Nov 2026): the educators to choose from, one supervisor's page, and
+// setting exactly which educators are theirs. Named routes before "/:id".
+router.get("/supervisors/educator-options", authorize("admin"), supervisorEducatorOptions);
+router.get("/supervisors/candidates", authorize("admin"), supervisorCandidates);
+router.get("/supervisors/:id", authorize("admin"), getSupervisor);
+router.put("/supervisors/:id/educators", authorize("admin"), setSupervisorEducators);
 router.post("/supervisors", authorize("admin"), createSupervisor);
 router.put("/supervisors/:id", authorize("admin"), updateSupervisor);
 router.delete("/supervisors/:id", authorize("admin"), removeSupervisor);

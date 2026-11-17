@@ -730,7 +730,9 @@ const AuthService = {
     // phone up to date; job title stays admin-only.
     const parent = role === "learner" && !!current.email && !current.username;
     // An affiliate's login has no record of its own to edit — its name and phone are on the login.
-    const editable = role === "admin" ? ["name", "phone", "jobTitle"] : parent || role === "affiliate" ? ["name", "phone"] : [];
+    // A supervisor keeps their phone up to date; their name and job title are the admin's
+    // (People → Supervisors, 17 Nov 2026).
+    const editable = role === "admin" ? ["name", "phone", "jobTitle"] : parent || role === "affiliate" ? ["name", "phone"] : role === "supervisor" ? ["phone"] : [];
     if (["name", "phone", "jobTitle"].some((field) => field in data && !editable.includes(field))) {
       const err = new Error("Only an admin can change these details here.");
       err.statusCode = 403;

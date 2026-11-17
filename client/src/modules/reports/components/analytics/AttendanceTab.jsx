@@ -61,7 +61,7 @@ export default function AttendanceTab({ data, links, isHub }) {
       <DataTable
         title="Absent again and again"
         columns={[
-          { key: "name", label: "Learner", render: (r) => <button type="button" className="an-link" onClick={() => links.learner(r.learnerId)}>{r.name}</button>, csv: (r) => r.name },
+          { key: "name", label: "Learner", render: (r) => (links.learner ? <button type="button" className="an-link" onClick={() => links.learner(r.learnerId)}>{r.name}</button> : r.name), csv: (r) => r.name },
           { key: "className", label: "Class", render: (r) => [r.className, !isHub ? r.hubName : null].filter(Boolean).join(" · ") || "–", csv: (r) => [r.className, r.hubName].filter(Boolean).join(" · ") },
           { key: "absent", label: "Absent", align: "num" },
           { key: "late", label: "Late", align: "num" },

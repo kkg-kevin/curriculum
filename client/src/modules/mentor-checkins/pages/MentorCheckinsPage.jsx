@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { FiCalendar, FiClipboard, FiFileText, FiLayers, FiMapPin, FiPlus, FiVideo } from "react-icons/fi";
+import { FiBookOpen, FiCalendar, FiClipboard, FiFileText, FiLayers, FiMapPin, FiPlus, FiSearch, FiVideo } from "react-icons/fi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useMeetings, useRounds } from "../hooks/useMentorCheckins";
 import MeetingList from "../components/MeetingList";
 // Templates are QA's own screen, saving to parent–mentor check-ins (qa/templateSources.js).
 import TemplatesTab from "../../qa/components/TemplatesTab";
-import { CheckinStyles, Empty, FORMAT_LABEL, Pill, Segmented, T, Tabs, btn, card, font, formatDate, hint, toolbar, useMentorBase } from "../shared";
+import { CheckinStyles, Empty, FORMAT_LABEL, Pill, Segmented, T, Tabs, btn, card, font, formatDate, formatDateTime, hint, input, stateFor, toolbar, toolbarSelect, useMentorBase } from "../shared";
 
 const VIEWER_OF_BASE = {
   "/mentor-checkins": "manager",
@@ -21,7 +21,7 @@ const INTRO = {
   educator: "Your check-ins with the families of your classes, one at a time. After each, write a short report — the parent reads it and approves it.",
   parent: "One-to-one talks with your child's mentor about how they're doing. Confirm your time or pick another that suits you; afterwards, read the mentor's report and approve it.",
   hub: "When your classes' educators are meeting each family, and where each check-in stands.",
-  supervisor: "When your educators are meeting their classes' families, and where each check-in stands.",
+  supervisor: "When your educators are meeting their classes' families, where each check-in stands, and the reports they wrote.",
 };
 
 // One round: a class's check-ins.
@@ -107,6 +107,72 @@ function MeetingsTab({ base, viewer, roundId }) {
   );
 }
 
+// Every written report (17 Nov 2026) — one place to find them instead of opening each round:
+// with the parent or approved, newest first. Each row names the learner, the parent, the mentors,
+// the hub and the class, and opens the report. Search and the hub filter work on what's loaded.
+function ReportsTab({ base }) {
+  const [state, setState] = useState("all");
+  const [hubId, setHubId] = useState("");
+  const [search, setSearch] = useState("");
+  const { data, isLoading, isError, error } = useMeetings({ view: "reports" });
+  const meetings = data?.meetings || [];
+  const hubs = useMemo(() => [...new Map(meetings.map((m) => [m.hubId, m.hubName || "A hub"])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [meetings]);
+  const counts = { all: meetings.length, awaiting_approval: meetings.filter((m) => m.state === "awaiting_approval").length, approved: meetings.filter((m) => m.state === "approved").length };
+  const q = search.trim().toLowerCase();
+  const shown = meetings.filter((m) => (state === "all" || m.state === state) && (!hubId || m.hubId === hubId) && (!q || [
+    ...(m.learners || []).map((l) => l.name), m.parentName, ...(m.educatorNames || []), m.className, m.hubName,
+  ].join(" ").toLowerCase().includes(q)));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={toolbar}>
+        <Segmented label="Show" value={state} onChange={setState} options={[
+          { key: "all", label: `All (${counts.all})` },
+          { key: "awaiting_approval", label: `With the parent (${counts.awaiting_approval})` },
+          { key: "approved", label: `Approved (${counts.approved})` },
+        ]} />
+        <label style={{ position: "relative", flex: "1 1 220px", maxWidth: 360 }}>
+          <FiSearch size={14} aria-hidden style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.inkMuted }} />
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Learner, parent, mentor, class…" aria-label="Search reports" style={{ ...input, paddingLeft: 30 }} />
+        </label>
+        {hubs.length > 1 && (
+          <select value={hubId} onChange={(e) => setHubId(e.target.value)} aria-label="Hub" style={toolbarSelect}>
+            <option value="">All hubs</option>
+            {hubs.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+        )}
+      </div>
+      <section style={{ ...card, overflow: "hidden" }}>
+        {isLoading && <p style={{ ...hint, padding: 18 }}>Loading…</p>}
+        {isError && <p style={{ ...hint, padding: 18, color: "#B91C1C" }}>{error?.message || "The reports couldn't be loaded."}</p>}
+        {!isLoading && !isError && shown.length === 0 && (
+          <Empty title={meetings.length ? "No report matches" : "No reports yet"}>{meetings.length ? "Try another search or filter." : "A report appears here once an educator writes up a check-in."}</Empty>
+        )}
+        {shown.map((m) => (
+          <Link key={m.id} to={`${base}/meetings/${m.id}`} style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", padding: "14px 18px", borderTop: "1px solid #F3F4F6", textDecoration: "none", color: "inherit" }}>
+            <span aria-hidden style={{ width: 38, height: 38, borderRadius: 11, background: "#F5F3FF", color: "#6D28D9", display: "grid", placeItems: "center", flexShrink: 0 }}><FiBookOpen size={17} /></span>
+            <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <strong style={{ fontSize: 14, color: T.ink }}>{(m.learners || []).map((l) => l.name).join(", ") || "Learner"}</strong>
+                <Pill look={stateFor(m.state, "manager")} />
+                {m.score != null && <Pill look={{ bg: "#EFF6FF", color: "#1D4ED8", label: `Score ${m.score}%` }} />}
+              </div>
+              <div style={{ marginTop: 4, fontSize: 12.5, color: T.inkMuted, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <span><strong style={{ color: "#374151" }}>Parent:</strong> {m.parentName}</span>
+                <span><strong style={{ color: "#374151" }}>Mentor{(m.educatorNames || []).length === 1 ? "" : "s"}:</strong> {(m.educatorNames || []).join(", ") || "—"}</span>
+                <span>{m.hubName}{m.className ? ` · ${m.className}` : ""}</span>
+              </div>
+            </div>
+            <div style={{ flexShrink: 0, textAlign: "right", fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>
+              <div><FiCalendar size={12} style={{ verticalAlign: -1 }} /> Check-in {formatDate(m.date, { day: "numeric", month: "short", year: "numeric" })}</div>
+              <div>Written {formatDateTime(m.reportSubmittedAt)}</div>
+            </div>
+          </Link>
+        ))}
+      </section>
+    </div>
+  );
+}
+
 // Parent–mentor check-ins. The admin app: every class's rounds (set one up, open its schedule)
 // and the templates. The teacher, hub and supervisor portals: their check-ins one by one, and by
 // class. The parent portal: their own check-ins. ?tab= picks the tab; ?round= narrows the list.
@@ -118,10 +184,12 @@ export default function MentorCheckinsPage() {
   const [params, setParams] = useSearchParams();
   const roundId = params.get("round") || undefined;
   const tabs = viewer === "manager"
-    ? [{ key: "rounds", label: "Schedules", icon: FiCalendar }, { key: "templates", label: "Templates", icon: FiFileText }]
+    ? [{ key: "rounds", label: "Schedules", icon: FiCalendar }, { key: "templates", label: "Templates", icon: FiFileText }, { key: "reports", label: "Reports", icon: FiBookOpen }]
     : viewer === "parent"
     ? []
-    : [{ key: "mine", label: "Check-ins", icon: FiClipboard }, { key: "classes", label: "By class", icon: FiLayers }];
+    : [{ key: "mine", label: "Check-ins", icon: FiClipboard }, { key: "classes", label: "By class", icon: FiLayers },
+      // A supervisor reads their educators' reports too (17 Nov 2026).
+      ...(viewer === "supervisor" ? [{ key: "reports", label: "Reports", icon: FiBookOpen }] : [])];
   const fallback = tabs[0]?.key;
   const tab = tabs.some((t) => t.key === params.get("tab")) ? params.get("tab") : fallback;
   const setTab = (key) => {
@@ -145,7 +213,10 @@ export default function MentorCheckinsPage() {
         <>
           {tab === "rounds" && <RoundsTab base={base} canManage={canManage} />}
           {tab === "templates" && <TemplatesTab source="mentor" />}
+          {tab === "reports" && <ReportsTab base={base} />}
         </>
+      ) : tab === "reports" ? (
+        <ReportsTab base={base} />
       ) : viewer === "parent" || tab === "mine" ? (
         <>
           {roundId && (

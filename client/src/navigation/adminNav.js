@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar, FiShield,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -55,6 +55,9 @@ export const ADMIN_SECTIONS = [
           { name: "Parent feedback", path: "/reports?tab=parent-feedback", ownerOnly: true },
         ],
       },
+      // People who look after a group of educators (modules/supervisors). Managing them is
+      // Claim approvals → Edit; anyone who can view Educators can look.
+      { name: "Supervisors", path: "/supervisors", icon: FiShield, module: ["claims-approval", "teachers"] },
       { name: "Learning Hubs", path: "/learning-hubs", icon: FiHome, module: "learning-hubs" },
     ],
   },

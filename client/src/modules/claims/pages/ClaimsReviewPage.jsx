@@ -4,7 +4,6 @@ import { FiChevronRight, FiFileText, FiInbox, FiSearch, FiSliders, FiUsers } fro
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useWorkspaceClaims } from "../hooks/useClaims";
 import { ClaimStatusPill, T, TYPE_LABEL, cardStyle, formatDate, formatMoney } from "../shared";
-import SupervisorsDialog from "../components/SupervisorsDialog";
 
 // Educator claims, for the workspace: the admin app's Billing → "Educator Claims" tab
 // (`embedded`: Billing supplies the heading; see BillingPage.jsx). An educator's claim is approved
@@ -22,7 +21,7 @@ const STAGES = [
   { key: "rejected", label: "Declined", empty: "No claims have been declined." },
 ];
 export default function ClaimsReviewPage({ embedded = false }) {
-  const { can, isStaff } = usePermissions();
+  const { can } = usePermissions();
   const canSupervise = can("claims", "edit");
   const canApprove = can("claims-approval", "edit");
   const [searchParams] = useSearchParams();
@@ -30,7 +29,6 @@ export default function ClaimsReviewPage({ embedded = false }) {
   const [picked, setStage] = useState(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const [showSupervisors, setShowSupervisors] = useState(false);
 
   const claims = useMemo(() => data?.claims || [], [data]);
   const counts = data?.counts || {};
@@ -68,9 +66,8 @@ export default function ClaimsReviewPage({ embedded = false }) {
           <button type="button" onClick={() => navigate("/billing/claim-invoices")} style={headerButton}><FiFileText size={15} /> Claim invoices</button>
           {canApprove && (
             <>
-              {/* Supervisors are managed in Settings → People & sharing; staff can't open that
-                  (owner only), so for them this still opens the list here. */}
-              <button type="button" onClick={() => (isStaff ? setShowSupervisors(true) : navigate("/settings?tab=people&section=supervisors"))} style={headerButton}><FiUsers size={15} /> Supervisors</button>
+              {/* Supervisors have their own page under People (modules/supervisors). */}
+              <button type="button" onClick={() => navigate("/supervisors")} style={headerButton}><FiUsers size={15} /> Supervisors</button>
               {/* The rates live in Settings → Educator pay, for the whole workspace. */}
               <button type="button" onClick={() => navigate("/settings?tab=educator-pay")} style={headerButton}><FiSliders size={15} /> Educator pay</button>
             </>
@@ -131,7 +128,6 @@ export default function ClaimsReviewPage({ embedded = false }) {
       </div>
 
       {openId && <Navigate to={`/billing/claims/${openId}`} replace />}
-      {showSupervisors && <SupervisorsDialog onClose={() => setShowSupervisors(false)} />}
 
       <style>{`
         .claim-row:hover { background: #F8FBFE !important; }

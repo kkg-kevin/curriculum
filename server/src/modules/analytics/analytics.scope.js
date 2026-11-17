@@ -11,7 +11,22 @@ const { periodFrom, inChunks } = require("./analytics.utils");
 
 const forbidden = (message = "You can't see analytics for that") => Object.assign(new Error(message), { statusCode: 403 });
 
-async function workspaceHubs(req) {
+// A supervisor (17 Nov 2026, the supervisor portal's Team insights): the classes their educators
+// teach (teachers.supervisorId → class_course_teacher_links), and those classes' hubs.
+async function supervisorClasses(req) {
+  const educatorIds = await db("teachers").where({ supervisorId: req.user.id }).whereNot({ status: "removed" }).pluck("id");
+  const classIds = educatorIds.length ? await db("class_course_teacher_links").whereIn("teacherId", educatorIds).distinct("classId").pluck("classId") : [];
+  // Their workspace (the inviting admin's organisation) — for workspace settings such as mentor standards.
+  const admin = req.user.invitedByAdminId ? await db("users").where({ id: req.user.invitedByAdminId }).first("id", "organisationId") : null;
+  return { educatorIds, classIds: new Set(classIds), ownerAdminId: admin ? admin.organisationId || admin.id : null };
+}
+
+async function workspaceHubs(req, supervised = null) {
+  if (supervised) {
+    const ids = classIdsList(supervised);
+    const hubIds = ids.length ? await db("classes").whereIn("id", ids).distinct("schoolId").pluck("schoolId") : [];
+    return hubIds.length ? (await db("learning_hubs").whereIn("id", hubIds)).filter((h) => h.status !== "removed") : [];
+  }
   if (req.user.role === "school") {
     if (!req.ownSchool) throw forbidden("No learning hub is linked to this login");
     return [req.ownSchool];
@@ -21,10 +36,14 @@ async function workspaceHubs(req) {
   return (await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true })).filter((h) => h.status !== "removed");
 }
 
+const classIdsList = (supervised) => [...supervised.classIds];
+
 async function resolveScope(req) {
   const q = req.query || {};
   const isHubView = req.user.role === "school";
-  const allHubs = await workspaceHubs(req);
+  const isSupervisorView = req.user.role === "supervisor";
+  const supervised = isSupervisorView ? await supervisorClasses(req) : null;
+  const allHubs = await workspaceHubs(req, supervised);
   let hubs = allHubs;
   if (q.hubId && !isHubView) {
     hubs = allHubs.filter((h) => h.id === q.hubId);
@@ -33,6 +52,7 @@ async function resolveScope(req) {
   const hubIds = hubs.map((h) => h.id);
 
   let classes = hubIds.length ? await db("classes").whereIn("schoolId", hubIds) : [];
+  if (supervised) classes = classes.filter((c) => supervised.classIds.has(c.id));
   if (q.curriculumId) classes = classes.filter((c) => c.curriculumId === q.curriculumId);
   if (q.classId) {
     classes = classes.filter((c) => c.id === q.classId);
@@ -43,7 +63,8 @@ async function resolveScope(req) {
 
   // Learners: their (active) places at these hubs — in the chosen classes when narrowed.
   let links = hubIds.length ? await db("learner_hub_links").whereIn("hubId", hubIds).where({ status: "active" }) : [];
-  if (narrowedByClass) {
+  // A supervisor only ever sees the learners of their educators' classes, never the rest of a hub.
+  if (narrowedByClass || supervised) {
     const set = new Set(classIds);
     links = links.filter((l) => set.has(l.classId));
   }
@@ -69,7 +90,9 @@ async function resolveScope(req) {
   return {
     req,
     isHubView,
-    ownerAdminId: req.ownerAdminId || null,
+    isSupervisorView,
+    supervisedEducatorIds: supervised ? supervised.educatorIds : null,
+    ownerAdminId: supervised ? supervised.ownerAdminId : req.ownerAdminId || null,
     period: periodFrom(q),
     filters: { hubId: q.hubId || null, curriculumId: q.curriculumId || null, classId: q.classId || null, courseId: q.courseId || null, stageId: q.stageId || null, pathway: q.pathway || null, gender: q.gender || null },
     // Filters that pick learners (not hubs or classes) — educators and hub logins can't follow them.
