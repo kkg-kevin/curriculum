@@ -144,7 +144,7 @@ TEMPLATE_SOURCES.mentor = {
 
 export const templateSource = (name) => TEMPLATE_SOURCES[name] || TEMPLATE_SOURCES.qa;
 
-// Same cache keys as useQa.js's useQaTemplates / useQaTemplate, so QA's other screens share them.
+// Same cache keys as useQa.js's useQaTemplates, so QA's other screens share them.
 export const useSourceTemplates = (source, params = {}, { enabled = true } = {}) =>
   useQuery({ queryKey: [...source.key, "templates", params], queryFn: () => source.api.list(params), enabled });
 export const useSourceTemplate = (source, id) =>

@@ -54,15 +54,6 @@ export function useLogVisits() {
   });
 }
 
-export function useUpdateVisit() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => hubVisitApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: HUB_VISIT_KEYS.all }); toast.success("Visit updated"); },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Could not update visit"),
-  });
-}
-
 export function useDeleteVisit() {
   const qc = useQueryClient();
   return useMutation({

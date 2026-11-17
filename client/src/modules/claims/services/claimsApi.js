@@ -1,4 +1,4 @@
-import api, { checkDelete } from "../../../services/api";
+import api from "../../../services/api";
 
 const BASE = "/api/claims";
 
@@ -32,8 +32,6 @@ export const claimsApi = {
   listSupervisors: () => api.get(`${BASE}/supervisors`).then((r) => r.data.data),
   createSupervisor: (data) => api.post(`${BASE}/supervisors`, data).then((r) => r.data.data),
   updateSupervisor: (id, data) => api.put(`${BASE}/supervisors/${id}`, data).then((r) => r.data.data),
-  removeSupervisor: (id) => api.delete(`${BASE}/supervisors/${id}`).then((r) => r.data),
-  checkRemoveSupervisor: (id) => checkDelete(`${BASE}/supervisors/${id}`),
 
   getSettings: () => api.get(`${BASE}/settings`).then((r) => r.data.data),
   updateSettings: (data) => api.put(`${BASE}/settings`, data).then((r) => r.data.data),

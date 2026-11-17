@@ -62,14 +62,6 @@ export const useMarkClaimPaid = () => useClaimMutation(({ id, ...data }) => clai
 export const useUpdateClaimSettings = () => useClaimMutation(claimsApi.updateSettings);
 export const useCreateSupervisor = () => useClaimMutation(claimsApi.createSupervisor);
 export const useUpdateSupervisor = () => useClaimMutation(({ id, ...data }) => claimsApi.updateSupervisor(id, data));
-// Removing a supervisor also clears them from their educators.
-export function useRemoveSupervisor() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: claimsApi.removeSupervisor,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["claims"] }); queryClient.invalidateQueries({ queryKey: ["teachers"] }); },
-  });
-}
 
 // M-Pesa payouts of one claim. While one waits for M-Pesa's answer it's asked about every few
 // seconds; when it settles, the claim and every total are refreshed (it may now be paid).

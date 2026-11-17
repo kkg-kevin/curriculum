@@ -4,7 +4,6 @@ import { totApi } from "../services/totApi";
 
 const KEY = ["tot"];
 
-export const useMyTraining = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "me"], queryFn: totApi.me, staleTime: 60 * 1000, enabled });
 export const useEducatorTraining = (teacherId, { enabled = true } = {}) => useQuery({ queryKey: [...KEY, "educator", teacherId], queryFn: () => totApi.educator(teacherId), enabled: enabled && !!teacherId });
 export const useTotLearners = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "learners"], queryFn: totApi.learners, enabled });
 export const useTotClasses =({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "classes"], queryFn: totApi.classes, enabled });

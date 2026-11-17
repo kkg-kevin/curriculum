@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-export const BOOTCAMP_SALE_STATUSES = [
-  { value: "internal",  label: "Internal only" },
-  { value: "for_sale",  label: "For sale" },
-];
 export const BOOTCAMP_FORMATS = [
   { value: "holiday",      label: "Holiday" },
   { value: "weekend",      label: "Weekend" },

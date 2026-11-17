@@ -26,7 +26,6 @@ const { todayInKenya } = require("../checkins/checkin.dates");
 
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };
 const lower = (s) => String(s || "").trim().toLowerCase();
-const nameOf = (p) => [p?.firstName, p?.lastName].filter(Boolean).join(" ").trim();
 const classLabel = (c) => [c?.gradeName, c?.streamName].filter(Boolean).join(" ").trim() + (c?.academicYear ? ` (${c.academicYear})` : "") || "A class";
 const jsonHas = (column, id) => [`CAST(?? AS CHAR) LIKE ?`, [column, `%${id}%`]];
 const parseList = (v) => {

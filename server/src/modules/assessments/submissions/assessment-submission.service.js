@@ -782,9 +782,6 @@ const AssessmentSubmissionService = {
     return AssessmentIssueModel.findAll({ classId });
   },
 
-  async getIssuesForCourse(courseId) {
-    return AssessmentIssueModel.findAll({ courseId });
-  },
 
   // Shared by getSubmissionsNeedingGrading/getStandaloneSubmissionsNeedingGrading below — merges
   // each submission with its issue/assessment/learner for display, dropping any row whose

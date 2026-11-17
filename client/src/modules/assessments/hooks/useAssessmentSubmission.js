@@ -3,7 +3,6 @@ import toast from "react-hot-toast";
 import { assessmentSubmissionApi } from "../services/assessmentSubmissionApi";
 
 const KEYS = {
-  issuesForClass: (classId)   => ["assessment-issues", "byClass", classId],
   roster:         (issueId)   => ["assessment-issues", issueId, "roster"],
   issuedLearner:  ()          => ["assessment-issues", "learner-issued"],
   // Under issuedLearner's prefix, so everything that refreshes the learner's list refreshes this too.
@@ -26,14 +25,6 @@ export function useIssueAssessment() {
       toast.success(chosen ? `Assessment issued to ${chosen} chosen learner${chosen === 1 ? "" : "s"}` : "Assessment issued to the class");
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to issue assessment"),
-  });
-}
-
-export function useIssuesForClass(classId) {
-  return useQuery({
-    queryKey: KEYS.issuesForClass(classId),
-    queryFn:  () => assessmentSubmissionApi.getIssuesForClass(classId),
-    enabled:  !!classId,
   });
 }
 
@@ -257,14 +248,6 @@ export function useLearnerIndicatorProgress(learnerId, curriculumId = null) {
     queryKey: KEYS.indicatorProgress(learnerId, curriculumId),
     queryFn:  () => assessmentSubmissionApi.getLearnerIndicatorProgress(learnerId, curriculumId),
     enabled:  !!learnerId,
-  });
-}
-
-export function useSubmissionQuery(id) {
-  return useQuery({
-    queryKey: KEYS.submission(id),
-    queryFn:  () => assessmentSubmissionApi.getSubmission(id),
-    enabled:  !!id,
   });
 }
 

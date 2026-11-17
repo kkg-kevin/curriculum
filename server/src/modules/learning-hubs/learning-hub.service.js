@@ -346,11 +346,6 @@ const LearningHubService = {
     return [...new Set(ids)];
   },
 
-  async getEffectiveCurricula(hubId) {
-    const ids = await this.getEffectiveCurriculumIds(hubId);
-    const curricula = await Promise.all(ids.map((id) => CurriculumModel.findById(id)));
-    return curricula.filter(Boolean);
-  },
 
   async deleteLearningHub(id) {
     // The Home Learning hub holds every home-learning child's hub link and class — deleting it

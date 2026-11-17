@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FiAlertCircle, FiArrowDownRight, FiArrowRight, FiArrowUpRight, FiAward, FiBookOpen, FiCalendar, FiCheck, FiCheckCircle, FiChevronDown, FiChevronUp, FiClock, FiInfo, FiMinus, FiRefreshCw, FiShield, FiStar, FiTarget, FiTrendingUp, FiUserCheck, FiUsers, FiZap } from "react-icons/fi";
 import FeedbackSummary from "../../mentor-reviews/components/FeedbackSummary";
 import StandardsCard from "../../mentor-standards/StandardsCard";
-import { OVERALL, formatValue, iconOf, targetText } from "../../mentor-standards/standards";
+import { OVERALL, formatValue, iconOf } from "../../mentor-standards/standards";
 import { useRefreshEducatorProfile } from "../hooks/useEducatorProfile";
 import { BRAND as C, FONT, card, cardHeading, pill } from "../../../theme/brand";
 

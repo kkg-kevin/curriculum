@@ -254,11 +254,6 @@ const PublicDiagnosticService = {
     };
   },
 
-  // Existence-only check — kept for the current /availability route's { diagnosticAvailable }
-  // shape. Thin wrapper over diagnosticInfo so there's one code path.
-  async hasDiagnostic(pathwayIdOrSlug) {
-    return (await this.diagnosticInfo(pathwayIdOrSlug)).available;
-  },
 
   // POST /api/public/diagnostics/:pathwayIdOrSlug/submit — grades, creates a lead, and returns
   // the report. The visitor gives a name + phone before seeing their result; that becomes a

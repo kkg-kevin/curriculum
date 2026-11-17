@@ -37,6 +37,3 @@ export function useRecordFollowup() {
   });
 }
 
-export function useFollowupHistory(learnerId) {
-  return useQuery({ queryKey: ["analytics", "followups", learnerId], queryFn: () => analyticsApi.followupHistory(learnerId), enabled: !!learnerId });
-}

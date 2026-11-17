@@ -3,10 +3,6 @@ import toast from "react-hot-toast";
 import { reportApi } from "../services/reportApi";
 
 const KEYS = {
-  readiness: (classId, courseId) => ["reports", "readiness", classId, courseId],
-  // Batched readiness shares the ["reports","readiness"] prefix so the same invalidation after
-  // generate/publish/unpublish refreshes both forms.
-  readinessBatch: (classId, courseIds) => ["reports", "readiness", "batch", classId, [...courseIds].sort().join(",")],
   list:      (classId, courseId) => ["reports", "list", classId, courseId],
   detail:    (id)                => ["reports", id],
   mine:      (hubId)             => ["reports", "mine", hubId || null],
@@ -14,31 +10,6 @@ const KEYS = {
   hubAnalytics: (hubId, days, gender) => ["reports", "hubAnalytics", hubId, days, gender || null],
   platformAnalytics: (days)      => ["reports", "platformAnalytics", days],
 };
-
-export function useReadiness(classId, courseId) {
-  return useQuery({
-    queryKey: KEYS.readiness(classId, courseId),
-    queryFn:  () => reportApi.getReadiness(classId, courseId),
-    enabled:  !!classId && !!courseId,
-  });
-}
-
-// One request per class instead of one per (class × course) — see getReadinessForClassCourses.
-export function useReadinessBatch(classId, courseIds = []) {
-  return useQuery({
-    queryKey: KEYS.readinessBatch(classId, courseIds),
-    queryFn:  () => reportApi.getReadinessBatch(classId, courseIds),
-    enabled:  !!classId && courseIds.length > 0,
-  });
-}
-
-export function useReportsList(classId, courseId) {
-  return useQuery({
-    queryKey: KEYS.list(classId, courseId),
-    queryFn:  () => reportApi.listForClass(classId, courseId),
-    enabled:  !!classId,
-  });
-}
 
 export function useReport(id) {
   return useQuery({

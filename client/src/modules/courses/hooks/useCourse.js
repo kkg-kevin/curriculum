@@ -175,14 +175,6 @@ export function useCourseCurricula(courseId) {
 
 /* ── Score Evidence resolution (preview only — no learner score exists yet) ── */
 
-export function useAssessmentScoring(courseId, assessmentId, curriculumId) {
-  return useQuery({
-    queryKey: COURSE_KEYS.assessmentScoring(courseId, assessmentId, curriculumId),
-    queryFn: () => courseApi.getAssessmentScoring(courseId, assessmentId, curriculumId),
-    enabled: !!courseId && !!assessmentId && !!curriculumId,
-  });
-}
-
 /* ── Sessions ─────────────────────────────────────────────────────────── */
 
 export function useSessions(courseId) {

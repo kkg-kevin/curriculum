@@ -33,6 +33,5 @@ export const assessmentSubmissionApi = {
   gradeMilestone: (issueId, milestoneId, payload) => api.post(`${BASE}/issues/${issueId}/milestones/${milestoneId}`, payload).then((r) => r.data.data),
   saveDraft:           (id, answers)     => api.patch(`${BASE}/submissions/${id}/draft`, { answers }).then((r) => r.data.data),
   submit:              (id, answers)     => api.post(`${BASE}/submissions/${id}/submit`, { answers }).then((r) => r.data.data),
-  getSubmission:       (id)              => api.get(`${BASE}/submissions/${id}`).then((r) => r.data.data),
   grade:               (id, payload)     => api.patch(`${BASE}/submissions/${id}/grade`, payload).then((r) => r.data.data),
 };

@@ -53,9 +53,6 @@ export const courseApi = {
   getCourseCurricula: (courseId) =>
     api.get(`${ENDPOINT}/${courseId}/curricula/links`).then((r) => r.data.data),
 
-  /* Score Evidence — preview how a course-attached assessment's marks narrow down under a linked curriculum */
-  getAssessmentScoring: (courseId, assessmentId, curriculumId) =>
-    api.get(`${ENDPOINT}/${courseId}/assessments/${assessmentId}/scoring`, { params: { curriculumId } }).then((r) => r.data.data),
 
   /* Sessions */
   getSessions: (courseId) =>

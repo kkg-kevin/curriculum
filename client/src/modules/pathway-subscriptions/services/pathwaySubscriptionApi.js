@@ -15,7 +15,6 @@ export const pathwaySubscriptionApi = {
 
   // Subscriptions (staff)
   list: (params = {}) => api.get(BASE, { params }).then(data),
-  get: (id) => api.get(`${BASE}/${id}`).then(data),
   setStatus: (id, status) => api.patch(`${BASE}/${id}/status`, { status }).then(data),
   // `choice`: a plan id, or { packageId, billingPeriod } — one of the plan's periods.
   changePlan: (id, choice) => api.put(`${BASE}/${id}/plan`, typeof choice === "string" ? { packageId: choice } : choice).then(data),

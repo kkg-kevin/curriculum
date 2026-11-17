@@ -104,11 +104,3 @@ export function removeSession(key) {
   }
 }
 
-export function removeLocal(key) {
-  memory.delete(key);
-  try {
-    storage()?.removeItem(key);
-  } catch {
-    /* blocked */
-  }
-}

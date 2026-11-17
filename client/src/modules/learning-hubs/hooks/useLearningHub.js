@@ -97,18 +97,6 @@ export function useUpdateLearningHubStatus() {
   });
 }
 
-export function useDeleteLearningHub() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: learningHubApi.remove,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: LEARNING_HUB_KEYS.all });
-      toast.success("Learning hub deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to delete learning hub"),
-  });
-}
-
 export function useAttachHubCurriculum() {
   const queryClient = useQueryClient();
   return useMutation({

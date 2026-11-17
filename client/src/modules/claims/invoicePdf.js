@@ -90,10 +90,6 @@ function invoiceFor(claim) {
   };
 }
 
-export function downloadClaimInvoice(claim) {
-  return buildInvoicePdf(invoiceFor(claim));
-}
-
 // The same invoice as a file to show on screen: { blob, filename }.
 export function claimInvoiceFile(claim) {
   return buildInvoicePdf(invoiceFor(claim), { output: "blob" });

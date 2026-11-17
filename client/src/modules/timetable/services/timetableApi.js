@@ -7,8 +7,6 @@ export const timetableApi = {
   create:      (data)        => api.post(BASE, data).then((r) => r.data.data),
   update:      (id, data)    => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:      (id)          => api.delete(`${BASE}/${id}`).then((r) => r.data),
-  getMyTeacherTimetable: ()  => api.get(`${BASE}/teacher/mine`).then((r) => r.data),
-  getMyLearnerTimetable: ()  => api.get(`${BASE}/learner/mine`).then((r) => r.data),
 
   getCourseSchedules: (classId) => api.get(`${BASE}/course-schedule`, { params: { classId } }).then((r) => r.data.data),
   setCourseSchedule:  (data)    => api.put(`${BASE}/course-schedule`, data).then((r) => r.data.data),
@@ -40,7 +38,6 @@ export const timetableApi = {
   // occurrence instead).
   createSkip:     (data)     => api.post(`${BASE}/skips`, data).then((r) => r.data.data),
   removeSkip:     (id)       => api.delete(`${BASE}/skips/${id}`).then((r) => r.data),
-  getSkipsByClass: (classId) => api.get(`${BASE}/skips`, { params: { classId } }).then((r) => r.data.data),
 
   // Which of the given candidate teacherIds would conflict (double-booked or outside their own
   // declared availability) if picked for this day/time — lets the slot picker gray out a

@@ -15,22 +15,10 @@ export const competenciesApi = {
     api.delete(`${base(curriculumId)}/links/${competencyId}`).then((r) => r.data.data),
   checkUnlinkCompetency: (curriculumId, competencyId) => checkDelete(`${base(curriculumId)}/links/${competencyId}`),
 
-  updateCompetencyLink: (curriculumId, competencyId, data) =>
-    api.put(`${base(curriculumId)}/links/${competencyId}`, data).then((r) => r.data.data),
 
-  /* Competency Indicators — how THIS curriculum evaluates an adopted competency */
-  getCompetencyIndicators: (curriculumId, competencyId) =>
-    api.get(`${base(curriculumId)}/links/${competencyId}/indicators`).then((r) => r.data.data),
 
-  createCompetencyIndicator: (curriculumId, competencyId, data) =>
-    api.post(`${base(curriculumId)}/links/${competencyId}/indicators`, data).then((r) => r.data.data),
 
-  updateCompetencyIndicator: (curriculumId, competencyId, indicatorId, data) =>
-    api.put(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`, data).then((r) => r.data.data),
 
-  deleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) =>
-    api.delete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`).then((r) => r.data),
-  checkDeleteCompetencyIndicator: (curriculumId, competencyId, indicatorId) => checkDelete(`${base(curriculumId)}/links/${competencyId}/indicators/${indicatorId}`),
 
   /* Pathways — this curriculum's own roadmaps (courses + diagnostic + age + placement) */
   getPathways: (curriculumId) =>
@@ -46,34 +34,16 @@ export const competenciesApi = {
     api.delete(`${base(curriculumId)}/pathways/${pathwayId}`).then((r) => r.data),
   checkDeletePathway: (curriculumId, pathwayId) => checkDelete(`${base(curriculumId)}/pathways/${pathwayId}`),
 
-  // pathwayId here is a pathway-template id (Settings library) — the server clones it into
-  // this curriculum as a fresh, independent pathway. The wire field stays `pathwayId`.
-  importPathway: (curriculumId, pathwayId) =>
-    api.post(`${base(curriculumId)}/pathways/import`, { pathwayId }).then((r) => r.data.data),
 
-  /* Progression Ladder */
-  getLadder: (curriculumId) =>
-    api.get(`${base(curriculumId)}/ladder`).then((r) => r.data.data),
 
-  updateLadder: (curriculumId, rungs) =>
-    api.put(`${base(curriculumId)}/ladder`, { rungs }).then((r) => r.data.data),
 
   // Indicators actually tagged in this curriculum's attached assessments, grouped by
   // competency (computed live) — feeds the Performance Bands indicator picker.
   getPopulatedIndicators: (curriculumId) =>
     api.get(`${base(curriculumId)}/populated-indicators`).then((r) => r.data.data),
 
-  // Persisted marks-earned per indicator (Engine 5 framework), joined against live marksPossible.
-  getIndicatorAchievements: (curriculumId) =>
-    api.get(`${base(curriculumId)}/indicator-achievements`).then((r) => r.data.data),
 
-  setIndicatorAchievement: (curriculumId, indicatorId, competencyId, marksEarned) =>
-    api.put(`${base(curriculumId)}/indicator-achievements/${indicatorId}`, { competencyId, marksEarned }).then((r) => r.data.data),
 
-  // Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
-  // ageCategoryId is required now that Performance Bands are scoped per Developmental Stage.
-  getCompetencyScores: (curriculumId, ageCategoryId) =>
-    api.get(`${base(curriculumId)}/scores`, { params: { ageCategoryId } }).then((r) => r.data.data),
 
   // Real per-learner sibling of the above — this learner's own graded work run through the
   // same Evidence Type → Assessment Type → Engine 1/2/5/3 pipeline, instead of the shared
@@ -101,14 +71,8 @@ export const competenciesApi = {
   getProgressLevels: (curriculumId) =>
     api.get(`${base(curriculumId)}/levels`).then((r) => r.data.data),
 
-  createProgressLevel: (curriculumId, data) =>
-    api.post(`${base(curriculumId)}/levels`, data).then((r) => r.data.data),
 
-  updateProgressLevel: (curriculumId, plId, data) =>
-    api.put(`${base(curriculumId)}/levels/${plId}`, data).then((r) => r.data.data),
 
-  deleteProgressLevel: (curriculumId, plId) =>
-    api.delete(`${base(curriculumId)}/levels/${plId}`).then((r) => r.data),
 
   /* Assessment Framework — Assessment Types */
   getAssessmentTypes: (curriculumId) =>
@@ -123,17 +87,11 @@ export const competenciesApi = {
   deleteAssessmentType: (curriculumId, atId) =>
     api.delete(`/api/curricula/${curriculumId}/assessments/types/${atId}`).then((r) => r.data),
 
-  updateScoring: (curriculumId, atId, evidenceWeights) =>
-    api.put(`/api/curricula/${curriculumId}/assessments/types/${atId}/scoring`, { evidenceWeights }).then((r) => r.data.data),
 
-  getCompetencyWeights: (curriculumId) =>
-    api.get(`/api/curricula/${curriculumId}/assessments/scoring`).then((r) => r.data.data),
 
   updateGlobalScoring: (curriculumId, assessmentTypes, competencyWeights = []) =>
     api.put(`/api/curricula/${curriculumId}/assessments/scoring`, { assessmentTypes, competencyWeights }).then((r) => r.data.data),
 
-  calculateScore: (curriculumId, atId, evidenceScores, ageCategoryId) =>
-    api.post(`/api/curricula/${curriculumId}/assessments/types/${atId}/calculate`, { evidenceScores, ageCategoryId }).then((r) => r.data.data),
 
   /* Assessment Framework — Evidence Types */
   getEvidenceTypes: (curriculumId) =>
@@ -189,15 +147,11 @@ export const competenciesApi = {
   reorderPathwayCourses: (curriculumId, pathwayId, orderedIds) =>
     api.put(`${base(curriculumId)}/pathways/${pathwayId}/courses/reorder`, { orderedIds }).then((r) => r.data.data),
 
-  getLearnerPathwayCourseProgress: (curriculumId, pathwayId, learnerId) =>
-    api.get(`${base(curriculumId)}/pathways/${pathwayId}/course-progress/learner/${learnerId}`).then((r) => r.data.data),
 
   /* Pathway — per-learner, per-Pathway placement/history */
   getPathway: (curriculumId, learnerId) =>
     api.get(`${base(curriculumId)}/pathway-placement/${learnerId}`).then((r) => r.data.data),
 
-  placeLearner: (curriculumId, learnerId, areaId, data) =>
-    api.post(`${base(curriculumId)}/pathway-placement/${learnerId}/${areaId}`, data).then((r) => r.data.data),
 
   /* Pathways staff assign a learner by hand, alongside the automatic (stage) one */
   assignLearnerPathway: (curriculumId, learnerId, pathwayId) =>

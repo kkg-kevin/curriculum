@@ -20,7 +20,6 @@ const AssessmentTypeModel   = require("./competency-framework/assessment-type.mo
 const EvidenceTypeModel     = require("./competency-framework/evidence-type.model");
 const PerformanceBandModel  = require("./competency-framework/performance-band.model");
 const ProgressionLadderModel = require("./competency-framework/progression-ladder.model");
-const CurriculumAssessmentModel = require("./competency-framework/assessment.model");
 const CurriculumVersionModel = require("./versions/curriculum-versions.model");
 const AcademicYearGroupModel = require("./academic-years/academic-year-groups.model");
 const AcademicYearVersionModel = require("./academic-years/academic-year-versions.model");

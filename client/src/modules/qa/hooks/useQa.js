@@ -8,7 +8,6 @@ const KEY = ["qa"];
 export const qaErrorText = (err) => err?.errors?.[0]?.message || err?.message || "Something went wrong";
 
 export const useQaTemplates = (params = {}, { enabled = true } = {}) => useQuery({ queryKey: [...KEY, "templates", params], queryFn: () => qaApi.templates(params), enabled });
-export const useQaTemplate = (id) => useQuery({ queryKey: [...KEY, "template", id], queryFn: () => qaApi.template(id), enabled: !!id });
 export const useQaEducators = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "educators"], queryFn: qaApi.educators, staleTime: 30 * 1000, enabled });
 export const useQaReviewers = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "reviewers"], queryFn: qaApi.reviewers, staleTime: 60 * 1000, enabled });
 export const useQaSchedules = (params) => useQuery({ queryKey: [...KEY, "schedules", params], queryFn: () => qaApi.schedules(params) });

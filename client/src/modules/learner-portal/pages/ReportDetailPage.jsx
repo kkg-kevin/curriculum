@@ -10,7 +10,6 @@ import ReportPrintDocument from "../../reports/components/ReportPrintDocument";
 import { downloadElementAsPdf } from "../../../utils/pdf";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
-const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
 // The branded document lives here for Print/Download only — kept out of normal flow so the
 // on-screen page keeps its original look. It's positioned far off-screen (not display:none, which

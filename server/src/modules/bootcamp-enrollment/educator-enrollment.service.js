@@ -76,7 +76,7 @@ const EducatorEnrollmentService = {
           email,
           phone: data.phone,
           // Not teaching yet: signs in and learns, but isn't given classes until an admin makes
-          // them Active (teacher.validation.js's canTeach). An existing educator keeps theirs.
+          // them Active (teacher.validation.js's cantTeachReason). An existing educator keeps theirs.
           status: "in_training",
           employmentType: "part_time",
           payRateTypes: ["session"],

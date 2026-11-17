@@ -165,4 +165,3 @@ const MentorCheckinNotifications = {
 };
 
 module.exports = MentorCheckinNotifications;
-module.exports._wording = { educatorPhrase };

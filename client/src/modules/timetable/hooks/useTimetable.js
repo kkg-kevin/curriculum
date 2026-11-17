@@ -4,15 +4,12 @@ import { timetableApi } from "../services/timetableApi";
 
 const TIMETABLE_KEYS = {
   byClass: (classId) => ["timetable", "class", classId],
-  mineTeacher: () => ["timetable", "mine", "teacher"],
-  mineLearner: () => ["timetable", "mine", "learner"],
   courseSchedules: (classId) => ["timetable", "course-schedule", classId],
   calendar: (classId, from, to) => ["timetable", "calendar", "class", classId, from, to],
   calendarHub: (hubId, from, to) => ["timetable", "calendar", "hub", hubId, from, to],
   calendarMineTeacher: (from, to) => ["timetable", "calendar", "mine", "teacher", from, to],
   calendarMineLearner: (from, to) => ["timetable", "calendar", "mine", "learner", from, to],
   sessionSummary: (sessionId, classId, date) => ["timetable", "session-summary", sessionId, classId, date],
-  skips: (classId) => ["timetable", "skips", classId],
   occurrences: (classId) => ["timetable", "occurrences", classId],
 };
 
@@ -32,20 +29,6 @@ export function useClassDateWindow(classId) {
     queryKey: ["timetable", "class-date-window", classId],
     queryFn:  () => timetableApi.getClassDateWindow(classId),
     enabled:  !!classId,
-  });
-}
-
-export function useMyTeacherTimetable() {
-  return useQuery({
-    queryKey: TIMETABLE_KEYS.mineTeacher(),
-    queryFn:  () => timetableApi.getMyTeacherTimetable(),
-  });
-}
-
-export function useMyLearnerTimetable() {
-  return useQuery({
-    queryKey: TIMETABLE_KEYS.mineLearner(),
-    queryFn:  () => timetableApi.getMyLearnerTimetable(),
   });
 }
 
@@ -207,17 +190,6 @@ export function useSessionStatusBulk(occurrences, enabled = true) {
     queryFn:  () => timetableApi.getSessionStatusBulk(occurrences),
     enabled:  enabled && occurrences.length > 0,
     staleTime: 30_000,
-  });
-}
-
-// A class's active reschedules — mainly for SkipDetailModal to resolve which row a clicked
-// marker corresponds to; the calendar's own skippedSessions (see useClassCalendar etc.) already
-// covers day-to-day display.
-export function useClassSkips(classId) {
-  return useQuery({
-    queryKey: TIMETABLE_KEYS.skips(classId),
-    queryFn:  () => timetableApi.getSkipsByClass(classId),
-    enabled:  !!classId,
   });
 }
 

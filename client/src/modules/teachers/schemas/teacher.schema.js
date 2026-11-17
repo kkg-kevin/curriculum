@@ -24,12 +24,6 @@ export const PAY_RATE_TYPES = [
 
 export const TEACHER_LEVELS = [1, 2, 3, 4, 5].map((n) => ({ value: n, label: `Level ${n}` }));
 
-// The old single hourly/daily placeholder — superseded by payRateTypes, kept for older records.
-export const PAYMENT_TERMS = [
-  { value: "hourly", label: "Hourly Rate" },
-  { value: "daily",  label: "Daily Rate" },
-];
-
 export const teacherSchema = z
   .object({
     firstName:  z.string().min(1, "First name is required").max(80),

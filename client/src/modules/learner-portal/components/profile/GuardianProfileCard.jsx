@@ -1,5 +1,5 @@
 import { FiEdit2, FiUsers } from "react-icons/fi";
-import { T, KID, cardStyle, KidHeading, NotOnRecord } from "./theme";
+import { KID, cardStyle, KidHeading, NotOnRecord } from "./theme";
 import { MetaRow } from "./ProfileIdentityCard";
 
 // The guardian's own contact profile — deliberately separate from ProfileIdentityCard (the
