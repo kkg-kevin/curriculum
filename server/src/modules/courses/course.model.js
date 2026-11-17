@@ -5,6 +5,7 @@ const {
   deleteRecord,
   firstOrNull,
   stringifyJsonFields,
+  whereInChunks,
 } = require("../../shared/utils/model.utils");
 
 // Canonical shape (enforced at write time by course.validation.js's createCourseSchema, not
@@ -39,6 +40,11 @@ const CourseModel = {
 
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
+  },
+
+  // Many courses in one query (batch form of findById; missing ids are simply absent).
+  findByIds(ids) {
+    return whereInChunks(db, TABLE, "id", ids);
   },
 
   update(id, data) {

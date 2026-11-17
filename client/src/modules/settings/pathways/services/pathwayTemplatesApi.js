@@ -22,9 +22,5 @@ export const pathwayTemplatesApi = {
   create: (data) =>
     api.post(BASE, data).then((r) => r.data.data),
 
-  update: (id, data) =>
-    api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
 
-  remove: (id) =>
-    api.delete(`${BASE}/${id}`).then((r) => r.data),
 };

@@ -379,4 +379,3 @@ module.exports = PublicBootcampService;
 // bootcamp-enrollment.service.js can resolve "which bootcamp" identically without
 // re-implementing the id/slug/tenant-scoping rules — an internal helper, not a new public route.
 module.exports.resolveForSaleBootcamp = resolveForSaleBootcamp;
-module.exports._pickForSlug = pickForSlug;

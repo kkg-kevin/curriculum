@@ -13,7 +13,6 @@
 // A change of package or price takes effect from the next period (`pendingBilling`).
 
 const PERIODS = ["daily", "weekly", "monthly", "quarterly", "annually"];
-const UNIT = { daily: "day", weekly: "week", monthly: "month", quarterly: "quarter", annually: "year" };
 const MONTHS_PER = { monthly: 1, quarterly: 3, annually: 12 };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -160,9 +159,7 @@ function allowsPlans(invoice) {
   return daysBetween(String(invoice.periodStart).slice(0, 10), String(invoice.periodEnd).slice(0, 10)) >= MIN_DAYS_FOR_PLANS;
 }
 
-const perUnit = (billingPeriod) => UNIT[billingPeriod] || "month";
-
 module.exports = {
-  PERIODS, UNIT, addDays, addMonths, monthEnd, daysBetween, periodAt, nextPeriod, periodLabel, dueDateFor,
-  changeFrom, scheduleChange, dueChange, onActivation, allowsPlans, perUnit,
+  PERIODS, addDays, addMonths, monthEnd, daysBetween, periodAt, nextPeriod, periodLabel, dueDateFor,
+  changeFrom, scheduleChange, dueChange, onActivation, allowsPlans,
 };

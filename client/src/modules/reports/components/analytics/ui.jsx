@@ -32,7 +32,6 @@ export function fmtHours(h) {
   return `${Math.round((h / 24) * 10) / 10} days`;
 }
 export const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—");
-export const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString("en-KE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 
 export const STYLES = `
 .an { font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 16px; min-width: 0; }

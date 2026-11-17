@@ -33,19 +33,6 @@ export function usePathwayDirectory({ enabled = true } = {}) {
   });
 }
 
-// Settings → Pathways → Website: show on the website, and the hubs it runs at.
-export function useSetPathwayWebsite() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => pathwayTemplatesApi.setWebsite(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
-      toast.success("Website settings saved");
-    },
-    onError: (err) => toast.error(err?.response?.data?.message || "Couldn't save the website settings"),
-  });
-}
-
 export function useCreatePathwayTemplate() {
   const qc = useQueryClient();
   return useMutation({
@@ -58,26 +45,3 @@ export function useCreatePathwayTemplate() {
   });
 }
 
-export function useUpdatePathwayTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => pathwayTemplatesApi.update(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
-      toast.success("Pathway updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update pathway"),
-  });
-}
-
-export function useDeletePathwayTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: pathwayTemplatesApi.remove,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PATHWAY_TEMPLATE_KEYS.all });
-      toast.success("Pathway deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete pathway"),
-  });
-}

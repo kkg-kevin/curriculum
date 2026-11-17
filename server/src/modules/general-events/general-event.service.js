@@ -32,8 +32,6 @@ const { htmlToText } = require("../../shared/utils/public-content");
 const EVENTS = "general_events";
 const REGS = "general_event_registrations";
 const POPUPS = "general_event_popup_states";
-const JSON_EVENT = ["images", "systemAudience", "highlights"];
-const JSON_REG = ["childrenAges", "interests", "visitSource"];
 
 const fail = (status, message, extra = {}) => Object.assign(new Error(message), { statusCode: status, ...extra });
 const parseJson = (v, fallback = null) => {
@@ -415,8 +413,6 @@ async function saveDetails(reg, details) {
 }
 
 // ---- Who's in a workspace (pop-up for private events, invitations) -----------------------------
-
-const STAFF_ROLES = ["admin", "collaborator", "curriculumAdmin"];
 
 // The workspaces a signed-in person belongs to (organisation keys, as events' ownerAdminId).
 async function workspacesOf(req) {

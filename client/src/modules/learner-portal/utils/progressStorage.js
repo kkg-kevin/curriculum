@@ -46,11 +46,6 @@ export function getCourseSectionProgress(email, courseId) {
   return (progress.sectionProgress || {})[courseId] || {};
 }
 
-export function isSectionComplete(email, courseId, sessionId, sectionKey) {
-  const sessionProgress = getCourseSectionProgress(email, courseId)[sessionId];
-  return !!sessionProgress?.[sectionKey];
-}
-
 export function markSectionComplete(email, courseId, sessionId, sectionKey) {
   const progress = getLearnerProgress(email);
   if (progress.sectionProgress?.[courseId]?.[sessionId]?.[sectionKey]) return progress;

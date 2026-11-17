@@ -251,7 +251,7 @@ const getAllLearners = asyncHandler(async (req, res) => {
       // otherwise-unbounded !schoolId && !classId branch (see learner.service.js's
       // getAllLearners) to this admin's tenant — plus every learner the tenant created that has no
       // hub link yet, or they'd be unreachable until someone enrolled them.
-      const links = (await Promise.all(ownHubIds.map((hubId) => LearnerHubLinkModel.findByHubId(hubId)))).flat();
+      const links = await LearnerHubLinkModel.findByHubIds(ownHubIds);
       const createdIds = await LearnerModel.findIdsCreatedByAdmin(req.ownerAdminId);
       filters.ids = [...new Set([...links.map((l) => l.learnerId), ...createdIds])];
     }

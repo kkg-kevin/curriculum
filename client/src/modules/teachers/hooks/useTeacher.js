@@ -132,18 +132,6 @@ export function useAddAvailabilitySlot(teacherId) {
   });
 }
 
-export function useUpdateAvailabilitySlot(teacherId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ slotId, data }) => teacherApi.updateAvailabilitySlot(teacherId, slotId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: TEACHER_KEYS.availability(teacherId) });
-      toast.success("Availability window updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to update availability"),
-  });
-}
-
 export function useRemoveAvailabilitySlot(teacherId) {
   const qc = useQueryClient();
   return useMutation({

@@ -37,7 +37,7 @@ function CourseEducatorRow({ classId, course, links, hubTeachers, onAssign, onUn
   // include this course. Mirrors the server-side gate in class.controller.js's
   // assignCourseTeacher exactly, so the picker never offers a choice the server would reject.
   // Educators still "in training" (website TOT sign-ups) aren't given classes until made active —
-  // the server refuses them too (class.controller.js, canTeach).
+  // the server refuses them too (class.controller.js, cantTeachReason).
   const available = (hubTeachers || []).filter((t) =>
     !assignedIds.has(t.id) && t.status !== "in_training" && (!t.qualifiedCourseIds?.length || t.qualifiedCourseIds.includes(course.id))
   );

@@ -4,6 +4,7 @@ const {
   updateRecord,
   firstOrNull,
   stringifyJsonFields,
+  whereInChunks,
 } = require("../../../shared/utils/model.utils");
 
 const TABLE = "curriculum_versions";
@@ -16,6 +17,12 @@ const CurriculumVersionModel = {
 
   findAllByCurriculumId(curriculumId) {
     return db(TABLE).where({ curriculumId }).orderBy("versionNumber", "desc");
+  },
+
+  // Batch form — every version of many curricula, newest first within each.
+  async findAllByCurriculumIds(curriculumIds) {
+    const rows = await whereInChunks(db, TABLE, "curriculumId", curriculumIds);
+    return rows.sort((a, b) => b.versionNumber - a.versionNumber);
   },
 
   findById(id) {

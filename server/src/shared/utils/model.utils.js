@@ -72,7 +72,17 @@ function withOwnerScope(query, ownerAdminId) {
   return query.where({ ownerAdminId });
 }
 
+// Rows whose `column` is any of `ids`, in slices so a long list never makes one enormous query —
+// the batch counterpart of calling findById/findByX once per id (17 Nov 2026).
+async function whereInChunks(db, table, column, ids, size = 1000) {
+  const list = [...new Set((ids || []).filter(Boolean))];
+  const out = [];
+  for (let i = 0; i < list.length; i += size) out.push(...(await db(table).whereIn(column, list.slice(i, i + size))));
+  return out;
+}
+
 module.exports = {
+  whereInChunks,
   generateId,
   toJson,
   stringifyJsonFields,

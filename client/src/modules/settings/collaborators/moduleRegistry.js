@@ -22,4 +22,3 @@ export const MODULE_OPTIONS = [
   { key: "home-learning", label: "Home Learning" },
 ];
 
-export const MODULE_KEYS = MODULE_OPTIONS.map((m) => m.key);

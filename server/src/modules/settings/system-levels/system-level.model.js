@@ -1,5 +1,5 @@
 const db = require("../../../config/db");
-const { generateId, updateRecord, deleteRecord, firstOrNull } = require("../../../shared/utils/model.utils");
+const { generateId, updateRecord, deleteRecord, firstOrNull, whereInChunks } = require("../../../shared/utils/model.utils");
 
 const TABLE = "system_levels";
 
@@ -16,6 +16,10 @@ const SystemLevelModel = {
 
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
+  },
+
+  findByIds(ids) {
+    return whereInChunks(db, TABLE, "id", ids);
   },
 
   async create(data) {

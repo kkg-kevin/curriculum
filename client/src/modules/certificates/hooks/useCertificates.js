@@ -6,7 +6,6 @@ const KEYS = {
   all:      ["certificates"],
   mine:     (hubId)             => ["certificates", "mine", hubId || null],
   learner:  (learnerId)         => ["certificates", "learner", learnerId],
-  class:    (classId, courseId) => ["certificates", "class", classId, courseId || null],
   list:     (filters)           => ["certificates", "list", filters],
   detail:   (id)                => ["certificates", id],
   verify:   (token)             => ["certificates", "verify", token],
@@ -37,14 +36,6 @@ export function useLearnerCertificates(learnerId) {
     queryKey: KEYS.learner(learnerId),
     queryFn:  () => certificateApi.listForLearner(learnerId),
     enabled:  !!learnerId,
-  });
-}
-
-export function useClassCertificates(classId, courseId) {
-  return useQuery({
-    queryKey: KEYS.class(classId, courseId),
-    queryFn:  () => certificateApi.listForClass(classId, courseId),
-    enabled:  !!classId,
   });
 }
 

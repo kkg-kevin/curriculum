@@ -83,10 +83,6 @@ const PathwayAccess = {
     return db(TABLE).where({ subscriptionId, source: "subscription" }).update({ accessUntil, status, updatedAt: new Date() });
   },
 
-  // A child taken off a subscription, or a learner deleted: their access row goes.
-  async removeForLearner(learnerId, { subscriptionId = null } = {}) {
-    return db(TABLE).where({ learnerId }).modify((q) => { if (subscriptionId) q.where({ subscriptionId }); }).del();
-  },
 };
 
 module.exports = PathwayAccess;

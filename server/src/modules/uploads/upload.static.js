@@ -11,11 +11,17 @@ function isActiveContent(filePath) {
   return ACTIVE_EXTENSIONS.has(path.extname(String(filePath || "")).toLowerCase());
 }
 
+// Every upload is saved under a new random name (upload.middleware.js) and never overwritten, so
+// a browser may keep it for 30 days without asking again (17 Nov 2026) — photos and covers stop
+// downloading on every visit.
+const CACHE_CONTROL = "public, max-age=2592000, immutable";
+
 // express.static's setHeaders hook for /uploads.
 function setUploadHeaders(res, filePath) {
+  res.setHeader("Cache-Control", CACHE_CONTROL);
   if (!isActiveContent(filePath)) return;
   res.setHeader("Content-Disposition", "attachment");
   res.setHeader("Content-Security-Policy", "sandbox");
 }
 
-module.exports = { setUploadHeaders, isActiveContent };
+module.exports = { setUploadHeaders, isActiveContent, CACHE_CONTROL };

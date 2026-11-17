@@ -6,7 +6,7 @@ const {
 
 // "survey" is an ungraded assessment type built from the author's own questions — rating scales
 // (itemSchema's "survey" kind / ratingScale below), choices with no correct answer, short and open
-// text, can-do checks (builder.constants.js's SURVEY_ITEM_KINDS / SURVEY_OPEN_KINDS); it's never
+// text, can-do checks (the client's assessment.schema.js SURVEY_ITEM_KINDS / SURVEY_OPEN_KINDS); it's never
 // scored (see grading.utils.js's requiresManualGrading/computeMaxScore) but its items can still be
 // tagged to competency indicators like any other assessment.
 const ASSESSMENT_TYPES = ["quiz", "exam", "project", "assignment", "observation", "survey"];

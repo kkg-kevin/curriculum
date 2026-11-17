@@ -2,7 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { FiArrowLeft, FiCheck, FiEye, FiFileText, FiInfo, FiX } from "react-icons/fi";
 import { useAdminDecision, useClaim, useClaimPayouts, useMarkClaimPaid, usePayClaimByMpesa, useSupervisorDecision } from "../hooks/useClaims";
-import { ClaimStatusPill, ClaimTimeline, Dialog, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateDetail, unitsLabel } from "../shared";
+import { ClaimStatusPill, ClaimTimeline, LocationChip, RATE_TYPE_LABEL, T, TYPE_LABEL, formatDate, formatMoney, ghostButton, inputStyle, invoiceHref, primaryButton, rateDetail, unitsLabel } from "../shared";
 import { InvoicePanel, useSideBySide } from "./ClaimInvoiceViewer";
 import SessionEvidence from "./SessionEvidence";
 import { HistoryButton } from "../../activity/components/RecordStamp";
@@ -341,19 +341,3 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
   });
 }
 
-// The review in a pop-up — the admin's Billing → Educator Claims tab.
-export default function ClaimReviewDialog({ claimId, canSupervise, canApprove, onClose }) {
-  return (
-    <ClaimReview
-      claimId={claimId}
-      canSupervise={canSupervise}
-      canApprove={canApprove}
-      onDone={onClose}
-      frame={({ title, subtitle, wide, busy = false, children }) => (
-        <Dialog title={title} subtitle={subtitle} onClose={onClose} busy={busy} width={wide ? 1480 : 980}>
-          {children}
-        </Dialog>
-      )}
-    />
-  );
-}

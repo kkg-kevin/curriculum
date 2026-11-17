@@ -45,14 +45,9 @@ export const REPORT_PARTS = [
 
 export const kenyaToday = () => new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
 export const shortDay = (date) => new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-export const whenText = (m) => `${shortDay(m.date)} · ${m.startTime}–${m.endTime}`;
 export const joinNames = (list) => {
   const items = (list || []).filter(Boolean);
   if (items.length <= 1) return items[0] || "";
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 };
 export const childNames = (m) => joinNames((m.learners || []).map((l) => l.firstName || l.name));
-// Who a viewer sees as the "other side" of a check-in.
-export const titleFor = (m, viewer) => (viewer === "parent"
-  ? `About ${childNames(m) || "your child"}`
-  : `${m.parentName} · ${childNames(m)}`);

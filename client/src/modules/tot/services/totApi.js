@@ -6,8 +6,6 @@ const BASE = "/api/tot";
 const data = (r) => r.data.data;
 
 export const totApi = {
-  // The signed-in educator's own training (null when they aren't in training).
-  me: () => api.get(`${BASE}/me`).then(data),
   // An educator's training — admin, their supervisor, or a hub they work at.
   educator: (teacherId) => api.get(`${BASE}/educators/${teacherId}`).then(data),
   // The workspace's TOT learners (Learners → TOT learners): each with their educator, classes, work.

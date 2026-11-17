@@ -169,7 +169,4 @@ module.exports = {
   createBootcampSchema,
   updateBootcampSchema,
   scheduleRunSchema,
-  BOOTCAMP_SALE_STATUSES: SALE_STATUSES,
-  BOOTCAMP_FORMATS: FORMATS,
-  BOOTCAMP_DESCRIPTION_MAX_WORDS: DESCRIPTION_MAX_WORDS,
 };

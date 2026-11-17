@@ -1374,18 +1374,6 @@ const CompetencyService = {
     return [...sequencedIds, ...(pathway.courses || []).filter((cid) => !sequencedIds.includes(cid))];
   },
 
-  // The learner's Developmental Stage at each hub whose class runs this curriculum (stage lives
-  // on the hub link — see maybeAutoIssueDiagnostic in learner.service.js).
-  async learnerStageIds(curriculumId, learnerId) {
-    const links = await LearnerHubLinkModel.findByLearnerId(learnerId);
-    const stageIds = new Set();
-    for (const link of links) {
-      if (!link.classId || !link.currentStageId) continue;
-      const cls = await ClassModel.findById(link.classId);
-      if (cls?.curriculumId === curriculumId) stageIds.add(link.currentStageId);
-    }
-    return stageIds;
-  },
 
   // One entry per pathway the learner is on in this curriculum, the automatic one first. Each
   // carries its ordered courseIds — the learner's My Courses adds these to their class's.

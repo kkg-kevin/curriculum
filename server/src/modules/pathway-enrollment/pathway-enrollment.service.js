@@ -1,7 +1,6 @@
 const LeadModel = require("../leads/lead.model");
 const LeadService = require("../leads/lead.service");
 const LearnerService = require("../learners/learner.service");
-const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const AuthService = require("../auth/auth.service");

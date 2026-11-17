@@ -81,7 +81,4 @@ const updateCompetitionSchema = competitionFields.partial().superRefine(applyDat
 module.exports = {
   createCompetitionSchema,
   updateCompetitionSchema,
-  COMPETITION_STATUSES: STATUSES,
-  COMPETITION_FORMATS: FORMATS,
-  COMPETITION_CADENCES: CADENCES,
 };

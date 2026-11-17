@@ -44,32 +44,6 @@ export function useCurriculumCurrentCourses(curriculumId, gradeId) {
   });
 }
 
-// Same as above, but for a teacher assigned to more than one class — merges current courses
-// across every distinct grade they're the class teacher for (shares cache entries with the
-// single-grade hook above, since it's the same query key per grade).
-export function useCurriculumCurrentCoursesForGrades(curriculumId, gradeIds) {
-  const results = useQueries({
-    queries: (gradeIds || []).map((gradeId) => ({
-      queryKey: KEYS.currentCourses(curriculumId, gradeId),
-      queryFn:  () => curriculumVersionApi.getCurrentCourses(curriculumId, gradeId),
-      enabled:  !!curriculumId,
-    })),
-  });
-
-  const byId = new Map();
-  results.forEach((r) => (r.data || []).forEach((c) => byId.set(c.id, c)));
-
-  // Matches every other hook in this file's shape (data/isLoading/isError/error), even though
-  // this merges several useQueries results — a consumer that copy-pastes the usual destructure
-  // pattern from a sibling hook gets a real isError/error instead of a silent always-undefined.
-  return {
-    data:      [...byId.values()],
-    isLoading: results.some((r) => r.isLoading),
-    isError:   results.some((r) => r.isError),
-    error:     results.find((r) => r.error)?.error || null,
-  };
-}
-
 // Same per-grade queries as above, but kept separate per grade instead of merged — for a
 // school-wide view that needs to know which specific grade has which courses (e.g. "Grade 1
 // has 0 courses"), not just the deduplicated union. Returned Map is keyed by gradeId.
@@ -86,7 +60,7 @@ export function useCurriculumCoursesByGrade(curriculumId, gradeIds) {
   const byGrade = new Map();
   ids.forEach((gradeId, i) => byGrade.set(gradeId, results[i]?.data || []));
 
-  // Same shape-parity note as useCurriculumCurrentCoursesForGrades above.
+  // The same shape (data/isLoading/isError/error) as every other hook in this file.
   return {
     data:      byGrade,
     isLoading: results.some((r) => r.isLoading),
@@ -97,7 +71,7 @@ export function useCurriculumCoursesByGrade(curriculumId, gradeIds) {
 
 // Courses across several (curriculumId, gradeId) pairs, each possibly a DIFFERENT curriculum —
 // for a multi-hub person (teacher/learner) whose hubs don't all share one curriculum, unlike
-// useCurriculumCoursesByGrade/useCurriculumCurrentCoursesForGrades above which assume a single
+// useCurriculumCoursesByGrade above which assumes a single
 // curriculumId across every grade. Shares cache entries with those hooks (same query key shape
 // per pair), so a hub already resolved elsewhere on the page never re-fetches here.
 export function useCoursesForPairs(pairs) {

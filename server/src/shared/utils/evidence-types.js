@@ -29,4 +29,4 @@ function resolveEvidenceType(assessment, evidenceTypes) {
   };
 }
 
-module.exports = { resolveEvidenceType, normEvidenceName: norm, NOT_EVIDENCE };
+module.exports = { resolveEvidenceType, NOT_EVIDENCE };

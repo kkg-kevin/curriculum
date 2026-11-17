@@ -44,7 +44,6 @@ const BillingModel = {
     if (forUpdate) query = query.forUpdate();
     return firstOrNull(query);
   },
-  findBatchById(id) { return firstOrNull(db(BATCHES).where({ id })); },
   findBatches(filters = {}) {
     let query = db(BATCHES).orderBy("createdAt", "desc");
     for (const [key, value] of Object.entries(filters)) {
@@ -52,7 +51,6 @@ const BillingModel = {
     }
     return query;
   },
-  findInvoicesByBatchId(batchId) { return db(INVOICES).where({ batchId }).orderBy("createdAt", "asc"); },
   findExistingLearnerInvoice({ hubId, learnerId, invoiceType, periodLabel }) {
     return firstOrNull(db(INVOICES).where({ hubId, learnerId, invoiceType, periodLabel: periodLabel || null }).whereNotIn("status", ["cancelled", "void"]));
   },

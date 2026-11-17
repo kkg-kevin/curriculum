@@ -6,7 +6,6 @@ const STALE = 5 * 60 * 1000; // 5 minutes — data is fresh across tab switches
 
 const KEYS = {
   comps:            (cid) => ["curriculum-competencies", cid],
-  indicators:       (cid, compId) => ["curriculum-competency-indicators", cid, compId],
   areas:            (cid) => ["pathways", cid],
   ladder:           (cid) => ["progression-ladder", cid],
   ageCats:          (cid) => ["age-categories", cid],
@@ -16,12 +15,9 @@ const KEYS = {
   performanceBands: (cid) => ["performance-bands", cid],
   compWeights:      (cid) => ["competency-weights", cid],
   pathway:  (cid, learnerId) => ["pathway-placement", cid, learnerId],
-  indicatorAchievements: (cid) => ["indicator-achievements", cid],
-  competencyScores:      (cid, ageCategoryId) => ["competency-scores", cid, ageCategoryId],
   bandProgress:          (cid, ageCategoryId) => ["band-progress", cid, ageCategoryId],
   learnerCompetencyScores: (cid, learnerId, hubId) => ["competency-scores", "learner", cid, learnerId, hubId || null],
   learnerBandProgress:     (cid, learnerId, hubId) => ["band-progress", "learner", cid, learnerId, hubId || null],
-  learnerPathwayCourseProgress: (cid, pathwayId, learnerId) => ["pathway-course-progress", cid, pathwayId, learnerId],
 };
 
 /* ── Curriculum ↔ Competency links (competencies are authored in Settings) ── */
@@ -60,69 +56,12 @@ export function useUnlinkCompetency(curriculumId) {
   });
 }
 
-// Threshold is how THIS curriculum evaluates an adopted competency.
-export function useUpdateCompetencyLink(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ competencyId, data }) => competenciesApi.updateCompetencyLink(curriculumId, competencyId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.comps(curriculumId) });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update competency"),
-  });
-}
-
 /* ── Competency Indicators (how THIS curriculum evaluates an adopted competency) ──
    NOT WIRED INTO SCORING: no component calls these hooks today, and records created
    here get fresh IDs disconnected from the global Competency.indicators[] ids that
    assessment indicatorMarks / Performance Bands / the scoring engines all key off.
    Don't build a UI on top of this without first re-pointing it at the global indicator
    ids, or it'll look like it affects competency scores when it doesn't. ── */
-
-export function useCompetencyIndicators(curriculumId, competencyId, enabled = true) {
-  return useQuery({
-    queryKey:  KEYS.indicators(curriculumId, competencyId),
-    queryFn:   () => competenciesApi.getCompetencyIndicators(curriculumId, competencyId),
-    enabled:   !!curriculumId && !!competencyId && enabled,
-    staleTime: STALE,
-  });
-}
-
-export function useCreateCompetencyIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => competenciesApi.createCompetencyIndicator(curriculumId, competencyId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator added");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to add indicator"),
-  });
-}
-
-export function useUpdateCompetencyIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }) => competenciesApi.updateCompetencyIndicator(curriculumId, competencyId, id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator updated");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update indicator"),
-  });
-}
-
-export function useDeleteCompetencyIndicator(curriculumId, competencyId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id) => competenciesApi.deleteCompetencyIndicator(curriculumId, competencyId, id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicators(curriculumId, competencyId) });
-      toast.success("Indicator deleted");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to delete indicator"),
-  });
-}
 
 /* ── Pathways (grouping for competencies as used within this curriculum) ── */
 
@@ -172,20 +111,6 @@ export function useDeletePathway(curriculumId, successMessage = "Pathway deleted
   });
 }
 
-// Clones a pathway from the Settings catalog into this curriculum. The result is
-// a brand-new, independent record — editing it afterwards never touches the catalog default.
-export function useImportPathway(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (pathwayId) => competenciesApi.importPathway(curriculumId, pathwayId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.areas(curriculumId) });
-      toast.success("Pathway imported");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to import pathway"),
-  });
-}
-
 // Reorders a Pathway's own course ladder — Performance Bands with pathwayId+courseId set (same
 // underlying data useReorderPerformanceBands reorders for a Developmental Stage's ladder, just
 // scoped by pathwayId instead), so invalidates performanceBands, not the pathway record itself.
@@ -204,26 +129,6 @@ export function useReorderPathwayCourses(curriculumId) {
 
 /* ── Progression Ladder ─────────────────────────────────────────────────── */
 
-export function useLadder(curriculumId) {
-  return useQuery({
-    queryKey:  KEYS.ladder(curriculumId),
-    queryFn:   () => competenciesApi.getLadder(curriculumId),
-    enabled:   !!curriculumId,
-    staleTime: STALE,
-  });
-}
-
-export function useUpdateLadder(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (rungs) => competenciesApi.updateLadder(curriculumId, rungs),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.ladder(curriculumId) });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to update pathway placement"),
-  });
-}
-
 // Indicators actually tagged in this curriculum's attached assessments, grouped by
 // competency — feeds the Performance Bands indicator picker. Always live (no cache
 // staleTime override), since it reflects whatever's currently tagged on assessments.
@@ -232,42 +137,6 @@ export function usePopulatedIndicators(curriculumId) {
     queryKey: ["populated-indicators", curriculumId],
     queryFn:  () => competenciesApi.getPopulatedIndicators(curriculumId),
     enabled:  !!curriculumId,
-  });
-}
-
-// Persisted marks-earned per indicator (Engine 5 framework) — always live, same reasoning as
-// usePopulatedIndicators above.
-export function useIndicatorAchievements(curriculumId) {
-  return useQuery({
-    queryKey: KEYS.indicatorAchievements(curriculumId),
-    queryFn:  () => competenciesApi.getIndicatorAchievements(curriculumId),
-    enabled:  !!curriculumId,
-  });
-}
-
-// One write here feeds three reads — the achievement list itself, the computed competency
-// scores, and the indicator-driven band completion — so all three get invalidated together.
-export function useSetIndicatorAchievement(curriculumId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ indicatorId, competencyId, marksEarned }) =>
-      competenciesApi.setIndicatorAchievement(curriculumId, indicatorId, competencyId, marksEarned),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.indicatorAchievements(curriculumId) });
-      qc.invalidateQueries({ queryKey: KEYS.competencyScores(curriculumId) });
-      qc.invalidateQueries({ queryKey: KEYS.bandProgress(curriculumId) });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to save score"),
-  });
-}
-
-// Computed score per adopted competency (Engine 5 → Engine 3), with resolved level/band.
-// Scoped to one Developmental Stage's ladder now — only fires once a stage is selected.
-export function useCompetencyScores(curriculumId, ageCategoryId) {
-  return useQuery({
-    queryKey: KEYS.competencyScores(curriculumId, ageCategoryId),
-    queryFn:  () => competenciesApi.getCompetencyScores(curriculumId, ageCategoryId),
-    enabled:  !!curriculumId && !!ageCategoryId,
   });
 }
 
@@ -298,17 +167,6 @@ export function useLearnerBandProgress(curriculumId, learnerId, hubId = null) {
     queryKey: KEYS.learnerBandProgress(curriculumId, learnerId, hubId),
     queryFn:  () => competenciesApi.getLearnerBandProgress(curriculumId, learnerId, hubId),
     enabled:  !!curriculumId && !!learnerId,
-  });
-}
-
-// Pathway sibling of useLearnerBandProgress above — how much of THIS Pathway's current-course
-// indicator-contribution budget the learner has earned, same engine, scoped to one Pathway's
-// course ladder instead of a Developmental Stage's.
-export function useLearnerPathwayCourseProgress(curriculumId, pathwayId, learnerId) {
-  return useQuery({
-    queryKey: KEYS.learnerPathwayCourseProgress(curriculumId, pathwayId, learnerId),
-    queryFn:  () => competenciesApi.getLearnerPathwayCourseProgress(curriculumId, pathwayId, learnerId),
-    enabled:  !!curriculumId && !!pathwayId && !!learnerId,
   });
 }
 
@@ -574,18 +432,6 @@ export function usePathway(curriculumId, learnerId) {
     queryKey: KEYS.pathway(curriculumId, learnerId),
     queryFn:  () => competenciesApi.getPathway(curriculumId, learnerId),
     enabled:  !!curriculumId && !!learnerId,
-  });
-}
-
-export function usePlaceLearner(curriculumId, learnerId) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ areaId, data }) => competenciesApi.placeLearner(curriculumId, learnerId, areaId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.pathway(curriculumId, learnerId) });
-      toast.success("Learner placed");
-    },
-    onError: (err) => toast.error(err.response?.data?.message || "Failed to place learner"),
   });
 }
 

@@ -11,5 +11,4 @@ export const analyticsApi = {
   coverageDetail: (classId, courseId) => api.get(`/api/analytics/coverage/${classId}/${courseId}`).then((r) => r.data.data),
   // Following up a learner at risk: { learnerId, action, note?, message?, reasons? }.
   followup: (body) => api.post("/api/analytics/followups", body).then((r) => r.data.data),
-  followupHistory: (learnerId) => api.get(`/api/analytics/followups/${learnerId}`).then((r) => r.data.data),
 };

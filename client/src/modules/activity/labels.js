@@ -79,10 +79,6 @@ export function tone(entry) {
   return { color: "#1D4ED8", background: "#DBEAFE", label: null };
 }
 
-const ACCOUNT_LABELS = { admin: "Admin", collaborator: "Staff", teacher: "Educator", school: "Learning hub", learner: "Learner / parent", curriculumAdmin: "Curriculum admin", affiliate: "Affiliate", supervisor: "Supervisor", totLearner: "TOT learner", visitor: "Website visitor" };
-// "Staff · Finance", "Educator", "Admin"
-export const accountLabel = (entry) => [ACCOUNT_LABELS[entry.actorRole] || entry.actorRole, entry.actorAccessRole].filter(Boolean).join(" · ");
-
 // The tag beside a person's name in "Who did what" and the Activity log (12 Nov 2026): what they
 // were acting as — Admin, a staff member's own role name (e.g. "CEO", "Finance"), Supervisor,
 // Educator, Parent (a learner-role login with an email) or Learner (a child's username login),

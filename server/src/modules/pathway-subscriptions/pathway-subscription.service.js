@@ -6,7 +6,7 @@ const NotificationService = require("../notifications/notification.service");
 const PaymentOptions = require("../payments/payment-options");
 const PathwayAccess = require("./pathway-access");
 const { PathwayPackageModel, PathwaySubscriptionModel } = require("./pathway-subscription.model");
-const { priceForPackage, toPublicPackage, resolvePricing, periodWord, CURRENCY } = require("../home-learning/home-learning.pricing");
+const { priceForPackage, resolvePricing, periodWord, CURRENCY } = require("../home-learning/home-learning.pricing");
 const { kenyaToday } = require("../../shared/utils/age");
 const { addDays, scheduleChange, periodLabel, PERIODS } = require("../../shared/utils/billing-periods");
 const { slugify } = require("../../shared/utils/slugify");
@@ -214,11 +214,6 @@ const PathwaySubscriptionService = {
     return { deleted: true };
   },
 
-  // The website's plans for one pathway (its catalogue entry), cheapest first.
-  async publicPackagesFor(ownerAdminId, pathwayTemplateId) {
-    if (!pathwayTemplateId) return [];
-    return (await PathwayPackageModel.findAll(ownerAdminId, { pathwayTemplateId, publishedOnly: true })).map(toPublicPackage);
-  },
 
   priceFor(plan, childCount, billingPeriod = null) {
     return priceForPackage(plan, childCount, billingPeriod);

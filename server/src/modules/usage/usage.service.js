@@ -419,7 +419,6 @@ const OWNER = {
 };
 
 const UsageService = {
-  TYPES: Object.keys(CHECKS),
 
   // What uses one record: { inUse, usages: [{ key, count, label, examples }], alternative }.
   async usageOf(type, id) {

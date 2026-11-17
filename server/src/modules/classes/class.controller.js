@@ -83,8 +83,7 @@ const getAllClasses = asyncHandler(async (req, res) => {
       // Unbounded — a class has no owner column of its own, scoped here to every class whose
       // schoolId is one of this admin's own hubs. class.model.js's findAll takes one schoolId at
       // a time, so this fetches per-hub and merges rather than adding a new whereIn param.
-      const perHub = await Promise.all(ownHubIds.map((hubId) => ClassService.getAllClasses({ ...filters, schoolId: hubId })));
-      let records = perHub.flat();
+      let records = await ClassService.getAllClassesForHubs(ownHubIds, filters);
       if (teacherId) { const ids = await classIdsTaughtBy(teacherId); records = records.filter((c) => ids.has(c.id)); }
       return res.json({ success: true, data: records, count: records.length });
     }

@@ -60,7 +60,6 @@ const MpesaModel = {
   // Calls answered later at a result URL: payouts, status checks, reversals.
   createOperation(data) { return createRecord(db, OPERATIONS, stringifyJsonFields(data, JSON_FIELDS)); },
   updateOperation(id, data) { return updateRecord(db, OPERATIONS, id, stringifyJsonFields(data, JSON_FIELDS)); },
-  findOperationById(id) { return firstOrNull(db(OPERATIONS).where({ id })); },
   // Safaricom answers with both ids; ours (OriginatorConversationID) is the one we chose.
   findOperationForResult({ originatorConversationId, conversationId }) {
     if (!originatorConversationId && !conversationId) return null;

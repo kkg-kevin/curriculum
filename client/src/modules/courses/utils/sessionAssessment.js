@@ -23,6 +23,3 @@ export function getSessionAssessmentIds(session) {
   return [...new Set(normalizeAssessmentAttachments(session).map((attachment) => attachment.assessmentId))];
 }
 
-export function getAssessmentAttachmentById(session, assessmentId) {
-  return normalizeAssessmentAttachments(session).find((attachment) => attachment.assessmentId === assessmentId) || null;
-}
