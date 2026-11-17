@@ -12,6 +12,8 @@ const { PROGRAMMES } = require("./learner-move.rules");
 //   GET  /api/learner-moves/:learnerId           what they hold, what stays theirs, where they can go
 //   POST /api/learner-moves/:learnerId/move      { destination: { programme, … }, endKeys, stopKeys }
 //   GET  /api/learner-moves/:learnerId/history   their Moves, newest first
+//   GET  /api/learner-moves/:learnerId/past      earlier programmes and what they earned there (admin, hub)
+//   GET  /api/learner-moves/mine/past            the same for a learner's / parent's own child
 
 const router = express.Router();
 const admin = authorize("admin");
@@ -40,12 +42,23 @@ const moveSchema = z.object({
     guardianEmail: z.string().max(255).optional().nullable(),
     guardianPhone: z.string().max(30).optional().nullable(),
   }),
+  // Tell the parent (bell + email) where the child went and that their records stay. Default on.
+  notifyParent: z.boolean().optional(),
   endKeys: z.array(z.string().max(120)).max(50).optional(),
   stopKeys: z.array(z.string().max(120)).max(50).optional(),
 });
 
 // Empty strings from the form mean "not chosen".
 const tidy = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, v === "" ? null : v]));
+
+// Registered before /:learnerId/… so "mine" is never read as a learner id.
+router.get("/mine/past", authorize("learner"), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await LearnerMoveService.past(req, null) });
+}));
+
+router.get("/:learnerId/past", authorize("admin", "school"), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await LearnerMoveService.past(req, req.params.learnerId) });
+}));
 
 router.get("/:learnerId", admin, asyncHandler(async (req, res) => {
   res.json({ success: true, data: await LearnerMoveService.options(req, req.params.learnerId) });

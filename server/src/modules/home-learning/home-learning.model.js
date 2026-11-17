@@ -38,11 +38,15 @@ const HouseholdModel = {
       .where({ ownerAdminId })
       .whereIn("householdId", households.map((h) => h.id))
       .orderBy("createdAt", "asc");
-    const [learners, curricula, educators] = await Promise.all([
+    const classIds = idsOf(links, "classId");
+    const [learners, curricula, educators, slotRows] = await Promise.all([
       lookup("learners", idsOf(links, "learnerId")),
       lookup("curricula", idsOf(links, "curriculumId")),
       lookup("teachers", idsOf(links, "educatorId")),
+      // How many weekly timetable slots each child's class has — the card flags "No timetable yet".
+      classIds.length ? db("timetable_slots").whereIn("classId", classIds).groupBy("classId").select("classId").count({ total: "*" }) : [],
     ]);
+    const slotCounts = new Map(slotRows.map((row) => [row.classId, Number(row.total) || 0]));
     return households.map((household) => ({
       ...household,
       learners: links.filter((l) => l.householdId === household.id).map((link) => {
@@ -52,6 +56,7 @@ const HouseholdModel = {
           learner: learnerSummary(learners.get(link.learnerId)),
           curriculum: curriculum ? { id: curriculum.id, name: curriculum.name } : null,
           educator: personSummary(educators.get(link.educatorId)),
+          slotCount: link.classId ? slotCounts.get(link.classId) || 0 : 0,
         };
       }),
     }));

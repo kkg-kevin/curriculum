@@ -7,6 +7,8 @@ router.get("/", authorize("admin"), controller.list);
 // Read-only here — the household forms pick a package from this list. Packages are created and
 // edited from Billing → Packages (/api/billing/packages, see billing.routes.js).
 router.get("/packages", authorize("admin"), controller.listPackages);
+// The hub every child's class sits in — the per-child timetable screen edits slots through /api/timetable.
+router.get("/hub", authorize("admin"), controller.getHub);
 router.get("/educator", authorize("teacher"), controller.getForEducator);
 router.get("/learner/:learnerId", authorize("learner"), controller.getForLearner);
 // A parent fills the free places in their package with more children (parent login only).

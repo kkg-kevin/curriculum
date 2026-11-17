@@ -390,6 +390,12 @@ const HomeLearningService = {
     });
   },
 
+  // The Home Learning hub, for the per-child timetable screen (each child's class lives in it).
+  async getHub(ownerAdminId) {
+    const hub = await ensureHomeHub(ownerAdminId);
+    return { id: hub.id, name: hub.name, curriculumId: hub.curriculumId || null };
+  },
+
   getHousehold(ownerAdminId, id) {
     return HouseholdModel.findById(id, ownerAdminId);
   },

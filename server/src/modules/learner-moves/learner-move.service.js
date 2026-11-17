@@ -13,6 +13,8 @@ const R = require("./learner-move.rules");
 const { placesOf, endPlace, classLabel } = require("./learner-move.places");
 const { DESTINATIONS, pathwayRowsByCurriculum, dayOf, list } = require("./learner-move.destinations");
 const { describePlaces } = require("./learner-move.details");
+const { pastProgrammes } = require("./learner-move.past");
+const NotificationService = require("../notifications/notification.service");
 
 // Moving a learner between programmes (16 Nov 2026) — staff learner page → Move learner:
 //   1. where to: a hub class, a bootcamp run, Home Learning, a Tech Club or a pathway plan;
@@ -49,6 +51,27 @@ async function loadLearner(ownerAdminId, learnerId) {
   if (!learner || !(await inWorkspace(ownerAdminId, learner.id))) fail("Learner not found", 404);
   if (learner.teacherId) fail("An educator in training is moved from their educator page (Training)");
   return learner;
+}
+
+// After a move, a short note to the parent's login (bell + email: learner_moved): where the child
+// went, and that their earlier reports and certificates are still theirs. Only when the child
+// actually left somewhere, and only to a parent login (never a staff account on the same email).
+async function tellParent(ctx, ended, toLabel) {
+  const { learner } = ctx;
+  if (!ended.length || !learner.guardianEmail) return false;
+  const parent = await db("users").whereRaw("LOWER(email) = ?", [String(learner.guardianEmail).trim().toLowerCase()])
+    .where({ role: "learner" }).whereNull("deactivatedAt").first("id");
+  if (!parent) return false;
+  const first = learner.firstName || "Your child";
+  const from = [...new Set(ended.map((e) => e.label).filter(Boolean))].join(" and ");
+  await NotificationService.notifyPerson(parent.id, {
+    type: "learner_moved",
+    title: `${first} has moved to ${toLabel}`.slice(0, 200),
+    message: `${first} has moved${from ? ` from ${from}` : ""} to ${toLabel}. Everything ${first} did before — reports, certificates and marked work — is still on their record: open ${first}'s page and look under Reports → Earlier programmes.`,
+    payload: { learnerId: learner.id, route: `/parent/children/${learner.id}` },
+    ownerAdminId: ctx.ownerAdminId,
+  });
+  return true;
 }
 
 async function openInvoices(learnerId) {
@@ -261,10 +284,38 @@ const LearnerMoveService = {
     }));
     await db("learner_transfers").insert(rows);
 
+    // The family hears where the child went and that nothing earlier was lost (staff can untick it).
+    let parentTold = false;
+    if (input.notifyParent !== false) {
+      parentTold = await tellParent(ctx, ended, toLabel).catch((err) => {
+        console.error(`[learner-moves] parent notice for ${learner.id} failed:`, err.message);
+        return false;
+      });
+    }
+
     return {
       programme, label: toLabel, recordId: opened.recordId, active: opened.active !== false,
-      ended: ended.length, notEnded, invoice: opened.invoice || null,
+      ended: ended.length, notEnded, invoice: opened.invoice || null, parentTold,
     };
+  },
+
+  // Earlier programmes (learner-move.past.js): the learner themself (or their parent) sees all of
+  // theirs; a hub login, its own hub's; an admin or staff member, their workspace's.
+  async past(req, learnerId) {
+    if (req.user.role === "learner") {
+      if (!req.ownLearner) return [];
+      return pastProgrammes(req.ownLearner.id, null);
+    }
+    if (req.user.role === "school") {
+      const hubId = req.ownSchool?.id;
+      const linked = hubId && (await db("learner_hub_links").where({ learnerId, hubId }).first("id"));
+      if (!linked) fail("Learner not found", 404);
+      return pastProgrammes(learnerId, [hubId]);
+    }
+    const learner = await LearnerModel.findById(learnerId);
+    if (!learner || !(await inWorkspace(req.ownerAdminId, learner.id))) fail("Learner not found", 404);
+    const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
+    return pastProgrammes(learner.id, hubs.map((h) => h.id));
   },
 
   // The learner's Moves, newest first: rows written before 16 Nov 2026 have no labels, so their

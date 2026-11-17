@@ -760,7 +760,18 @@ const CompetencyService = {
         throw err;
       }
     }
-    return EvidenceTypeModel.update(id, data);
+    const updated = await EvidenceTypeModel.update(id, data);
+    // Assessments tagged with the old name (assessments.evidenceType) follow the rename (17 Nov 2026).
+    if (data.name && data.name.trim().toLowerCase() !== String(item.name).trim().toLowerCase()) {
+      const db = require("../../../config/db");
+      const owner = await db("curricula").where({ id: curriculumId }).first("ownerAdminId");
+      if (owner?.ownerAdminId) {
+        await db("assessments").where({ ownerAdminId: owner.ownerAdminId })
+          .whereRaw("LOWER(TRIM(evidenceType)) = ?", [String(item.name).trim().toLowerCase()])
+          .update({ evidenceType: data.name.trim(), updatedAt: new Date() });
+      }
+    }
+    return updated;
   },
 
   /* ── Performance Bands ──────────────────────────────────────────────── */

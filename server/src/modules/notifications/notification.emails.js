@@ -297,6 +297,15 @@ const EMAIL_TYPES = {
     look: { tone: "info", icon: "envelope", eyebrow: "A message about your child" },
     path: (p) => routeOr(p, "/parent"),
   },
+  // A child moved between programmes (learner-moves, 17 Nov 2026) — where to, and that their
+  // earlier reports and certificates stay theirs.
+  learner_moved: {
+    label: "Your child has moved to a new programme",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "info", icon: "envelope", eyebrow: "A change for your child" },
+    path: (p) => routeOr(p, "/parent"),
+  },
   learner_flagged: {
     label: "A learner of yours needs support",
     roles: EDUCATOR_ROLES,

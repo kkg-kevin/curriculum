@@ -4,6 +4,9 @@ import api from "../../../services/api";
 export const learnerMovesApi = {
   options: (learnerId) => api.get(`/api/learner-moves/${learnerId}`).then((r) => r.data.data),
   move: (learnerId, body) => api.post(`/api/learner-moves/${learnerId}/move`, body).then((r) => r.data.data),
+  // Earlier programmes: a learner's (staff) or one's own / one's child's (portal).
+  past: (learnerId) => api.get(`/api/learner-moves/${learnerId}/past`).then((r) => r.data.data || []),
+  myPast: () => api.get("/api/learner-moves/mine/past").then((r) => r.data.data || []),
   history: (learnerId) => api.get(`/api/learner-moves/${learnerId}/history`).then((r) => r.data.data || []),
 };
 

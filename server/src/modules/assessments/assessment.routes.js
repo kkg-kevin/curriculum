@@ -37,6 +37,24 @@ router.route("/folders/:folderId")
 router.put("/folders/:folderId/assessments", authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.addAssessments(req.ownerAdminId, req.params.folderId, req.body))));
 router.delete("/folders/:folderId/assessments/:assessmentId", authorize("admin"), asyncHandler(async (req, res) => ok(res, await AssessmentFolderService.removeAssessment(req.ownerAdminId, req.params.folderId, req.params.assessmentId))));
 
+// The evidence type names across this admin's curricula, with their categories — the builder's
+// "Counts as" choice (evidenceType). Registered before /:id.
+router.get("/evidence-types", authorize("admin"), asyncHandler(async (req, res) => {
+  const db = require("../../config/db");
+  const rows = await db("evidence_types as e").join("curricula as c", "c.id", "e.curriculumId")
+    .where("c.ownerAdminId", req.ownerAdminId).select("e.name", "e.category", "e.minItemCount");
+  const byName = new Map();
+  for (const r of rows) {
+    const key = r.name.trim().toLowerCase();
+    const seen = byName.get(key) || { name: r.name.trim(), categories: new Set(), curricula: 0, withMinimum: 0 };
+    if (r.category) seen.categories.add(r.category);
+    seen.curricula += 1;
+    if (r.minItemCount > 0) seen.withMinimum += 1;
+    byName.set(key, seen);
+  }
+  ok(res, [...byName.values()].map((x) => ({ ...x, categories: [...x.categories] })).sort((a, b) => a.name.localeCompare(b.name)));
+}));
+
 router.route("/:id").get(authorize("admin"), getAssessmentById).put(authorize("admin"), updateAssessment).delete(authorize("admin"), deleteAssessment);
 
 // Everything under "/:id/..." below is assessment-authoring content (competency/pathway/

@@ -31,6 +31,7 @@ import DiagnosticReportCard from "../components/profile/DiagnosticReportCard";
 import AssessmentsOverview from "../components/AssessmentsOverview";
 import ProjectsOverview from "../components/ProjectsOverview";
 import ReportsOverview from "../components/ReportsOverview";
+import EarlierProgrammes from "../../learner-moves/components/EarlierProgrammes";
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import { useMyCertificates, useMyCertificateProgress } from "../../certificates/hooks/useCertificates";
 import { FiBell, FiBriefcase, FiKey } from "react-icons/fi";
@@ -186,7 +187,7 @@ export default function ProfilePage() {
 
       {activeTab === "Projects" && <ProjectsOverview classId={cls?.id} learner={learner} />}
 
-      {activeTab === "Reports" && <ReportsOverview hubId={selectedHub?.id} />}
+      {activeTab === "Reports" && <><ReportsOverview hubId={selectedHub?.id} /><EarlierProgrammes learnerId={learner.id} /></>}
 
       {cls ? <SummaryRow classId={cls.id} /> : <NoClassNotice />}
 

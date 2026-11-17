@@ -191,6 +191,9 @@ const assessmentFields = z.object({
   indicators:    z.array(indicatorSchema).optional().default([]),
   deliverables:  z.array(deliverableSchema).optional().default([]),
   milestones:    z.array(milestoneSchema).optional().default([]),
+  // Which evidence type it counts as (an evidence type's name; empty = automatic, by its type) —
+  // shared/utils/evidence-types.js. No default, so a partial update never clears it.
+  evidenceType:  z.string().trim().max(150).nullable().transform((s) => (s ? s : null)).optional(),
   ...saleFields,
 });
 

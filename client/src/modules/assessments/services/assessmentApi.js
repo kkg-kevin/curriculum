@@ -9,6 +9,8 @@ export const assessmentApi = {
   update: (id, data) => api.put(`${ENDPOINT}/${id}`, data).then((r) => r.data.data),
   remove: (id) => api.delete(`${ENDPOINT}/${id}`).then((r) => r.data),
   checkRemove: (id) => checkDelete(`${ENDPOINT}/${id}`),
+  // Evidence type names across the admin's curricula (builder → "Counts as").
+  evidenceTypes: () => api.get(`${ENDPOINT}/evidence-types`).then((r) => r.data.data || []),
 
   // Assessment folders (Assessments page) — an assessment sits in at most one; deleting a folder
   // keeps its assessments.

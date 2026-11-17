@@ -21,6 +21,8 @@ export const homeLearningApi = {
   // Parent portal → My Family (the parent's own login): households, free places, add a child.
   getFamily: () => api.get(`${BASE}/family`).then((r) => r.data.data),
   addFamilyChild: (householdId, data) => api.post(`${BASE}/family/${householdId}/children`, data).then((r) => r.data.data),
+  // The Home Learning hub (each child's class lives in it) — for the per-child timetable screen.
+  getHub: () => api.get(`${BASE}/hub`).then((r) => r.data.data),
   getMyAssignments: () => api.get(`${BASE}/educator`).then((r) => r.data.data),
 };
 
