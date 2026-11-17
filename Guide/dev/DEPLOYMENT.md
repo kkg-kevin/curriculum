@@ -128,6 +128,51 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (17 Nov 2026, evening) — Supervisors under People, a fuller supervisor portal, parent check-in reports
+
+**Portal and backend** from `curriculum` (branch `modules`) at `9dde5e47`. **Website: no change** since 13 Nov. **No new
+migration, no new npm package, no new setting.** If the 17 Nov (morning) release below isn't up yet, these files include it:
+follow its steps (its two migrations and the new `.htaccess`) and skip the short list here.
+
+### Upload in this order
+
+0. **Take a database backup** of the Dev database (no migration this time, but the routine stays).
+1. **Backend** — `backend-deploy.zip` (762 files, 186 migrations — none new). **Stop App → Start App**.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-BRp-co4F.js`), after the backend. In `curriculum.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the same as the morning's — upload it only if
+   the morning release isn't up.
+
+Nothing to run afterwards. Existing supervisors, their educators and claims are untouched.
+
+### What changed
+
+- **People → Supervisors** (admin app sidebar, after Educators) replaces the Supervisors section in Settings → People & sharing
+  and the Supervisors pop-up on Educator Claims (old links open the new page):
+  - a list with each supervisor's educators, claims waiting and last sign-in;
+  - **Add supervisor**: *someone already here* — an educator who signs in or a staff member, chosen from a list; they keep their
+    one login and password, gain the supervisor portal, and pick the portal when they sign in — or *someone new* (name, email,
+    password); then the educators they look after;
+  - each supervisor's page: edit details, new password, remove, choose or take off educators.
+  - An existing login's password is never replaced from here, and nobody can supervise their own educator record.
+- **Supervisor portal:** "Also waiting for you" on the dashboard; Parent feedback; Hub check-ins (read only); Team insights
+  (coverage, attendance, parent check-ins, trends, assessments, competencies, learners at risk, educators — their educators'
+  classes only); Team activity; **Message educators** (a bell notice and an email to each educator). **My Educators**, each
+  educator's page (tabs like the admin's educator page, with a Claims tab) and **My Profile** redesigned; supervisors can now
+  change their own phone number.
+- **Parent–mentor check-ins:** a **Reports** tab next to Templates, each report headed with the learner, mentor, parent and hub,
+  and a **Parent check-ins** tab in Reports & Analytics.
+
+### Verify
+
+1. Sign in as an admin at https://curriculum.digifunzi.com → **People → Supervisors** lists the supervisors; open one; **Add supervisor** →
+   "Someone already here" lists educators and staff. Settings → People & sharing no longer shows Supervisors.
+2. Sign in as a supervisor: the sidebar has Parent feedback, Hub check-ins, Team insights and Team activity; My Educators shows
+   one card per educator; an educator opens with tabs; My Profile shows their figures.
+3. Parent–Mentor Check-ins → **Reports**; Reports & Analytics → **Parent check-ins**.
+4. Someone made a supervisor from "someone already here" signs in and is asked "How do you want to sign in?".
+
+---
+
 ## This release (17 Nov 2026) — Curriculum coverage, minimum evidence, a Home Learning timetable, earlier programmes kept in view, and a faster, lighter system
 
 **Portal and backend** from `curriculum` (branch `modules`) at `47703702` (with `382a8717`, `f3b4efe2`, `35e28dd2` and `159f20a9`
