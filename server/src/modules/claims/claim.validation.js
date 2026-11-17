@@ -74,17 +74,26 @@ const settingsSchema = z
 
 // No password needed when the email already signs in (an educator, staff) — they keep their one
 // login (AuthService.addWorkspaceRole).
+const optionalText = (max) => z.preprocess((v) => (v === "" ? undefined : v), z.string().trim().max(max).optional());
 const createSupervisorSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(150),
   email: z.string().trim().email("Enter a valid email address"),
   password: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8, "Password must be at least 8 characters").optional()),
+  phone: optionalText(30),
+  jobTitle: optionalText(100),
+  // The educators they'll look after, chosen in the same step (17 Nov 2026).
+  teacherIds: z.array(z.string().max(64)).max(500).optional(),
 });
 
-// Renaming, or setting a new password — either or both.
+// Renaming, a phone / job title, or a new password — any of them.
 const updateSupervisorSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(150).optional(),
   password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  phone: z.string().trim().max(30).optional(),
+  jobTitle: z.string().trim().max(100).optional(),
 });
 
+const supervisorEducatorsSchema = z.object({ teacherIds: z.array(z.string().max(64)).max(500) });
+
 module.exports = {
-  createSupervisorSchema, updateSupervisorSchema, submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES, RATE_TYPES };
+  createSupervisorSchema, updateSupervisorSchema, supervisorEducatorsSchema, submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, CLAIM_TYPES, CLAIM_STATUSES, RATE_TYPES };

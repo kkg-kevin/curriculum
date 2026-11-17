@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiBookOpen, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiBookOpen, FiMessageCircle, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { readLocal, writeLocal } from "../../../../utils/safeStorage";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAnalytics, useAnalyticsFilters } from "../../hooks/useAnalytics";
@@ -19,6 +19,7 @@ import AttendanceTab from "./AttendanceTab";
 import EnrolmentTab from "./EnrolmentTab";
 import ParentsTab from "./ParentsTab";
 import CoverageTab from "./CoverageTab";
+import MentorCheckinsTab from "./MentorCheckinsTab";
 import AttentionPanel from "./AttentionPanel";
 import { Card, Empty, STYLES, T } from "./ui";
 
@@ -44,6 +45,8 @@ const TABS = [
   { key: "at-risk", label: "Learners at risk", icon: FiAlertTriangle, group: "Learning", Component: AtRiskTab },
   { key: "logins", label: "Logins", icon: FiLogIn, group: "People", Component: LoginsTab },
   { key: "parents", label: "Parent engagement", icon: FiHeart, group: "People", Component: ParentsTab },
+  // 17 Nov 2026: parent–mentor check-ins — held, pending, speed, families reached.
+  { key: "mentor-checkins", label: "Parent check-ins", icon: FiMessageCircle, group: "People", Component: MentorCheckinsTab },
   { key: "parent-feedback", label: "Parent feedback", icon: FiStar, group: "People", Component: ParentFeedbackTab },
   // Per-educator performance — admins only (hubs never see per-educator tables).
   { key: "educators", label: "Educators", icon: FiUsers, group: "People", Component: EducatorsTab, adminOnly: true },
@@ -52,12 +55,18 @@ const TABS = [
 const GROUP_ICON = { Summary: FiActivity, Learning: FiAward, People: FiUsers, Business: FiDollarSign };
 const FILTER_KEYS = ["hubId", "curriculumId", "classId", "courseId", "stageId", "pathway", "gender"];
 
-export default function AnalyticsPage({ level = "admin", overview, onCertificates }) {
+// A supervisor (the supervisor portal's Team insights, 17 Nov 2026) gets these tabs only, for the
+// classes their educators teach — the server allows no others (analytics.routes.js).
+const SUPERVISOR_TABS = ["coverage", "assessments", "competencies", "attendance", "at-risk", "trends", "mentor-checkins", "educators"];
+
+export default function AnalyticsPage({ level = "admin", overview, onCertificates, title = "Reports & Analytics" }) {
   const navigate = useNavigate();
   const isHub = level === "hub";
+  const isSupervisor = level === "supervisor";
   const [params, setParams] = useSearchParams();
-  const tabs = TABS.filter((t) => !(isHub && t.adminOnly));
-  const tab = tabs.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
+  const tabs = isSupervisor ? TABS.filter((t) => SUPERVISOR_TABS.includes(t.key)) : TABS.filter((t) => !(isHub && t.adminOnly));
+  const homeTab = isSupervisor ? "coverage" : "overview";
+  const tab = tabs.some((t) => t.key === params.get("tab")) ? params.get("tab") : homeTab;
   const preset = params.get("period") || "30";
   const range = preset === "custom" ? { from: params.get("from") || presetRange("30").from, to: params.get("to") || presetRange("30").to } : presetRange(preset);
   const value = { preset, ...range, ...Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])) };
@@ -77,7 +86,7 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
   };
   const setTab = (key) => {
     const next = new URLSearchParams(params);
-    if (key === "overview") next.delete("tab"); else next.set("tab", key);
+    if (key === homeTab) next.delete("tab"); else next.set("tab", key);
     setParams(next);
   };
 
@@ -109,8 +118,9 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
     setParams(next);
   };
   const links = {
-    learner: (id) => navigate(learnerPath(isHub ? "school" : "admin", id, "view")),
-    educator: (id) => navigate(isHub ? `/school-portal/teachers/${id}/view` : `/teachers/${id}/view`),
+    // A supervisor has no learner pages — names show as plain text.
+    learner: isSupervisor ? null : (id) => navigate(learnerPath(isHub ? "school" : "admin", id, "view")),
+    educator: (id) => navigate(isSupervisor ? `/supervisor-portal/educators/${id}` : isHub ? `/school-portal/teachers/${id}/view` : `/teachers/${id}/view`),
   };
   const Component = current.Component;
 
@@ -124,7 +134,7 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: T.ink, letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: 10 }}>
           <span aria-hidden style={{ width: 36, height: 36, borderRadius: 11, background: `linear-gradient(135deg, ${T.navy}, ${T.sky})`, color: "#fff", display: "grid", placeItems: "center" }}><FiActivity size={18} /></span>
-          Reports & Analytics
+          {title}
         </h1>
         {onCertificates && (
           <button type="button" onClick={onCertificates}
@@ -170,7 +180,7 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
             <Card><Empty>Loading…</Empty></Card>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, opacity: viewQuery.isFetching ? 0.6 : 1, transition: "opacity .15s" }}>
-              <Component data={viewQuery.data} links={links} isHub={isHub} onTab={setTab} onFocusHub={focusHub} />
+              <Component data={viewQuery.data} links={links} isHub={isHub} level={level} onTab={setTab} onFocusHub={focusHub} />
             </div>
           )}
         </>

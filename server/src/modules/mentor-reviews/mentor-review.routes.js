@@ -33,6 +33,11 @@ router.get("/me", authorize("teacher"), asyncHandler(async (req, res) => {
   res.json({ success: true, data: await MentorReviewService.mine(req) });
 }));
 
+// A supervisor's educators with their feedback summaries and open concerns (17 Nov 2026).
+router.get("/supervisor", authorize("supervisor"), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await MentorReviewService.forSupervisor(req) });
+}));
+
 // An educator's feedback: named for admins / staff / their supervisor, averages for a hub.
 router.get("/educators/:teacherId", authorize("admin", "supervisor", "school"), asyncHandler(async (req, res) => {
   res.json({ success: true, data: await MentorReviewService.feedbackForEducator(req, req.params.teacherId) });

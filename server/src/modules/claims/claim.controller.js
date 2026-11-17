@@ -1,7 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const ClaimService = require("./claim.service");
 const SupervisorService = require("./supervisor.service");
-const { submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, createSupervisorSchema, updateSupervisorSchema, CLAIM_STATUSES } = require("./claim.validation");
+const { submitClaimSchema, submitBookingsClaimSchema, decisionSchema, markPaidSchema, settingsSchema, createSupervisorSchema, updateSupervisorSchema, supervisorEducatorsSchema, CLAIM_STATUSES } = require("./claim.validation");
 const UsageService = require("../usage/usage.service");
 
 // The educator behind this login — every educator route works off this, never off an id in the
@@ -122,13 +122,31 @@ const updateSupervisor = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await SupervisorService.update(req.params.id, req.ownerAdminId, data) });
 });
 
+const getSupervisor = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await SupervisorService.get(req.params.id, req.ownerAdminId) });
+});
+
+const supervisorEducatorOptions = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await SupervisorService.educatorOptions(req.ownerAdminId) });
+});
+
+// People already here who could become a supervisor (Add supervisor → "Someone already here").
+const supervisorCandidates = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await SupervisorService.candidates(req.ownerAdminId) });
+});
+
+const setSupervisorEducators = asyncHandler(async (req, res) => {
+  const { teacherIds } = supervisorEducatorsSchema.parse(req.body);
+  res.json({ success: true, data: await SupervisorService.setEducators(req.params.id, req.ownerAdminId, teacherIds) });
+});
+
 const removeSupervisor = asyncHandler(async (req, res) => {
   if (await UsageService.guardDelete(req, res, "supervisor", req.params.id, "This supervisor")) return;
   res.json({ success: true, ...(await SupervisorService.remove(req.params.id, req.ownerAdminId)) });
 });
 
 module.exports = {
-  listSupervisors, createSupervisor, updateSupervisor, removeSupervisor,
+  listSupervisors, createSupervisor, updateSupervisor, removeSupervisor, getSupervisor, supervisorEducatorOptions, supervisorCandidates, setSupervisorEducators,
   getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims, getMyBookingEarnings, submitBookingsClaim,
   getClaim, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,
 };

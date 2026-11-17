@@ -61,7 +61,10 @@ async function getTrends(scope) {
 
   let mentorByMonth = null;
   if (!scope.isHubView && scope.ownerAdminId) {
-    const snaps = await db("mentor_standard_snapshots").where({ ownerAdminId: scope.ownerAdminId }).whereIn("month", months.map((m) => m.key)).select("month", "standing");
+    let snapQuery = db("mentor_standard_snapshots").where({ ownerAdminId: scope.ownerAdminId }).whereIn("month", months.map((m) => m.key));
+    // A supervisor's trend counts their own educators only.
+    if (scope.supervisedEducatorIds) snapQuery = snapQuery.whereIn("teacherId", scope.supervisedEducatorIds.length ? scope.supervisedEducatorIds : ["-"]);
+    const snaps = await snapQuery.select("month", "standing");
     mentorByMonth = new Map();
     for (const s of snaps) {
       const st = json(s.standing) || {};

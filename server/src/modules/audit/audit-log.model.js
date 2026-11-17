@@ -79,11 +79,13 @@ function withinRecord(query, recordType, recordId) {
 // Narrows a query to what the Activity page asks for. Always scoped to one workspace. `action`
 // may be a list ("password_changed,password_reset"). `recordType` + `recordId`: one record with
 // its parts (RECORDS above).
-function applyFilters(query, { ownerAdminId, view, actorUserId, module, action, outcome, entityType, entityId, recordType, recordId, from, to, q }) {
+function applyFilters(query, { ownerAdminId, view, actorUserId, actorUserIds, module, action, outcome, entityType, entityId, recordType, recordId, from, to, q }) {
   query.where({ ownerAdminId });
   if (recordType) withinRecord(query, recordType, recordId);
   if (view && VIEWS[view]) query.where((w) => VIEWS[view](w));
   if (actorUserId) query.where({ actorUserId });
+  // Several people at once (a supervisor's educators — supervisor-portal.service.js).
+  if (actorUserIds) query.whereIn("actorUserId", actorUserIds.length ? actorUserIds : ["-"]);
   if (module) query.where({ module });
   if (action) query.whereIn("action", String(action).split(",").map((a) => a.trim()).filter(Boolean));
   if (outcome) query.where({ outcome });

@@ -1,11 +1,45 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { FiAlertTriangle, FiArrowRight, FiCheckCircle, FiClock, FiDollarSign, FiInbox, FiUsers } from "react-icons/fi";
+import { FiAlertTriangle, FiArrowRight, FiCheckCircle, FiClock, FiDollarSign, FiEdit3, FiHeart, FiInbox, FiMessageCircle, FiSend, FiUsers } from "react-icons/fi";
+import MessageEducatorsDialog from "../../supervisor-portal/components/MessageEducatorsDialog";
 import { useAuth } from "../../../context/AuthContext";
 import { useSupervisorClaims } from "../hooks/useClaims";
 import { T, cardStyle, formatDate, formatMoney, TYPE_LABEL, ClaimStatusPill } from "../shared";
 import { Avatar, ClaimCard, HeroStat, OVERDUE_DAYS, daysSince, greeting } from "../components/supervisorParts";
 import SupervisorQaCard from "../../qa/components/SupervisorQaCard";
+import { useTotMarking } from "../../tot/hooks/useTot";
+import { useMeetings } from "../../mentor-checkins/hooks/useMentorCheckins";
+import { useSupervisorFeedback } from "../../mentor-reviews/hooks/useMentorReviews";
+
+// What else waits on the supervisor (17 Nov 2026): their educators' training work to mark,
+// parent check-ins whose report is overdue, and parents' open concerns — each a link to where
+// it's dealt with.
+function AlsoWaitingCard() {
+  const { data: marking = [] } = useTotMarking();
+  const { data: checkins } = useMeetings({ view: "todo" });
+  const { data: feedback } = useSupervisorFeedback();
+  const rows = [
+    { key: "marking", icon: FiEdit3, label: "Training work to mark", count: marking.length, to: "/supervisor-portal/marking" },
+    { key: "checkins", icon: FiMessageCircle, label: "Check-in reports overdue", count: checkins?.counts?.todo || 0, to: "/supervisor-portal/mentor-checkins" },
+    { key: "concerns", icon: FiHeart, label: "Parents' open concerns", count: feedback?.openConcerns || 0, to: "/supervisor-portal/feedback" },
+  ];
+  return (
+    <div style={{ ...cardStyle, padding: 18 }}>
+      <h2 style={{ margin: "0 0 10px", fontSize: 15, fontWeight: 800, color: T.ink }}>Also waiting for you</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {rows.map(({ key, icon: Icon, label, count, to }) => (
+          <Link key={key} to={to} className="supervisor-educator" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, textDecoration: "none" }}>
+            <span aria-hidden style={{ width: 32, height: 32, borderRadius: 10, display: "grid", placeItems: "center", background: count ? "#FFF5E1" : "#F1F5F9", color: count ? "#B87708" : T.inkFaint, flexShrink: 0 }}><Icon size={15} /></span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{label}</span>
+            {count > 0
+              ? <span style={{ padding: "2px 9px", borderRadius: 999, background: T.gold, color: "#17304B", fontSize: 11.5, fontWeight: 800 }}>{count}</span>
+              : <span style={{ fontSize: 12, color: "#047857", display: "inline-flex", alignItems: "center", gap: 4 }}><FiCheckCircle size={12} /> None</span>}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // The supervisor's dashboard: what needs them now — claims to review, and their QA check-ins. The claims that have waited longest are here
 // to act on directly; the full list, with its filters and export, is the Claims page.
@@ -17,6 +51,7 @@ export default function SupervisorDashboardPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { data, isLoading, isError, error } = useSupervisorClaims();
+  const [messaging, setMessaging] = useState(false);
 
   const claims = useMemo(() => data?.claims || [], [data]);
   const educators = useMemo(() => data?.educators || [], [data]);
@@ -134,11 +169,15 @@ export default function SupervisorDashboardPage() {
         </section>
 
         <aside style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          <AlsoWaitingCard />
           <SupervisorQaCard />
           <div style={{ ...cardStyle, padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink }}>Your educators</h2>
-              <Link to="/supervisor-portal/educators" style={linkStyle}>View all <FiArrowRight size={14} /></Link>
+              <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {educators.length > 0 && <button type="button" onClick={() => setMessaging(true)} style={{ ...linkStyle, border: 0, background: "none", padding: 0, cursor: "pointer", fontFamily: "Inter, sans-serif" }}><FiSend size={13} /> Message</button>}
+                <Link to="/supervisor-portal/educators" style={linkStyle}>View all <FiArrowRight size={14} /></Link>
+              </span>
             </div>
             {educators.length === 0 ? (
               <p style={{ margin: 0, fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>No educators are assigned to you yet. The admin assigns them; their claims then come to you, and you can schedule their QA check-ins.</p>
@@ -179,6 +218,7 @@ export default function SupervisorDashboardPage() {
       </div>
 
       {openId && <Navigate to={`/supervisor-portal/claims/${openId}`} replace />}
+      {messaging && <MessageEducatorsDialog educators={educators.map((e) => ({ id: e.id, name: e.name }))} onClose={() => setMessaging(false)} />}
 
       <style>{`
         .supervisor-dash { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 26vw, 400px); gap: 20px; align-items: start; }

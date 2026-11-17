@@ -593,7 +593,7 @@ const MentorCheckinService = {
     const today = todayInKenya();
     const [view] = await decorateRounds([round], today);
     const meetingRows = (await db(MEETINGS).where({ roundId: id }).orderBy([{ column: "date", order: "asc" }, { column: "startTime", order: "asc" }])).map(shapeMeeting);
-    const meetings = await decorateMeetings(meetingRows, today, { withReport: ctx.kind === "manager" || ctx.kind === "educator" });
+    const meetings = await decorateMeetings(meetingRows, today, { withReport: ["manager", "educator", "supervisor"].includes(ctx.kind) });
     const canManage = ctx.kind === "manager" && ctx.canManage;
     return { ...view, meetings, permissions: { canManage, canCancel: canManage && round.status === "published" } };
   },
@@ -667,17 +667,25 @@ const MentorCheckinService = {
         ? (x) => x.whereNotNull("reportSubmittedAt").whereNull("approvedAt").whereNot({ status: "cancelled" })
         : (x) => x.where({ status: "scheduled" }).whereNull("reportSubmittedAt").where("date", "<", today),
       done: (x) => x.where((w) => w.whereNotNull("reportSubmittedAt").orWhereIn("status", ["missed", "cancelled"])),
+      // Written reports (the managers' Reports tab, 17 Nov 2026): with the parent, or approved.
+      reports: (x) => x.whereNotNull("reportSubmittedAt").whereNot({ status: "cancelled" }),
       all: (x) => x,
     };
     const counts = {};
     for (const [key, apply] of Object.entries(views)) {
       if (key !== "all") counts[key] = Number((await apply(q.clone()).count({ n: "*" }).first())?.n || 0);
     }
+    // Reports newest written first; everything else by the check-in's date.
+    if (view === "reports") {
+      const rows = (await views.reports(q.clone()).orderBy("reportSubmittedAt", "desc").limit(500)).map(shapeMeeting);
+      const meetings = await decorateMeetings(rows, today, { withReport: ["manager", "educator", "supervisor"].includes(ctx.kind) });
+      return { meetings, counts, today, viewer: ctx.kind };
+    }
     const ascending = view === "coming";
     const rows = (await (views[view] || views.coming)(q.clone())
       .orderBy([{ column: "date", order: ascending ? "asc" : "desc" }, { column: "startTime", order: ascending ? "asc" : "desc" }])
       .limit(300)).map(shapeMeeting);
-    const meetings = await decorateMeetings(rows, today, { withReport: ctx.kind === "manager" || ctx.kind === "educator" });
+    const meetings = await decorateMeetings(rows, today, { withReport: ["manager", "educator", "supervisor"].includes(ctx.kind) });
     return { meetings, counts, today, viewer: ctx.kind };
   },
 

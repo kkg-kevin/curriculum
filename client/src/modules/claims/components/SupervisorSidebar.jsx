@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle, FiHeart, FiBarChart2, FiCheckSquare, FiActivity } from "react-icons/fi";
 import { useTotMarking } from "../../tot/hooks/useTot";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
@@ -13,6 +13,10 @@ const menuItems = [
   { name: "Work to mark", path: "/supervisor-portal/marking", icon: FiEdit3, badge: "marking" },
   { name: "QA Visits",    path: "/supervisor-portal/qa", icon: FiStar },
   { name: "Parent check-ins", path: "/supervisor-portal/mentor-checkins", icon: FiMessageCircle },
+  { name: "Parent feedback", path: "/supervisor-portal/feedback", icon: FiHeart },
+  { name: "Hub check-ins", path: "/supervisor-portal/checkins", icon: FiCheckSquare },
+  { name: "Team insights", path: "/supervisor-portal/insights", icon: FiBarChart2 },
+  { name: "Team activity", path: "/supervisor-portal/activity", icon: FiActivity },
   { name: "My Profile",   path: "/supervisor-portal/profile", icon: FiUser },
 ];
 

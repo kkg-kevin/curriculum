@@ -61,7 +61,7 @@ function CompetencyCard({ c, groupLabel, links, filenameBase }) {
           {view === "learners" && (
             <DataTable
               columns={[
-                { key: "name", label: "Learner", render: (r) => <button type="button" className="an-link" onClick={() => links.learner(r.learnerId)}>{r.name}</button>, csv: (r) => r.name },
+                { key: "name", label: "Learner", render: (r) => (links.learner ? <button type="button" className="an-link" onClick={() => links.learner(r.learnerId)}>{r.name}</button> : r.name), csv: (r) => r.name },
                 { key: "group", label: groupLabel },
                 { key: "percent", label: "Score", align: "num", render: (r) => `${r.percent}%` },
                 { key: "level", label: "Level", render: (r) => levelLabel(r.level), csv: (r) => levelLabel(r.level), sort: (r) => r.percent },

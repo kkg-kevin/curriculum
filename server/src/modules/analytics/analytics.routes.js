@@ -24,11 +24,25 @@ const { getAttendance } = require("./analytics.attendance");
 const { getEnrolment } = require("./analytics.enrolment");
 const { getParents } = require("./analytics.parents");
 const { getCoverage, getCoverageDetail } = require("./analytics.coverage");
+const { getMentorCheckins } = require("./analytics.mentorcheckins");
 const Followups = require("./analytics.followups");
 const { z } = require("zod");
 
 const router = express.Router();
-router.use(authorize("admin", "school"));
+router.use(authorize("admin", "school", "supervisor"));
+
+// A supervisor (the supervisor portal's Team insights, 17 Nov 2026) reaches only these, scoped to
+// the classes their educators teach (analytics.scope.js).
+const SUPERVISOR_PATHS = [
+  /^\/filters$/, /^\/coverage(\/[^/]+\/[^/]+)?$/, /^\/attendance$/, /^\/mentor-checkins$/,
+  /^\/assessments$/, /^\/competencies$/, /^\/at-risk$/, /^\/educators$/, /^\/trends$/,
+];
+router.use((req, res, next) => {
+  // Reading a learner's follow-ups is allowed (the at-risk list); recording one isn't.
+  const followupHistory = req.method === "GET" && /^\/followups\/[^/]+$/.test(req.path);
+  if (req.user.role !== "supervisor" || followupHistory || SUPERVISOR_PATHS.some((re) => re.test(req.path))) return next();
+  res.status(403).json({ success: false, message: "That report isn't part of Team insights" });
+});
 
 // Each tab's figures are kept for a minute (17 Nov 2026), so moving between tabs and filters and
 // back doesn't work the same figures out again. Keyed by whose figures they are (the workspace,
@@ -37,7 +51,8 @@ router.use(authorize("admin", "school"));
 const CACHE_MS = 60 * 1000;
 const CACHE_MAX = 100;
 const cache = new Map();
-const ownerKey = (req) => (req.user.role === "school" ? `hub:${req.ownSchool?.id || "-"}` : `ws:${req.ownerAdminId || "-"}`);
+const ownerKey = (req) => (req.user.role === "school" ? `hub:${req.ownSchool?.id || "-"}`
+  : req.user.role === "supervisor" ? `sup:${req.user.id}` : `ws:${req.ownerAdminId || "-"}`);
 const cacheKey = (req, view) => {
   const q = Object.keys(req.query || {}).sort().map((k) => `${k}=${req.query[k]}`).join("&");
   return `${ownerKey(req)}|${view}|${q}`;
@@ -75,6 +90,8 @@ const VIEWS = {
   parents: getParents,
   // 17 Nov 2026: how far each class has got through its courses.
   coverage: getCoverage,
+  // 17 Nov 2026: parent–mentor check-ins — held, pending, timeliness, by hub / class / educator.
+  "mentor-checkins": getMentorCheckins,
 };
 
 // Following up a learner at risk (analytics.followups.js): message the parent, tell the class's

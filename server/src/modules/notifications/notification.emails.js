@@ -306,6 +306,14 @@ const EMAIL_TYPES = {
     look: { tone: "info", icon: "envelope", eyebrow: "A change for your child" },
     path: (p) => routeOr(p, "/parent"),
   },
+  // A supervisor's note to their educators (supervisor portal, 17 Nov 2026).
+  supervisor_message: {
+    label: "A message from your supervisor",
+    roles: EDUCATOR_ROLES,
+    default: true,
+    look: { tone: "info", icon: "envelope", eyebrow: "From your supervisor" },
+    path: (p) => routeOr(p, "/teacher-portal"),
+  },
   learner_flagged: {
     label: "A learner of yours needs support",
     roles: EDUCATOR_ROLES,

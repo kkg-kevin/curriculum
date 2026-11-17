@@ -148,7 +148,7 @@ const CATALOG_READERS = {
 CATALOG_READERS["/api/dashboard"] = MODULES.map((m) => m.key);
 // The educator form offers a supervisor to pick — so the list of supervisors can also be read by
 // anyone who can view Educators.
-const SUPERVISOR_LIST = /^\/api\/claims\/supervisors$/;
+const SUPERVISOR_LIST = /^\/api\/claims\/supervisors(\/[^/]+)?$/;
 // The hub form offers an Account Manager and a Training Lead to pick — so that list can also be
 // read by anyone who can view Learning Hubs.
 const CHECKIN_PEOPLE_LIST = /^\/api\/checkins\/people$/;
@@ -213,7 +213,10 @@ const ACTION_OVERRIDES = [
   { method: "PUT", pattern: /^\/api\/claims\/settings$/, module: "claims-approval", action: "edit" },
   // Creating, changing and removing supervisor accounts is the admin's side too.
   { method: "POST", pattern: /^\/api\/claims\/supervisors$/, module: "claims-approval", action: "edit" },
+  // Who could be made a supervisor lists staff and educators' logins — for those who may add one.
+  { method: "GET", pattern: /^\/api\/claims\/supervisors\/candidates$/, module: "claims-approval", action: "edit" },
   { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
+  { method: "PUT", pattern: /^\/api\/claims\/supervisors\/[^/]+\/educators$/, module: "claims-approval", action: "edit" },
   { method: "DELETE", pattern: /^\/api\/claims\/supervisors\/[^/]+$/, module: "claims-approval", action: "edit" },
   // Removing a supervisor the long way (modules/removals/).
   { method: "DELETE", pattern: /^\/api\/removals\/supervisor\/[^/]+$/, module: "claims-approval", action: "edit" },

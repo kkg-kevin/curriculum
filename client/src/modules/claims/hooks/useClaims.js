@@ -62,6 +62,10 @@ export const useMarkClaimPaid = () => useClaimMutation(({ id, ...data }) => clai
 export const useUpdateClaimSettings = () => useClaimMutation(claimsApi.updateSettings);
 export const useCreateSupervisor = () => useClaimMutation(claimsApi.createSupervisor);
 export const useUpdateSupervisor = () => useClaimMutation(({ id, ...data }) => claimsApi.updateSupervisor(id, data));
+export const useSupervisor = (id) => useQuery({ queryKey: ["claims", "supervisors", id], queryFn: () => claimsApi.getSupervisor(id), enabled: !!id });
+export const useSupervisorCandidates = () => useQuery({ queryKey: ["claims", "supervisors", "candidates"], queryFn: claimsApi.supervisorCandidates });
+export const useSupervisorEducatorOptions = () => useQuery({ queryKey: ["claims", "supervisors", "educator-options"], queryFn: claimsApi.supervisorEducatorOptions });
+export const useSetSupervisorEducators = () => useClaimMutation(({ id, teacherIds }) => claimsApi.setSupervisorEducators(id, teacherIds));
 
 // M-Pesa payouts of one claim. While one waits for M-Pesa's answer it's asked about every few
 // seconds; when it settles, the claim and every total are refreshed (it may now be paid).

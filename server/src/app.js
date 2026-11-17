@@ -427,6 +427,8 @@ app.use("/api/removals", protect, attachOwnRecords, require("./modules/removals/
 // Moving a learner between programmes: a hub class, a bootcamp run, Home Learning, a Tech Club or
 // a pathway plan. See modules/learner-moves/.
 app.use("/api/learner-moves", protect, attachOwnRecords, require("./modules/learner-moves/learner-move.routes"));
+// The supervisor portal's own reads and messages (17 Nov 2026). See modules/supervisor-portal/.
+app.use("/api/supervisor-portal", protect, attachOwnRecords, require("./modules/supervisor-portal/supervisor-portal.routes"));
 app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
 
 app.use(notFound);

@@ -4,7 +4,8 @@ import { Card, DataTable, Delta, Empty, Funnel, LevelLegend, LevelStack, Note, S
 export default function AssessmentsTab({ data, links, isHub }) {
   const h = data.headline;
   const r = data.reports;
-  const learnerCell = (row) => <button type="button" className="an-link" onClick={() => links.learner(row.learnerId)}>{row.learner}</button>;
+  // A supervisor has no learner pages — the name shows as plain text.
+  const learnerCell = (row) => (links.learner ? <button type="button" className="an-link" onClick={() => links.learner(row.learnerId)}>{row.learner}</button> : row.learner);
   const rateColumns = (first) => [
     first,
     { key: "issues", label: "Issued", align: "num" },

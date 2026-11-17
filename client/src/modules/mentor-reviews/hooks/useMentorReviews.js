@@ -7,6 +7,7 @@ const errorText = (err, fallback) => err?.errors?.[0]?.message || err?.message |
 
 export const useMyMentors = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "mine"], queryFn: mentorReviewApi.mine, enabled, staleTime: 60 * 1000 });
 export const useMyFeedback = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "me"], queryFn: mentorReviewApi.me, enabled });
+export const useSupervisorFeedback = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "supervisor"], queryFn: mentorReviewApi.supervisor, enabled, staleTime: 60 * 1000 });
 export const useEducatorFeedback = (teacherId, { enabled = true } = {}) => useQuery({ queryKey: [...KEY, "educator", teacherId], queryFn: () => mentorReviewApi.forEducator(teacherId), enabled: enabled && !!teacherId });
 export const useFeedbackSettings = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "settings"], queryFn: mentorReviewApi.settings, enabled });
 

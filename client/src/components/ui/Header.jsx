@@ -130,6 +130,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/curriculum": "Curriculum",
     "/learners": "Learners",
     "/teachers": "Educators",
+    "/supervisors": "Supervisors",
+    "/supervisors/new": "Add Supervisor",
     "/classes": "Classes",
     "/assessments": "Assessments",
     "/reports": "Reports",
@@ -171,6 +173,10 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/supervisor-portal/claims": "Claims",
     "/supervisor-portal/educators": "My Educators",
     "/supervisor-portal/profile": "My Profile",
+    "/supervisor-portal/feedback": "Parent feedback",
+    "/supervisor-portal/insights": "Team insights",
+    "/supervisor-portal/activity": "Team activity",
+    "/supervisor-portal/checkins": "Hub Check-ins",
     "/school-portal": "My Dashboard",
     "/school-portal/curriculum": "Curriculum",
     "/school-portal/reports": "Reports",
@@ -224,6 +230,11 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return pathname.startsWith("/teacher-portal") || pathname.startsWith("/school-portal") ? "QA Reviews" : "Quality Assurance";
     if (pathname.startsWith("/supervisor-portal/educators/"))
       return "My Educators";
+    // Parent–mentor check-ins, in every app it's in (the list, a round, a check-in).
+    if (pathname.startsWith("/supervisor-portal/checkins/"))
+      return "Hub Check-ins";
+    if (/^\/(supervisor-portal\/|teacher-portal\/|school-portal\/|parent\/)?mentor-checkins(\/|$)/.test(pathname))
+      return pathname.startsWith("/parent") ? "Mentor Check-ins" : "Parent–Mentor Check-ins";
     if (pathname.startsWith("/teacher-portal/claims/"))
       return "Payments";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))

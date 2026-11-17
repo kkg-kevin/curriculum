@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import CompetenciesPanel from "../competencies/components/CompetenciesPanel";
 import PathwayTemplatesPanel from "../pathways/components/PathwayTemplatesPanel";
 import SystemLevelsPanel from "../system-levels/components/SystemLevelsPanel";
@@ -55,7 +55,7 @@ const OWNER_ONLY_TABS = ["people", "emails", "enquiries", "certificates", "payme
 
 // Staff, Roles & access, Sharing and Admins used to be tabs of their own; links to them (the
 // sharing notifications, bookmarks) open the matching section of People & sharing.
-const FORMER_TABS = { collaborators: "staff", staff: "staff", roles: "roles", sharing: "sharing", admins: "admins", supervisors: "supervisors" };
+const FORMER_TABS = { collaborators: "staff", staff: "staff", roles: "roles", sharing: "sharing", admins: "admins" };
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -88,6 +88,9 @@ export default function SettingsPage() {
   }, [requestedTab, requestedSection]);
 
   useSettingsStyles();
+
+  // Supervisors were a People & sharing section until 17 Nov 2026; they have their own page now.
+  if (rawTab === "supervisors" || requestedSection === "supervisors") return <Navigate to="/supervisors" replace />;
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
