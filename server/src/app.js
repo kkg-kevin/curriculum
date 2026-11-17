@@ -2,10 +2,10 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const env = require("./config/env");
+const { requestLog } = require("./shared/middleware/request-log.middleware");
 const authRoutes = require("./modules/auth/auth.routes");
 const curriculumRoutes = require("./modules/curriculum/curriculum.routes");
 const competencyRoutes = require("./modules/settings/competencies/competency.routes");
@@ -135,7 +135,8 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(morgan("dev"));
+// Errors and slow requests only (REQUEST_LOG=all for every request) — see request-log.middleware.js.
+app.use(requestLog());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), { setHeaders: setUploadHeaders }));
 // The brand logo in every email's header — mail apps fetch it from here (see mail.layout.js).
 app.use("/email-assets", express.static(path.join(__dirname, "shared/mail/assets"), { maxAge: "30d" }));
