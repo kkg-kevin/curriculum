@@ -30,6 +30,32 @@ const { z } = require("zod");
 const router = express.Router();
 router.use(authorize("admin", "school"));
 
+// Each tab's figures are kept for a minute (17 Nov 2026), so moving between tabs and filters and
+// back doesn't work the same figures out again. Keyed by whose figures they are (the workspace,
+// or the hub a hub login acts as) plus the tab and every filter — never shared across workspaces.
+// Recording a follow-up clears that workspace's figures at once.
+const CACHE_MS = 60 * 1000;
+const CACHE_MAX = 100;
+const cache = new Map();
+const ownerKey = (req) => (req.user.role === "school" ? `hub:${req.ownSchool?.id || "-"}` : `ws:${req.ownerAdminId || "-"}`);
+const cacheKey = (req, view) => {
+  const q = Object.keys(req.query || {}).sort().map((k) => `${k}=${req.query[k]}`).join("&");
+  return `${ownerKey(req)}|${view}|${q}`;
+};
+async function cached(key, compute) {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
+  const data = await compute();
+  cache.delete(key);
+  cache.set(key, { at: Date.now(), data });
+  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+  return data;
+}
+const forgetWorkspace = (req) => {
+  const prefix = `${ownerKey(req)}|`;
+  for (const key of [...cache.keys()]) if (key.startsWith(prefix)) cache.delete(key);
+};
+
 const VIEWS = {
   logins: getLogins,
   "time-to-task": getTimeToTask,
@@ -71,7 +97,9 @@ router.post("/followups", asyncHandler(async (req, res) => {
   const parsed = followupSchema.safeParse(req.body || {});
   if (!parsed.success) return res.status(400).json({ success: false, message: "Check the follow-up", errors: parsed.error.issues });
   const scope = await resolveScope({ ...req, query: {} });
-  res.status(201).json({ success: true, data: await Followups.record(scope, req.user, parsed.data) });
+  const data = await Followups.record(scope, req.user, parsed.data);
+  forgetWorkspace(req);
+  res.status(201).json({ success: true, data });
 }));
 
 router.get("/followups/:learnerId", asyncHandler(async (req, res) => {
@@ -89,8 +117,8 @@ router.get("/coverage/:classId/:courseId", asyncHandler(async (req, res) => {
 router.get("/:view", asyncHandler(async (req, res) => {
   const fn = VIEWS[req.params.view];
   if (!fn) return res.status(404).json({ success: false, message: "Unknown analytics view" });
-  const scope = await resolveScope(req);
-  res.json({ success: true, data: await fn(scope) });
+  const data = await cached(cacheKey(req, req.params.view), async () => fn(await resolveScope(req)));
+  res.json({ success: true, data });
 }));
 
 module.exports = router;

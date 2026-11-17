@@ -5,6 +5,7 @@ const {
   deleteRecord,
   firstOrNull,
   stringifyJsonFields,
+  whereInChunks,
 } = require("../../shared/utils/model.utils");
 
 const TABLE = "curricula";
@@ -28,6 +29,10 @@ const CurriculumModel = {
 
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
+  },
+
+  findByIds(ids) {
+    return whereInChunks(db, TABLE, "id", ids);
   },
 
   update(id, data) {

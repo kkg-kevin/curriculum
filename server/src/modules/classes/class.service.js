@@ -90,13 +90,21 @@ async function resolveNextClass(cls) {
 // year first, then stream name (2 before 10). A hub running more than one curriculum keeps each
 // curriculum's classes together; a class whose grade is no longer on its curriculum goes after
 // that curriculum's others, in its original order.
-async function sortByCurriculumOrder(classes) {
-  const curriculumIds = [...new Set(classes.map((c) => c.curriculumId).filter(Boolean))];
-  const curricula = (await Promise.all(curriculumIds.map((id) => CurriculumModel.findById(id)))).filter(Boolean);
+// `lookups` (optional) — curricula and levels already loaded, so sorting many hubs' classes one
+// hub at a time doesn't load the same ones again (getAllClassesForHubs).
+async function curriculumLookups(curriculumIds) {
+  const curricula = await CurriculumModel.findByIds(curriculumIds);
   const gradesOf = (curriculum) => (Array.isArray(curriculum.classes) ? curriculum.classes : []);
   const levelIds = [...new Set(curricula.flatMap((c) => gradesOf(c).map((g) => g.systemLevelId)).filter(Boolean))];
-  const levels = await Promise.all(levelIds.map((id) => SystemLevelModel.findById(id)));
-  const sequenceById = new Map(levels.filter(Boolean).map((l) => [l.id, l.sequence]));
+  const levels = await SystemLevelModel.findByIds(levelIds);
+  return { curriculumById: new Map(curricula.map((c) => [c.id, c])), sequenceById: new Map(levels.map((l) => [l.id, l.sequence])) };
+}
+
+async function sortByCurriculumOrder(classes, lookups = null) {
+  const curriculumIds = [...new Set(classes.map((c) => c.curriculumId).filter(Boolean))];
+  const { curriculumById, sequenceById } = lookups || (await curriculumLookups(curriculumIds));
+  const curricula = curriculumIds.map((id) => curriculumById.get(id)).filter(Boolean);
+  const gradesOf = (curriculum) => (Array.isArray(curriculum.classes) ? curriculum.classes : []);
 
   const gradeIndex = new Map(); // `${curriculumId}|${gradeId}` or `${curriculumId}|name|${name}` -> position
   curricula.forEach((curriculum) => {
@@ -154,6 +162,21 @@ const ClassService = {
     // A paged request keeps the model's own stable order (see ClassModel.findAll).
     if (filters?.limit || filters?.offset) return counted;
     return sortByCurriculumOrder(counted);
+  },
+
+  // Every class of several hubs (an admin's workspace list), in the same order as calling
+  // getAllClasses once per hub and joining the results — but loaded in a handful of queries
+  // instead of a few per hub (17 Nov 2026).
+  async getAllClassesForHubs(hubIds, filters = {}) {
+    const classes = await ClassModel.findAll({ ...filters, schoolId: undefined, schoolIds: hubIds });
+    const links = await LearnerHubLinkModel.findByClassIds(classes.map((c) => c.id));
+    const countMap = {};
+    for (const l of links) if (l.classId) countMap[l.classId] = (countMap[l.classId] || 0) + 1;
+    const counted = classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
+    const lookups = await curriculumLookups([...new Set(counted.map((c) => c.curriculumId).filter(Boolean))]);
+    const out = [];
+    for (const hubId of hubIds) out.push(...(await sortByCurriculumOrder(counted.filter((c) => c.schoolId === hubId), lookups)));
+    return out;
   },
 
   async getClassById(id) {

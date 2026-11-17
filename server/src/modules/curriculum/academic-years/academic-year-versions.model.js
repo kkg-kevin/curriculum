@@ -4,6 +4,7 @@ const {
   updateRecord,
   firstOrNull,
   stringifyJsonFields,
+  whereInChunks,
 } = require("../../../shared/utils/model.utils");
 
 const TABLE = "academic_year_versions";
@@ -16,6 +17,11 @@ const AcademicYearVersionModel = {
 
   findByCurriculumId(curriculumId) {
     return db(TABLE).where({ curriculumId });
+  },
+
+  // Batch form of findByCurriculumId.
+  findByCurriculumIds(curriculumIds) {
+    return whereInChunks(db, TABLE, "curriculumId", curriculumIds);
   },
 
   findById(id) {

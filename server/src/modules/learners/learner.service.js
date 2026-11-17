@@ -393,12 +393,17 @@ const LearnerService = {
       // hubIds — which hubs, so the Learners page can group learners by hub (a learner at two
       // hubs is listed under both). The controller trims it to the caller's own hubs.
       const learners = await LearnerModel.findAll({ guardianEmail, ids, limit, offset, excludeTrainees });
-      return Promise.all(
-        learners.map(async (l) => {
-          const links = await LearnerHubLinkModel.findByLearnerId(l.id);
-          return { ...l, hubCount: links.length, hubIds: links.map((link) => link.hubId) };
-        })
-      );
+      // Every learner's hub links in one query (was one query per learner).
+      const linksByLearner = new Map();
+      for (const link of await LearnerHubLinkModel.findByLearnerIds(learners.map((l) => l.id))) {
+        if (!linksByLearner.has(link.learnerId)) linksByLearner.set(link.learnerId, []);
+        linksByLearner.get(link.learnerId).push(link);
+      }
+      return learners.map((l) => {
+        // Hub order as the one-learner query returned it (by its learnerId+hubId index).
+        const links = (linksByLearner.get(l.id) || []).sort((a, b) => String(a.hubId).localeCompare(String(b.hubId)));
+        return { ...l, hubCount: links.length, hubIds: links.map((link) => link.hubId) };
+      });
     }
     let links = classId ? await LearnerHubLinkModel.findByClassId(classId) : await LearnerHubLinkModel.findByHubId(schoolId);
     if (schoolId && classId) links = links.filter((l) => l.hubId === schoolId);
@@ -415,13 +420,15 @@ const LearnerService = {
     const classById = new Map();
     const coursesByClassId = new Map();
     if (classIds.length > 0) {
-      const [classes, courseLinks] = await Promise.all([
-        Promise.all(classIds.map((id) => ClassModel.findById(id))),
-        Promise.all(classIds.map((id) => ClassCourseTeacherLinkModel.findByClassId(id))),
+      // One query each for the classes, their course links and the courses (was one per class/course).
+      const [classes, allCourseLinks] = await Promise.all([
+        ClassModel.findByIds(classIds),
+        ClassCourseTeacherLinkModel.findByClassIds(classIds),
       ]);
       classes.forEach((c) => { if (c) classById.set(c.id, c); });
-      const courseIds = new Set(courseLinks.flat().map((l) => l.courseId));
-      const courses = await Promise.all([...courseIds].map((id) => CourseModel.findById(id)));
+      const courseLinks = classIds.map((id) => allCourseLinks.filter((l) => l.classId === id));
+      const courseIds = new Set(allCourseLinks.map((l) => l.courseId));
+      const courses = await CourseModel.findByIds([...courseIds]);
       const courseById = new Map(courses.filter(Boolean).map((c) => [c.id, c]));
       classIds.forEach((id, i) => {
         const ids = new Set(courseLinks[i].map((l) => l.courseId));

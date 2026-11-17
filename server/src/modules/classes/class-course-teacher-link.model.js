@@ -1,5 +1,5 @@
 const db = require("../../config/db");
-const { generateId, firstOrNull } = require("../../shared/utils/model.utils");
+const { generateId, firstOrNull, whereInChunks } = require("../../shared/utils/model.utils");
 
 const TABLE = "class_course_teacher_links";
 
@@ -12,6 +12,11 @@ const TABLE = "class_course_teacher_links";
 const ClassCourseTeacherLinkModel = {
   findByClassId(classId) {
     return db(TABLE).where({ classId });
+  },
+
+  // Batch form of findByClassId — every link of many classes in one query.
+  findByClassIds(classIds) {
+    return whereInChunks(db, TABLE, "classId", classIds);
   },
 
   findByTeacherId(teacherId) {

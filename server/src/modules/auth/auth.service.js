@@ -397,11 +397,14 @@ const AuthService = {
   // An Account Manager / Training Lead session (account-roles.js's HUB_LEAD_ROLE) runs in the hub
   // portal, so it is shown as a "school" session with `hubLead: true` — every check of "is this the
   // hub portal" keeps working — and `sessionRole` says which role it really is.
-  async sessionUser(user, role, { withRoles = true } = {}) {
+  // withStatus: false skips working out `suspended` / `pendingPayment` — the request guard
+  // (auth.middleware.js's protect) never reads them, and for a parent they cost about a dozen
+  // queries on every request. Writes are still refused by blockIfSuspended, which works it out itself.
+  async sessionUser(user, role, { withRoles = true, withStatus = true } = {}) {
     if (role === TOT_LEARNER_ROLE) return this.totLearnerSessionUser(user, { withRoles });
     const hubLead = role === HUB_LEAD_ROLE;
     const asRole = { ...user, role };
-    const suspended = await resolveSuspension(asRole);
+    const suspended = withStatus ? await resolveSuspension(asRole) : undefined;
     const pendingPayment = suspended === "payment" ? await this.getPendingPayment(asRole) : null;
     return {
       ...sanitize(asRole),
@@ -619,11 +622,11 @@ const AuthService = {
   // the account's own. A suspended user still gets a valid /me response — the client uses
   // `suspended` to lock them to the in-app "Account Suspended" page. `withRoles` adds the list of
   // roles it can switch to (a lookup per extra role — /me wants it, `protect` doesn't).
-  async getById(id, role = null, { withRoles = false } = {}) {
+  async getById(id, role = null, { withRoles = false, withStatus = true } = {}) {
     const user = await UserModel.findById(id);
     await assertUserExists(user);
     const active = role && sessionRolesOf(user).includes(role) ? role : user.role;
-    return this.sessionUser(user, active, { withRoles });
+    return this.sessionUser(user, active, { withRoles, withStatus });
   },
 
   // "What do I owe" for the "payment pending" screen — a learner auto-provisioned from a public

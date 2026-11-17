@@ -1,5 +1,5 @@
 const db = require("../../config/db");
-const { generateId, updateRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { generateId, updateRecord, firstOrNull, whereInChunks } = require("../../shared/utils/model.utils");
 
 const TABLE = "learner_hub_links";
 
@@ -21,6 +21,15 @@ const LearnerHubLinkModel = {
 
   findByHubId(hubId) {
     return db(TABLE).where({ hubId });
+  },
+
+  // Batch forms of findByLearnerId / findByHubId — one query for many ids.
+  findByLearnerIds(learnerIds) {
+    return whereInChunks(db, TABLE, "learnerId", learnerIds);
+  },
+
+  findByHubIds(hubIds) {
+    return whereInChunks(db, TABLE, "hubId", hubIds);
   },
 
   findByClassId(classId) {

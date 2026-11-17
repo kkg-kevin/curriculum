@@ -44,7 +44,8 @@ async function protect(req, res, next) {
     }
     req.sessionJti = payload.jti;
     // The role this session runs as (an account may hold several — see account-roles.js).
-    const user = await AuthService.getById(payload.sub, payload.role);
+    // Only the identity fields below are used here — not suspension/payment status (see sessionUser).
+    const user = await AuthService.getById(payload.sub, payload.role, { withStatus: false });
     req.user = { id: user.id, role: user.role, email: user.email, username: user.username, invitedByAdminId: user.invitedByAdminId, allowedModules: user.allowedModules, roleId: user.roleId, organisationId: user.organisationId || null };
     // An Account Manager / Training Lead session runs as "school" (the hub portal) — see
     // AuthService.sessionUser; scope.middleware.js and blockHubLeadWrites read this.

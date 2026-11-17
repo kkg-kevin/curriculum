@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const CurriculumModel          = require("./curriculum.model");
 const UserModel = require("../auth/user.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -36,14 +37,18 @@ const NAME_MAX = 100; // curricula.name — see createCurriculumSchema
 // now sourced from the real tables, scoped to just the curricula being enriched (getMeta is
 // only ever called against one of `curricula`).
 async function buildCurriculumMeta(curricula) {
-  const ayGroups = [];
-  const ayVersions = [];
-  const cvVersions = [];
-  for (const c of curricula) {
-    ayGroups.push(...(await AcademicYearGroupModel.findByCurriculumId(c.id)));
-    ayVersions.push(...(await AcademicYearVersionModel.findByCurriculumId(c.id)));
-    cvVersions.push(...(await CurriculumVersionModel.findAllByCurriculumId(c.id)));
-  }
+  // Three queries for every curriculum together (was three per curriculum, one after another),
+  // regrouped curriculum by curriculum in the same order as before.
+  const ids = curricula.map((c) => c.id);
+  const [allGroups, allAyVersions, allCvVersions] = await Promise.all([
+    AcademicYearGroupModel.findByCurriculumIds(ids),
+    AcademicYearVersionModel.findByCurriculumIds(ids),
+    CurriculumVersionModel.findAllByCurriculumIds(ids),
+  ]);
+  const inCurriculumOrder = (rows) => curricula.flatMap((c) => rows.filter((r) => r.curriculumId === c.id));
+  const ayGroups = inCurriculumOrder(allGroups);
+  const ayVersions = inCurriculumOrder(allAyVersions);
+  const cvVersions = inCurriculumOrder(allCvVersions);
 
   const groupById = Object.fromEntries(ayGroups.map((g) => [g.id, g]));
   const publishedYearByCurriculumId = {};
@@ -115,13 +120,14 @@ async function buildCurriculumMeta(curricula) {
   };
 }
 
-async function enrichCurriculum(curriculum, meta) {
+async function enrichCurriculum(curriculum, meta, adminsById = null) {
   if (!curriculum) return curriculum;
   const enriched = { ...curriculum, ...meta.getMeta(curriculum) };
   // Resolved fresh from the live user record each read, never stored, so it can't drift if
   // that account's name/email changes later (same posture as event.service.js's enrich()).
+  // adminsById: already loaded for a whole list (getAllCurricula).
   if (curriculum.curriculumAdminId) {
-    const admin = await UserModel.findById(curriculum.curriculumAdminId);
+    const admin = adminsById ? adminsById.get(curriculum.curriculumAdminId) : await UserModel.findById(curriculum.curriculumAdminId);
     enriched.curriculumAdmin = admin ? { id: admin.id, name: admin.name, email: admin.email } : null;
   } else {
     enriched.curriculumAdmin = null;
@@ -160,7 +166,11 @@ const CurriculumService = {
   async getAllCurricula(filters) {
     const curricula = await CurriculumModel.findAll(filters);
     const meta = await buildCurriculumMeta(curricula);
-    return Promise.all(curricula.map((c) => enrichCurriculum(c, meta)));
+    // Every curriculum admin named in the list, in one query.
+    const adminIds = [...new Set(curricula.map((c) => c.curriculumAdminId).filter(Boolean))];
+    const admins = adminIds.length ? await db("users").whereIn("id", adminIds).select("id", "name", "email") : [];
+    const adminsById = new Map(admins.map((u) => [u.id, u]));
+    return Promise.all(curricula.map((c) => enrichCurriculum(c, meta, adminsById)));
   },
 
   async getCurriculumById(id) {

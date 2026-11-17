@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { setUploadHeaders, isActiveContent } = require("../src/modules/uploads/upload.static");
+const { setUploadHeaders, isActiveContent, CACHE_CONTROL } = require("../src/modules/uploads/upload.static");
 
 function headersFor(file) {
   const headers = {};
@@ -11,12 +11,12 @@ function headersFor(file) {
 test("HTML, SVG and XML uploads are sent as sandboxed downloads", () => {
   for (const file of ["a.html", "a.HTM", "pic.svg", "data.xml", "page.xhtml"]) {
     assert.equal(isActiveContent(file), true, file);
-    assert.deepEqual(headersFor(`/uploads/${file}`), { "Content-Disposition": "attachment", "Content-Security-Policy": "sandbox" });
+    assert.deepEqual(headersFor(`/uploads/${file}`), { "Cache-Control": CACHE_CONTROL, "Content-Disposition": "attachment", "Content-Security-Policy": "sandbox" });
   }
 });
 
-test("photos, videos, PDFs and other files are served exactly as before", () => {
+test("photos, videos, PDFs and other files are served as before, with browser caching", () => {
   for (const file of ["a.png", "a.jpg", "clip.mp4", "doc.pdf", "notes.docx", "code.py", "app.js", "project.sb3", "noextension"]) {
-    assert.deepEqual(headersFor(`/uploads/${file}`), {}, file);
+    assert.deepEqual(headersFor(`/uploads/${file}`), { "Cache-Control": CACHE_CONTROL }, file);
   }
 });

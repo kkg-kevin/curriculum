@@ -1,5 +1,5 @@
 const db = require("../../config/db");
-const { createRecord, updateRecord, deleteRecord, firstOrNull } = require("../../shared/utils/model.utils");
+const { createRecord, updateRecord, deleteRecord, firstOrNull, whereInChunks } = require("../../shared/utils/model.utils");
 
 const TABLE = "classes";
 
@@ -10,9 +10,11 @@ const ClassModel = {
 
   // limit/offset are optional and additive — omitted (as every current caller does), this
   // returns the full result set exactly as before.
-  findAll({ schoolId, status, limit, offset } = {}) {
+  findAll({ schoolId, schoolIds, status, limit, offset } = {}) {
     let query = db(TABLE);
     if (schoolId) query = query.where({ schoolId });
+    // Several hubs at once (an admin's whole workspace) — same order as one hub at a time.
+    if (schoolIds) query = query.whereIn("schoolId", schoolIds.length ? schoolIds : ["-"]);
     if (status) query = query.where({ status });
     // id as a secondary sort key breaks ties deterministically — several classes created in
     // the same bulk operation (e.g. Set Up Year) can share the exact same createdAt millisecond,
@@ -27,6 +29,11 @@ const ClassModel = {
 
   findById(id) {
     return firstOrNull(db(TABLE).where({ id }));
+  },
+
+  // Many classes in one query (batch form of findById; missing ids are simply absent).
+  findByIds(ids) {
+    return whereInChunks(db, TABLE, "id", ids);
   },
 
   update(id, data) {

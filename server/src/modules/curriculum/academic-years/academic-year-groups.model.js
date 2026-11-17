@@ -1,11 +1,16 @@
 const db = require("../../../config/db");
-const { createRecord, updateRecord, firstOrNull } = require("../../../shared/utils/model.utils");
+const { createRecord, updateRecord, firstOrNull, whereInChunks } = require("../../../shared/utils/model.utils");
 
 const TABLE = "academic_year_groups";
 
 const AcademicYearGroupModel = {
   findByCurriculumId(curriculumId) {
     return db(TABLE).where({ curriculumId });
+  },
+
+  // Batch form of findByCurriculumId.
+  findByCurriculumIds(curriculumIds) {
+    return whereInChunks(db, TABLE, "curriculumId", curriculumIds);
   },
 
   findById(id) {
