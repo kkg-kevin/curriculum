@@ -2111,8 +2111,8 @@ function EvidenceTypesSubPanel({ curriculumId }) {
           <label className="cp-field-label">Minimum Count</label>
           <p style={{ margin: "2px 0 6px", fontSize: "11px", color: "#9CA3AF" }}>
             {name.trim()
-              ? `Minimum number of "${name.trim()}" expected in a course. Reference only — not yet enforced by scoring.`
-              : "Minimum number of this evidence type expected in a course (e.g. minimum quizzes to complete). Reference only — not yet enforced by scoring."}
+              ? `Minimum number of "${name.trim()}" expected in each course. Tracked in Reports → Curriculum coverage; a learner with fewer has these marks count for less.`
+              : "Minimum number of this evidence type expected in each course (e.g. 2 projects). Tracked in Reports → Curriculum coverage; a learner with fewer has these marks count for less."}
           </p>
           <input className="cp-input" type="number" min="0" step="1" style={{ width: "100%", boxSizing: "border-box" }}
             value={minCount}

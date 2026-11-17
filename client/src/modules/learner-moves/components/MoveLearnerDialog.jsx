@@ -61,6 +61,8 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
   const [pathForm, setPathForm] = useState({});
   const [endKeys, setEndKeys] = useState([]);
   const [stopKeys, setStopKeys] = useState([]);
+  // Tell the parent where the child went and that their earlier records stay (bell + email).
+  const [notifyParent, setNotifyParent] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Start from the child's record: the parent's details, today; every active place ticked to leave,
@@ -190,10 +192,11 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
     if (problem) { toast.error(problem); return; }
     setSaving(true);
     try {
-      const result = await learnerMovesApi.move(learnerId, { destination: destination(), endKeys, stopKeys: stopKeys.filter((k) => endKeys.includes(k)) });
+      const result = await learnerMovesApi.move(learnerId, { destination: destination(), endKeys, stopKeys: stopKeys.filter((k) => endKeys.includes(k)), notifyParent });
       const extra = result.invoice ? ` — invoice ${result.invoice.invoiceNumber} raised` : "";
       const where = `${PROGRAMME_LABELS[result.programme]}: ${result.label}`;
-      toast.success(result.active ? `Moved — ${where}${extra}` : `Moved — ${where}. Their place starts once it's active`);
+      const told = result.parentTold ? " The parent has been told." : "";
+      toast.success(result.active ? `Moved — ${where}${extra}.${told}` : `Moved — ${where}. Their place starts once it's active.${told}`);
       for (const n of result.notEnded || []) toast.error(`Couldn't leave ${n.label}: ${n.reason}`, { duration: 8000 });
       queryClient.invalidateQueries();
       onMoved?.(result);
@@ -485,6 +488,12 @@ export default function MoveLearnerDialog({ open, learnerId, onClose, onMoved })
                     </div>
                     {continuity === "same" && <p style={{ ...muted, display: "flex", gap: 6, marginTop: 8 }}><FiInfo size={14} style={{ flexShrink: 0, marginTop: 2 }} /> Same curriculum as before — the work they&apos;ve done there still counts in the new place.</p>}
                     {continuity === "different" && <p style={{ ...muted, display: "flex", gap: 6, marginTop: 8 }}><FiInfo size={14} style={{ flexShrink: 0, marginTop: 2 }} /> A different curriculum — its courses start fresh. Everything they&apos;ve done before stays on their record and in their reports.</p>}
+                    {options.learner.guardianEmail && endKeys.length > 0 && (
+                      <label style={{ ...checkRow, marginTop: 8 }}>
+                        <input type="checkbox" checked={notifyParent} onChange={(e) => setNotifyParent(e.target.checked)} />
+                        <span>Tell the parent ({options.learner.guardianEmail}) where {options.learner.firstName} has moved, and that their earlier reports and certificates are kept. Sent to their login and by email, if they have a parent login.</span>
+                      </label>
+                    )}
                   </Section>
 
                   {options.openInvoices.length > 0 && (

@@ -18,6 +18,10 @@ const list = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.list(req.ownerAdminId) });
 });
 
+const getHub = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await HomeLearningService.getHub(req.ownerAdminId) });
+});
+
 const listPackages = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await HomeLearningService.listPackages(req.ownerAdminId) });
 });
@@ -99,7 +103,7 @@ const getForEducator = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  list, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
+  list, getHub, listPackages, createPackage, updatePackage, deletePackage, create, update, setEnrollment, createLearner, removeEnrollment,
   generateInvoice, generateDueInvoices, getForLearner, getForEducator, approveSignup, declineSignup,
   getFamily, addFamilyChild,
 };

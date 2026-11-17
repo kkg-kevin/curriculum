@@ -143,6 +143,7 @@ import CustomerDetailPage from "../modules/billing/pages/CustomerDetailPage";
 import EnquiriesListPage from "../modules/leads/pages/EnquiriesListPage";
 import HomeLearningPage from "../modules/home-learning/pages/HomeLearningPage";
 import EducatorHomeLearningPage from "../modules/home-learning/pages/EducatorHomeLearningPage";
+import HomeLearningTimetablePage from "../modules/home-learning/pages/HomeLearningTimetablePage";
 import TechClubsPage from "../modules/tech-clubs/pages/TechClubsPage";
 import PathwaySubscriptionsPage from "../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage";
 import AffiliatesPage from "../modules/affiliates/pages/AffiliatesPage";
@@ -325,6 +326,7 @@ export default function AppRoutes() {
           <Route path=":id/profile" element={<Navigate to=".." relative="path" replace />} />
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
+        <Route path="home-learning/timetable" element={<HomeLearningTimetablePage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
         <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
         {/* Affiliate marketing — affiliates, referrals, commissions, payouts (modules/affiliates). */}

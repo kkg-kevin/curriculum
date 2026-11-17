@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiBookOpen, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { readLocal, writeLocal } from "../../../../utils/safeStorage";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAnalytics, useAnalyticsFilters } from "../../hooks/useAnalytics";
@@ -18,6 +18,7 @@ import GrowthTab from "./GrowthTab";
 import AttendanceTab from "./AttendanceTab";
 import EnrolmentTab from "./EnrolmentTab";
 import ParentsTab from "./ParentsTab";
+import CoverageTab from "./CoverageTab";
 import AttentionPanel from "./AttentionPanel";
 import { Card, Empty, STYLES, T } from "./ui";
 
@@ -33,6 +34,8 @@ const TABS = [
   { key: "overview", label: "Overview", icon: FiGrid, group: "Summary" },
   { key: "trends", label: "Trends", icon: FiTrendingUp, group: "Summary", Component: TrendsTab },
   { key: "hubs", label: "Hubs", icon: FiHome, group: "Summary", Component: HubsTab, adminOnly: true },
+  // 17 Nov 2026: how far each class has got through its courses.
+  { key: "coverage", label: "Curriculum coverage", icon: FiBookOpen, group: "Learning", Component: CoverageTab },
   { key: "growth", label: "Growth", icon: FiArrowUpRight, group: "Learning", Component: GrowthTab },
   { key: "assessments", label: "Assessments", icon: FiClipboard, group: "Learning", Component: AssessmentsTab },
   { key: "time-to-task", label: "Time to task", icon: FiClock, group: "Learning", Component: TimeToTaskTab },

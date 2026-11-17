@@ -23,6 +23,7 @@ const { getGrowth } = require("./analytics.growth");
 const { getAttendance } = require("./analytics.attendance");
 const { getEnrolment } = require("./analytics.enrolment");
 const { getParents } = require("./analytics.parents");
+const { getCoverage, getCoverageDetail } = require("./analytics.coverage");
 const Followups = require("./analytics.followups");
 const { z } = require("zod");
 
@@ -46,6 +47,8 @@ const VIEWS = {
   attendance: getAttendance,
   enrolment: getEnrolment,
   parents: getParents,
+  // 17 Nov 2026: how far each class has got through its courses.
+  coverage: getCoverage,
 };
 
 // Following up a learner at risk (analytics.followups.js): message the parent, tell the class's
@@ -75,6 +78,12 @@ router.get("/followups/:learnerId", asyncHandler(async (req, res) => {
   const scope = await resolveScope({ ...req, query: {} });
   if (!scope.learnerIds.has(req.params.learnerId)) return res.status(403).json({ success: false, message: "That learner isn't in your hubs" });
   res.json({ success: true, data: await Followups.history(req.params.learnerId) });
+}));
+
+// One class + course of the Curriculum coverage tab, session by session.
+router.get("/coverage/:classId/:courseId", asyncHandler(async (req, res) => {
+  const scope = await resolveScope({ ...req, query: {} });
+  res.json({ success: true, data: await getCoverageDetail(scope, req.params.classId, req.params.courseId) });
 }));
 
 router.get("/:view", asyncHandler(async (req, res) => {

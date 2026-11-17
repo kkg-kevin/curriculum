@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const db = require("../../config/db");
 const CertificateModel = require("./certificate.model");
 const CertificateSettingsModel = require("./certificate-settings.model");
 const ReportModel = require("../reports/report.model");
@@ -356,6 +357,11 @@ const CertificateService = {
     // Only the pathway(s) the learner is actually in — placed by their diagnostic or by staff
     // (learner_pathways) — not every pathway their curriculum offers.
     const placedPathwayIds = new Set((await LearnerPathwayModel.findByLearner(learnerId)).map((p) => p.pathwayId));
+    // Classes they were in before (published reports there) — on the same curriculum + grade as a
+    // class they're in now, their sessions done there count toward progress here (17 Nov 2026).
+    const reportedClassIds = (await db("reports").where({ learnerId, status: "published" }).whereNotNull("sessionId").distinct("classId")).map((r) => r.classId).filter(Boolean);
+    const reportedClasses = reportedClassIds.length ? await db("classes").whereIn("id", reportedClassIds).select("id", "curriculumId", "gradeId") : [];
+    const earlierFor = (cls) => reportedClasses.filter((c) => c.id !== cls.id && c.curriculumId === cls.curriculumId && c.gradeId === cls.gradeId).map((c) => c.id);
 
     // Keyed by course: a learner in two classes that run the same course sees it once, at
     // whichever class they're furthest along in — and not at all once they hold its certificate.
@@ -369,7 +375,7 @@ const CertificateService = {
       const classCourses = await CurriculumVersionService.getCurrentCourses(cls.curriculumId, cls.gradeId);
       for (const course of classCourses) {
         if (heldCourseIds.has(course.id)) continue;
-        const progress = await ReportService.getCourseProgressForLearner(course.id, cls.id, learnerId);
+        const progress = await ReportService.getCourseProgressForLearner(course.id, cls.id, learnerId, earlierFor(cls));
         if (progress.totalSessions === 0) continue;
         const entry = { kind: "course", id: course.id, classId: cls.id, title: course.name, hubName, done: progress.doneSessions, total: progress.totalSessions };
         const seen = courses.get(course.id);

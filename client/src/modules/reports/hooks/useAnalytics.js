@@ -19,6 +19,11 @@ export function useAnalytics(view, params, { enabled = true } = {}) {
   });
 }
 
+// Curriculum coverage: one class + course, session by session (opened from a course chip).
+export function useCoverageDetail(classId, courseId) {
+  return useQuery({ queryKey: ["analytics", "coverage-detail", classId, courseId], queryFn: () => analyticsApi.coverageDetail(classId, courseId), enabled: !!classId && !!courseId, staleTime: 60 * 1000 });
+}
+
 // Following up a learner at risk — the at-risk list and "Needs your attention" recount after.
 export function useRecordFollowup() {
   const qc = useQueryClient();

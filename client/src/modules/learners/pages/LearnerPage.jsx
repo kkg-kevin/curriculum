@@ -40,6 +40,7 @@ import LearnerStaffBar from "../components/staff/LearnerStaffBar";
 import LearnerLoginDialog from "../components/staff/LearnerLoginDialog";
 import MoveLearnerDialog from "../../learner-moves/components/MoveLearnerDialog";
 import LearnerMoves from "../../learner-moves/components/LearnerMoves";
+import EarlierProgrammes from "../../learner-moves/components/EarlierProgrammes";
 import ProjectsOverview from "../../learner-portal/components/ProjectsOverview";
 import { usePermissions } from "../../../hooks/usePermissions";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
@@ -279,7 +280,7 @@ export default function LearnerPage() {
 
       {tab === "Projects" && <ProjectsOverview classId={cls?.id} staffLearnerId={id} learner={learner} />}
 
-      {tab === "Reports" && <ReportsOverview hubId={selectedHub?.id} staffLearnerId={id} learner={learner} cls={cls} />}
+      {tab === "Reports" && <><ReportsOverview hubId={selectedHub?.id} staffLearnerId={id} learner={learner} cls={cls} /><EarlierProgrammes staffLearnerId={id} /></>}
 
       {tab === "Parent" && <ParentTab learnerId={id} onEdit={manage ? () => setEditing("guardian") : undefined} />}
 

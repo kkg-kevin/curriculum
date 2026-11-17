@@ -132,6 +132,8 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
   const removed = item.status === "removed";
   // A child who signed up on the website has no curriculum until the admin places them.
   const unplaced = !item.curriculumId && !removed;
+  // Placed children have their own class in the Home Learning hub, which carries their timetable.
+  const hasClass = !removed && !unplaced && !!item.classId;
   const name = item.learner ? `${item.learner.firstName} ${item.learner.lastName}` : "Learner";
   const startEdit = (status) => {
     setDraft({ curriculumId: item.curriculumId, gradeId: item.gradeId || "", educatorId: item.educatorId || "", status });
@@ -158,6 +160,9 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
             : <IconLine icon={FiBookOpen}>{item.curriculum?.name || "Curriculum"} · {item.gradeName || <span style={{ color: "#B45309", fontWeight: 700 }}>Grade not set — edit to create this child's class</span>}</IconLine>}
           {item.placementNotes && <IconLine icon={FiFileText}><span style={{ color: "#6B7280" }}>{item.placementNotes}</span></IconLine>}
           <IconLine icon={FiUser}>{item.educator ? `${item.educator.firstName} ${item.educator.lastName}` : <span style={{ color: "#B45309" }}>Educator not assigned</span>}</IconLine>
+          {hasClass && <IconLine icon={FiCalendar}>{item.slotCount
+            ? `${item.slotCount} lesson${item.slotCount === 1 ? "" : "s"} a week`
+            : <span style={{ color: "#B45309", fontWeight: 700 }}>No timetable yet — set their weekly lessons</span>}</IconLine>}
         </div>
       </div>
     </div>
@@ -169,6 +174,7 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
           {unplaced
             ? <button type="button" onClick={() => startEdit("active")} style={{ ...secondaryButton, borderColor: "#B45309", color: "#B45309" }}><FiBookOpen /> Place child</button>
             : <button type="button" onClick={() => startEdit(item.status)} style={secondaryButton}><FiEdit2 /> Edit</button>}
+          {hasClass && <Link to={`/home-learning/timetable?class=${item.classId}`} style={{ ...secondaryButton, textDecoration: "none", ...(item.slotCount ? {} : { borderColor: "#B45309", color: "#B45309" }) }}><FiCalendar /> Timetable</Link>}
           <button type="button" onClick={() => onRemove({ householdId: household.id, learnerId: item.learnerId, name })} style={{ ...secondaryButton, color: "#B91C1C" }}>Remove</button>
         </>}
     </div>}

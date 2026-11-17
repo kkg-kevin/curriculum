@@ -12,6 +12,8 @@ const PATH_MODULES = [
   ["/learning-hubs", "learning-hubs"],
   ["/curriculum", "curriculum"],
   ["/learners", "learners"],
+  // Editing a child's lessons goes through the Timetable API, so it needs Timetable access.
+  ["/home-learning/timetable", "timetable"],
   ["/home-learning", "home-learning"],
   ["/tech-clubs", "tech-clubs"],
   ["/pathway-subscriptions", "pathway-subscriptions"],

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 import {
   useAssessmentQuery, useCreateAssessment, useUpdateAssessment,
   useAssessmentCompetencies, useAssessmentPathways, useAssessmentInventory,
@@ -1609,9 +1610,36 @@ function saleFromAssessment(a) {
   };
 }
 
+// "Counts as": which evidence type this assessment is, for each course's minimum of that type
+// (Reports → Curriculum coverage). Empty = automatic — the evidence type with the same type, when
+// only one has it. Stored as the evidence type's name (assessments are shared across curricula).
+function EvidenceTypeField({ type, value, onChange }) {
+  const { data: options = [] } = useQuery({ queryKey: ["assessments", "evidence-types"], queryFn: assessmentApi.evidenceTypes, staleTime: 5 * 60 * 1000 });
+  if (type === "survey") return null;
+  const matching = options.filter((o) => o.categories.includes(type));
+  const auto = matching.length === 1 ? matching[0].name : null;
+  const ambiguous = matching.length > 1 && !value;
+  const listed = value && !options.some((o) => o.name.toLowerCase() === value.toLowerCase());
+  return (
+    <div>
+      <Label>Counts as (evidence type)</Label>
+      <select className="tb-input" value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{auto ? `Automatic — ${auto}` : "Automatic (by type)"}</option>
+        {listed && <option value={value}>{value}</option>}
+        {options.map((o) => <option key={o.name} value={o.name}>{o.name}{o.categories.length ? ` (${o.categories.map((c) => TYPE_LABELS[c] || c).join(", ")})` : ""}</option>)}
+      </select>
+      <p style={{ margin: "5px 0 0", fontSize: "11.5px", color: ambiguous ? "#B45309" : "#9CA3AF", lineHeight: 1.45 }}>
+        {ambiguous
+          ? `More than one evidence type is a ${TYPE_LABELS[type] || type} (${matching.map((m) => m.name).join(", ")}). Choose one so it counts toward the right minimum.`
+          : "Counts toward each course's minimum of this evidence type — see Reports → Curriculum coverage."}
+      </p>
+    </div>
+  );
+}
+
 function buildBlankForm(type) {
   return {
-    type, name: "", description: "", instructions: "", structureType: "mixed", overview: "",
+    type, name: "", description: "", instructions: "", structureType: "mixed", overview: "", evidenceType: "",
     sections: [], items: [], indicators: [], deliverables: [], milestones: [], rubric: [],
     competencyIds: [], pathwayIds: [], inventory: [],
     ...BLANK_SALE,
@@ -1621,7 +1649,7 @@ function buildBlankForm(type) {
 function buildFormFromAssessment(a, competencyIds, pathwayIds, inventory) {
   return {
     type: a.type, name: a.name || "", description: a.description || "", instructions: a.instructions || "",
-    structureType: a.structureType || "mixed", overview: a.overview || "",
+    structureType: a.structureType || "mixed", overview: a.overview || "", evidenceType: a.evidenceType || "",
     sections: a.sections || [],
     items: (a.items || []).map((item) => ({ ...normalizeLegacyItem(item), id: item.id || genId(), indicatorMarks: item.indicatorMarks || [], scoringCriteria: item.scoringCriteria || [] })),
     indicators: (a.indicators || []).map((ind) => ({ id: ind.id || genId(), kind: ind.kind || "rating", sectionId: ind.sectionId || null, competencyIndicatorIds: ind.competencyIndicatorIds || [], scoringCriteria: ind.scoringCriteria || [], ...ind })),
@@ -1897,6 +1925,7 @@ export default function AssessmentBuilderPage() {
       sections: form.sections.map((s, i) => ({ ...s, order: i })),
     };
     if (registry?.supportsDeliverables) payload.overview = form.overview.trim();
+    payload.evidenceType = type === "survey" ? null : (form.evidenceType || null);
     payload.items = registry?.supportsItems === false ? [] : form.items;
     // Editable via the Structure canvas for Teacher Observation (see entries/setEntries above);
     // stays permanently [] for every other type.
@@ -2026,6 +2055,7 @@ export default function AssessmentBuilderPage() {
                       <RichTextEditor value={form.overview} onChange={(html) => setForm((f) => ({ ...f, overview: html }))} />
                     </div>
                   )}
+                  <EvidenceTypeField type={type} value={form.evidenceType} onChange={(v) => setForm((f) => ({ ...f, evidenceType: v }))} />
                   <div>
                     <Label>Structure Type</Label>
                     <SegmentedControl options={STRUCTURE_MODES} value={form.structureType} onChange={(v) => setForm((f) => ({ ...f, structureType: v }))} />

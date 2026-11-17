@@ -283,9 +283,13 @@ function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingCl
   );
 }
 
-export default function TimetablePage() {
-  const { school, hubsLoading: schoolLoading } = useOutletContext();
-  const [selectedClassId, setSelectedClassId] = useState("");
+// Used two ways: inside the hub portal (hub comes from the outlet), and from Home Learning, which
+// passes its own hub plus the child's class to open on (HomeLearningTimetablePage.jsx).
+export default function TimetablePage({ hub, initialClassId = "", heading = "Timetable", intro } = {}) {
+  const outlet = useOutletContext() || {};
+  const school = hub || outlet.school;
+  const schoolLoading = hub ? false : outlet.hubsLoading;
+  const [selectedClassId, setSelectedClassId] = useState(initialClassId);
   const [addingDay, setAddingDay] = useState(null);
   const [editingSlotId, setEditingSlotId] = useState(null);
   // "class" = the existing single-class editor + calendar below; "all" = a merged, read-only
@@ -454,9 +458,9 @@ export default function TimetablePage() {
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ background: `linear-gradient(135deg, ${T.accentDeep} 0%, ${T.accent} 40%, ${T.accentMid} 75%, ${T.accentLight} 100%)`, borderRadius: 20, padding: "28px 32px" }}>
-        <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Timetable</h1>
+        <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>{heading}</h1>
         <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
-          A weekly schedule for each class — set a day, time, course and educator once; it repeats every week.
+          {intro || "A weekly schedule for each class — set a day, time, course and educator once; it repeats every week."}
         </p>
       </div>
 

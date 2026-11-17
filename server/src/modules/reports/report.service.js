@@ -536,13 +536,24 @@ const ReportService = {
     }
   },
 
-  async getCourseProgressForLearner(courseId, classId, learnerId) {
+  // earlierClassIds (17 Nov 2026): classes the learner was in before on the same curriculum + grade
+  // (a move) — a session done there counts here too, so moving doesn't reset their progress.
+  // Without them this is exactly the one-class count it always was.
+  async getCourseProgressForLearner(courseId, classId, learnerId, earlierClassIds = []) {
     const allSessions = await SessionModel.findByCourseId(courseId);
-    const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
-    const sessions = allSessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
+    const classIds = [classId, ...earlierClassIds.filter((id) => id && id !== classId)];
     const graded = await getPublishedGraded(learnerId);
-    const reports = await Promise.all(sessions.map(({ session }) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id })));
-    return { totalSessions: sessions.length, doneSessions: sessions.filter(({ session, requiredIds }, i) => sessionDone(reports[i], requiredIds, graded.forSession(session.id))).length };
+    const perSession = await Promise.all(allSessions.map(async (session) => {
+      const perClass = await Promise.all(classIds.map(async (cid) => {
+        const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, cid);
+        if (!requiredIds.length) return { counts: false, done: false };
+        const report = await ReportModel.findOne({ learnerId, courseId, classId: cid, sessionId: session.id });
+        return { counts: true, done: sessionDone(report, requiredIds, graded.forSession(session.id)) };
+      }));
+      return { counts: perClass.some((p) => p.counts), done: perClass.some((p) => p.done) };
+    }));
+    const counted = perSession.filter((s) => s.counts);
+    return { totalSessions: counted.length, doneSessions: counted.filter((s) => s.done).length };
   },
 
   // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,
