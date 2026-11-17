@@ -128,6 +128,94 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (17 Nov 2026) — Curriculum coverage, minimum evidence, a Home Learning timetable, earlier programmes kept in view, and a faster, lighter system
+
+**Portal and backend** from `curriculum` (branch `modules`) at `47703702` (with `382a8717`, `f3b4efe2`, `35e28dd2` and `159f20a9`
+before it). **Website: no change** since 13 Nov — the website zip in this folder is the 13 Nov one; upload it only if that release
+isn't up yet. If the 16 Nov release below isn't up yet, these files include it: follow its steps too (its one-off
+`projects:recount-milestones` included).
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database — two new migrations.
+1. **Backend** — `backend-deploy.zip` (757 files, 186 migrations). No new npm package — **Stop App → Start App**; the start
+   applies two new migrations:
+   - `20261117100000` — `assessments.evidenceType` (an evidence type's name, empty for every existing assessment = "automatic").
+   - `20261117120000` — four indexes, no data change: `assessment_issues` (classId, sessionId) and (learnerId), `reports` (hubId),
+     `audit_log` (actorUserId, action). On a big `audit_log` this can take a few seconds.
+
+   Check: `SHOW COLUMNS FROM assessments LIKE 'evidenceType';` (1 row) and
+   `SHOW INDEX FROM audit_log WHERE Key_name = 'audit_log_actoruserid_action_index';` (2 rows). If either is missing: Run JS script →
+   `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Cp_bMtGD.js`) **and `.htaccess`** — new this time. After the backend.
+   In `dcf.digifunzi.com`: delete the old `assets/` folder and `index.html` as usual, then upload all three and Extract
+   `assets.zip`. **Replace the existing `.htaccess`** with the one in this folder (it keeps the old page-routing lines and adds
+   browser caching). In File Manager, Settings → "Show Hidden Files" to see it.
+
+No new environment variable needed and no new npm package. Optional new settings: `REQUEST_LOG=all` (log every request again)
+and `SLOW_REQUEST_MS` (default 1500).
+
+**Optional, any time — lighter cron jobs.** Each job can run with `node` directly instead of `npm run` (one process instead of
+two), at staggered minutes so they never start together. Keep each line's start (`source /home/USER/nodevenv/APP_ROOT/NODE_VERSION/bin/activate && cd /home/USER/APP_ROOT && `)
+and change the rest:
+
+| Schedule | Rest of the command |
+|---|---|
+| `*/10 * * * *` | `node src/scripts/processEmailOutbox.js >> mail-cron.log 2>&1` |
+| `5 * * * *` | `node src/scripts/processCheckins.js >> checkins-cron.log 2>&1` |
+| `25 * * * *` | `node src/scripts/processQa.js >> qa-cron.log 2>&1` |
+| `45 * * * *` | `node src/scripts/processBilling.js >> billing-cron.log 2>&1` |
+| `15 7 * * *` | `node src/scripts/processEnquiries.js >> enquiries-cron.log 2>&1` |
+| `40 7 * * 1` | `node src/scripts/analyticsWeekly.js >> analytics-cron.log 2>&1` |
+| `30 2 * * *` | `node src/scripts/educatorStats.js >> educator-stats-cron.log 2>&1` |
+
+### What changed
+
+**Curriculum coverage** (Reports & Analytics → Learning → **Curriculum coverage**) — how far each class has got through its
+courses, as of today: covered vs planned and vs due so far, Behind / Slightly behind / On pace / Not started / Complete /
+Not scheduled per class, each course as a chip that opens session by session (covered and when, due not recorded,
+cancelled, coming up). A session counts as covered once it's marked taught **or** its register is taken. Lists of classes
+and courses with no weekly lessons or start date, and every class and course, with CSVs.
+
+**Minimum evidence** — an evidence type's **Minimum Count** (Curriculum → Assessment → Evidence Types) is now tracked per
+class and course in Curriculum coverage: planned in the course, given to the class, and done (given and fully marked), with
+what's still to do. The assessment builder has a **Counts as (evidence type)** choice — automatic by type, chosen by hand
+only when two evidence types share a type (an orange note says so); the coverage tab lists the assessments that need a
+choice. Scores are not affected.
+
+**Home Learning timetable** — each placed child's card shows "N lessons a week" or "No timetable yet" and a **Timetable**
+button that opens the timetable on that child's class (weekly lessons, course start dates, calendar). Staff need Timetable
+access for it.
+
+**Earlier programmes** — under Reports on the staff learner page, the learner portal and a parent's view of a child: every
+class a learner was in before, with its certificates, final reports and what else was kept. A learner moved to a class on
+the same curriculum and grade keeps their course progress. The Move dialog can **tell the parent** (on by default) where the
+child went and that their earlier records are kept — a notification and an email (`learner_moved`).
+
+**Educator portal on phones** — every educator screen uses the full width, friendlier on small screens.
+
+**Faster and lighter** — no change to what anyone sees, apart from a short "Loading…" the first time a page opens:
+- The portal loads each page and each portal's layout only when it's opened: the start-up download went from about 5.3 MB to
+  855 KB (261 KB compressed). A tab left open across a release reloads itself once.
+- Browsers keep the portal's files (the new `.htaccess`) and uploaded photos/files (30 days), instead of fetching them again.
+- The Learners, Classes and Curricula lists load in a handful of database queries instead of one per row; a parent's or
+  learner's requests make about a third of the queries they did; Reports & Analytics keeps each tab's figures for a minute
+  (so a change made elsewhere can take up to a minute to show there).
+- The server log now records only errors and slow requests (`[slow] GET /api/… 200 2310ms`) — send those lines over and the
+  slow pages get looked at.
+- Unused code removed throughout (no visible change).
+
+### Verify
+
+1. Open https://dcf.digifunzi.com and sign in — the dashboard loads; open Learners, Classes, Billing and Reports.
+2. Browser developer tools → Network → reload: a file under `/assets/` has `Cache-Control: public, max-age=31536000, immutable`
+   and `index.html` has `no-cache`. A deep link (e.g. `/learners`) opened directly still loads the page.
+3. Reports & Analytics → **Curriculum coverage** shows the class list; open a course chip.
+4. Home Learning → a placed child → **Timetable** opens their class's timetable.
+5. As a parent, open a child's Reports tab — it loads as before.
+
+---
+
 ## This release (16 Nov 2026) — Move a learner between programmes, teacher observations without issuing, a Projects tab, project milestones that count
 
 **Portal and backend** from `curriculum` (branch `modules`) at `e73c81c7` (with `8d8b9b2b` before it). **Website: no change** since
@@ -7682,7 +7770,7 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 5. **Delete the previous build's files** so old hashed chunks don't linger:
    - the whole `assets/` folder
    - `index.html`
-   (Leave `.htaccess` alone.)
+   (Leave `.htaccess` alone — unless a release ships a new one, as 17 Nov 2026 does.)
 
 6. **Upload**:
    - `index.html` from `Guide/live/` (or `client/dist/`, same file)
@@ -7692,10 +7780,13 @@ To reset the live database to empty (keeping schema/tables intact), truncate its
 
 8. **Delete** `assets.zip` after extraction
 
-9. **Create `.htaccess`** file in `dcf.digifunzi.com` (if not already there):
+9. **`.htaccess`** in `dcf.digifunzi.com` — since 17 Nov 2026 it comes with the bundle (`Guide/<env>/.htaccess`, built from
+   `client/public/.htaccess`): page routing plus browser caching. Upload it when a release says so, replacing the old one.
+   The routing part, if you ever need to write it by hand:
    ```apache
    Options -MultiViews
    RewriteEngine On
+   RewriteCond %{REQUEST_URI} !^/assets/
    RewriteCond %{REQUEST_FILENAME} !-f
    RewriteRule ^ index.html [QSA,L]
    ```
