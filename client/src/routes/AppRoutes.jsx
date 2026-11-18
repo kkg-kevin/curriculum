@@ -23,6 +23,8 @@ import TotLearnerHandoff from "../modules/tot/components/TotLearnerHandoff";
 const MentorFeedbackPage = lazyPage(() => import("../modules/mentor-reviews/pages/MentorFeedbackPage"));
 const MyFeedbackPage = lazyPage(() => import("../modules/mentor-reviews/pages/MyFeedbackPage"));
 const PublicEducatorPage = lazyPage(() => import("../modules/educator-profiles/pages/PublicEducatorPage"));
+// A family's "no thanks" link from an affiliate's invite (modules/affiliates) — no sign-in.
+const NoThanksPage = lazyPage(() => import("../modules/affiliates/pages/NoThanksPage"));
 const FindMentorPage = lazyPage(() => import("../modules/educator-profiles/pages/FindMentorPage"));
 const MentorProfilePage = lazyPage(() => import("../modules/educator-profiles/pages/FindMentorPage"), "MentorProfilePage");
 const TotMarkingPage = lazyPage(() => import("../modules/tot/pages/TotMarkingPage"));
@@ -191,6 +193,7 @@ export default function AppRoutes() {
       <Route path="/public/learners/:token" element={<PublicLearnerProfilePage />} />
       {/* A published educator profile — no sign-in, read only (modules/educator-profiles). */}
       <Route path="/public/educators/:slug" element={<PublicEducatorPage />} />
+      <Route path="/no-thanks/:token" element={<NoThanksPage />} />
       {/* Unauthenticated too — where the QR on a course certificate leads, for anyone checking
           that it is genuine. */}
       <Route path="/certificates/verify/:token" element={<VerifyCertificatePage />} />

@@ -33,10 +33,71 @@ router.put("/me", own, asyncHandler(async (req, res) => {
 }));
 router.post("/me/payouts", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.requestMyPayout(req))));
 
+// ---- Prospects (19 Nov 2026 — affiliate.prospects.js): families an affiliate pre-registers ---------
+const PROGRAMME_KEYS = ["home_learning", "tech_club", "pathway", "bootcamp", "shop"];
+const optionalText = (max) => z.union([z.string().trim().max(max), z.null()]).optional().transform((v) => (v ? v : null));
+const prospectSchema = z.object({
+  parentName: z.string().trim().min(2, "Enter the parent's name").max(150),
+  phone: optionalText(40),
+  email: z.union([z.string().trim().email("Enter a valid email address").max(255), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
+  childName: optionalText(150),
+  childAge: z.union([z.coerce.number().int().min(2).max(25), z.literal(""), z.null()]).optional().transform((v) => (v === "" || v == null ? null : v)),
+  programme: z.union([z.enum(PROGRAMME_KEYS), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
+  notes: optionalText(1000),
+  // The affiliate confirms the family agreed to be contacted (Data Protection Act).
+  consent: z.literal(true, { error: "Confirm the family agreed to be contacted by Digifunzi" }),
+}).superRefine((v, ctx) => {
+  if (!v.phone && !v.email) ctx.addIssue({ code: "custom", path: ["phone"], message: "Give the parent's phone number or email" });
+});
+const prospectEditSchema = z.object({
+  childName: optionalText(150),
+  childAge: z.union([z.coerce.number().int().min(2).max(25), z.literal(""), z.null()]).optional().transform((v) => (v === "" || v == null ? null : v)),
+  programme: z.union([z.enum(PROGRAMME_KEYS), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
+  notes: optionalText(1000),
+});
+// A spreadsheet's rows: each is checked by itself (a bad row is reported, the rest still added).
+const bulkSchema = z.object({
+  consent: z.literal(true, { error: "Confirm every family agreed to be contacted by Digifunzi" }),
+  rows: z.array(z.record(z.string(), z.any())).min(1, "The file has no families in it").max(200, "Up to 200 families at a time"),
+});
+const rowOf = (r) => ({
+  parentName: String(r.parentName || "").trim(), phone: r.phone ? String(r.phone).trim() : null, email: r.email ? String(r.email).trim() : null,
+  childName: r.childName ? String(r.childName).trim() : null, childAge: r.childAge ? Number(r.childAge) || null : null,
+  programme: PROGRAMME_KEYS.includes(r.programme) ? r.programme : null, notes: r.notes ? String(r.notes).trim() : null,
+});
+router.get("/me/prospects", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.myProspects(req))));
+router.post("/me/prospects", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.addMyProspect(req, prospectSchema.parse(req.body || {})))));
+router.post("/me/prospects/bulk", own, asyncHandler(async (req, res) => {
+  const { rows } = bulkSchema.parse(req.body || {});
+  ok(res, await AffiliateService.addMyProspects(req, rows.map(rowOf)));
+}));
+router.put("/me/prospects/:id", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.updateMyProspect(req, req.params.id, prospectEditSchema.parse(req.body || {})))));
+router.post("/me/prospects/:id/release", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.releaseMyProspect(req, req.params.id))));
+router.post("/me/prospects/:id/invite", own, asyncHandler(async (req, res) => {
+  const { channel } = z.object({ channel: z.enum(["whatsapp", "email"]) }).parse(req.body || {});
+  ok(res, await AffiliateService.inviteMyProspect(req, req.params.id, channel));
+}));
+
 // ---- Admin -------------------------------------------------------------------------------------
 const admin = authorize("admin");
 router.get("/settings", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.getSettings(req.ownerAdminId))));
 router.put("/settings", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.saveSettings(req.ownerAdminId, req.body || {}))));
+
+// Prospects: every claim; adding one for an affiliate; releasing, moving, deciding possible matches.
+router.get("/prospects", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listProspects(req, { filter: req.query.filter || null, affiliateId: req.query.affiliateId || null }))));
+router.post("/prospects", admin, asyncHandler(async (req, res) => {
+  const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1, "Choose the affiliate").max(36) }).parse(req.body || {});
+  ok(res, await AffiliateService.addProspectFor(req, affiliateId, prospectSchema.parse(req.body || {})));
+}));
+router.post("/prospects/:id/release", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.releaseProspect(req, req.params.id))));
+router.post("/prospects/:id/reassign", admin, asyncHandler(async (req, res) => {
+  const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1).max(36) }).parse(req.body || {});
+  ok(res, await AffiliateService.reassignProspect(req, req.params.id, affiliateId));
+}));
+router.post("/prospects/:id/match", admin, asyncHandler(async (req, res) => {
+  const { approve } = z.object({ approve: z.boolean() }).parse(req.body || {});
+  ok(res, await AffiliateService.decideProspectMatch(req, req.params.id, approve));
+}));
 
 router.get("/referrals", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listReferrals(req, { affiliateId: req.query.affiliateId || null }))));
 router.post("/referrals/:id/cancel", admin, asyncHandler(async (req, res) => {
@@ -143,6 +204,9 @@ const dashboardMoved = (req, res) => res.status(410).json({
   data: { signInUrl: appUrl("/login"), setPasswordUrl: appUrl("/forgot-password") },
 });
 publicRouter.get("/affiliate-dashboard", dashboardMoved);
+// A family's "no thanks" link from an invite (the portal's /no-thanks/:token page): their claim
+// closes and their details are removed. Rate-limited; says nothing about anyone else.
+publicRouter.post("/affiliate-prospects/opt-out/:token", limiter, asyncHandler(async (req, res) => ok(res, await AffiliateService.optOutProspect(req.params.token))));
 publicRouter.post("/affiliate-dashboard/payouts", dashboardMoved);
 
 module.exports = { router, publicRouter };

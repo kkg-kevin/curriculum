@@ -3,12 +3,13 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiUsers, FiX } from "react-icons/fi";
+import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiUserPlus, FiUsers, FiX } from "react-icons/fi";
 import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
+import ProspectsTab from "../components/ProspectsTab";
 
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
@@ -22,6 +23,7 @@ import { askConfirm, askText } from "../../../components/ui/AskDialog";
 
 const TABS = [
   { key: "affiliates", label: "Affiliates", icon: FiUsers },
+  { key: "prospects", label: "Prospects", icon: FiUserPlus },
   { key: "referrals", label: "Referrals", icon: FiLink },
   { key: "commissions", label: "Commissions", icon: FiGift },
   { key: "payouts", label: "Payouts", icon: FiDollarSign },
@@ -421,7 +423,7 @@ function ReferralsTab() {
           <td style={td}><strong style={{ color: BRAND.ink }}>{r.customerName || "—"}</strong><div style={{ fontSize: 12, color: BRAND.muted, overflowWrap: "anywhere" }}>{[r.parentEmail, r.parentPhone].filter(Boolean).join(" · ")}</div></td>
           <td style={td}>{r.programmeLabel}<div style={{ fontSize: 12, color: BRAND.muted }}>{r.detail}</div></td>
           <td style={td}>{r.affiliate ? <>{r.affiliate.name} <code style={{ color: BRAND.navy }}>{r.affiliate.code}</code></> : "—"}</td>
-          <td style={td}>{r.via === "code" ? "Typed the code" : "Came by the link"}{r.landingPage && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.landingPage}</div>}</td>
+          <td style={td}>{r.via === "code" ? "Typed the code" : r.via === "prospect" ? "On their prospect list" : "Came by the link"}{r.landingPage && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.landingPage}</div>}</td>
           <td style={td}><span style={pill(r.status === "paid" ? "good" : r.status === "cancelled" ? "danger" : "waiting")}>{r.status === "paid" ? "Paying" : r.status === "cancelled" ? "Cancelled" : "Not paid yet"}</span></td>
           <td style={td}>{formatKsh(r.earned)}{r.payments > 0 && <div style={{ fontSize: 12, color: BRAND.muted }}>{r.payments} {r.payments === 1 ? "payment" : "payments"}</div>}</td>
           <td style={{ ...td, textAlign: "right" }}>{r.status !== "cancelled" && <button type="button" style={btn} onClick={async () => { const why = await askText({ title: "Cancel this referral?", message: "It stops earning, and commissions not yet paid out are cancelled.", label: "Why?", confirmLabel: "Cancel referral", cancelLabel: "Keep it", tone: "danger" }); if (why !== null) cancel.mutate({ r, why }); }}>Cancel</button>}</td>
@@ -621,6 +623,24 @@ function SettingsTab() {
         <label style={label}>Smallest payout (KSh)<input min={0} {...num("minimumPayout")} /></label>
         <label style={label}>Days a link counts after the visit<input min={1} max={365} {...num("attributionDays")} /></label>
       </section>
+      <section style={{ ...card, padding: 18, display: "grid", gap: 12 }}>
+        <h3 style={cardHeading}><FiUsers size={13} /> Prospects (families affiliates register)</h3>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13.5, fontWeight: 700, color: BRAND.ink, cursor: "pointer" }}>
+          <input type="checkbox" checked={form.prospectsEnabled !== false} onChange={(e) => set("prospectsEnabled", e.target.checked)} />
+          Affiliates can register families they&rsquo;ve talked to — a sign-up matching the phone or email is theirs, code or no code
+        </label>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
+          <label style={label}>Days a family stays theirs<input min={1} max={365} {...num("claimDays")} /></label>
+          <label style={label}>Families each affiliate can add a day<input min={1} max={1000} {...num("prospectDailyLimit")} /></label>
+          <label style={label}>If the family types another affiliate&rsquo;s code
+            <select style={input} value={form.claimOrder || "code_first"} onChange={(e) => set("claimOrder", e.target.value)}>
+              <option value="code_first">The code they typed wins</option>
+              <option value="prospect_first">The family stays with whoever registered them</option>
+            </select>
+          </label>
+        </div>
+        <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>A registered family always beats a link they clicked. Families already with us can&rsquo;t be registered; when a claim ends, the family&rsquo;s details are removed.</p>
+      </section>
       <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>
         Website sign-ups belong to the website's workspace, so only its affiliates earn from them. A family never earns from their own sign-up.
       </p>
@@ -663,6 +683,7 @@ export default function AffiliatesPage() {
         tabs={TABS.map((t) => ({ ...t, count: t.key === "affiliates" && toApprove ? toApprove : t.key === "payouts" && toPay ? toPay : null, alert: (t.key === "affiliates" && toApprove > 0) || (t.key === "payouts" && toPay > 0) }))} />
 
       {tab === "affiliates" && <AffiliatesTab onEdit={setEditing} />}
+      {tab === "prospects" && <ProspectsTab affiliates={affiliates} />}
       {tab === "referrals" && <ReferralsTab />}
       {tab === "commissions" && <CommissionsTab />}
       {tab === "payouts" && <PayoutsTab />}

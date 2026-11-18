@@ -41,7 +41,16 @@ const DEFAULT_SETTINGS = {
   // commission ("commission"). Never taken out of the affiliate's commission.
   teamRate: 2,
   teamBasis: "payment",
+  // Prospects (19 Nov 2026): families an affiliate pre-registers are claimed for them for
+  // `claimDays`; a sign-up matching the parent's phone or email is theirs even without a code.
+  // `claimOrder`: "code_first" — a code the family types wins, then a prospect claim, then a link;
+  // "prospect_first" — the claim wins even over a typed code. At most `prospectDailyLimit` a day.
+  prospectsEnabled: true,
+  claimDays: 60,
+  claimOrder: "code_first",
+  prospectDailyLimit: 30,
 };
+const CLAIM_ORDERS = ["code_first", "prospect_first"];
 const TEAM_BASES = ["payment", "commission"];
 
 const money = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -72,6 +81,10 @@ function normaliseSettings(raw) {
     emailOutsiders: s.emailOutsiders === undefined ? DEFAULT_SETTINGS.emailOutsiders : Boolean(s.emailOutsiders),
     teamRate: Math.round(clamp(s.teamRate, 0, 100, DEFAULT_SETTINGS.teamRate) * 100) / 100,
     teamBasis: TEAM_BASES.includes(s.teamBasis) ? s.teamBasis : DEFAULT_SETTINGS.teamBasis,
+    prospectsEnabled: s.prospectsEnabled === undefined ? DEFAULT_SETTINGS.prospectsEnabled : Boolean(s.prospectsEnabled),
+    claimDays: Math.round(clamp(s.claimDays, 1, 365, DEFAULT_SETTINGS.claimDays)),
+    claimOrder: CLAIM_ORDERS.includes(s.claimOrder) ? s.claimOrder : DEFAULT_SETTINGS.claimOrder,
+    prospectDailyLimit: Math.round(clamp(s.prospectDailyLimit, 1, 1000, DEFAULT_SETTINGS.prospectDailyLimit)),
   };
 }
 
@@ -164,6 +177,38 @@ function pickAttribution({ typedCode, visitSource, attributionDays = DEFAULT_SET
   return { code: linked, via: "link" };
 }
 
+// A person's name for matching: lower case, letters and single spaces only ("Mary  Wanjiku-Otieno"
+// → "mary wanjiku otieno").
+const nameKey = (name) => String(name || "").toLowerCase().replace(/[^a-zÀ-ɏ]+/g, " ").trim() || null;
+
+// Who a sign-up is credited to, from the candidates found valid (an active affiliate of the
+// workspace, not the family themself): the code the family typed, an open prospect claim on their
+// phone or email, a link they came by. The workspace's `claimOrder` decides between a typed code
+// and a claim; a link always comes last. → { via, value } or null.
+function chooseClaim({ typed = null, prospect = null, link = null, order = "code_first" }) {
+  const seq = order === "prospect_first" ? ["prospect", "code", "link"] : ["code", "prospect", "link"];
+  const found = { code: typed, prospect, link };
+  for (const via of seq) if (found[via]) return { via, value: found[via] };
+  return null;
+}
+
+// What a claim looks like from the affiliate's side, from its status and dates: open (and days
+// left), signed up, paying, lost, expired, released, opted out.
+function prospectState(p, referral = null, today = new Date()) {
+  if (p.status === "open" && new Date(p.expiresAt) < today) return { key: "expired", label: "Claim ended" };
+  if (p.status === "open") {
+    const days = Math.max(0, Math.ceil((new Date(p.expiresAt) - today) / 864e5));
+    return { key: "open", label: "Waiting to sign up", daysLeft: days };
+  }
+  if (p.status === "signed_up") return referral?.status === "paid" ? { key: "paying", label: "Paying" } : referral?.status === "cancelled" ? { key: "cancelled", label: "Cancelled" } : { key: "signed_up", label: "Signed up" };
+  return {
+    lost: { key: "lost", label: "Signed up with another code" },
+    expired: { key: "expired", label: "Claim ended" },
+    released: { key: "released", label: "Released" },
+    opted_out: { key: "opted_out", label: "Asked not to be contacted" },
+  }[p.status] || { key: p.status, label: p.status };
+}
+
 // Is the family the affiliate themself (their own login, email or phone)?
 function isSelfReferral(affiliate, parent) {
   if (!affiliate || !parent) return false;
@@ -219,5 +264,6 @@ const firstNameOf = (name) => String(name || "").trim().split(/\s+/)[0] || "A fa
 module.exports = {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, DEFAULT_SETTINGS, TEAM_BASES,
   normaliseSettings, normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, normaliseCode, suggestCode, phoneKey, emailKey, pickAttribution, isSelfReferral,
+  CLAIM_ORDERS, nameKey, chooseClaim, prospectState,
   commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
 };

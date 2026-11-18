@@ -14,8 +14,9 @@ const { adminIdsOf } = require("../../shared/utils/organisation");
 const {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, normaliseSettings, normaliseCode, suggestCode,
   emailKey, pickAttribution, isSelfReferral, commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
-  normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem,
+  normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, chooseClaim,
 } = require("./affiliate.rules");
+const Prospects = require("./affiliate.prospects");
 
 // Affiliate marketing (6 Nov 2026) — see CLAUDE.md "Affiliates". How it fits together:
 //   1. Attribution: a website link carries ?ref=CODE (kept with the visit — the website's
@@ -409,17 +410,45 @@ const AffiliateService = {
   // by. `programme` one of PROGRAMMES; `recordId` the household / membership / subscription /
   // order (bootcamp: the invoice); `parent` { userId, name, email, phone }. Never throws — a
   // family's sign-up must never fail over a referral. Returns the referral, or null.
-  async recordReferral({ ownerAdminId, programme, recordId, invoiceId = null, parent = {}, code = null, visitSource = null, detail = null }) {
+  // Who a sign-up is credited to (19 Nov 2026): each candidate is checked on its own — the code the
+  // family typed, an open prospect claim on their phone or email (affiliate.prospects.js), the
+  // link they came by — and Settings' claimOrder picks between them (a link always last). A
+  // sign-up nobody is credited for, with the same parent name as an open claim, is kept for an
+  // admin to decide. `forceProspectId`: an admin approving such a possible match.
+  async recordReferral({ ownerAdminId, programme, recordId, invoiceId = null, parent = {}, code = null, visitSource = null, detail = null, forceProspectId = null }) {
     try {
       if (!ownerAdminId || !recordId || !PROGRAMMES.includes(programme)) return null;
       const settings = await getSettings(ownerAdminId);
       if (!settings.enabled || !settings.programmes[programme]) return null;
-      const pick = pickAttribution({ typedCode: code, visitSource, attributionDays: settings.attributionDays });
-      if (!pick) return null;
-      const affiliate = await db(A).where({ code: pick.code }).first();
-      if (!affiliate || affiliate.status !== "active" || affiliate.ownerAdminId !== ownerAdminId) return null;
-      if (isSelfReferral(affiliate, parent)) return null;
       if (await db(R).where({ programme, recordId }).first()) return null;
+      const usable = async (c) => {
+        const clean = normaliseCode(c);
+        if (!clean) return null;
+        const a = await db(A).where({ code: clean }).first();
+        return a && a.status === "active" && a.ownerAdminId === ownerAdminId && !isSelfReferral(a, parent) ? a : null;
+      };
+      const typed = await usable(code);
+      const linkPick = pickAttribution({ typedCode: null, visitSource, attributionDays: settings.attributionDays });
+      const linked = linkPick ? await usable(linkPick.code) : null;
+      let claim = null;
+      if (forceProspectId) {
+        const p = await db("affiliate_prospects").where({ id: forceProspectId, ownerAdminId, status: "open" }).first();
+        const a = p ? await db(A).where({ id: p.affiliateId }).first() : null;
+        claim = a && a.status === "active" ? { prospect: p, affiliate: a } : null;
+        if (!claim) return null;
+      } else if (settings.prospectsEnabled) {
+        claim = await Prospects.matchFor(ownerAdminId, parent);
+        if (claim && isSelfReferral(claim.affiliate, parent)) claim = null;
+      }
+      const choice = forceProspectId
+        ? { via: "prospect", value: claim }
+        : chooseClaim({ typed, prospect: claim, link: linked, order: settings.claimOrder });
+      if (!choice) {
+        if (settings.prospectsEnabled) await Prospects.notePossibleMatch(ownerAdminId, parent, { programme, recordId, invoiceId, detail });
+        return null;
+      }
+      const affiliate = choice.via === "prospect" ? choice.value.affiliate : choice.value;
+      const pick = { via: choice.via === "prospect" ? "prospect" : choice.via };
       const referral = {
         id: generateId(), ownerAdminId, affiliateId: affiliate.id, via: pick.via, programme, recordId,
         invoiceId: invoiceId || null, parentUserId: parent.userId || null,
@@ -431,11 +460,13 @@ const AffiliateService = {
         status: "signed_up", createdAt: now(), updatedAt: now(),
       };
       await db(R).insert(referral);
+      // The claim on this family (if any) is theirs now — or lost to the code the family typed.
+      if (claim) await Prospects.settle(claim.prospect, referral, affiliate.id);
       if (affiliate.userId) {
         await NotificationService.notifyPerson(affiliate.userId, {
           type: "affiliate_referral",
-          title: "A family signed up through you",
-          message: `${firstNameOf(referral.customerName)} signed up for ${PROGRAMME_LABEL[programme]}. You earn once they pay.`,
+          title: pick.via === "prospect" ? "A family you registered signed up" : "A family signed up through you",
+          message: `${firstNameOf(referral.customerName)} signed up for ${PROGRAMME_LABEL[programme]}${pick.via === "prospect" ? " — they were on your list" : ""}. You earn once they pay.`,
           payload: { route: portalRoute(affiliate) },
           dedupeKey: `affiliate_referral:${referral.id}`,
         }).catch(() => {});
@@ -1072,6 +1103,64 @@ const AffiliateService = {
     if (affiliate.payoutMethod === "bank" && !affiliate.payoutDetails) fail("Add your bank details first.");
     await AffiliateService._requestPayout(affiliate, { requestedBy: req.user.id, enforceMinimum: true });
     return AffiliateService.mine(req);
+  },
+
+  // ---- Prospects (19 Nov 2026 — affiliate.prospects.js) -------------------------------------------
+  async _myAffiliate(req) {
+    if (!AffiliateService.eligible(req)) fail("Refer & earn is for parents, educators and affiliates.", 403);
+    const affiliate = await db(A).where({ userId: req.user.id }).orderByRaw("FIELD(status, 'active', 'pending', 'suspended')").first();
+    if (!affiliate) fail("Join the referral programme first.", 404);
+    return affiliate;
+  },
+  async myProspects(req) {
+    return Prospects.listMine(await AffiliateService._myAffiliate(req));
+  },
+  async addMyProspect(req, data) {
+    const affiliate = await AffiliateService._myAffiliate(req);
+    await Prospects.add(affiliate, data, { source: "portal", createdBy: req.user.id });
+    return Prospects.listMine(affiliate);
+  },
+  async addMyProspects(req, rows) {
+    const affiliate = await AffiliateService._myAffiliate(req);
+    const results = await Prospects.addMany(affiliate, rows, { source: "bulk", createdBy: req.user.id });
+    return { results, ...(await Prospects.listMine(affiliate)) };
+  },
+  async updateMyProspect(req, id, data) {
+    const affiliate = await AffiliateService._myAffiliate(req);
+    await Prospects.updateMine(affiliate, id, data);
+    return Prospects.listMine(affiliate);
+  },
+  async releaseMyProspect(req, id) {
+    const affiliate = await AffiliateService._myAffiliate(req);
+    await Prospects.release(id, { affiliateId: affiliate.id }, "Released by the affiliate");
+    return Prospects.listMine(affiliate);
+  },
+  async inviteMyProspect(req, id, channel) {
+    const affiliate = await AffiliateService._myAffiliate(req);
+    return Prospects.invite(affiliate, id, channel);
+  },
+
+  // Admins: every claim; adding one for an affiliate; releasing, moving, deciding possible matches.
+  listProspects(req, filters) {
+    return Prospects.listAll(req.ownerAdminId, filters);
+  },
+  async addProspectFor(req, affiliateId, data) {
+    const affiliate = await db(A).where({ id: affiliateId, ownerAdminId: req.ownerAdminId }).first();
+    if (!affiliate) fail("Affiliate not found", 404);
+    await Prospects.add(affiliate, data, { source: "admin", createdBy: req.user.id, skipDailyLimit: true });
+    return Prospects.listAll(req.ownerAdminId, {});
+  },
+  releaseProspect(req, id) {
+    return Prospects.release(id, { ownerAdminId: req.ownerAdminId }, "Released by our team");
+  },
+  reassignProspect(req, id, affiliateId) {
+    return Prospects.reassign(req.ownerAdminId, id, affiliateId);
+  },
+  decideProspectMatch(req, id, approve) {
+    return Prospects.decideMatch(req.ownerAdminId, id, approve, (args) => AffiliateService.recordReferral(args));
+  },
+  optOutProspect(token) {
+    return Prospects.optOut(token);
   },
 };
 
