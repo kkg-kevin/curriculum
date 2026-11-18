@@ -40,6 +40,7 @@ const RECORDS = {
   mentor_checkin_meetings: ["/api/mentor-checkins/meetings/"],
   billing_invoices: ["/api/billing/"],
   teacher_claims: ["/api/claims/"],
+  expense_claims: ["/api/expenses/"],
   mentor_bookings: ["/api/mentor-bookings/"],
   home_learning_households: ["/api/home-learning/"],
   club_memberships: ["/api/tech-clubs/"],

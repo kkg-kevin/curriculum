@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FiLogOut, FiMenu, FiUser } from "react-icons/fi";
+import { FiCreditCard, FiLogOut, FiMenu, FiUser } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "./NotificationBell";
@@ -85,6 +85,9 @@ function AdminAvatarMenu({ user, initial }) {
           <button type="button" role="menuitem" style={item} {...hover} onClick={() => { setOpen(false); navigate("/profile"); }}>
             <FiUser size={15} /> My profile
           </button>
+          <button type="button" role="menuitem" style={item} {...hover} onClick={() => { setOpen(false); navigate("/my-expenses"); }}>
+            <FiCreditCard size={15} /> My expenses
+          </button>
           <button type="button" role="menuitem" style={{ ...item, color: "#B91C1C" }} {...hover} onClick={() => { setOpen(false); logout(); }}>
             <FiLogOut size={15} /> Sign out
           </button>
@@ -137,6 +140,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/reports": "Reports",
     "/settings": "Settings",
     "/profile": "My Profile",
+    "/expenses": "Expenses",
+    "/my-expenses": "My expenses",
     "/activity": "Activity",
     "/courses": "Courses",
     "/events": "Events",
@@ -168,11 +173,13 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/teacher-portal/attendance": "Attendance",
     "/teacher-portal/claims": "Payments",
     "/teacher-portal/invoices": "Payments",
+    "/teacher-portal/expenses": "Payments",
     "/teacher-portal/profile": "My Profile",
     "/supervisor-portal": "My Dashboard",
     "/supervisor-portal/claims": "Claims",
     "/supervisor-portal/educators": "My Educators",
     "/supervisor-portal/profile": "My Profile",
+    "/supervisor-portal/expenses": "Expenses",
     "/supervisor-portal/feedback": "Parent feedback",
     "/supervisor-portal/insights": "Team insights",
     "/supervisor-portal/activity": "Team activity",

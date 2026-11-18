@@ -164,6 +164,14 @@ function resolveNotificationPath(n) {
     case "affiliate_payout_rejected":
       // The affiliate's own Refer & earn page (set by the server for their portal).
       return p.route || "/parent/refer";
+    case "expense_submitted":
+    case "expense_to_pay":
+    case "expense_approved":
+    case "expense_returned":
+    case "expense_rejected":
+    case "expense_paid":
+      // Expenses: the claim, in the app of whoever reads it (set by the server).
+      return p.route || "/my-expenses";
     case "affiliate_payout_requested":
     case "affiliate_joined":
       return p.route || "/affiliates";

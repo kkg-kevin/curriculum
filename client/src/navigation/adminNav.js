@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar, FiShield,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar, FiShield, FiCreditCard, FiShoppingBag,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -111,6 +111,19 @@ export const ADMIN_SECTIONS = [
       },
       // Educators' payment requests — Billing's Educator Claims tab, for whoever reviews or approves them.
       { name: "Educator claims", path: "/billing?tab=claims", icon: FiFileText, module: ["claims", "claims-approval"], match: (l) => tabOf(l) === "claims" || l.pathname.startsWith("/billing/claims") || l.pathname.startsWith("/billing/claim-invoices") },
+      // Expenses claimed back by the team (ExpensesPage's tabs, ?tab=) — reviewing and paying.
+      {
+        name: "Expenses", path: "/expenses", icon: FiCreditCard, module: "expenses",
+        children: [
+          { name: "To approve", path: "/expenses?tab=approve", isDefault: true, match: (l) => l.pathname === "/expenses" && (!tabOf(l) || tabOf(l) === "approve") },
+          { name: "To pay", path: "/expenses?tab=pay" },
+          { name: "Paid", path: "/expenses?tab=paid" },
+          { name: "All", path: "/expenses?tab=all" },
+          { name: "Settings", path: "/expenses?tab=settings" },
+        ],
+      },
+      // Everyone's own expense claims — no module: every staff member may claim.
+      { name: "My expenses", path: "/my-expenses", icon: FiShoppingBag },
       // Affiliate marketing (AffiliatesPage's tabs, ?tab=).
       {
         name: "Affiliates", path: "/affiliates", icon: FiGift, module: "affiliates",

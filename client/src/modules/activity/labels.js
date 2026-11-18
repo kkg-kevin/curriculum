@@ -22,6 +22,7 @@ export const AREA_LABELS = {
   "mentor-bookings": "Mentor bookings",
   "mentor-checkins": "Parent–mentor check-ins",
   claims: "Educator claims",
+  expenses: "Expenses",
   competitions: "Competitions",
   bootcamps: "Bootcamps",
   reports: "Reports",

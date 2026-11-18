@@ -59,6 +59,8 @@ const accessRoutes = require("./modules/access/access.routes");
 const sharingRoutes = require("./modules/sharing/sharing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
 const claimRoutes = require("./modules/claims/claim.routes");
+const expenseRoutes = require("./modules/expenses/expense.routes");
+const { expenseContext } = require("./modules/expenses/expense.context");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
@@ -137,6 +139,9 @@ app.use(express.json());
 app.use(cookieParser());
 // Errors and slow requests only (REQUEST_LOG=all for every request) — see request-log.middleware.js.
 app.use(requestLog());
+// Expense proof (receipts) is kept in uploads/.expenses/ and is never served from here — only
+// through GET /api/expenses/files/:id to the people allowed to see the claim (expense.files.js).
+app.use("/uploads/.expenses", (req, res) => res.status(404).end());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), { setHeaders: setUploadHeaders }));
 // The brand logo in every email's header — mail apps fetch it from here (see mail.layout.js).
 app.use("/email-assets", express.static(path.join(__dirname, "shared/mail/assets"), { maxAge: "30d" }));
@@ -385,6 +390,10 @@ app.use("/api/audit", protect, attachOwnRecords, authorize("admin"), auditRoutes
 // supervisor and then the admin. Educators and the workspace's reviewers share this router; its
 // own routes file says who reaches what (see claim.routes.js).
 app.use("/api/claims", protect, attachOwnRecords, claimRoutes);
+// Expenses — admins, staff, educators and supervisors claiming back money they spent on the
+// organisation's work, with proof. Not behind attachOwnRecords: every one of them may claim their
+// own whatever their staff role; expense.context.js works out who may review and pay.
+app.use("/api/expenses", protect, expenseContext, expenseRoutes);
 // Hub check-ins — Account Managers and Training Leads checking in with each hub on a schedule,
 // reporting, and following up; the workspace owner and check-in managers oversee them. See
 // modules/checkins/ (checkin.access.js for who sees which hubs).

@@ -31,6 +31,11 @@ const CHECKIN_PARTICIPANT_ROLES = ["admin", "collaborator", "teacher", "school",
 const participantCheckinPath = (p) => (typeof p.route === "string" && /^\/([a-z-]+\/)?checkins(\/|$)/.test(p.route) ? p.route : "/checkins");
 // Quality assurance: whoever reviews — supervisors, admins and staff.
 const QA_REVIEWER_ROLES = ["admin", "collaborator", "supervisor"];
+// Expenses: everyone who works for the organisation claims; supervisors review their educators'
+// claims; admins and staff approve and pay.
+const EXPENSE_CLAIMANT_ROLES = ["admin", "collaborator", "teacher", "supervisor"];
+const EXPENSE_REVIEWER_ROLES = ["admin", "collaborator", "supervisor"];
+const EXPENSE_PAYER_ROLES = ["admin", "collaborator"];
 // Parent–mentor check-ins (modules/mentor-checkins/): what parents get, and what the class's
 // educators get — their own arrays so Settings → Emails groups them under the feature.
 const MENTOR_CHECKIN_PARENT_ROLES = ["learner"];
@@ -289,6 +294,49 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "check", eyebrow: "Claim paid" },
     path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/claims"),
   },
+  // Expenses (modules/expenses/, 18 Nov 2026): money spent on the organisation's work, claimed back.
+  expense_submitted: {
+    label: "An expense claim is sent for you to review",
+    roles: EXPENSE_REVIEWER_ROLES,
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "Expense claim" },
+    path: (p) => routeOr(p, "/expenses"),
+  },
+  expense_to_pay: {
+    label: "An expense claim is approved, ready to pay",
+    roles: EXPENSE_PAYER_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Expense claim" },
+    path: (p) => routeOr(p, "/expenses"),
+  },
+  expense_approved: {
+    label: "An expense claim of yours is approved",
+    roles: EXPENSE_CLAIMANT_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Expense approved" },
+    path: (p) => routeOr(p, "/my-expenses"),
+  },
+  expense_returned: {
+    label: "An expense claim of yours is sent back for a change",
+    roles: EXPENSE_CLAIMANT_ROLES,
+    default: true,
+    look: { tone: "warning", icon: "alert", eyebrow: "Expense claim" },
+    path: (p) => routeOr(p, "/my-expenses"),
+  },
+  expense_rejected: {
+    label: "An expense claim of yours is declined",
+    roles: EXPENSE_CLAIMANT_ROLES,
+    default: true,
+    look: { tone: "danger", icon: "cross", eyebrow: "Expense declined" },
+    path: (p) => routeOr(p, "/my-expenses"),
+  },
+  expense_paid: {
+    label: "An expense claim of yours is paid back",
+    roles: EXPENSE_CLAIMANT_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Expense paid" },
+    path: (p) => routeOr(p, "/my-expenses"),
+  },
   // Following up a learner at risk (Reports & Analytics, 10 Nov 2026 — analytics.followups.js).
   learner_followup: {
     label: "A message from the learning hub about your child",
@@ -419,6 +467,7 @@ const groupFor = (roles) => {
   if (roles === BOOKING_PARENT_ROLES || roles === BOOKING_BOTH_ROLES) return "Mentor sessions (families and mentors)";
   if (roles === EVENT_INVITE_ROLES) return "Events (everyone)";
   if (roles === EVENT_ADMIN_ROLES) return "Events (you and your staff)";
+  if (roles === EXPENSE_CLAIMANT_ROLES || roles === EXPENSE_REVIEWER_ROLES || roles === EXPENSE_PAYER_ROLES) return "Expenses (your team)";
   return "You (the admin)";
 };
 

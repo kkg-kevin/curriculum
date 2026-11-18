@@ -48,6 +48,10 @@ const MODULES = [
   // payments, the session rate, and managing the supervisor accounts.
   { key: "claims", label: "Educator claims (review for a supervisor)", group: "Finance" },
   { key: "claims-approval", label: "Claim approvals & payment", group: "Finance" },
+  // Expenses (modules/expenses/): everyone claims their own whatever their role. View = see every
+  // claim of the workspace; Edit = approve, send back, decline and pay them (never their own), and
+  // the settings. /api/expenses checks this itself (expense.context.js), not through attachOwnRecords.
+  { key: "expenses", label: "Expenses (approve & pay)", group: "Finance" },
   // Hub check-ins: setting up schedules and seeing every hub's check-ins. A hub's Account Manager
   // and Training Lead aren't staff — they're named on the hub and work in the hub portal
   // (modules/checkins/checkin.access.js).
@@ -101,6 +105,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/affiliates": "affiliates",
   "/api/audit": "activity",
   "/api/claims": "claims",
+  "/api/expenses": "expenses",
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
   "/api/mentor-checkins": "mentor-checkins",

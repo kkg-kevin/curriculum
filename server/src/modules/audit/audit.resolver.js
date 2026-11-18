@@ -45,6 +45,7 @@ const ROOTS = {
   "hub-visits": { table: "hub_visits", noun: "hub visit", module: "hub-visits" },
   leads: { table: "leads", noun: "enquiry", module: "enquiries" },
   claims: { table: "teacher_claims", noun: "claim", module: "claims" },
+  expenses: { table: "expense_claims", noun: "expense claim", module: "expenses" },
   checkins: { table: null, noun: "hub check-in", module: "checkins" },
   qa: { table: null, noun: "QA visit", module: "qa" },
   "mentor-checkins": { table: null, noun: "parent check-in", module: "mentor-checkins" },
@@ -161,6 +162,7 @@ const SKIP = [
   /^\/api\/notifications(\/|$)/, // marking your own notifications read
   /^\/api\/public\/email-preferences\//, // your own email choices, from an email's footer link — the address carries that person's token
   /^\/api\/uploads(\/|$)/, // the upload itself; the save that uses the file is what's logged
+  /^\/api\/expenses\/files(\/|$)/, // an expense receipt being uploaded; the claim's save is logged
   /^\/api\/audit(\/|$)/,
   /\/(preview|search|validate|check|export)$/, // work things out, save nothing
   /^\/api\/assessment-submissions\/submissions$/, // a learner opening an assessment
