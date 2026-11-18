@@ -56,6 +56,10 @@ const LearnerProgressPage = lazyPage(() => import("../modules/learner-portal/pag
 const LearnerTimetablePage = lazyPage(() => import("../modules/learner-portal/pages/TimetablePage"));
 const LearnerProfilePage = lazyPage(() => import("../modules/learner-portal/pages/ProfilePage"));
 const LearnerFamilyPage = lazyPage(() => import("../modules/learner-portal/pages/FamilyPage"));
+// Class position — a learner's place and Learning Score in their class (modules/rankings).
+const PositionPage = lazyPage(() => import("../modules/rankings/pages/PositionPage"));
+// Learner analytics — everything a learner does, this term or this year (modules/rankings).
+const LearnerAnalyticsPage = lazyPage(() => import("../modules/rankings/pages/AnalyticsPage"));
 const AdminReportsPage = lazyPage(() => import("../modules/reports/pages/AdminReportsPage"));
 const CourseContentLandingPage = lazyPage(() => import("../modules/courses/pages/CourseContentLandingPage"));
 const CurriculumPage = lazyPage(() => import("../modules/curriculum/pages/CurriculumPage"));
@@ -520,6 +524,8 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
           <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
           <Route path="progress" element={<LearnerProgressPage />} />
+          <Route path="position" element={<PositionPage />} />
+          <Route path="analytics" element={<LearnerAnalyticsPage />} />
           {/* A TOT learner rates their trainers (modules/mentor-reviews). */}
           <Route path="feedback" element={<MentorFeedbackPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
@@ -545,6 +551,9 @@ export default function AppRoutes() {
             <Route path="reports/:reportId" element={<LearnerReportDetailPage />} />
             <Route path="certificates/:certificateId" element={<LearnerCertificateViewPage />} />
             <Route path="progress" element={<Navigate to=".." relative="path" replace />} />
+            {/* Their place and Learning Score in their class (modules/rankings). */}
+            <Route path="position" element={<PositionPage />} />
+            <Route path="analytics" element={<LearnerAnalyticsPage />} />
             <Route path="login" element={<ChildLoginPage />} />
           </Route>
           <Route path="timetable" element={<ParentTimetablePage />} />

@@ -23,6 +23,9 @@ const ICONS = {
   session_report_published: { Icon: FiFileText, color: "#7C3AED" },
   level_up: { Icon: FiAward, color: "#feb139" },
   certificate_issued: { Icon: FiAward, color: "#B45309" },
+  ranking_badge: { Icon: FiAward, color: "#feb139" },
+  ranking_moved_up: { Icon: FiAward, color: "#2e7db5" },
+  ranking_weekly: { Icon: FiAward, color: "#25476a" },
   invoice_issued: { Icon: FiFileText, color: "#25476a" },
   payment_reminder: { Icon: FiFileText, color: "#B45309" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
@@ -164,6 +167,11 @@ function resolveNotificationPath(n) {
     case "affiliate_payout_rejected":
       // The affiliate's own Refer & earn page (set by the server for their portal).
       return p.route || "/parent/refer";
+    case "ranking_badge":
+    case "ranking_moved_up":
+    case "ranking_weekly":
+      // Class rankings: the child's position page (a parent's login is taken to that child's).
+      return p.route || "/learner-portal/position";
     case "expense_submitted":
     case "expense_to_pay":
     case "expense_approved":

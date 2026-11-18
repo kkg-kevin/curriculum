@@ -106,6 +106,12 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/audit": "activity",
   "/api/claims": "claims",
   "/api/expenses": "expenses",
+  // Class rankings: Settings → Rankings is Settings; a learner's analytics is part of seeing the
+  // learner; a class's ranking is part of seeing the class. (Most specific first — the first
+  // matching prefix wins.)
+  "/api/rankings/settings": "settings",
+  "/api/rankings/learner": "learners",
+  "/api/rankings": "classes",
   "/api/checkins": "checkins-manage",
   "/api/qa": "qa",
   "/api/mentor-checkins": "mentor-checkins",

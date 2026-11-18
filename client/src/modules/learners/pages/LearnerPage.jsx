@@ -46,6 +46,8 @@ import { usePermissions } from "../../../hooks/usePermissions";
 import LearnerHubsManager from "../components/staff/LearnerHubsManager";
 import PathwayManagerCard from "../components/staff/PathwayManagerCard";
 import ParentTab from "../components/staff/ParentTab";
+import LearnerAnalyticsView from "../../rankings/components/LearnerAnalyticsView";
+import ThisTermStrip from "../../rankings/components/ThisTermStrip";
 import WebsiteDiagnosticsCard from "../components/staff/WebsiteDiagnosticsCard";
 import DiagnosticReportCard from "../../learner-portal/components/profile/DiagnosticReportCard";
 import RecordStamp from "../../activity/components/RecordStamp";
@@ -142,7 +144,8 @@ export default function LearnerPage() {
   // Staff also get the Parent tab (the parent on their own) and, when they may read the log, History.
   // An educator in training (TOT — learner.teacherId) is an adult learning for themself: no parent.
   const isEducatorTrainee = !!learner?.teacherId;
-  const tabs = preview ? PROFILE_TABS : [...PROFILE_TABS, ...(isEducatorTrainee ? [] : ["Parent"]), ...(canSeeRecordHistory(user) ? ["History"] : [])];
+  // Analytics (modules/rankings): everything the learner does, with their place in each class.
+  const tabs = preview ? PROFILE_TABS : [...PROFILE_TABS, "Analytics", ...(isEducatorTrainee ? [] : ["Parent"]), ...(canSeeRecordHistory(user) ? ["History"] : [])];
   const tab = tabs.includes(activeTab) ? activeTab : "Overview";
 
   if (isLoading) {
@@ -247,6 +250,7 @@ export default function LearnerPage() {
 
       {tab === "Overview" && (
         <>
+          <ThisTermStrip learnerId={id} />
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={id} curriculumId={curriculumId} hubId={selectedHub?.id} />
           <DiagnosticReportCard learnerId={id} curriculumId={curriculumId} staff={!preview} />
         </>
@@ -284,10 +288,11 @@ export default function LearnerPage() {
 
       {tab === "Parent" && <ParentTab learnerId={id} onEdit={manage ? () => setEditing("guardian") : undefined} />}
 
+      {tab === "Analytics" && <LearnerAnalyticsView staff learnerId={id} />}
       {tab === "History" && isAdmin && <LearnerMoves learnerId={id} />}
       {tab === "History" && <RecordHistory entityType="learners" entityId={id} defaultOpen />}
 
-      {tab !== "History" && tab !== "Parent" && (
+      {tab !== "History" && tab !== "Parent" && tab !== "Analytics" && (
         <>
           {cls ? <SummaryRow classId={cls.id} staffLearnerId={id} /> : <NoClassNotice />}
           <FrameworkLegend />

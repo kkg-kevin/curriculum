@@ -207,6 +207,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
     "/learner-portal/courses": "My Courses",
     "/learner-portal/assessments": "Assessments",
     "/learner-portal/progress": "Progress",
+    "/learner-portal/position": "My class position",
+    "/learner-portal/analytics": "How I'm doing",
   };
 
   const getPageTitle = (pathname) => {

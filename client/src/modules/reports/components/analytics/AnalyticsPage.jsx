@@ -20,6 +20,7 @@ import EnrolmentTab from "./EnrolmentTab";
 import ParentsTab from "./ParentsTab";
 import CoverageTab from "./CoverageTab";
 import MentorCheckinsTab from "./MentorCheckinsTab";
+import RankingsTab from "./RankingsTab";
 import AttentionPanel from "./AttentionPanel";
 import { Card, Empty, STYLES, T } from "./ui";
 
@@ -38,6 +39,8 @@ const TABS = [
   // 17 Nov 2026: how far each class has got through its courses.
   { key: "coverage", label: "Curriculum coverage", icon: FiBookOpen, group: "Learning", Component: CoverageTab },
   { key: "growth", label: "Growth", icon: FiArrowUpRight, group: "Learning", Component: GrowthTab },
+  // 18 Nov 2026: class rankings side by side — top learners, most improved (modules/rankings).
+  { key: "rankings", label: "Rankings", icon: FiAward, group: "Learning", Component: RankingsTab },
   { key: "assessments", label: "Assessments", icon: FiClipboard, group: "Learning", Component: AssessmentsTab },
   { key: "time-to-task", label: "Time to task", icon: FiClock, group: "Learning", Component: TimeToTaskTab },
   { key: "competencies", label: "Competencies", icon: FiTarget, group: "Learning", Component: CompetenciesTab },

@@ -35,6 +35,7 @@ import EarlierProgrammes from "../../learner-moves/components/EarlierProgrammes"
 import AchievementsShowcase from "../../certificates/components/AchievementsShowcase";
 import { useMyCertificates, useMyCertificateProgress } from "../../certificates/hooks/useCertificates";
 import { FiBell, FiBriefcase, FiKey } from "react-icons/fi";
+import ThisTermStrip from "../../rankings/components/ThisTermStrip";
 
 // classId-scoped components (AssessmentsOverview, SummaryRow) fall back to showing the
 // learner's ENTIRE cross-hub assessment history when classId is undefined — correct for a
@@ -49,7 +50,7 @@ function NoClassNotice() {
 }
 
 export default function ProfilePage() {
-  const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading, viewOnly } = useOutletContext();
+  const { user, learner, isLoading, hubs, hubsLoading, cls, selectedHub, mentors, mentorsLoading, viewOnly, portalBase } = useOutletContext();
   const { mutate: updateLearner, isPending: isSaving } = useUpdateLearner();
   const [activeTab, setActiveTab] = useState("Overview");
   // null | "learner" | "guardian" — which of the two now-separate edit modals is open.
@@ -162,6 +163,9 @@ export default function ProfilePage() {
 
       {activeTab === "Overview" && (
         <>
+          {/* This term — badges and place in each class (modules/rankings). */}
+          <ThisTermStrip linkTo={portalBase ? `${portalBase}/position` : "/learner-portal/position"} />
+
           <CompetencyProgressGrid competencies={competencies} isLoading={competenciesLoading} learnerId={learner.id} curriculumId={cls?.curriculumId} hubId={selectedHub?.id} />
 
           <DiagnosticReportCard learnerId={learner.id} curriculumId={cls?.curriculumId} />

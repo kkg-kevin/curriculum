@@ -16,6 +16,7 @@ import { SettingsPage as SettingsLayoutPage } from "../components/SettingsLayout
 import EducatorPayPanel from "../educator-pay/EducatorPayPanel";
 import FeedbackSettingsPanel from "../../mentor-reviews/components/FeedbackSettingsPanel";
 import MentorStandardsPanel from "../../mentor-standards/MentorStandardsPanel";
+import RankingSettingsPanel from "../../rankings/components/RankingSettingsPanel";
 import { can } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
 import { useSettingsStyles } from "../components/settingsStyles";
@@ -48,6 +49,8 @@ const ALL_TABS = [
   { key: "parent-feedback", label: "Parent feedback" },
   // The bar every mentor is measured against (their profile, Reports → Educators) — MentorStandardsPanel.
   { key: "mentor-standards", label: "Mentor standards" },
+  // Class positions for families, the Learning Score's weights, names, period and term dates — RankingSettingsPanel.
+  { key: "rankings", label: "Rankings" },
 ];
 
 // Workspace management — only ever the owner (the server refuses these for staff too).
@@ -136,6 +139,7 @@ export default function SettingsPage() {
         {activeTab === "educator-pay" && <EducatorPayPanel />}
         {activeTab === "parent-feedback" && <FeedbackSettingsPanel />}
         {activeTab === "mentor-standards" && <MentorStandardsPanel />}
+        {activeTab === "rankings" && <RankingSettingsPanel />}
       </div>
     </div>
   );

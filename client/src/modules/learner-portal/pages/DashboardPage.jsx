@@ -12,6 +12,7 @@ import SideRail from "../components/SideRail";
 import DevelopmentalSnapshotCard from "../components/DevelopmentalSnapshotCard";
 import ProgressArcCard from "../components/ProgressArcCard";
 import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
+import PositionSummaryCard from "../../rankings/components/PositionSummaryCard";
 
 const T = {
   accent: "#25476a",
@@ -191,6 +192,9 @@ export default function DashboardPage() {
               page (full width, right under the hero) since motivating the learner to keep moving
               up it is the whole point of showing it here rather than only buried in Profile. */}
           {cls?.curriculumId && <ProgressArcCard curriculumId={cls.curriculumId} learnerId={learner.id} hubId={selectedHub?.id} />}
+
+          {/* My class position — the key things only (modules/rankings); nothing when there's no class or rankings are off. */}
+          <PositionSummaryCard classId={cls?.id || null} />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
           {/* Main column */}
