@@ -182,6 +182,7 @@ function resolveNotificationPath(n) {
       return p.route || "/my-expenses";
     case "affiliate_payout_requested":
     case "affiliate_joined":
+    case "affiliate_possible_match":
       return p.route || "/affiliates";
     case "qa_visit_announced":
     case "qa_review_submitted":

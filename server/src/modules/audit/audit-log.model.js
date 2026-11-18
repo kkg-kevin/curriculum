@@ -47,6 +47,7 @@ const RECORDS = {
   pathway_subscriptions: ["/api/pathway-subscriptions/"],
   leads: ["/api/leads/"],
   affiliates: ["/api/affiliates/"],
+  affiliate_prospects: ["/api/affiliates/prospects/", "/api/affiliates/me/prospects/"],
   // Records edited in a list or a pop-up.
   qa_templates: ["/api/qa/templates/"],
   checkin_templates: ["/api/checkins/templates/"],

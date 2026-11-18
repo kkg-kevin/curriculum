@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { FiCheckCircle, FiCopy, FiDownload, FiGift, FiLink, FiShare2, FiUsers } from "react-icons/fi";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL } from "../services/affiliatesApi";
+import MyProspects from "../components/MyProspects";
 
 // "Refer & earn" (/parent/refer, /teacher-portal/refer, and /affiliate-portal for someone signed in
 // as Affiliate): an affiliate's own place in the referral programme (server: modules/affiliates/,
@@ -328,6 +329,8 @@ export default function ReferEarnPage() {
             <Stat label="Paid to you" value={formatKsh(data.totals.paid)} />
             <Stat label="Families referred" value={data.referrals.length} />
           </div>
+          {/* Families they've talked to — theirs while the claim is open (19 Nov 2026). */}
+          {affiliate.status === "active" && <MyProspects />}
           {affiliate.status === "active" && <PayoutCard data={data} />}
           {data.team && <TeamCard team={data.team} programme={programme} />}
 
@@ -339,7 +342,7 @@ export default function ReferEarnPage() {
                   <div key={r.id} className="re-row" style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${BRAND.line}` }}>
                     <div style={{ minWidth: 0 }}>
                       <strong style={{ color: BRAND.ink }}>{r.firstName}</strong>
-                      <div style={{ fontSize: 12.5, color: BRAND.muted }}>{r.programme} · {formatDay(r.createdAt)} · {r.via === "code" ? "used your code" : "came by your link"}</div>
+                      <div style={{ fontSize: 12.5, color: BRAND.muted }}>{r.programme} · {formatDay(r.createdAt)} · {r.via === "code" ? "used your code" : r.via === "prospect" ? "from your prospect list" : "came by your link"}</div>
                     </div>
                     <div className="re-row__end">
                       {r.earned > 0 && <strong style={{ color: BRAND.navy }}>{formatKsh(r.earned)}</strong>}

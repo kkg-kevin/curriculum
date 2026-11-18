@@ -35,6 +35,22 @@ export const affiliatesApi = {
   join: (body = {}) => api.post(`${BASE}/me/join`, body).then(data),
   updateMine: (body) => api.put(`${BASE}/me`, body).then(data),
   requestPayout: () => api.post(`${BASE}/me/payouts`).then(data),
+
+  // Prospects (19 Nov 2026): families an affiliate pre-registers — theirs while the claim is open.
+  myProspects: () => api.get(`${BASE}/me/prospects`).then(data),
+  addProspect: (body) => api.post(`${BASE}/me/prospects`, body).then(data),
+  addProspects: (rows) => api.post(`${BASE}/me/prospects/bulk`, { consent: true, rows }).then(data),
+  updateProspect: (id, body) => api.put(`${BASE}/me/prospects/${id}`, body).then(data),
+  releaseProspect: (id) => api.post(`${BASE}/me/prospects/${id}/release`).then(data),
+  inviteProspect: (id, channel) => api.post(`${BASE}/me/prospects/${id}/invite`, { channel }).then(data),
+  // Admin
+  prospects: (params = {}) => api.get(`${BASE}/prospects`, { params }).then(data),
+  addProspectFor: (body) => api.post(`${BASE}/prospects`, body).then(data),
+  adminReleaseProspect: (id) => api.post(`${BASE}/prospects/${id}/release`).then(data),
+  reassignProspect: (id, affiliateId) => api.post(`${BASE}/prospects/${id}/reassign`, { affiliateId }).then(data),
+  decideMatch: (id, approve) => api.post(`${BASE}/prospects/${id}/match`, { approve }).then(data),
+  // The family's "no thanks" link (no sign-in).
+  optOut: (token) => api.post(`/api/public/affiliate-prospects/opt-out/${token}`).then(data),
 };
 
 export const PROGRAMMES = [

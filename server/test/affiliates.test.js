@@ -122,3 +122,47 @@ test("two levels only", () => {
   assert.match(teamProblem({ affiliate: { id: "m" }, isManager: false, managerId: "m", manager: mgr }), /own manager/);
   assert.match(teamProblem({ affiliate: { id: "m", isManager: true }, isManager: false, managerId: null, teamSize: 2 }), /manage 2 affiliates/);
 });
+
+// ---- Prospects (19 Nov 2026) ----
+test("prospects: settings defaults and limits", () => {
+  const R = require("../src/modules/affiliates/affiliate.rules");
+  const s = R.normaliseSettings({});
+  assert.equal(s.prospectsEnabled, true);
+  assert.equal(s.claimDays, 60);
+  assert.equal(s.claimOrder, "code_first");
+  assert.equal(s.prospectDailyLimit, 30);
+  const t = R.normaliseSettings({ claimDays: 9999, claimOrder: "odd", prospectDailyLimit: 0, prospectsEnabled: false });
+  assert.equal(t.claimDays, 365);
+  assert.equal(t.claimOrder, "code_first");
+  assert.equal(t.prospectDailyLimit, 1);
+  assert.equal(t.prospectsEnabled, false);
+});
+
+test("prospects: a typed code beats a claim, a claim beats a link (or the claim first, when set)", () => {
+  const R = require("../src/modules/affiliates/affiliate.rules");
+  assert.deepEqual(R.chooseClaim({ typed: "T", prospect: "P", link: "L" }), { via: "code", value: "T" });
+  assert.deepEqual(R.chooseClaim({ prospect: "P", link: "L" }), { via: "prospect", value: "P" });
+  assert.deepEqual(R.chooseClaim({ link: "L" }), { via: "link", value: "L" });
+  assert.deepEqual(R.chooseClaim({ typed: "T", prospect: "P", order: "prospect_first" }), { via: "prospect", value: "P" });
+  assert.deepEqual(R.chooseClaim({ typed: "T", link: "L", order: "prospect_first" }), { via: "code", value: "T" });
+  assert.equal(R.chooseClaim({}), null);
+});
+
+test("prospects: names match without case, spaces or punctuation; phones by their last 9 digits", () => {
+  const R = require("../src/modules/affiliates/affiliate.rules");
+  assert.equal(R.nameKey(" Mary  Wanjiku-Otieno "), "mary wanjiku otieno");
+  assert.equal(R.nameKey("MARY wanjiku otieno"), R.nameKey("mary  Wanjiku Otieno"));
+  assert.equal(R.phoneKey("0712 345 678"), R.phoneKey("+254712345678"));
+  assert.equal(R.emailKey(" Mary@Example.COM "), "mary@example.com");
+});
+
+test("prospects: what the affiliate sees of a claim", () => {
+  const R = require("../src/modules/affiliates/affiliate.rules");
+  const today = new Date("2026-11-19T10:00:00Z");
+  assert.deepEqual(R.prospectState({ status: "open", expiresAt: "2026-11-29T10:00:00Z" }, null, today), { key: "open", label: "Waiting to sign up", daysLeft: 10 });
+  assert.equal(R.prospectState({ status: "open", expiresAt: "2026-11-18T10:00:00Z" }, null, today).key, "expired");
+  assert.equal(R.prospectState({ status: "signed_up" }, { status: "signed_up" }, today).label, "Signed up");
+  assert.equal(R.prospectState({ status: "signed_up" }, { status: "paid" }, today).label, "Paying");
+  assert.equal(R.prospectState({ status: "lost" }, null, today).label, "Signed up with another code");
+  assert.equal(R.prospectState({ status: "opted_out" }, null, today).key, "opted_out");
+});

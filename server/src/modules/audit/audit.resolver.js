@@ -119,6 +119,7 @@ const COLLECTIONS = {
     referrals: { table: "affiliate_referrals", noun: "referral" },
     commissions: { table: "affiliate_commissions", noun: "commission" },
     payouts: { table: "affiliate_payouts", noun: "payout" },
+    prospects: { table: "affiliate_prospects", noun: "prospect" },
   },
   // Pathway plans (Billing → Packages → Pathway plans) — not Home Learning's "packages".
   "pathway-subscriptions": { packages: { table: "pathway_packages", noun: "pathway plan" } },
