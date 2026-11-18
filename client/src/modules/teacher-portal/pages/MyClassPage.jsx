@@ -8,6 +8,7 @@ import { teacherApi } from "../../teachers/services/teacherApi";
 import { learnerApi } from "../../learners/services/learnerApi";
 import ClassGroupsPanel from "../components/ClassGroupsPanel";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
+import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
 
 const LEARNER_STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
@@ -127,6 +128,11 @@ export default function MyClassPage() {
         ) : (
           learners.map((l) => <LearnerRow key={l.id} learner={l} />)
         )}
+      </div>
+
+      {/* The class's ranking this term (modules/rankings). */}
+      <div style={{ marginTop: 20 }}>
+        <ClassRankingPanel classId={classId} />
       </div>
 
       <div style={{ marginTop: 20 }}>

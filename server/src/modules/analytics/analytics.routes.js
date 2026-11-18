@@ -92,6 +92,8 @@ const VIEWS = {
   coverage: getCoverage,
   // 17 Nov 2026: parent–mentor check-ins — held, pending, timeliness, by hub / class / educator.
   "mentor-checkins": getMentorCheckins,
+  // 18 Nov 2026: class rankings side by side, top learners and most improved (modules/rankings).
+  rankings: (scope) => require("../rankings/ranking.reports").getRankings(scope),
 };
 
 // Following up a learner at risk (analytics.followups.js): message the parent, tell the class's

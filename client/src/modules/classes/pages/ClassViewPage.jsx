@@ -15,6 +15,7 @@ import PromotionPanel from "../components/PromotionPanel";
 import ClassCompletionPanel from "../components/ClassCompletionPanel";
 import { formatClassName } from "../utils/classDisplay";
 import RecordStamp from "../../activity/components/RecordStamp";
+import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
 
 function DetailRow({ label, value, empty = "—" }) {
   return (
@@ -330,6 +331,11 @@ export default function ClassViewPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* The class's ranking this term (modules/rankings). */}
+      <div style={{ marginBottom: 16 }}>
+        <ClassRankingPanel classId={cls.id} />
       </div>
 
       {/* Year-completion checklist — the four close-out metrics that gate promotion */}

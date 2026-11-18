@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar, FiAward, FiPieChart } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -14,6 +14,10 @@ const menuItems = [
   { name: "Assessments",  path: "/learner-portal/assessments", icon: FiClipboard },
   { name: "Reports",      path: "/learner-portal/reports", icon: FiBarChart2 },
   { name: "Progress",     path: "/learner-portal/progress", icon: FiTrendingUp },
+  // Their place and Learning Score in their class (modules/rankings).
+  { name: "Class position", path: "/learner-portal/position", icon: FiAward },
+  // Everything they do, this term or this year (modules/rankings).
+  { name: "How I'm doing", path: "/learner-portal/analytics", icon: FiPieChart },
   { name: "Timetable",    path: "/learner-portal/timetable", icon: FiCalendar },
   { name: "Invoices",     path: "/learner-portal/invoices", icon: FiFileText },
   { name: "My Family",    path: "/learner-portal/family", icon: FiUsers },

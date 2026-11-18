@@ -60,6 +60,7 @@ const sharingRoutes = require("./modules/sharing/sharing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
 const claimRoutes = require("./modules/claims/claim.routes");
 const expenseRoutes = require("./modules/expenses/expense.routes");
+const rankingRoutes = require("./modules/rankings/ranking.routes");
 const { expenseContext } = require("./modules/expenses/expense.context");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
@@ -394,6 +395,9 @@ app.use("/api/claims", protect, attachOwnRecords, claimRoutes);
 // organisation's work, with proof. Not behind attachOwnRecords: every one of them may claim their
 // own whatever their staff role; expense.context.js works out who may review and pay.
 app.use("/api/expenses", protect, expenseContext, expenseRoutes);
+// Class rankings — a learner's Learning Score and place in their class this term (learner and
+// parent portals), and the whole class for its educators and staff. See modules/rankings/.
+app.use("/api/rankings", protect, attachOwnRecords, rankingRoutes);
 // Hub check-ins — Account Managers and Training Leads checking in with each hub on a schedule,
 // reporting, and following up; the workspace owner and check-in managers oversee them. See
 // modules/checkins/ (checkin.access.js for who sees which hubs).

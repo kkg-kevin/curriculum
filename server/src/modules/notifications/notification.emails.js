@@ -337,6 +337,29 @@ const EMAIL_TYPES = {
     look: { tone: "success", icon: "check", eyebrow: "Expense paid" },
     path: (p) => routeOr(p, "/my-expenses"),
   },
+  // Class rankings (modules/rankings/, 18 Nov 2026): a new badge, moving up a place, and the
+  // weekly summary (ranking.weekly.js) — all to the family; on by default.
+  ranking_badge: {
+    label: "Your child earns a badge in class",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "New badge" },
+    path: (p) => routeOr(p, "/learner-portal/position"),
+  },
+  ranking_moved_up: {
+    label: "Your child moves up a place in class",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "success", icon: "check", eyebrow: "Class position" },
+    path: (p) => routeOr(p, "/learner-portal/position"),
+  },
+  ranking_weekly: {
+    label: "A weekly summary of your child's class position and score",
+    roles: LEARNER_ROLES,
+    default: true,
+    look: { tone: "info", icon: "document", eyebrow: "This week in class" },
+    path: (p) => routeOr(p, "/learner-portal/position"),
+  },
   // Following up a learner at risk (Reports & Analytics, 10 Nov 2026 — analytics.followups.js).
   learner_followup: {
     label: "A message from the learning hub about your child",

@@ -8,6 +8,43 @@ import { JoinOnlineButton, isLive } from "../../timetable/components/OnlineClass
 import { formatDay, formatMoney, plural, relativeDay } from "../format";
 import ParentSubscriptions from "../components/ParentSubscriptions";
 import MentorFeedbackPrompt from "../../mentor-reviews/components/MentorFeedbackPrompt";
+import { useQuery } from "@tanstack/react-query";
+import { rankingsApi } from "../../rankings/services/rankingsApi";
+
+// The child's class position in one line (modules/rankings): their best place — exact in the top
+// half of the class, a band below — or how close they are to getting one, with the score.
+const ordinalOf = (n) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+};
+function PositionLine({ child, summary }) {
+  if (!summary?.classes?.length) return null;
+  const ranked = summary.classes.filter((c) => c.rank).sort((a, b) => a.rank / a.rankedCount - b.rank / b.rankedCount);
+  const best = ranked[0] || summary.classes.find((c) => c.band) || [...summary.classes].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0];
+  const place = best.rank ? `${ordinalOf(best.rank)} of ${best.rankedCount}` : best.band || (best.eligible ? "Places on their way" : "Getting on the board");
+  const others = summary.classes.length - 1;
+  return (
+    <Link to={childPath(child.id, "/position")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 14, background: best.rank === 1 ? "#FFF5E1" : "#EAF6FD", border: `1.5px solid ${best.rank === 1 ? "#FDD89A" : "#BFE3F7"}`, textDecoration: "none", color: T.ink }}>
+      <span style={{ width: 40, height: 40, borderRadius: "50%", background: best.rank === 1 ? "#feb139" : best.rank ? "#38aae1" : "#fff", color: best.rank === 1 ? "#25476a" : best.rank ? "#fff" : T.accent, display: "grid", placeItems: "center", fontWeight: 900, fontSize: 14, flexShrink: 0, border: best.rank ? 0 : `1.5px solid ${T.border}` }}>
+        {best.rank ? ordinalOf(best.rank) : <FiAward size={16} />}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 11, fontWeight: 800, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>Class position</span>
+        <span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>
+          {place} in {best.className}
+          {best.movement > 0 ? <span style={{ color: "#2e7db5" }}> · up {best.movement}</span> : null}
+          {others > 0 ? <span style={{ color: T.inkMuted, fontWeight: 600 }}> · +{others} more</span> : null}
+        </span>
+      </span>
+      <span style={{ textAlign: "right", flexShrink: 0 }}>
+        <span style={{ display: "block", fontSize: 18, fontWeight: 900, color: T.accent, lineHeight: 1 }}>{best.score == null ? "—" : Math.round(best.score)}</span>
+        <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.inkMuted }}>{best.level || "score"}</span>
+      </span>
+      <FiChevronRight color={T.inkFaint} />
+    </Link>
+  );
+}
 
 function SummaryPill({ icon, value, label }) {
   return (
@@ -65,7 +102,7 @@ function Fact({ icon, label, children }) {
   );
 }
 
-function ChildCard({ child, index }) {
+function ChildCard({ child, index, ranking }) {
   const color = childColor(index);
   const hub = child.hubs[0];
   const result = child.work.results[0];
@@ -82,6 +119,8 @@ function ChildCard({ child, index }) {
             </p>
           </div>
         </div>
+
+        <PositionLine child={child} summary={ranking} />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
           <Fact icon={<FiClipboard />} label="Work to do">
@@ -128,6 +167,8 @@ function ChildCard({ child, index }) {
 // The parent's home: every child at a glance, and what needs the parent's attention.
 export default function ParentHomePage() {
   const { overview, children, overviewLoading } = useOutletContext();
+  const { data: rankings = [] } = useQuery({ queryKey: ["parent", "rankings"], queryFn: rankingsApi.family, staleTime: 60 * 1000 });
+  const rankingOf = (id) => rankings.find((r) => r.learnerId === id);
 
   if (overviewLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading your family…</div>;
@@ -186,7 +227,7 @@ export default function ParentHomePage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(340px, 100%), 1fr))", gap: 16 }}>
-          {children.map((child, index) => <ChildCard key={child.id} child={child} index={index} />)}
+          {children.map((child, index) => <ChildCard key={child.id} child={child} index={index} ranking={rankingOf(child.id)} />)}
         </div>
       )}
     </div>

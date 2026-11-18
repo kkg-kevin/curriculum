@@ -18,6 +18,8 @@ export function parentPathFor(pathname, search) {
   if ((match = rest.match(/^\/assessments\/([^/]+)/))) return forChild(`/assessments/${match[1]}`);
   if ((match = rest.match(/^\/reports\/([^/]+)/))) return forChild(`/reports/${match[1]}`);
   if ((match = rest.match(/^\/certificates\/([^/]+)/))) return forChild(`/certificates/${match[1]}`);
+  if (rest === "/position") return forChild("/position");
+  if (rest === "/analytics") return forChild("/analytics");
   if (/^\/(assessments|reports|progress)/.test(rest)) return forChild("");
   if (/^\/(invoices|receipts|statement|family)/.test(rest)) return `/parent${rest}`;
   if (rest === "/timetable") return "/parent/timetable";
