@@ -157,6 +157,8 @@ const HomeLearningTimetablePage = lazyPage(() => import("../modules/home-learnin
 const TechClubsPage = lazyPage(() => import("../modules/tech-clubs/pages/TechClubsPage"));
 const PathwaySubscriptionsPage = lazyPage(() => import("../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage"));
 const AffiliatesPage = lazyPage(() => import("../modules/affiliates/pages/AffiliatesPage"));
+const ExpensesPage = lazyPage(() => import("../modules/expenses/pages/ExpensesPage"));
+const MyExpensesPage = lazyPage(() => import("../modules/expenses/pages/MyExpensesPage"));
 const ReferEarnPage = lazyPage(() => import("../modules/affiliates/pages/ReferEarnPage"));
 const AffiliateAccountPage = lazyPage(() => import("../modules/affiliates/pages/AffiliateAccountPage"));
 
@@ -341,6 +343,9 @@ export default function AppRoutes() {
         <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
         {/* Affiliate marketing — affiliates, referrals, commissions, payouts (modules/affiliates). */}
         <Route path="affiliates" element={<AffiliatesPage />} />
+        {/* Expenses (modules/expenses): reviewing and paying them (Finance), and everyone's own claims. */}
+        <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="my-expenses" element={<MyExpensesPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -383,6 +388,8 @@ export default function AppRoutes() {
           <Route path="claims" element={<TeacherPaymentsPage tab="claims" />} />
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
+          {/* Expenses they claim back (modules/expenses) — a third tab of Payments. */}
+          <Route path="expenses" element={<TeacherPaymentsPage tab="expenses" />} />
           <Route path="profile" element={<TeacherProfilePage />} />
           {/* Training of trainers is a sign-in of its own now (TOT learner — the learner portal):
               old "My learning" links switch to it and open the same page there. */}
@@ -445,6 +452,8 @@ export default function AppRoutes() {
           <Route path="checkins/sessions/:id" element={<CheckinSessionPage />} />
           <Route path="insights" element={<SupervisorInsightsPage />} />
           <Route path="activity" element={<TeamActivityPage />} />
+          {/* Expenses: their educators' claims to review, and their own (modules/expenses). */}
+          <Route path="expenses" element={<ExpensesPage mode="supervisor" />} />
           <Route path="profile" element={<SupervisorProfilePage />} />
         </Route>
       </Route>

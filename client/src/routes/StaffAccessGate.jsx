@@ -35,6 +35,8 @@ const PATH_MODULES = [
   ["/claims", ["claims", "claims-approval"]],
   ["/checkins", "checkins-manage"],
   ["/affiliates", "affiliates"],
+  // Reviewing expenses needs the module; /my-expenses (everyone's own claims) is open to all staff.
+  ["/expenses", "expenses"],
   ["/qa", "qa"],
   ["/mentor-checkins", "mentor-checkins"],
   ["/mentor-bookings", "mentor-bookings"],

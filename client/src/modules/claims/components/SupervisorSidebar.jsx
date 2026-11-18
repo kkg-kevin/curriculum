@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle, FiHeart, FiBarChart2, FiCheckSquare, FiActivity } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle, FiHeart, FiBarChart2, FiCheckSquare, FiActivity, FiCreditCard } from "react-icons/fi";
+import { useQuery } from "@tanstack/react-query";
 import { useTotMarking } from "../../tot/hooks/useTot";
+import { expensesApi } from "../../expenses/services/expensesApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -17,6 +19,8 @@ const menuItems = [
   { name: "Hub check-ins", path: "/supervisor-portal/checkins", icon: FiCheckSquare },
   { name: "Team insights", path: "/supervisor-portal/insights", icon: FiBarChart2 },
   { name: "Team activity", path: "/supervisor-portal/activity", icon: FiActivity },
+  // Their educators' expense claims to review, and their own (modules/expenses).
+  { name: "Expenses",     path: "/supervisor-portal/expenses", icon: FiCreditCard, badge: "expenses" },
   { name: "My Profile",   path: "/supervisor-portal/profile", icon: FiUser },
 ];
 
@@ -27,7 +31,8 @@ function SupervisorSidebar({ isMobile = false, isMobileOpen = false, onClose = (
   const { expanded, handlers } = useSidebarHover(!isMobile);
   const isCollapsed = !isMobile && !expanded;
   const { data: marking = [] } = useTotMarking();
-  const counts = { claims: waiting, marking: marking.length };
+  const { data: expenseClaims = [] } = useQuery({ queryKey: ["expenses", "review"], queryFn: expensesApi.review, staleTime: 60 * 1000 });
+  const counts = { claims: waiting, marking: marking.length, expenses: expenseClaims.filter((c) => c.canDecide && (c.status === "pending_supervisor" || c.status === "pending_admin")).length };
 
   return (
     <>

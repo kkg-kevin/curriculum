@@ -2,13 +2,16 @@ import { NavLink } from "react-router-dom";
 import ClaimsPage from "./ClaimsPage";
 import InvoicesPage from "./InvoicesPage";
 import { T } from "../../claims/shared";
+import MyExpensesPage from "../../expenses/pages/MyExpensesPage";
 
 const TABS = [
   { key: "claims", label: "Claims", to: "/teacher-portal/claims" },
   { key: "invoices", label: "Invoices", to: "/teacher-portal/invoices" },
+  // Money they spent on work, claimed back with proof (modules/expenses).
+  { key: "expenses", label: "Expenses", to: "/teacher-portal/expenses" },
 ];
 
-// Payments — the educator's claims and the invoices sent with them, as two tabs of one page (one
+// Payments — the educator's claims, the invoices sent with them, and the expenses they claim back, as tabs of one page (one
 // "Payments" item in the menu). Each tab keeps its own address, so links to either still land.
 export default function PaymentsPage({ tab = "claims" }) {
   return (
@@ -29,7 +32,7 @@ export default function PaymentsPage({ tab = "claims" }) {
           );
         })}
       </nav>
-      {tab === "invoices" ? <InvoicesPage embedded /> : <ClaimsPage embedded />}
+      {tab === "invoices" ? <InvoicesPage embedded /> : tab === "expenses" ? <MyExpensesPage embedded /> : <ClaimsPage embedded />}
     </div>
   );
 }

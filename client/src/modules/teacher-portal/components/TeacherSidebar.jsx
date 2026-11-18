@@ -13,7 +13,7 @@ const menuItems = [
   { name: "Attendance",      path: "/teacher-portal/attendance", icon: FiCheckSquare },
   { name: "Timetable",       path: "/teacher-portal/timetable", icon: FiCalendar },
   // Claims and Invoices — two tabs of one page (PaymentsPage), so either address lights it up.
-  { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices"] },
+  { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices", "/teacher-portal/expenses"] },
   { name: "QA Reviews",      path: "/teacher-portal/qa", icon: FiStar },
   { name: "Hub Check-ins",   path: "/teacher-portal/checkins", icon: FiClipboard },
   // Sessions families booked with them, to take a stuck learner through (modules/mentor-bookings).
