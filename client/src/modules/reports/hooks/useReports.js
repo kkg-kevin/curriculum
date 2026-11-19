@@ -160,3 +160,18 @@ export function useRevokeReportCertificate() {
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't revoke this certificate"),
   });
 }
+
+// Generate certificates at a module's (course's) last session (19 Nov 2026) — one learner
+// (learnerIds) or the whole class. No report needed.
+export function useGenerateCertificates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: certificateApi.generate,
+    onSuccess: ({ done }) => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      qc.invalidateQueries({ queryKey: ["certificates"] });
+      toast.success(done ? `${done} certificate${done === 1 ? "" : "s"} generated — families told` : "Everyone already has this certificate");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't generate the certificates"),
+  });
+}

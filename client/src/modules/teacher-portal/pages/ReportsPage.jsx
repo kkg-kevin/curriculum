@@ -9,7 +9,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { reportApi } from "../../reports/services/reportApi";
-import { CourseReportCard, NeedsPublishingSection, T, cardStyle, flattenReportRows, rowStatus } from "../../reports/components/CourseReportCards";
+import { CourseReportCard, T, cardStyle, reportStats } from "../../reports/components/CourseReportCards";
 
 // The course report cards (sessions, module reports, final report, every action on them) are shared
 // with the admin and hub class page — reports/components/CourseReportCards.jsx (19 Nov 2026).
@@ -83,12 +83,8 @@ export default function ReportsPage() {
     cls, course, rows: readinessByClass.get(cls.id)?.[course.id] || [],
   })).filter((s) => s.rows.length > 0);
 
-  // Final course reports and module reports alike — each counts in the tiles and in "Needs publishing".
-  const allRows = flattenReportRows(sections);
-  const readyCount = allRows.filter((r) => rowStatus(r) === "ready").length;
-  const draftRows = allRows.filter((r) => rowStatus(r) === "draft");
-  const draftCount = draftRows.length;
-  const publishedCount = allRows.filter((r) => rowStatus(r) === "published").length;
+  // Session reports sent, certificates issued, certificates that can be generated now.
+  const stats = reportStats(sections);
 
   const isLoading = teacherLoading || (!!teacher && (classesLoading || readinessResults.some((r) => r.isLoading)));
   const isError = classesError || readinessResults.some((r) => r.isError);
@@ -113,18 +109,17 @@ export default function ReportsPage() {
         <div style={{ position: "relative" }}>
           <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Course Reports</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 620 }}>
-            Each session's report publishes automatically once its assessments are graded — no action needed. Once every session is ready, generate the course's final combined report card here, add remarks, then publish it for the learner and guardian to see.
+            Each session's report goes to the learner and their family by itself once its work is marked. At the last session of a module — and of the course — generate the learners' certificates here.
           </p>
         </div>
       </div>
 
       <div className="tp-kpis" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <KpiTile icon={<HourglassEmptyIcon fontSize="small" />} num={readyCount} label="Ready to generate" sub="Every assessment graded" />
-        <KpiTile icon={<DescriptionIcon fontSize="small" />} num={draftCount} label="Drafts" sub="Awaiting your review" />
-        <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={publishedCount} label="Published" sub="Visible to learner & guardian" />
+        <KpiTile icon={<DescriptionIcon fontSize="small" />} num={stats.sent} label="Session reports sent" sub="To learners and families" />
+        <KpiTile icon={<HourglassEmptyIcon fontSize="small" />} num={stats.toGenerate} label="Certificates to generate" sub="Module or course has reached its last session" />
+        <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={stats.issued} label="Certificates issued" sub="Module and course certificates" />
       </div>
 
-      <NeedsPublishingSection rows={draftRows} reportPath={reportPath} />
 
       {sections.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>

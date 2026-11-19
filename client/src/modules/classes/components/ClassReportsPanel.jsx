@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { reportApi } from "../../reports/services/reportApi";
-import { CourseReportCard, NeedsPublishingSection, flattenReportRows, rowStatus } from "../../reports/components/CourseReportCards";
+import { CourseReportCard } from "../../reports/components/CourseReportCards";
 import { learnerReportPath } from "../../../routes/portalPaths";
 
 /*
@@ -24,8 +24,6 @@ export default function ClassReportsPanel({ cls, courses = [] }) {
   });
   const byCourse = data?.data || {};
   const sections = courses.map((course) => ({ cls, course, rows: byCourse[course.id] || [] })).filter((s) => s.rows.length > 0);
-  const all = flattenReportRows(sections);
-  const drafts = all.filter((r) => rowStatus(r) === "draft");
   const reportPath = (id) => learnerReportPath(user?.role, id);
 
   return (
@@ -34,7 +32,7 @@ export default function ClassReportsPanel({ cls, courses = [] }) {
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "20px 28px", border: 0, background: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
         <span style={{ flex: 1 }}>
           <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learner reports &amp; certificates</span>
-          <span style={{ display: "block", fontSize: 12.5, color: "#6B7280", marginTop: 3 }}>Module and final course reports for this class — publish them, then issue the learners' certificates.</span>
+          <span style={{ display: "block", fontSize: 12.5, color: "#6B7280", marginTop: 3 }}>Each session's reports, and the learners' certificates at the last session of each module and of the course.</span>
         </span>
         {open ? <FiChevronDown size={18} color="#6B7280" /> : <FiChevronRight size={18} color="#6B7280" />}
       </button>
@@ -45,7 +43,6 @@ export default function ClassReportsPanel({ cls, courses = [] }) {
               : isError ? <p style={{ margin: 0, fontSize: 13, color: "#B91C1C" }}>Couldn't load the reports — try again.</p>
                 : sections.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>No learners or nothing to assess in this class's courses yet.</p>
                   : <>
-                    <NeedsPublishingSection rows={drafts} reportPath={reportPath} />
                     {sections.map(({ course, rows }) => <CourseReportCard key={course.id} cls={cls} course={course} rows={rows} reportPath={reportPath} showClass={false} />)}
                   </>}
         </div>

@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  listMyCertificates, getMyProgress, getLearnerProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
+  listMyCertificates, getMyProgress, getLearnerProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate, generateCertificates,
   getSettings, updateSettings,
 } = require("./certificate.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
@@ -22,6 +22,8 @@ router.get("/learner/:learnerId/progress", authorize("admin", "school"), getLear
 // Staff-facing: one learner's (?learnerId=), a class's (?classId=&courseId=), or — admin and
 // school — every certificate in the workspace / hub.
 router.get("/", authorize("admin", "school", "teacher"), listCertificates);
+// Generate module / course certificates at the last session (19 Nov 2026).
+router.post("/generate", authorize("admin", "school", "teacher"), generateCertificates);
 
 router.get("/:id", authorize("admin", "school", "teacher", "learner"), getCertificate);
 // Educators revoke too (19 Nov 2026) — certificates from a class they teach (canAccess).

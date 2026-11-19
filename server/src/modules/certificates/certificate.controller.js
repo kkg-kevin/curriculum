@@ -5,7 +5,7 @@ const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
-const { revokeSchema, settingsSchema, listSchema } = require("./certificate.validation");
+const { revokeSchema, settingsSchema, listSchema, generateSchema } = require("./certificate.validation");
 
 function fail(statusCode, message) {
   const err = new Error(message);
@@ -127,6 +127,16 @@ const revokeCertificate = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await CertificateService.revoke(req.params.id, reason) });
 });
 
+// Generate certificates at the last session (19 Nov 2026) — whoever can reach the class.
+const generateCertificates = asyncHandler(async (req, res) => {
+  const body = generateSchema.parse(req.body);
+  const cls = await ClassModel.findById(body.classId);
+  if (!cls) fail(404, "Class not found");
+  assertOwn(await canAccess(req, { classId: cls.id, hubId: cls.schoolId }));
+  const result = await CertificateService.generateForClass({ ...body, moduleId: body.moduleId || null, learnerIds: body.learnerIds || null, issuedBy: req.ownTeacher?.id || req.user.id });
+  res.json({ success: true, data: result });
+});
+
 const reinstateCertificate = asyncHandler(async (req, res) => {
   await loadManageableOrThrow(req);
   res.json({ success: true, data: await CertificateService.reinstate(req.params.id) });
@@ -151,4 +161,5 @@ const verifyCertificate = asyncHandler(async (req, res) => {
 module.exports = {
   listMyCertificates, getMyProgress, getLearnerProgress, listCertificates, getCertificate, revokeCertificate, reinstateCertificate,
   getSettings, updateSettings, verifyCertificate,
+  generateCertificates,
 };
