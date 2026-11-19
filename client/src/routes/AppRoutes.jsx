@@ -160,6 +160,9 @@ const EnquiriesListPage = lazyPage(() => import("../modules/leads/pages/Enquirie
 const HomeLearningPage = lazyPage(() => import("../modules/home-learning/pages/HomeLearningPage"));
 const EducatorHomeLearningPage = lazyPage(() => import("../modules/home-learning/pages/EducatorHomeLearningPage"));
 const HomeLearningTimetablePage = lazyPage(() => import("../modules/home-learning/pages/HomeLearningTimetablePage"));
+// One Home Learning family, opened from the list; and Add household (19 Nov 2026).
+const HouseholdPage = lazyPage(() => import("../modules/home-learning/pages/HouseholdPage"));
+const NewHouseholdPage = lazyPage(() => import("../modules/home-learning/pages/NewHouseholdPage"));
 const TechClubsPage = lazyPage(() => import("../modules/tech-clubs/pages/TechClubsPage"));
 const PathwaySubscriptionsPage = lazyPage(() => import("../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage"));
 const AffiliatesPage = lazyPage(() => import("../modules/affiliates/pages/AffiliatesPage"));
@@ -247,6 +250,8 @@ export default function AppRoutes() {
         <Route path="enquiries" element={<EnquiriesListPage />} />
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="reports/certificates" element={<CertificatesListPage backTo="/reports" />} />
+        {/* A learner's report, opened from the class page's Reports panel (19 Nov 2026). */}
+        <Route path="reports/learner/:reportId" element={<TeacherReportEditorPage backTo={-1} />} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="billing/customers" element={<CustomersListPage />} />
         <Route path="billing/customers/:hubId" element={<CustomerDetailPage />} />
@@ -346,6 +351,8 @@ export default function AppRoutes() {
         </Route>
         <Route path="home-learning" element={<HomeLearningPage />} />
         <Route path="home-learning/timetable" element={<HomeLearningTimetablePage />} />
+        <Route path="home-learning/new" element={<NewHouseholdPage />} />
+        <Route path="home-learning/:id" element={<HouseholdPage />} />
         <Route path="tech-clubs" element={<TechClubsPage />} />
         <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
         {/* Affiliate marketing — affiliates, referrals, commissions, payouts (modules/affiliates). */}
@@ -492,6 +499,7 @@ export default function AppRoutes() {
           <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
           <Route path="reports/certificates" element={<CertificatesListPage backTo="/school-portal/reports" />} />
+          <Route path="reports/learner/:reportId" element={<TeacherReportEditorPage backTo={-1} />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="billing/receipts" element={<ReceiptsListPage />} />
           <Route path="billing/receipts/:invoiceId/:paymentId" element={<ReceiptDetailPage />} />
