@@ -4,6 +4,7 @@ import { useReport, useUpdateRemarks, usePublishReport, useUnpublishReport } fro
 import { useLearnerQuery } from "../../learners/hooks/useLearners";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
 import ReportView from "../../reports/components/ReportView";
+import { askConfirm } from "../../../components/ui/AskDialog";
 
 const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
@@ -49,6 +50,37 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
   const content = report.content || {};
   const overall = content.overall || { totalScore: 0, maxScore: 0, percent: 0 };
   const isPublished = report.status === "published";
+  // Module and final reports carry a certificate; session reports don't.
+  const earnsCertificate = !report.sessionId;
+  const what = report.moduleId ? `the ${content.moduleName || "module"} certificate` : "the course certificate";
+  // A final report published before the course's module reports: those module certificates only
+  // come from their own reports (19 Nov 2026), so say which are still to do.
+  const outstanding = !isPublished && !report.sessionId && !report.moduleId ? report.moduleReportsOutstanding || [] : [];
+  const withdraw = async () => {
+    if (earnsCertificate) {
+      const ok = await askConfirm({
+        title: "Withdraw this report to draft?",
+        message: `The learner and their family stop seeing it, and ${what} is revoked until you publish it again (it comes back with the same number).`,
+        confirmLabel: "Withdraw",
+        tone: "danger",
+      });
+      if (!ok) return;
+    }
+    unpublish(report.id);
+  };
+  const publishNow = async () => {
+    if (outstanding.length) {
+      const ok = await askConfirm({
+        title: "Publish the final report now?",
+        message: `${outstanding.join(", ")} ${outstanding.length === 1 ? "has" : "have"} no published module report for this learner yet, so no certificate for ${outstanding.length === 1 ? "that module" : "those modules"}. You can publish ${outstanding.length === 1 ? "it" : "them"} afterwards from Course Reports — the certificates follow.`,
+        confirmLabel: "Publish anyway",
+      });
+      if (!ok) return;
+    }
+    const go = () => publish(report.id, { onSuccess: () => navigate(backTo) });
+    if (remarks !== (report.remarks || "") || homeNote !== (report.homeNote || "")) saveRemarks({ id: report.id, remarks, homeNote }, { onSuccess: go });
+    else go();
+  };
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -77,7 +109,12 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
 
       {!isPublished && (
         <div style={{ padding: "12px 18px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 12.5, color: "#92400E", fontWeight: 600 }}>
-          This is still a draft — the learner and guardian can't see it until you publish it below.
+          This is still a draft — the learner and guardian can't see it until you publish it below.{earnsCertificate ? ` Publishing it issues ${what}.` : ""}
+        </div>
+      )}
+      {outstanding.length > 0 && (
+        <div style={{ padding: "12px 18px", backgroundColor: "#FFF7ED", border: "1.5px solid #FED7AA", borderRadius: 12, fontSize: 12.5, color: "#9A3412", fontWeight: 600 }}>
+          Module reports not published yet for this learner: {outstanding.join(", ")}. Each module certificate comes from its own module report — publish {outstanding.length === 1 ? "it" : "them"} from Course Reports too.
         </div>
       )}
 
@@ -103,7 +140,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
               <textarea
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                placeholder="A note for the learner and guardian about this course overall…"
+                placeholder={report.sessionId ? "A note for the learner and guardian about this session…" : report.moduleId ? "A note for the learner and guardian about this module…" : "A note for the learner and guardian about this course overall…"}
                 style={{ ...fieldStyle, width: "100%", minHeight: 90, resize: "vertical" }}
               />
               <p style={{ margin: "12px 0 4px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>How to help at home <span style={{ textTransform: "none", fontWeight: 500 }}>(optional)</span></p>
@@ -136,7 +173,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
             // keeping its remarks and history; re-publishing afterwards re-snapshots the scores.
             <button
               type="button"
-              onClick={() => unpublish(report.id)}
+              onClick={withdraw}
               disabled={unpublishing}
               style={{ padding: "10px 22px", backgroundColor: "#fff", color: "#B45309", border: "1.5px solid #FDE68A", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: unpublishing ? "not-allowed" : "pointer" }}
             >
@@ -145,11 +182,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
           ) : (
             <button
               type="button"
-              onClick={() => {
-                const go = () => publish(report.id, { onSuccess: () => navigate(backTo) });
-                if (remarks !== (report.remarks || "") || homeNote !== (report.homeNote || "")) saveRemarks({ id: report.id, remarks, homeNote }, { onSuccess: go });
-                else go();
-              }}
+              onClick={publishNow}
               disabled={publishing}
               style={{ padding: "10px 22px", backgroundColor: publishing ? "#b8d9ee" : T.accent, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: publishing ? "not-allowed" : "pointer" }}
             >

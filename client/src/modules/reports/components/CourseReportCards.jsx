@@ -107,6 +107,8 @@ function ReportRow({ row, cls, course, moduleRow = null, reportPath, navigate, g
   const generating = generate.isPending && generate.variables?.learnerId === row.learner.id && generate.variables?.courseId === course.id && (generate.variables?.moduleId || null) === (moduleRow?.moduleId || null);
   // Published, but the work no longer adds up to finished — a mark withdrawn or revoked since.
   const changed = status === "published" && subject.ready === false;
+  // Final report rows: module reports not yet published — their certificates are still to come.
+  const modulesLeft = moduleRow ? [] : (row.modules || []).filter((m) => m.report?.status !== "published");
 
   const fileAll = async () => {
     const ok = await askConfirm({
@@ -132,6 +134,11 @@ function ReportRow({ row, cls, course, moduleRow = null, reportPath, navigate, g
             : `${course.name} · ${row.requiredCount === 0 ? "no assessments to report on" : `${row.gradedCount}/${row.requiredCount} assessments graded`}`}
         </p>
         {status === "not_ready" && blockers.length > 0 && <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>{blockers.join(" · ")}</p>}
+        {status !== "not_ready" && modulesLeft.length > 0 && (
+          <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#C2410C", fontWeight: 600 }}>
+            Module {modulesLeft.length === 1 ? "report" : "reports"} not published: {modulesLeft.map((m) => m.moduleName).join(", ")} — no module certificate until {modulesLeft.length === 1 ? "it is" : "they are"}
+          </p>
+        )}
         {changed && (
           <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#B91C1C", fontWeight: 600 }}>
             Work changed since this was published — it's no longer complete. Review it; withdraw and re-publish once it's sorted.
@@ -167,10 +174,12 @@ function BulkActions({ cls, course, moduleId = null, subjects, what }) {
   if (!readyCount && !draftCount) return null;
   const busy = (action) => bulk.isPending && bulk.variables?.action === action && (bulk.variables?.moduleId || null) === moduleId && bulk.variables?.courseId === course.id;
   const run = (action) => bulk.mutate({ action, classId: cls.id, courseId: course.id, ...(moduleId ? { moduleId } : {}) });
+  // Final reports: drafts whose learner still has module reports unpublished (no module certificate yet).
+  const modulesLeft = moduleId ? 0 : subjects.filter((s) => rowStatus(s) === "draft" && (s.modules || []).some((m) => m.report?.status !== "published")).length;
   const publishAll = async () => {
     const ok = await askConfirm({
       title: `Publish ${plural(draftCount, "draft")}?`,
-      message: `Learners and parents will see ${draftCount === 1 ? "this" : "these"} ${what}, and each learner gets their certificate. Remarks you haven't written stay empty — review drafts one by one first if you want to add them.`,
+      message: `Learners and parents will see ${draftCount === 1 ? "this" : "these"} ${what}, and each learner gets their certificate. Remarks you haven't written stay empty — review drafts one by one first if you want to add them.${modulesLeft ? ` ${plural(modulesLeft, "learner")} still ${modulesLeft === 1 ? "has" : "have"} module reports unpublished — those module certificates come only when they are.` : ""}`,
       confirmLabel: `Publish ${draftCount}`,
     });
     if (ok) run("publish");
