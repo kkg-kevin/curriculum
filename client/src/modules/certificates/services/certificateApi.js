@@ -3,9 +3,10 @@ import api from "../../../services/api";
 const BASE = "/api/certificates";
 const SETTINGS = "/api/certificate-settings";
 
-// A course certificate is issued when a learner's final course report is published, and pathway
-// and bootcamp certificates follow from those, and a module certificate follows its module report
-// (server: certificate.service.js). Staff can read them all, and revoke or reinstate one.
+// Module and course certificates are issued by staff once the learner's module / final report is
+// published (Issue certificate, 19 Nov 2026); pathway and bootcamp certificates follow from the
+// course ones (server: certificate.service.js). Staff read them all; admins, hubs and educators
+// revoke one, admins and hubs reinstate.
 export const certificateApi = {
   // hubId scopes to the hub the portal switcher is on; omitted returns every hub's certificates.
   getMine:        (hubId)             => api.get(`${BASE}/learner/mine`, { params: hubId ? { hubId } : {} }).then((r) => r.data.data),

@@ -10,6 +10,7 @@ const {
   getReport,
   updateRemarks,
   publishReport,
+  issueCertificate,
   unpublishReport,
   fileNotSubmitted,
   bulkReports,
@@ -37,6 +38,7 @@ router.get("/", authorize("admin", "school", "teacher"), listReportsForClassCour
 router.patch("/:id", authorize("admin", "school", "teacher"), updateRemarks);
 router.post("/:id/publish", authorize("admin", "school", "teacher"), publishReport);
 // Withdraws a published report back to draft — see unpublishReport in report.service.js.
+router.post("/:id/certificate", authorize("admin", "school", "teacher"), issueCertificate);
 router.post("/:id/unpublish", authorize("admin", "school", "teacher"), unpublishReport);
 
 // Learner-facing: this learner's own published reports.

@@ -128,6 +128,208 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (19 Nov 2026, evening) — Certificates issued by the educator, reports at the last session, group work marked as one
+
+**Portal and backend** from `curriculum` (branch `modules`) at `c1981157`. **Website: no change** since 13 Nov. **No new
+migration, no new npm package, no new environment variable, no new cron job.** If the 19 Nov "later" release below isn't up
+yet, these files include it: follow its steps too (its four migrations).
+
+### Before you upload: tell the educators
+
+Certificates are **no longer issued automatically** when a report is published. From this release the educator issues them:
+Reports → the course → publish the module (or final) reports → **Issue all certificates** (or **Issue certificate** per
+learner). Learners whose reports were published before and never got a certificate now show an **Issue certificate** button —
+look before issuing everyone at once.
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/`.
+1. **Backend** — `backend-deploy.zip` (794 files, 194 migrations — none new). **Stop App → Start App**.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-CRX2zeNI.js`), after the backend. In `dcf.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's — upload it only if
+   that release isn't up.
+
+### What changed
+
+**Module and course reports open at the last session** — every learner's module report can be generated once the class
+reaches the module's last session (the final report: the course's last session; a class whose timetable never gets there:
+straight away). Work not handed in or not marked no longer holds anyone back: the report includes everything marked and lists
+the rest under **Not in this report**. Before the last session the row says when it opens. Whole class: **Generate all**,
+**Publish all drafts**.
+
+**Certificates issued by the educator** — publishing a report no longer issues its certificate. Once a learner's module or
+final report is published: **Issue certificate** (row or report page) or **Issue all certificates** for the class; the family
+is told then. Educators can now **revoke** certificates from their own classes (admins and hubs as before); withdrawing a
+report still revokes its certificate, and **Issue again** brings it back with the same number. Training of trainers: the
+supervisor's one step still publishes and issues together.
+
+**Group work marked as one** — a learner who opened a group assessment before being put in a group kept a submission of their
+own, so Needs Grading listed each member separately and marking the group missed them. Once they're in a group their work joins
+it (when added to the group, when Assessments or the roster opens, and before marking): the group shows once with its size,
+and marking it gives every member the marks, report and notice. An assessment issued **without** group mode is individual work
+and stays that way.
+
+### Verify
+
+1. Sign in as an educator → Reports → a course whose module has ended → the module's rows say **Ready**; **Generate all**,
+   publish, then **Issue all certificates** — Certificates lists them.
+2. A learner's published report → **Revoke** asks for a reason; **Issue again** gives the same number back.
+3. Assessments → Needs Grading: a group assessment shows as "Group name · N members".
+
+---
+
+## This release (19 Nov 2026, later) — Session covers, module certificates, group work marked for everyone, Home Learning families
+
+**Portal and backend** from `curriculum` (branch `modules`) at `124dfdd9`. **Website: no change** since 13 Nov. **Four new
+migrations, no new npm package, no new environment variable, no new cron job.** If the morning's 19 Nov release below isn't up
+yet, these files include it: follow its steps too (its four migrations, its new `rankings:weekly` cron and the rankings decision).
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/`.
+1. **Backend** — `backend-deploy.zip` (794 files, 194 migrations — four new). **Stop App → Start App** (no new package, so no
+   NPM Install). The migrations run on start:
+   - `20261119120000` parent–mentor check-ins — educators added to a class after a round was published join its running rounds (data only, no notices)
+   - `20261119140000` module reports — `reports.moduleId` (and an index)
+   - `20261119160000` session covers — `session_covers`
+   - `20261119170000` group assessments — every member of a group gets the group's handed-in / marked work and their session report (data only, no notices)
+
+   Check: `SHOW COLUMNS FROM reports LIKE 'moduleId';` and `SHOW TABLES LIKE 'session_covers';` (1 row each). If either is
+   missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-lyA1q7sx.js`), after the backend. In `dcf.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's — upload it only if
+   that release isn't up.
+
+The existing `checkins:process` cron now also keeps covers up to date (a cover whose session moved is cancelled) and tells a
+class's families the day before who is teaching. Nothing to change in cPanel.
+
+### What changed
+
+**Session covers** — an educator asks another educator (any educator in the system) to teach one session of their class:
+calendar → the session → **Ask someone to cover**. Admins and hubs can arrange one too. The cover educator accepts or
+declines; once accepted the session is on their calendar and their **Covers** page, with the class, the course material and
+the note left for them. Families hear the day before who is teaching. Move, skip or delete the session and the cover is
+cancelled. Pay and hours follow who taught: the session leaves the class educator's claim and the cover educator claims it
+(Covers → **To claim** → Claim it; full-time educators have nothing to claim). Admins: Educators → **Covers**; hubs: **Covers**. Bell + email for each step (Settings → Emails, "Covers").
+
+**Module certificates** — a course with two or more modules that have assessments gets a **module report** per module
+(Reports → the course card → **Module Reports**). Publishing a learner's module report issues their certificate for that module
+("Intro to Python, part of Python"); withdrawing it revokes it; re-publishing brings back the same number. Whole class:
+Generate all ready / Publish all drafts per module. The final report still gives the course certificate. Publishing a final
+report while a learner's module reports aren't published now warns first, and the row says which are missing. Withdraw to
+Draft asks first (it revokes the certificate).
+
+**Not handed in** — a learner who never handed some work in can still finish: **File as not handed in** on their report row
+files every missing session at once, and their report and certificate follow. Work not due yet can't be filed.
+
+**Group assessments** — marking a group's work now reaches every member: all get the marks, the notice and their session
+report, and the work no longer shows as needing marking.
+
+**Also** — Home Learning is a list of families, each opening its own page; educators added to a class later see its
+parent check-ins; course start dates on the timetable are set and checked one class at a time.
+
+### Verify
+
+1. Sign in as an educator at https://dcf.digifunzi.com → the calendar → a session → **Ask someone to cover** lists educators;
+   the sidebar has **Covers**.
+2. As an admin → Educators → **Covers** opens.
+3. Reports → a course with two assessed modules shows **Module Reports**; publish one → **Certificates** lists it as Module.
+4. `SHOW COLUMNS FROM reports LIKE 'moduleId';` returns 1 row.
+
+---
+
+## This release (19 Nov 2026) — Expenses, class rankings and learner analytics, affiliate prospects
+
+**Portal and backend** from `curriculum` (branch `modules`) at `9aa9fce7`. **Website: no change** since 13 Nov. **Four new
+migrations, one new cron job, no new npm package, no new environment variable.** If the 17 Nov releases below aren't up yet,
+these files include them: follow their steps too (the morning's two migrations and its new `.htaccess`).
+
+### Before you upload: decide about rankings for families
+
+Class rankings are **on** for families as soon as this is up, and the badges each learner has already earned are announced
+(bell + email to the parent) the first time anyone opens that class's ranking. That's intended, but if you want to look
+first: after the upload, sign in as an admin before anyone else and go to **Settings → Rankings** — under "Class positions for families"
+untick "Show learners and parents their class position…" (or switch it off for chosen hubs), or untick the three ranking emails in **Settings → Emails** ("Parents and learners").
+Staff still see every class ranking either way.
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/` (four new tables' worth of migrations this time).
+1. **Backend** — `backend-deploy.zip` (784 files, 190 migrations — four new). **Stop App → Start App** (no new package, so no
+   NPM Install). The migrations run on start:
+   - `20261118090000` Expenses — `expense_claims`, `expense_items`, `expense_files`, `expense_settings`
+   - `20261118120000` class ranking history — `learner_rank_snapshots`
+   - `20261118150000` ranking settings and badges — `ranking_settings`, `learner_badges`
+   - `20261119090000` affiliate prospects — `affiliate_prospects`
+
+   Check: `SHOW TABLES LIKE 'expense%';` (4 rows), `SHOW TABLES LIKE 'learner_rank_snapshots';`, `SHOW TABLES LIKE 'learner_badges';`
+   and `SHOW TABLES LIKE 'affiliate_prospects';` (1 row each). If any is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-aU60WmDH.js`), after the backend. In `dcf.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's — upload it only if
+   that release isn't up.
+
+**Keep the `uploads/` folder** as you always do: expense receipts are saved in `uploads/.expenses/` (a hidden folder — never
+served to the web; only the claimant and their reviewers can open a receipt, through the app). Uploading the backend zip
+doesn't touch `uploads/`; just don't delete or replace it.
+
+**One new cron job** (Monday mornings, after the analytics one — e.g. 07:50): `npm run rankings:weekly` — or, the lighter way,
+`node src/scripts/rankingsWeekly.js >> rankings-cron.log 2>&1` with the usual start of the line. It ranks every class afresh,
+awards new badges and sends each family "moved up a place" and one weekly summary per child. Safe to run twice (one notice per
+learner per week). The emails go out with the outbox cron as usual.
+
+| Schedule | Rest of the command |
+|---|---|
+| `50 7 * * 1` | `node src/scripts/rankingsWeekly.js >> rankings-cron.log 2>&1` |
+
+### What changed
+
+**Expenses** (Finance → **Expenses**; **My expenses** in the avatar menu) — admins, staff, educators and supervisors claim
+back money they spent on the organisation's work (fuel, fares, materials…). A claim is one trip or purpose with one or more
+lines (date, category, amount, paid to, what for, optional M-Pesa code), each with an optional receipt — a photo, an M-Pesa
+screenshot or a PDF; phones get "Take photo". Numbered EXP-0001… when first sent.
+- Educators with a supervisor send to the supervisor; everyone else to the admins. Approve (all or some lines), send back,
+  or decline; an admin then records the payment (M-Pesa / bank / cash / other — recorded, not sent). Nobody approves or pays
+  their own claim unless they are the only possible approver.
+- Educators: Payments → **Expenses**; supervisors: **Expenses** (To review · Reviewed · My expenses).
+- Staff module **Expenses**: View sees every claim, Edit approves, pays and changes Settings (the categories).
+- Bell + email for each step (Settings → Emails, "Expenses (your team)"). Not the same as Educator Claims (pay for teaching).
+
+**Class rankings** — a **Learning Score** (0–100) per learner per class per term from marked work (50%), attendance (15%),
+work on time (15%), growth (10%) and competencies (10%), and a place in class.
+- Ranked once a learner has 3 marked pieces and 5 learners in the class qualify; equal scores share a place.
+- **Families** see the exact place in the top half of the class, a band below it ("Climbing the ladder"), points to the next
+  place, the top three and their neighbours, each part as a level word and bar — never raw marks. Other children show as
+  "Amani K.". **Staff** see everything.
+- Learner portal: **Class position** and **How I'm doing** (analytics: assessments, attendance, competencies, growth,
+  projects, reports), a **My class position** card on the dashboard and a **This term** strip on the profile.
+- Parent portal: **Profile | Class position | How {child}'s doing** above each child, and a Class position line per child on
+  the home page.
+- Educators (My Class) and admins / hubs (class view): a **Class ranking** panel. Staff learner page: an **Analytics** tab.
+- **Badges** (Top three, Most improved, Perfect week, On-time streak, Full marks, Personal best, Strong skill…), extra boards
+  (Most improved, Attendance, On time, each course) and Reports & Analytics → **Rankings**.
+- **Settings → Rankings**: on/off for families (whole workspace or per hub), the five weights, the minimums, how other
+  children's names show, term or last 30 days, and the workspace's own term dates.
+
+**Affiliate prospects** — an affiliate pre-registers families they've talked to (Refer & earn → **My prospects**: one at a
+time with a consent tick, or a CSV list). For 60 days, a sign-up whose parent's phone or email matches is that affiliate's
+referral even without their code (a typed code still wins). Families already with us, or held by another affiliate, are
+refused; 30 a day at most. The affiliate can send an invite by WhatsApp or email; each carries a "no thanks" link that
+removes the family's details. Admins: Affiliates → **Prospects** (every claim, Move to another affiliate, Release, and
+"possible matches" — a sign-up with the same name but no phone/email match — to approve or turn down). Affiliates → Settings →
+Prospects (on/off, days, which wins, daily limit).
+
+### Verify
+
+1. Sign in as an admin at https://dcf.digifunzi.com → **Finance → Expenses** opens (To approve · To pay · …); **My expenses** →
+   New claim with a receipt photo → Send → it shows under To approve for another admin.
+2. **Settings → Rankings** opens with "Class positions for families"; open a class with marked work → **Class ranking** panel.
+3. Sign in as a learner → sidebar **Class position** and **How I'm doing**; the dashboard shows **My class position**.
+   As a parent → each child has **Class position** next to Profile.
+4. **Affiliates → Prospects** opens; an affiliate's Refer & earn shows **My prospects**.
+5. After the first Monday: `rankings-cron.log` has a line `[rankings-weekly] week of …`.
+
+---
+
 ## This release (17 Nov 2026, evening) — Supervisors under People, a fuller supervisor portal, parent check-in reports
 
 **Portal and backend** from `curriculum` (branch `modules`) at `9dde5e47`. **Website: no change** since 13 Nov. **No new

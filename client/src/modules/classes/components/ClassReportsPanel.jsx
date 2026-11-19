@@ -34,7 +34,7 @@ export default function ClassReportsPanel({ cls, courses = [] }) {
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "20px 28px", border: 0, background: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
         <span style={{ flex: 1 }}>
           <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Learner reports &amp; certificates</span>
-          <span style={{ display: "block", fontSize: 12.5, color: "#6B7280", marginTop: 3 }}>Module and final course reports for this class — publishing one issues the learner's certificate.</span>
+          <span style={{ display: "block", fontSize: 12.5, color: "#6B7280", marginTop: 3 }}>Module and final course reports for this class — publish them, then issue the learners' certificates.</span>
         </span>
         {open ? <FiChevronDown size={18} color="#6B7280" /> : <FiChevronRight size={18} color="#6B7280" />}
       </button>

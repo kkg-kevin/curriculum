@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useReport, useUpdateRemarks, usePublishReport, useUnpublishReport } from "../../reports/hooks/useReports";
+import { useReport, useUpdateRemarks, usePublishReport, useUnpublishReport, useIssueCertificate } from "../../reports/hooks/useReports";
 import { useLearnerQuery } from "../../learners/hooks/useLearners";
 import { useCourseQuery } from "../../courses/hooks/useCourse";
 import ReportView from "../../reports/components/ReportView";
@@ -23,6 +23,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
   const { mutate: saveRemarks, isPending: savingRemarks } = useUpdateRemarks();
   const { mutate: publish, isPending: publishing } = usePublishReport();
   const { mutate: unpublish, isPending: unpublishing } = useUnpublishReport();
+  const issue = useIssueCertificate();
   const [remarks, setRemarks] = useState("");
   const [homeNote, setHomeNote] = useState("");
   // Families see words and bars; the educator can switch the raw marks on.
@@ -50,8 +51,10 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
   const content = report.content || {};
   const overall = content.overall || { totalScore: 0, maxScore: 0, percent: 0 };
   const isPublished = report.status === "published";
-  // Module and final reports carry a certificate; session reports don't.
+  // Module and final reports carry a certificate; session reports don't. Since 19 Nov 2026 the
+  // educator issues it once the report is published (Issue certificate) — not on publish.
   const earnsCertificate = !report.sessionId;
+  const certificate = report.certificate || null;
   const what = report.moduleId ? `the ${content.moduleName || "module"} certificate` : "the course certificate";
   // A final report published before the course's module reports: those module certificates only
   // come from their own reports (19 Nov 2026), so say which are still to do.
@@ -60,7 +63,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
     if (earnsCertificate) {
       const ok = await askConfirm({
         title: "Withdraw this report to draft?",
-        message: `The learner and their family stop seeing it, and ${what} is revoked until you publish it again (it comes back with the same number).`,
+        message: `The learner and their family stop seeing it.${certificate?.status === "issued" ? ` ${what[0].toUpperCase()}${what.slice(1)} (${certificate.certificateNumber}) is revoked — issue it again after re-publishing and it keeps its number.` : ""}`,
         confirmLabel: "Withdraw",
         tone: "danger",
       });
@@ -72,7 +75,7 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
     if (outstanding.length) {
       const ok = await askConfirm({
         title: "Publish the final report now?",
-        message: `${outstanding.join(", ")} ${outstanding.length === 1 ? "has" : "have"} no published module report for this learner yet, so no certificate for ${outstanding.length === 1 ? "that module" : "those modules"}. You can publish ${outstanding.length === 1 ? "it" : "them"} afterwards from Course Reports — the certificates follow.`,
+        message: `${outstanding.join(", ")} ${outstanding.length === 1 ? "has" : "have"} no published module report for this learner yet, so no certificate for ${outstanding.length === 1 ? "that module" : "those modules"} yet. You can publish ${outstanding.length === 1 ? "it" : "them"} afterwards from Course Reports and issue the certificates there.`,
         confirmLabel: "Publish anyway",
       });
       if (!ok) return;
@@ -109,7 +112,24 @@ export default function ReportEditorPage({ backTo = "/teacher-portal/reports" })
 
       {!isPublished && (
         <div style={{ padding: "12px 18px", backgroundColor: "#FFFBEB", border: "1.5px solid #FDE68A", borderRadius: 12, fontSize: 12.5, color: "#92400E", fontWeight: 600 }}>
-          This is still a draft — the learner and guardian can't see it until you publish it below.{earnsCertificate ? ` Publishing it issues ${what}.` : ""}
+          This is still a draft — the learner and guardian can't see it until you publish it below.{earnsCertificate ? ` Once it's published you issue ${what} — here or from Course Reports.` : ""}
+        </div>
+      )}
+      {isPublished && earnsCertificate && (
+        <div style={{ padding: "12px 18px", backgroundColor: certificate?.status === "issued" ? "#ECFDF5" : "#F8FAFC", border: `1.5px solid ${certificate?.status === "issued" ? "#A7F3D0" : T.border}`, borderRadius: 12, fontSize: 12.5, color: certificate?.status === "issued" ? "#065F46" : T.ink, fontWeight: 600, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ flex: 1, minWidth: 200 }}>
+            {certificate?.status === "issued"
+              ? `Certificate ${certificate.certificateNumber} issued — the learner and their family can see it.`
+              : certificate?.status === "revoked"
+                ? `Certificate ${certificate.certificateNumber} was revoked. Issue it again to bring it back (same number).`
+                : `No certificate yet — issue ${what} when you're ready.`}
+          </span>
+          {certificate?.status !== "issued" && (
+            <button type="button" disabled={issue.isPending} onClick={() => issue.mutate(report.id)}
+              style={{ padding: "8px 18px", backgroundColor: issue.isPending ? "#A7F3D0" : "#059669", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: issue.isPending ? "not-allowed" : "pointer" }}>
+              {issue.isPending ? "Issuing…" : certificate?.status === "revoked" ? "Issue again" : "Issue certificate"}
+            </button>
+          )}
         </div>
       )}
       {outstanding.length > 0 && (

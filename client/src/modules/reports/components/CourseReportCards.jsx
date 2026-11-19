@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Assignment as AssignmentIcon, Visibility as VisibilityIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { useBulkReports, useFileNotSubmitted, useGenerateReport } from "../hooks/useReports";
-import { askConfirm } from "../../../components/ui/AskDialog";
+import { useBulkReports, useGenerateReport, useIssueCertificate, useRevokeReportCertificate } from "../hooks/useReports";
+import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import { classLabel } from "../../../utils/classLabel";
 
 /*
@@ -21,7 +21,7 @@ export const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow:
 
 const STATUS_CONFIG = {
   not_ready: { label: "Not Ready", bg: "#F9FAFB", color: T.inkMuted, border: T.border },
-  ready:     { label: "Ready to Generate", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
+  ready:     { label: "Ready", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
   draft:     { label: "Draft", bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
   published: { label: "Published", bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
 };
@@ -51,7 +51,7 @@ export function rowStatus(row) {
 export function flattenReportRows(sections) {
   return sections.flatMap((s) => s.rows.flatMap((r) => [
     { ...r, cls: s.cls, course: s.course },
-    ...(r.modules || []).map((m) => ({ learner: r.learner, ready: m.ready, report: m.report, moduleName: m.moduleName, cls: s.cls, course: s.course })),
+    ...(r.modules || []).map((m) => ({ learner: r.learner, ready: m.ready, report: m.report, certificate: m.certificate, moduleName: m.moduleName, cls: s.cls, course: s.course })),
   ]));
 }
 
@@ -92,37 +92,54 @@ function Navigator({ items, index, onChange, label, extra }) {
   );
 }
 
-// A final report's row, or (moduleRow set) a module report's: status, what's holding it up, and
-// the action — File as not handed in, Generate, Review / View.
+// A final report's row, or (moduleRow set) a module report's: status, what the report will leave out,
+// and the action — Generate, Review / View, then Issue certificate (or Revoke).
+//
+// 19 Nov 2026 (user): missing work no longer holds a learner back. Every learner's report opens at
+// the module's (course's) last session — the report names what wasn't handed in or marked — and a
+// published report gets its certificate when the educator issues it, not automatically.
 function ReportRow({ row, cls, course, moduleRow = null, reportPath, navigate, generate }) {
   const subject = moduleRow || row;
   const status = rowStatus(subject);
-  const fileMissing = useFileNotSubmitted();
+  const issue = useIssueCertificate();
+  const revoke = useRevokeReportCertificate();
   const blocking = (row.sessions || []).filter((s) => !moduleRow || s.moduleId === moduleRow.moduleId);
-  const missing = blocking.filter((s) => s.state === "not_submitted");
-  const open = blocking.filter((s) => s.state === "open");
+  const missing = blocking.filter((s) => s.state === "not_submitted" || s.state === "open").length;
   const toMark = blocking.filter((s) => s.state === "needs_grading").length;
   const name = row.learner.firstName || "this learner";
   const scope = { learnerId: row.learner.id, courseId: course.id, classId: cls.id, ...(moduleRow ? { moduleId: moduleRow.moduleId } : {}) };
   const generating = generate.isPending && generate.variables?.learnerId === row.learner.id && generate.variables?.courseId === course.id && (generate.variables?.moduleId || null) === (moduleRow?.moduleId || null);
-  // Published, but the work no longer adds up to finished — a mark withdrawn or revoked since.
-  const changed = status === "published" && subject.ready === false;
-  // Final report rows: module reports not yet published — their certificates are still to come.
+  const filing = subject.filing;
+  const certificate = subject.certificate || null;
+  const reportId = subject.report?.id;
+  const issuing = issue.isPending && issue.variables === reportId;
+  const what = moduleRow ? `${moduleRow.moduleName} certificate` : `${course.name} certificate`;
+  // Final report rows: module reports not yet published (their certificates are separate).
   const modulesLeft = moduleRow ? [] : (row.modules || []).filter((m) => m.report?.status !== "published");
 
-  const fileAll = async () => {
-    const ok = await askConfirm({
-      title: `File ${name}'s missing work as not handed in?`,
-      message: `${plural(missing.length, "session")} of ${moduleRow ? moduleRow.moduleName : course.name} will say the work wasn't handed in (${missing.map((s) => s.sessionTitle || "Session").join(", ")}). Anything ${name} did hand in still counts.${toMark ? ` ${plural(toMark, "session")} still ${toMark === 1 ? "has" : "have"} work to mark first.` : open.length ? "" : " Then you can generate the report — publishing it issues the certificate."}`,
-      confirmLabel: "File as not handed in",
+  const notes = [];
+  if (status === "not_ready") notes.push({ tone: "muted", text: `Opens at the ${moduleRow ? "module's" : "course's"} last session${filing?.date ? ` (${fmtDay(filing.date)})` : ""}` });
+  else if (status !== "published" && !subject.complete && (missing || toMark)) {
+    notes.push({ tone: "warm", text: `${[missing ? `${plural(missing, "session")} not handed in` : null, toMark ? `${toMark} still to mark` : null].filter(Boolean).join(" · ")} — the report lists ${missing + toMark === 1 ? "it" : "them"}` });
+  }
+  if (status !== "not_ready" && modulesLeft.length > 0) notes.push({ tone: "warm", text: `Module ${modulesLeft.length === 1 ? "report" : "reports"} not published: ${modulesLeft.map((m) => m.moduleName).join(", ")}` });
+  if (status === "published" && certificate?.status === "issued") notes.push({ tone: "good", text: `Certificate ${certificate.certificateNumber} issued` });
+  if (status === "published" && certificate?.status === "revoked") notes.push({ tone: "bad", text: `Certificate ${certificate.certificateNumber} revoked${certificate.revokeReason ? ` — ${certificate.revokeReason}` : ""}` });
+  const toneColor = { muted: T.inkMuted, warm: "#B45309", good: "#059669", bad: "#B91C1C" };
+
+  const issueOne = () => issue.mutate(reportId);
+  const revokeOne = async () => {
+    const reason = await askText({
+      title: `Revoke ${name}'s certificate?`,
+      message: `${certificate.certificateNumber} (${what}) stops being valid — its verify link says so. You can issue it again later; it keeps its number.`,
+      label: "Why",
+      placeholder: "e.g. issued to the wrong learner",
+      confirmLabel: "Revoke",
+      tone: "danger",
+      required: true,
     });
-    if (ok) fileMissing.mutate(scope);
+    if (reason) revoke.mutate({ id: certificate.id, reason });
   };
-  const blockers = [
-    missing.length ? `${plural(missing.length, "session")} not handed in` : null,
-    open.length ? `${open.length} not due yet (until ${fmtDay(open.reduce((a, s) => (new Date(s.openUntil) > new Date(a || 0) ? s.openUntil : a), null))})` : null,
-    toMark ? `${toMark} still to mark` : null,
-  ].filter(Boolean);
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #F9FAFB", flexWrap: "wrap" }}>
@@ -133,25 +150,9 @@ function ReportRow({ row, cls, course, moduleRow = null, reportPath, navigate, g
             ? `${moduleRow.moduleName} · ${moduleRow.done}/${moduleRow.total} sessions done`
             : `${course.name} · ${row.requiredCount === 0 ? "no assessments to report on" : `${row.gradedCount}/${row.requiredCount} assessments graded`}`}
         </p>
-        {status === "not_ready" && blockers.length > 0 && <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>{blockers.join(" · ")}</p>}
-        {status !== "not_ready" && modulesLeft.length > 0 && (
-          <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#C2410C", fontWeight: 600 }}>
-            Module {modulesLeft.length === 1 ? "report" : "reports"} not published: {modulesLeft.map((m) => m.moduleName).join(", ")} — no module certificate until {modulesLeft.length === 1 ? "it is" : "they are"}
-          </p>
-        )}
-        {changed && (
-          <p style={{ margin: "3px 0 0", fontSize: 11.5, color: "#B91C1C", fontWeight: 600 }}>
-            Work changed since this was published — it's no longer complete. Review it; withdraw and re-publish once it's sorted.
-          </p>
-        )}
+        {notes.map((n) => <p key={n.text} style={{ margin: "3px 0 0", fontSize: 11.5, color: toneColor[n.tone], fontWeight: n.tone === "muted" ? 500 : 600 }}>{n.text}</p>)}
       </div>
       <StatusBadge status={status} />
-      {status === "not_ready" && missing.length > 0 && (
-        <button type="button" onClick={fileAll} disabled={fileMissing.isPending} title="For work this learner never handed in — so they can still finish, get their report and certificate"
-          style={pillButton("#fff", "#B45309", "1.5px solid #FDE68A", fileMissing.isPending)}>
-          {fileMissing.isPending ? "Filing…" : "File as not handed in"}
-        </button>
-      )}
       {status === "ready" && (
         <button type="button" disabled={generating} onClick={() => generate.mutate(scope, { onSuccess: (report) => navigate(reportPath(report.id)) })} style={pillButton("#feb139", "#25476a", "none", generating)}>
           {generating ? "Generating…" : "Generate"}
@@ -162,32 +163,52 @@ function ReportRow({ row, cls, course, moduleRow = null, reportPath, navigate, g
           <VisibilityIcon sx={{ fontSize: 13 }} /> {status === "draft" ? "Review" : "View"}
         </button>
       )}
+      {status === "published" && certificate?.status !== "issued" && (
+        <button type="button" disabled={issuing} onClick={issueOne} title={`Issue ${name}'s ${what} — the family is told`} style={pillButton("#059669", "#fff", "none", issuing)}>
+          {issuing ? "Issuing…" : certificate?.status === "revoked" ? "Issue again" : "Issue certificate"}
+        </button>
+      )}
+      {status === "published" && certificate?.status === "issued" && (
+        <button type="button" disabled={revoke.isPending} onClick={revokeOne} style={pillButton("#fff", "#B91C1C", "1.5px solid #FECACA", revoke.isPending)}>
+          Revoke
+        </button>
+      )}
     </div>
   );
 }
 
-// "Generate all ready" / "Publish all drafts" for one set of rows (a module's, or the final reports).
+// "Generate all ready" / "Publish all drafts" / "Issue all certificates" for one set of rows (a
+// module's, or the final reports) — the whole class at once, so every learner gets their report and
+// certificate as the module (course) ends.
 function BulkActions({ cls, course, moduleId = null, subjects, what }) {
   const bulk = useBulkReports();
   const readyCount = subjects.filter((s) => rowStatus(s) === "ready").length;
   const draftCount = subjects.filter((s) => rowStatus(s) === "draft").length;
-  if (!readyCount && !draftCount) return null;
+  const issueCount = subjects.filter((s) => rowStatus(s) === "published" && s.certificate?.status !== "issued").length;
+  if (!readyCount && !draftCount && !issueCount) return null;
   const busy = (action) => bulk.isPending && bulk.variables?.action === action && (bulk.variables?.moduleId || null) === moduleId && bulk.variables?.courseId === course.id;
   const run = (action) => bulk.mutate({ action, classId: cls.id, courseId: course.id, ...(moduleId ? { moduleId } : {}) });
-  // Final reports: drafts whose learner still has module reports unpublished (no module certificate yet).
-  const modulesLeft = moduleId ? 0 : subjects.filter((s) => rowStatus(s) === "draft" && (s.modules || []).some((m) => m.report?.status !== "published")).length;
   const publishAll = async () => {
     const ok = await askConfirm({
       title: `Publish ${plural(draftCount, "draft")}?`,
-      message: `Learners and parents will see ${draftCount === 1 ? "this" : "these"} ${what}, and each learner gets their certificate. Remarks you haven't written stay empty — review drafts one by one first if you want to add them.${modulesLeft ? ` ${plural(modulesLeft, "learner")} still ${modulesLeft === 1 ? "has" : "have"} module reports unpublished — those module certificates come only when they are.` : ""}`,
+      message: `Learners and parents will see ${draftCount === 1 ? "this" : "these"} ${what}. Remarks you haven't written stay empty — review drafts one by one first if you want to add them. Then issue the certificates.`,
       confirmLabel: `Publish ${draftCount}`,
     });
     if (ok) run("publish");
   };
+  const issueAll = async () => {
+    const ok = await askConfirm({
+      title: `Issue ${plural(issueCount, "certificate")}?`,
+      message: `Every learner here whose report is published gets their ${moduleId ? "module" : "course"} certificate, and their family is told. You can revoke one later.`,
+      confirmLabel: `Issue ${issueCount}`,
+    });
+    if (ok) run("issue");
+  };
   return (
     <span style={{ display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
-      {readyCount > 0 && <button type="button" disabled={bulk.isPending} onClick={() => run("generate")} style={pillButton("#feb139", "#25476a", "none", bulk.isPending)}>{busy("generate") ? "Generating…" : `Generate all ready (${readyCount})`}</button>}
+      {readyCount > 0 && <button type="button" disabled={bulk.isPending} onClick={() => run("generate")} style={pillButton("#feb139", "#25476a", "none", bulk.isPending)}>{busy("generate") ? "Generating…" : `Generate all (${readyCount})`}</button>}
       {draftCount > 0 && <button type="button" disabled={bulk.isPending} onClick={publishAll} style={pillButton(T.accent, "#fff", "none", bulk.isPending)}>{busy("publish") ? "Publishing…" : `Publish all drafts (${draftCount})`}</button>}
+      {issueCount > 0 && <button type="button" disabled={bulk.isPending} onClick={issueAll} style={pillButton("#059669", "#fff", "none", bulk.isPending)}>{busy("issue") ? "Issuing…" : `Issue all certificates (${issueCount})`}</button>}
     </span>
   );
 }
@@ -272,7 +293,7 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
           </div>
           <Navigator items={modules} index={Math.min(moduleIndex, modules.length - 1)} onChange={setModuleIndex}
             label={(m, i) => `Module ${i + 1} of ${modules.length}${m?.moduleName ? ` — ${m.moduleName}` : ""}`}
-            extra="Publishing a learner's report issues their certificate for this module" />
+            extra="At the module's last session: generate the reports, publish them, then issue the certificates" />
           {moduleRows.map(({ row, moduleRow }) => <ReportRow key={`${row.learner.id}:${moduleRow.moduleId}`} row={row} moduleRow={moduleRow} {...shared} />)}
         </>
       )}

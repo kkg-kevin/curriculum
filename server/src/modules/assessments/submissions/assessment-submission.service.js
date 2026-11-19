@@ -323,6 +323,40 @@ const GROUP_COPY_FIELDS = [
   "totalScore", "maxScore", "requiresManualGrading", "itemFeedback", "overallFeedback", "submittedAt", "gradedAt",
   "gradedBy", "indicatorBreakdown", "milestoneProgress", "reportPublished", "reportPublishedAt", "reportPublishedBy",
 ];
+// A learner who opened a group assessment before they were put in a group got a solo row (groupId
+// null — see getOrCreateSubmission), and kept it after joining one: the marking list showed each
+// such member on their own, and marking the group passed them by (19 Nov 2026). Once the learner
+// is in one of the class's groups, their solo rows on the class's group-mode issues join that group;
+// a member behind the group (the group handed in or was marked, they hadn't) takes the group's
+// work and marks. Runs when a learner is added to a group, when the marking list or a roster loads,
+// and before marking. learnerId: only theirs. Returns how many rows joined.
+const GROUP_RANK = { graded: 3, submitted: 2, in_progress: 1 };
+async function joinGroupRows(classId, { learnerId = null } = {}) {
+  if (!classId) return 0;
+  const issueIds = await db("assessment_issues").where({ classId, groupMode: true }).pluck("id");
+  if (!issueIds.length) return 0;
+  const groupIds = await db("class_groups").where({ classId }).pluck("id");
+  if (!groupIds.length) return 0;
+  const groupOf = new Map((await db("class_group_members").whereIn("groupId", groupIds).select("groupId", "learnerId")).map((m) => [m.learnerId, m.groupId]));
+  let query = db("assessment_submissions").whereIn("issueId", issueIds).whereNull("groupId");
+  if (learnerId) query = query.where({ learnerId });
+  const solo = (await query.select("id", "issueId", "learnerId")).filter((r) => groupOf.has(r.learnerId));
+  for (const row of solo) {
+    const groupId = groupOf.get(row.learnerId);
+    await AssessmentSubmissionModel.update(row.id, { groupId });
+    // Behind the group? Take its best row's state (its work and marks).
+    const siblings = await AssessmentSubmissionModel.findGroupSiblings(row.issueId, groupId);
+    const mine = siblings.find((s) => s.id === row.id);
+    const best = siblings.reduce((a, s) => ((GROUP_RANK[s.status] || 0) > (GROUP_RANK[a?.status] || 0) ? s : a), null);
+    if (mine && best && best.id !== mine.id && (GROUP_RANK[best.status] || 0) > (GROUP_RANK[mine.status] || 0)) {
+      const copy = {};
+      for (const field of GROUP_COPY_FIELDS) if (best[field] !== undefined && field !== "assessmentId" && field !== "classId") copy[field] = best[field];
+      await AssessmentSubmissionModel.update(row.id, copy);
+    }
+  }
+  return solo.length;
+}
+
 async function ensureGroupRows(state) {
   if (!state?.groupId || !state.issueId) return [];
   const issue = await AssessmentIssueModel.findById(state.issueId);
@@ -844,6 +878,8 @@ const AssessmentSubmissionService = {
   // ones actually awaiting a teacher's review, so a teacher doesn't have to open each assessment's
   // roster individually to find pending work.
   async getSubmissionsNeedingGrading(classId) {
+    // Group members' solo rows join their group first, so a group shows once (joinGroupRows).
+    await joinGroupRows(classId).catch(() => 0);
     const submissions = await AssessmentSubmissionModel.findAll({ classId, status: "submitted" });
     const rows = await withoutRevoked(await AssessmentSubmissionService._hydrateSubmissionRows(submissions));
     return AssessmentSubmissionService._dedupeGroupRows(rows);
@@ -871,7 +907,9 @@ const AssessmentSubmissionService = {
       // who happened to submit first as if they were the sole owner of the work.
       const { learner, ...representative } = list[0];
       const group = await ClassGroupModel.findById(representative.submission.groupId);
-      return { ...representative, group: group ? { id: group.id, name: group.name } : null, memberCount: list.length };
+      // The group's size, not how many of its rows happen to be waiting (19 Nov 2026).
+      const members = group ? await db("class_group_members").where({ groupId: group.id }).count("* as n").first() : null;
+      return { ...representative, group: group ? { id: group.id, name: group.name } : null, memberCount: Math.max(list.length, Number(members?.n) || 0) };
     }));
     return [...individual, ...groupRows];
   },
@@ -948,6 +986,7 @@ const AssessmentSubmissionService = {
       throw err;
     }
     const issue = found.reissuedFromIssueId ? await rootIssueOf(found) : found;
+    if (issue.groupMode) await joinGroupRows(issue.classId).catch(() => 0);
     const assessment = await loadAssessmentOrThrow(issue.assessmentId);
     // classId/status no longer live on the learner record — resolve the roster via enrollment
     // links for this class instead (see learner-hub-link.model.js).
@@ -1203,11 +1242,15 @@ const AssessmentSubmissionService = {
   // graded work invisible to the learner indefinitely, so it's now unconditional here — see
   // publishReport below, kept only as a manual override).
   async grade(submissionId, { itemFeedback = [], overallFeedback = "", manualScore = 0, gradedBy }) {
-    const submission = await AssessmentSubmissionModel.findById(submissionId);
+    let submission = await AssessmentSubmissionModel.findById(submissionId);
     if (!submission) {
       const err = new Error("Submission not found");
       err.statusCode = 404;
       throw err;
+    }
+    // A group member's solo row joins their group first, so the marks reach the whole group.
+    if (!submission.groupId && (await joinGroupRows(submission.classId, { learnerId: submission.learnerId }))) {
+      submission = await AssessmentSubmissionModel.findById(submissionId);
     }
     // Revoked for them: give it back before marking.
     await assertNotRevoked(await AssessmentIssueModel.findById(submission.issueId), submission.learnerId);
@@ -1399,5 +1442,8 @@ const AssessmentSubmissionService = {
     return summarizeIndicatorProgress(submissions, curriculumId);
   },
 };
+
+// For ClassGroupService.addMember (a learner put in a group joins their earlier solo rows to it).
+AssessmentSubmissionService.joinGroupRows = joinGroupRows;
 
 module.exports = AssessmentSubmissionService;

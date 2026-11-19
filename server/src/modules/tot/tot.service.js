@@ -220,7 +220,7 @@ const TotService = {
 
   // The final report of one course of an educator's training, generated and published in one
   // step — by their supervisor or an admin (a supervisor marks the work, so the certificate
-  // shouldn't wait on anyone else). Publishing issues the course certificate, and with it any
+  // shouldn't wait on anyone else). It then issues the course certificate, and with it any
   // level the TOT curriculum gives (onCourseCertificate). Only a course of one of their TOT classes.
   async publishCourseReport(teacherId, { classId, courseId, remarks = "" }, publishedBy) {
     const learner = await traineeOf(teacherId);
@@ -244,6 +244,11 @@ const TotService = {
       if (remarks) await ReportService.updateRemarks(report.id, { remarks });
       await ReportService.publishReport(report.id, publishedBy);
     }
+    // Publishing no longer issues certificates (19 Nov 2026) — this one step still does both for an
+    // educator in training: the supervisor's publish is the decision.
+    const CertificateService = require("../certificates/certificate.service");
+    const held = await CertificateService.findForScope({ learnerId: learner.id, courseId, classId });
+    if (held?.status !== "issued") await CertificateService.issueForReportByStaff(report.id, publishedBy);
     return TotService.progressFor(teacherId);
   },
 

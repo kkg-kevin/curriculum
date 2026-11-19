@@ -118,6 +118,8 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
     isModule,
     notSubmitted: Boolean(content.notSubmitted),
     notSubmittedAssessments: content.notSubmittedAssessments || [],
+    // A module / course report generated with work missing (19 Nov 2026): what it leaves out.
+    missingWork: content.missingWork || [],
     percent,
     level,
     overall,

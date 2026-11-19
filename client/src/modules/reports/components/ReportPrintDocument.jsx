@@ -186,6 +186,13 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
           </Box>
         ) : (
           <>
+            {/* A module / course report made with work missing (19 Nov 2026). */}
+            {!view.isSession && view.missingWork.length > 0 && (
+              <Box tone="warm">
+                <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: INK }}>Not in this report</p>
+                <p style={{ margin: "4px 0 0", fontSize: 11.5, color: INK_MUTED }}>{view.missingWork.map((x) => `${x.name} (${x.reason === "not_marked" ? "handed in, not marked yet" : "not handed in"})`).join(", ")}.</p>
+              </Box>
+            )}
             {/* Some work marked, the rest filed "not handed in" (19 Nov 2026). */}
             {view.notSubmitted && (
               <Box tone="warm">

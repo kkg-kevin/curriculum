@@ -24,7 +24,8 @@ router.get("/learner/:learnerId/progress", authorize("admin", "school"), getLear
 router.get("/", authorize("admin", "school", "teacher"), listCertificates);
 
 router.get("/:id", authorize("admin", "school", "teacher", "learner"), getCertificate);
-router.post("/:id/revoke", authorize("admin", "school"), revokeCertificate);
+// Educators revoke too (19 Nov 2026) — certificates from a class they teach (canAccess).
+router.post("/:id/revoke", authorize("admin", "school", "teacher"), revokeCertificate);
 router.post("/:id/reinstate", authorize("admin", "school"), reinstateCertificate);
 
 // Settings → Certificates: who signs the workspace's certificates. Mounted on its own path in

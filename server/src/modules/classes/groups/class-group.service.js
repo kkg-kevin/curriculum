@@ -119,6 +119,9 @@ const ClassGroupService = {
     const siblingGroups = await ClassGroupModel.findAll({ classId: group.classId });
     const siblingGroupIds = siblingGroups.map((g) => g.id).filter((id) => id !== groupId);
     await ClassGroupMemberModel.addExclusive(groupId, learnerId, siblingGroupIds);
+    // Work they opened before having a group joins it (19 Nov 2026). Required here: the submission
+    // service requires this file.
+    await require("../../assessments/submissions/assessment-submission.service").joinGroupRows(group.classId, { learnerId }).catch(() => 0);
     return ClassGroupService.getGroup(groupId);
   },
 
