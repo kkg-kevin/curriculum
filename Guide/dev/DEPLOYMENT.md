@@ -128,6 +128,33 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (19 Nov 2026, night) — Module and final reports on their last session
+
+**Portal only** from `curriculum` (branch `modules`) at `d00cd7d0`. **Backend: no change** — the `backend-deploy.zip` here is
+the evening's (`c1981157`); upload it only if the evening release isn't up yet (then follow its steps too). **Website: no
+change.** No migration, package, setting or cron job.
+
+### Upload
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/` (habit — nothing in the database changes).
+1. **Portal** — `index.html` + `assets.zip` (entry `index-CzzYE1wx.js`). In `curriculum.digifunzi.com`: delete the old `assets/` folder and `index.html`,
+   upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's.
+
+### What changed
+
+Reports → a course: the module report section now shows only when the session navigator is on **that module's last
+session**, and the **Final Combined Report** only on **the course's last session** (the last session of the last module) — not
+under every session. On other sessions a line says where they are, with a **Go to session N →** button. The separate
+"Module 1 of 2" navigator is gone.
+
+### Verify
+
+Sign in as an educator → Reports → a course with modules: on session 1 there's a "Go to session N →" line instead of the
+module and final report lists; on a module's last session its report rows show; on the course's last session the final report
+rows show.
+
+---
+
 ## This release (19 Nov 2026, evening) — Certificates issued by the educator, reports at the last session, group work marked as one
 
 **Portal and backend** from `curriculum` (branch `modules`) at `c1981157`. **Website: no change** since 13 Nov. **No new
