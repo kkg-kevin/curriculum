@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   FiGrid, FiBookOpen, FiLayers, FiHome, FiUserCheck, FiUsers, FiCheckSquare,
-  FiCalendar, FiBarChart2, FiDollarSign, FiUser, FiClipboard, FiStar, FiMessageCircle, FiLifeBuoy,
+  FiCalendar, FiRepeat, FiBarChart2, FiDollarSign, FiUser, FiClipboard, FiStar, FiMessageCircle, FiLifeBuoy,
 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
@@ -35,6 +35,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
     { name: "Learners",    path: `/school-portal/learners/${schoolId}`,   end: false, enabled: !!schoolId, icon: FiUsers },
     { name: "Attendance",  path: "/school-portal/attendance",             end: false, enabled: !!schoolId, icon: FiCheckSquare },
     { name: "Timetable",   path: "/school-portal/timetable",              end: false, enabled: true, icon: FiCalendar },
+    { name: "Covers",      path: "/school-portal/covers",                 end: false, enabled: true, icon: FiRepeat },
     { name: "Reports",     path: "/school-portal/reports", end: false, enabled: true, icon: FiBarChart2 },
     // The hub's own login reads its check-ins' reports (an Account Manager / Training Lead has
     // "Hub Check-ins" at the top instead).

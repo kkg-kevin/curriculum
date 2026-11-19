@@ -1177,6 +1177,18 @@ const ReportService = {
     return ReportModel.findById(id);
   },
 
+  // For a final course report: the course's module reports this learner hasn't had published yet
+  // (names, in module order). Each module certificate comes only from its own module report, so the
+  // educator is told before publishing the final report that these are still to do. [] otherwise.
+  async moduleReportsOutstanding(report) {
+    if (!report || !ReportModel.isFinalCourseReport(report)) return [];
+    const { modules } = await reportableModules(report.courseId);
+    if (!modules.length) return [];
+    const published = new Set((await ReportModel.findAll({ learnerId: report.learnerId, classId: report.classId, courseId: report.courseId, status: "published" }))
+      .filter((r) => r.moduleId).map((r) => r.moduleId));
+    return modules.filter((m) => !published.has(m.id)).map((m) => m.name);
+  },
+
   async listForClassCourse({ classId, courseId }) {
     return ReportModel.findAll({ classId, courseId });
   },

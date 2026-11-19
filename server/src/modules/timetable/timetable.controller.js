@@ -12,6 +12,14 @@ const CompetitionHubService = require("../competitions/competition-hub.service")
 const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
+// A timetable change can move a covered session off its date — the class's covers are re-checked
+// in the background (modules/session-covers/: a moved session cancels its cover, both told).
+function recheckCovers(classId) {
+  if (!classId) return;
+  setImmediate(() => require("../session-covers/session-cover.service").keepCurrent({ classId })
+    .catch((err) => console.error("[session-covers] re-check failed:", err.message)));
+}
+
 async function isOwnHubForAdmin(req, hubId) {
   if (!hubId) return false;
   const hubs = await LearningHubModel.findAll({ ownerAdminId: req.ownerAdminId, includeDrafts: true });
@@ -69,18 +77,20 @@ const listByClass = asyncHandler(async (req, res) => {
 });
 
 const updateSlot = asyncHandler(async (req, res) => {
-  await loadOwnedSlotOrThrow(req);
+  const owned = await loadOwnedSlotOrThrow(req);
   const parsed = updateSlotSchema.parse(req.body);
   // Same "only keys present in the raw body survive" guard every partial-update endpoint in
   // this codebase needs, added here from the start rather than found later as a live bug.
   const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
   const slot = await TimetableService.updateSlot(req.params.id, data);
+  recheckCovers(owned.classId);
   res.json({ success: true, data: slot });
 });
 
 const deleteSlot = asyncHandler(async (req, res) => {
-  await loadOwnedSlotOrThrow(req);
+  const owned = await loadOwnedSlotOrThrow(req);
   const result = await TimetableService.deleteSlot(req.params.id);
+  recheckCovers(owned.classId);
   res.json({ success: true, ...result });
 });
 
@@ -135,6 +145,7 @@ const setCourseSchedule = asyncHandler(async (req, res) => {
   await assertClassAccess(req, cls);
   try {
     const schedule = await TimetableService.setCourseSchedule(classId, courseId, startDate, { confirmMove: Boolean(confirmMove) });
+    recheckCovers(classId);
     res.json({ success: true, data: schedule });
   } catch (err) {
     // The page acts on these codes (ask to confirm a move, show the class's run).
@@ -259,6 +270,7 @@ const createSkip = asyncHandler(async (req, res) => {
   const cls = await ClassModel.findById(data.classId);
   await assertClassAccess(req, cls);
   const skip = await TimetableService.createSkip({ ...data, createdBy: req.ownTeacher?.id || req.user.id });
+  recheckCovers(data.classId);
   res.status(201).json({ success: true, data: skip });
 });
 
@@ -271,6 +283,7 @@ const deleteSkip = asyncHandler(async (req, res) => {
   }
   await assertClassAccess(req, await ClassModel.findById(skip.classId));
   const result = await TimetableService.deleteSkip(req.params.id);
+  recheckCovers(skip.classId);
   res.json({ success: true, ...result });
 });
 

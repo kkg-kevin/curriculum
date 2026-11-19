@@ -171,6 +171,8 @@ const getReport = asyncHandler(async (req, res) => {
     await assertClassAccess(req, cls);
   }
   await ReportService.withAuthor(report);
+  // Staff: module reports still to publish before this final one (their certificates follow them).
+  if (req.user.role !== "learner") report.moduleReportsOutstanding = await ReportService.moduleReportsOutstanding(report);
   // The family opened it (Parent engagement) — fire and forget.
   if (req.user.role === "learner") recordView(report, req.user);
   res.json({ success: true, data: report });

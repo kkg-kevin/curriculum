@@ -30,6 +30,10 @@ const MentorProfilePage = lazyPage(() => import("../modules/educator-profiles/pa
 const TotMarkingPage = lazyPage(() => import("../modules/tot/pages/TotMarkingPage"));
 const TeacherReportsPage = lazyPage(() => import("../modules/teacher-portal/pages/ReportsPage"));
 const TeacherReportEditorPage = lazyPage(() => import("../modules/teacher-portal/pages/ReportEditorPage"));
+// Session covers (19 Nov 2026): an educator's covers, one cover's page, and the hub/admin overview.
+const CoversPage = lazyPage(() => import("../modules/session-covers/pages/CoversPage"));
+const CoverSessionPage = lazyPage(() => import("../modules/session-covers/pages/CoverSessionPage"));
+const CoversOverviewPage = lazyPage(() => import("../modules/session-covers/pages/CoversOverviewPage"));
 const TeacherAttendancePage = lazyPage(() => import("../modules/teacher-portal/pages/AttendancePage"));
 const TeacherTimetablePage = lazyPage(() => import("../modules/teacher-portal/pages/TimetablePage"));
 const TeacherClaimCoursePage = lazyPage(() => import("../modules/teacher-portal/pages/ClaimCoursePage"));
@@ -368,6 +372,7 @@ export default function AppRoutes() {
           {/* Training of trainers: work to mark from educators with no supervisor (modules/tot). */}
           <Route path="training" element={<TotMarkingPage />} />
         </Route>
+        <Route path="covers" element={<CoversOverviewPage />} />
         <Route path="supervisors">
           <Route index element={<SupervisorsPage />} />
           <Route path="new" element={<NewSupervisorPage />} />
@@ -399,6 +404,8 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="timetable" element={<TeacherTimetablePage />} />
+          <Route path="covers" element={<CoversPage />} />
+          <Route path="covers/:coverId" element={<CoverSessionPage />} />
           <Route path="claims" element={<TeacherPaymentsPage tab="claims" />} />
           <Route path="claims/:classId/:courseId" element={<TeacherClaimCoursePage />} />
           <Route path="invoices" element={<TeacherPaymentsPage tab="invoices" />} />
@@ -496,6 +503,7 @@ export default function AppRoutes() {
           <Route path="learners/:id/edit" element={<EditLearnerPage />} />
           <Route path="attendance" element={<SchoolAttendancePage />} />
           <Route path="timetable" element={<SchoolTimetablePage />} />
+          <Route path="covers" element={<CoversOverviewPage />} />
           <Route path="rooms" element={<SchoolRoomsPage />} />
           <Route path="reports" element={<SchoolReportsPage />} />
           <Route path="reports/certificates" element={<CertificatesListPage backTo="/school-portal/reports" />} />

@@ -173,6 +173,13 @@ const EMAIL_TYPES = {
   // Quality assurance (modules/qa/qa.notifications.js) — the educator hears of an announced visit
   // and of each report; the reviewer (a supervisor, admin or staff) of a visit due and a reply.
   // Parent–mentor check-ins (modules/mentor-checkins/mentor-checkin.notifications.js).
+  // Session covers (modules/session-covers/, 19 Nov 2026).
+  cover_requested: { label: "You're asked to cover a session", roles: ["teacher"], default: true, look: { tone: "info", icon: "refresh", eyebrow: "Cover" }, path: (p) => routeOr(p, "/teacher-portal/covers") },
+  cover_accepted: { label: "Someone agrees to cover your session", roles: ["teacher", "school", "admin"], default: true, look: { tone: "success", icon: "check", eyebrow: "Cover" }, path: (p) => routeOr(p, "/teacher-portal/covers") },
+  cover_declined: { label: "Someone can't cover your session", roles: ["teacher", "school", "admin"], default: true, look: { tone: "warning", icon: "alert", eyebrow: "Cover" }, path: (p) => routeOr(p, "/teacher-portal/covers") },
+  cover_withdrawn: { label: "A cover educator pulls out", roles: ["teacher", "school", "admin"], default: true, look: { tone: "warning", icon: "alert", eyebrow: "Cover" }, path: (p) => routeOr(p, "/teacher-portal/covers") },
+  cover_cancelled: { label: "A cover is cancelled", roles: ["teacher", "school", "admin"], default: true, look: { tone: "warning", icon: "alert", eyebrow: "Cover" }, path: (p) => routeOr(p, "/teacher-portal/covers") },
+  cover_family_notice: { label: "Another educator is teaching your child's session", roles: LEARNER_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Timetable" }, path: () => "/learner-portal/timetable" },
   mentor_checkin_scheduled: { label: "A check-in with your child's mentor is set up", roles: MENTOR_CHECKIN_PARENT_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor check-in" }, path: mentorCheckinPath("/parent/mentor-checkins") },
   mentor_checkin_report_ready: { label: "The report from your mentor check-in is ready to approve", roles: MENTOR_CHECKIN_PARENT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Mentor check-in" }, path: mentorCheckinPath("/parent/mentor-checkins") },
   mentor_checkin_round_scheduled: { label: "Parent check-ins are set up for your class", roles: MENTOR_CHECKIN_EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Parent check-ins" }, path: mentorCheckinPath("/teacher-portal/mentor-checkins") },

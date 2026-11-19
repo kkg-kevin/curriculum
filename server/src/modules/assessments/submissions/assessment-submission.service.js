@@ -313,12 +313,53 @@ async function refreshSessionReport(submission) {
   }
 }
 
+// The group members who have no row for this issue yet — everyone who never opened it — get one
+// now, already in the group's state (19 Nov 2026). Before, only members who had opened the
+// assessment had a row, so marking the group's work left the rest with no marks, no report and a
+// session that could never finish. Only current members active in the class, issued it, and not
+// revoked for them. Returns the rows created.
+const GROUP_COPY_FIELDS = [
+  "assessmentId", "classId", "status", "answers", "autoScore", "autoMax", "autoItemResults", "manualScore",
+  "totalScore", "maxScore", "requiresManualGrading", "itemFeedback", "overallFeedback", "submittedAt", "gradedAt",
+  "gradedBy", "indicatorBreakdown", "milestoneProgress", "reportPublished", "reportPublishedAt", "reportPublishedBy",
+];
+async function ensureGroupRows(state) {
+  if (!state?.groupId || !state.issueId) return [];
+  const issue = await AssessmentIssueModel.findById(state.issueId);
+  if (!issue?.groupMode || !issue.classId) return [];
+  const memberIds = await db("class_group_members").where({ groupId: state.groupId }).pluck("learnerId");
+  if (!memberIds.length) return [];
+  const active = new Set((await LearnerHubLinkModel.findByClassId(issue.classId)).filter((l) => l.status === "active").map((l) => l.learnerId));
+  const have = new Set((await AssessmentSubmissionModel.findAll({ issueId: state.issueId })).map((r) => r.learnerId));
+  const created = [];
+  for (const learnerId of memberIds) {
+    if (have.has(learnerId) || !active.has(learnerId) || !AssessmentIssueModel.isForLearner(issue, learnerId)) continue;
+    if (await AssessmentRevocationModel.isRevoked(issue, learnerId)) continue;
+    const copy = { issueId: state.issueId, learnerId, groupId: state.groupId };
+    for (const field of GROUP_COPY_FIELDS) if (state[field] !== undefined) copy[field] = state[field];
+    created.push(await createOrExisting(copy));
+  }
+  return created;
+}
+
+// Copies `updates` to every other member of the group (creating the rows of members who never
+// opened it — ensureGroupRows). Returns the other members' rows as they now stand, so callers can
+// tell each of them (their marks, their milestone) — not just the member whose row was used.
 async function fanOutToGroup(submission, updates) {
-  if (!submission.groupId) return;
+  if (!submission.groupId) return [];
+  await ensureGroupRows({ ...submission, ...updates });
   const siblings = await AssessmentSubmissionModel.findGroupSiblings(submission.issueId, submission.groupId);
-  await Promise.all(
-    siblings.filter((s) => s.id !== submission.id).map((s) => AssessmentSubmissionModel.update(s.id, updates))
-  );
+  const others = siblings.filter((s) => s.id !== submission.id);
+  await Promise.all(others.map((s) => AssessmentSubmissionModel.update(s.id, updates)));
+  return others.map((s) => ({ ...s, ...updates }));
+}
+
+// Every other group member hears that the work is marked — and gets any level-up it brings.
+async function tellGroupGraded(others) {
+  for (const s of others) {
+    await NotificationService.assessmentGraded(s).catch(() => {});
+    await NotificationService.maybeNotifyLevelUp(s.learnerId, s.classId).catch(() => {});
+  }
 }
 
 // Whether a submission's own time limit (set on its issue, see issueAssessment) has run out.
@@ -1140,11 +1181,12 @@ const AssessmentSubmissionService = {
     // pathway progress below run once.
     const updated = await AssessmentSubmissionModel.updateIfInProgress(submissionId, updates);
     if (!updated) throw alreadySubmitted();
-    await fanOutToGroup(submission, updates);
+    const groupOthers = await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(updated);
     if (updated.status === "graded") {
       await maybeAdvancePathwayForCourse(updated);
       await NotificationService.assessmentGraded(updated);
+      await tellGroupGraded(groupOthers);
       await NotificationService.maybeNotifyLevelUp(updated.learnerId, updated.classId);
       await refreshSessionReport(updated);
     } else {
@@ -1193,10 +1235,11 @@ const AssessmentSubmissionService = {
     // Group-mode grading: whichever member's submission id the teacher graded, the identical
     // score/feedback/status now applies to every group member — see fanOutToGroup. The teacher
     // grades through the same PATCH endpoint either way; no separate group-grading endpoint.
-    await fanOutToGroup(submission, updates);
+    const groupOthers = await fanOutToGroup(submission, updates);
     await maybePlaceFromDiagnostic(graded);
     await maybeAdvancePathwayForCourse(graded);
     await NotificationService.assessmentGraded(graded);
+    await tellGroupGraded(groupOthers);
     await NotificationService.maybeNotifyLevelUp(graded.learnerId, graded.classId);
     await refreshSessionReport(graded);
     return graded;
@@ -1249,9 +1292,19 @@ const AssessmentSubmissionService = {
     let updated = await AssessmentSubmissionModel.update(submission.id, updates);
     // Group-mode: every member shares one project attempt, so a milestone graded for one
     // representative applies to the whole group — same fan-out grade()/submit() already use.
-    await fanOutToGroup(submission, updates);
+    const groupOthers = await fanOutToGroup(submission, updates);
 
-    // The learner hears about it (once per milestone; a correction updates what they see quietly).
+    // The learner hears about it (once per milestone; a correction updates what they see quietly) —
+    // every member of a group.
+    if (first) for (const member of groupOthers) {
+      await NotificationService.notifyLearner(member.learnerId, {
+        type: "project_milestone_marked",
+        title: "Milestone marked",
+        message: `Your teacher marked "${milestone.name}" in "${assessment.name}".${entry.feedback ? " They left you a note." : ""}`,
+        payload: { assessmentId: assessment.id, submissionId: member.id, issueId, learnerId: member.learnerId },
+        dedupeKey: `project_milestone:${member.id}:${milestoneId}`,
+      }).catch(() => {});
+    }
     if (first) {
       await NotificationService.notifyLearner(submission.learnerId, {
         type: "project_milestone_marked",

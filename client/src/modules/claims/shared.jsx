@@ -29,7 +29,7 @@ export function formatDate(value) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export const TYPE_LABEL = { advance: "Advance", full: "Full payment", bookings: "Mentor sessions" };
+export const TYPE_LABEL = { advance: "Advance", full: "Full payment", bookings: "Mentor sessions", covers: "Covered sessions" };
 
 // How a claim (or a course's figures) is worked out — per session, by the hour, by the day, or
 // Base plus (its own session rate plus a commission per enrolled learner, each session), at the
