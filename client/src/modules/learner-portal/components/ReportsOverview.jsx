@@ -8,8 +8,10 @@ import { T, cardStyle } from "./profile/theme";
 
 // A session report (report.sessionId set) is a smaller, secondary row; the final course report
 // (sessionId null/absent) is the primary one — same visual weighting the teacher-portal gives the
-// course-level report vs. its session breakdown.
+// course-level report vs. its session breakdown. A module report (19 Nov 2026, moduleId set) sits
+// between them: indented like a session's, named "Module report — <module>".
 function ReportRow({ report, navigate, primary }) {
+  const isModule = !report.sessionId && Boolean(report.moduleId);
   return (
     <div style={{ ...cardStyle(), padding: primary ? "18px 20px" : "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginLeft: primary ? 0 : 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -18,7 +20,7 @@ function ReportRow({ report, navigate, primary }) {
         </div>
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: primary ? 14 : 12.5, fontWeight: 700, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {primary ? "Final Report" : (report.content?.sessionName || "Session")}
+            {primary ? "Final Report" : isModule ? `Module report — ${report.content?.moduleName || "Module"}` : (report.content?.sessionName || "Session")}
           </p>
           <p style={{ margin: 0, fontSize: primary ? 12 : 11.5, color: T.inkMuted }}>
             {report.content?.overall?.totalScore ?? 0}/{report.content?.overall?.maxScore ?? 0} · {report.content?.overall?.percent ?? 0}%
@@ -110,14 +112,18 @@ export default function ReportsOverview({ limit, hubId, staffLearnerId, learner:
     const courseId = report.courseId;
     let group = groupByCourse.get(courseId);
     if (!group) {
-      group = { courseId, courseName: report.content?.courseName || "Course", sessionReports: [], finalReport: null };
+      group = { courseId, courseName: report.content?.courseName || "Course", sessionReports: [], moduleReports: [], finalReport: null };
       groupByCourse.set(courseId, group);
       groups.push(group);
     }
     if (report.sessionId) group.sessionReports.push(report);
+    else if (report.moduleId) group.moduleReports.push(report);
     else group.finalReport = report;
   });
-  groups.forEach((g) => g.sessionReports.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0)));
+  groups.forEach((g) => {
+    g.sessionReports.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0));
+    g.moduleReports.sort((a, b) => (a.content?.moduleNumber || 0) - (b.content?.moduleNumber || 0));
+  });
 
   // The diagnostics section counts as one slot toward `limit`, same as a single course group —
   // shown first since a diagnostic is chronologically the learner's very first result.
@@ -188,6 +194,7 @@ export default function ReportsOverview({ limit, hubId, staffLearnerId, learner:
           <div key={group.courseId} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ margin: "0 0 2px", fontSize: 12.5, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>{group.courseName}</p>
             {group.sessionReports.map((report) => <ReportRow key={report.id} report={report} navigate={navigate} primary={false} />)}
+            {group.moduleReports.map((report) => <ReportRow key={report.id} report={report} navigate={navigate} primary={false} />)}
             {group.finalReport && <ReportRow report={group.finalReport} navigate={navigate} primary />}
           </div>
         ))}

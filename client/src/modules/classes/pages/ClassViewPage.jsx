@@ -13,6 +13,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { classApi } from "../services/classApi";
 import PromotionPanel from "../components/PromotionPanel";
 import ClassCompletionPanel from "../components/ClassCompletionPanel";
+import ClassReportsPanel from "../components/ClassReportsPanel";
 import { formatClassName } from "../utils/classDisplay";
 import RecordStamp from "../../activity/components/RecordStamp";
 import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
@@ -336,6 +337,11 @@ export default function ClassViewPage() {
       {/* The class's ranking this term (modules/rankings). */}
       <div style={{ marginBottom: 16 }}>
         <ClassRankingPanel classId={cls.id} />
+      </div>
+
+      {/* Learner reports & certificates (19 Nov 2026) — the educator's Reports cards, for admins and hubs. */}
+      <div style={{ marginBottom: 16 }}>
+        <ClassReportsPanel cls={cls} courses={classCourses || []} />
       </div>
 
       {/* Year-completion checklist — the four close-out metrics that gate promotion */}

@@ -4,6 +4,7 @@ const {
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassDateWindow,
+  getClassPeriods,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,
@@ -31,6 +32,7 @@ router.get("/teachers/availability-conflicts", authorize("admin", "school"), get
 // timetable explain non-schedulable dates without needing access to the admin-only
 // /api/bootcamps or /api/competitions routes. Read-only, same role split as course-schedule above.
 router.get("/classes/:classId/date-window", authorize("admin", "school", "teacher"), getClassDateWindow);
+router.get("/classes/:classId/periods", authorize("admin", "school", "teacher"), getClassPeriods);
 
 // Resolved calendar (real dates, Sessions placed onto them) — read-only, same role split as
 // their slot-list equivalents below.

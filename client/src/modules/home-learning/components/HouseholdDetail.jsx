@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   FiAlertTriangle, FiBookOpen, FiGlobe, FiCalendar, FiEdit2, FiFileText, FiFlag, FiKey, FiMail, FiMapPin, FiPackage, FiPhone,
-  FiUser, FiUserPlus, FiUsers, FiX,
+  FiHome, FiUser, FiUserPlus, FiUsers, FiX,
 } from "react-icons/fi";
 import HomeLocation from "./HomeLocation";
 import { EnrollmentFields, HouseholdFields } from "./HouseholdFields";
@@ -13,6 +13,8 @@ import {
 } from "./ui";
 import { outlookLine, periodHow, pricePer } from "../../../utils/billingPeriods";
 import { HistoryButton } from "../../activity/components/RecordStamp";
+import { Tabs } from "../../../components/ui/TabBar";
+import { householdFlags, profileParentMismatches } from "./householdFlags";
 
 import { askConfirm } from "../../../components/ui/AskDialog";
 const EMPTY_CHILD = { firstName: "", lastName: "", gender: "", dateOfBirth: "", username: "", password: "", learnerPassword: "", curriculumId: "", gradeId: "", educatorId: "" };
@@ -56,24 +58,9 @@ function ParentPortal({ status, onSetUp }) {
   </div>;
 }
 
-// Children whose profile names a different parent email from the household's — grouped by that
-// parent. Their portal login reaches the child but not this household's invoices.
-function profileParentMismatches(household, children) {
-  const same = (a, b) => (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
-  const byEmail = new Map();
-  for (const item of children) {
-    const learner = item.learner;
-    if (item.status === "removed" || !learner?.guardianEmail || same(learner.guardianEmail, household.guardianEmail)) continue;
-    const key = learner.guardianEmail.trim().toLowerCase();
-    if (!byEmail.has(key)) byEmail.set(key, { name: learner.guardianName, email: learner.guardianEmail, phone: learner.guardianPhone, children: [] });
-    byEmail.get(key).children.push(learner.firstName);
-  }
-  return [...byEmail.values()];
-}
-
 function ParentMismatch({ household, parent, onUse, saving }) {
   const names = parent.children.join(" and ");
-  return <div style={{ margin: "16px 22px 0", padding: "12px 14px", borderRadius: 12, background: "#FFFBEB", border: "1px solid #FDE68A", color: "#78350F", fontSize: 13, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+  return <div style={{ padding: "12px 14px", borderRadius: 12, background: "#FFFBEB", border: "1px solid #FDE68A", color: "#78350F", fontSize: 13, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
     <FiAlertTriangle style={{ flexShrink: 0 }} />
     <div style={{ flex: "1 1 320px" }}>
       <strong>{names}'s profile lists a different parent:</strong> {parent.name || "Unnamed"} · {parent.email}{parent.phone ? ` · ${parent.phone}` : ""}.{" "}
@@ -98,9 +85,10 @@ function PlacesBar({ filled, total }) {
 
 function BillingTile({ household, canBill, onInvoice, invoicing }) {
   const [dueDate, setDueDate] = useState("");
+  // The Billing tab has the room: start with a year of invoices, the rest behind "Show more".
   const [showAll, setShowAll] = useState(false);
   const billing = household.billing || { outstanding: 0, overdue: false, invoices: [] };
-  const invoices = showAll ? billing.invoices : billing.invoices.slice(0, 3);
+  const invoices = showAll ? billing.invoices : billing.invoices.slice(0, 12);
   return <Tile icon={FiFileText} title="Billing" action={billing.overdue && <Pill tone={{ color: "#B91C1C", background: "#FEF2F2" }}><FiAlertTriangle /> Overdue</Pill>}>
     <div>
       <div style={{ fontSize: 12, color: "#6B7280" }}>Outstanding</div>
@@ -113,7 +101,7 @@ function BillingTile({ household, canBill, onInvoice, invoicing }) {
           <span>{invoice.periodLabel?.replace("Home Learning · ", "") || invoice.invoiceNumber}</span>
           <span>{formatMoney(invoice.total)} · <strong style={{ color: INVOICE_STATUS_COLORS[invoice.status] || "#6B7280", textTransform: "capitalize" }}>{invoice.status.replace("_", " ")}</strong></span>
         </Link>)}
-        {billing.invoices.length > 3 && <button type="button" onClick={() => setShowAll((v) => !v)} style={{ ...secondaryButton, border: 0, padding: 0, background: "none", color: "#25476a" }}>{showAll ? "Show fewer" : `Show ${billing.invoices.length - 3} more`}</button>}
+        {billing.invoices.length > 12 && <button type="button" onClick={() => setShowAll((v) => !v)} style={{ ...secondaryButton, border: 0, padding: 0, background: "none", color: "#25476a" }}>{showAll ? "Show fewer" : `Show ${billing.invoices.length - 12} more`}</button>}
       </div>}
     {billing.outlook && <span style={{ ...mutedText, fontSize: 12 }}>{outlookLine(billing.outlook)}</span>}
     {/* Invoices go out on their own; this raises the next one early (not for a daily package,
@@ -174,7 +162,7 @@ function ChildCard({ household, item, curricula, educators, onSave, onRemove, sa
           {unplaced
             ? <button type="button" onClick={() => startEdit("active")} style={{ ...secondaryButton, borderColor: "#B45309", color: "#B45309" }}><FiBookOpen /> Place child</button>
             : <button type="button" onClick={() => startEdit(item.status)} style={secondaryButton}><FiEdit2 /> Edit</button>}
-          {hasClass && <Link to={`/home-learning/timetable?class=${item.classId}`} style={{ ...secondaryButton, textDecoration: "none", ...(item.slotCount ? {} : { borderColor: "#B45309", color: "#B45309" }) }}><FiCalendar /> Timetable</Link>}
+          {hasClass && <Link to={`/home-learning/timetable?class=${item.classId}&household=${household.id}`} style={{ ...secondaryButton, textDecoration: "none", ...(item.slotCount ? {} : { borderColor: "#B45309", color: "#B45309" }) }}><FiCalendar /> Timetable</Link>}
           <button type="button" onClick={() => onRemove({ householdId: household.id, learnerId: item.learnerId, name })} style={{ ...secondaryButton, color: "#B91C1C" }}>Remove</button>
         </>}
     </div>}
@@ -256,7 +244,7 @@ const PAYMENT_METHODS = [["cash", "Cash"], ["mpesa_manual", "M-Pesa"], ["bank_tr
 
 // A family who signed up on the website: their logins stay locked until you approve their payment
 // (recorded against the sign-up invoice), or you decline the sign-up.
-function SignupBanner({ household, children, canApprove, canDecline, actions, pending }) {
+function SignupBanner({ household, children, canApprove, canDecline, actions, pending, onDeclined }) {
   const invoice = (household.billing?.invoices || []).find((inv) => inv.id === household.signupInvoiceId);
   const due = invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amountPaid || 0)) : Number(household.amount);
   const [approving, setApproving] = useState(false);
@@ -264,7 +252,7 @@ function SignupBanner({ household, children, canApprove, canDecline, actions, pe
   const unplacedCount = children.filter((item) => !item.curriculumId && item.status !== "removed").length;
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
 
-  return <div style={{ margin: "16px 22px 0", padding: "14px 16px", borderRadius: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1E3A8A", fontSize: 13 }}>
+  return <div style={{ padding: "14px 16px", borderRadius: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#1E3A8A", fontSize: 13 }}>
     <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
       <FiGlobe style={{ flexShrink: 0 }} />
       <div style={{ flex: "1 1 320px" }}>
@@ -275,7 +263,7 @@ function SignupBanner({ household, children, canApprove, canDecline, actions, pe
       {!approving && <div style={{ display: "flex", gap: 8 }}>
         {canApprove && <button type="button" onClick={() => setApproving(true)} style={{ ...primaryButton, padding: "8px 14px", fontSize: 13 }}>Approve payment</button>}
         {canDecline && <button type="button" disabled={pending.declining} onClick={async () => {
-          if (await askConfirm({ title: "Decline this sign-up?", message: "Its invoice is cancelled and the family's accounts are removed (they can sign up again later).", confirmLabel: "Decline sign-up", tone: "danger" })) actions.declineSignup(household.id);
+          if (await askConfirm({ title: "Decline this sign-up?", message: "Its invoice is cancelled and the family's accounts are removed (they can sign up again later).", confirmLabel: "Decline sign-up", tone: "danger" })) actions.declineSignup(household.id, onDeclined);
         }} style={{ ...secondaryButton, color: "#B91C1C" }}>{pending.declining ? "Declining…" : "Decline"}</button>}
       </div>}
     </div>
@@ -294,21 +282,36 @@ function SignupBanner({ household, children, canApprove, canDecline, actions, pe
   </div>;
 }
 
-export default function HouseholdCard({ household, focused, cardRef, packages, curricula, educators, availableLearners, canBill, canApprove, canDecline, actions, pending, prefillLearnerId }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(null);
+const sectionGrid = (min) => ({ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(min(${min}px,100%),1fr))`, gap: 14 });
+
+function ChildrenTab({ household, children, activeCount, remaining, curricula, educators, availableLearners, actions, pending, prefillLearnerId }) {
   // A household just created from an existing learner opens with that learner ready to assign.
   const [adding, setAdding] = useState(Boolean(prefillLearnerId));
-  const children = household.learners || [];
-  const activeCount = children.filter((item) => item.status === "active").length;
-  const remaining = Math.max(0, Number(household.childCount) - activeCount);
-  const status = HOUSEHOLD_STATUS[household.status] || HOUSEHOLD_STATUS.pending;
-  const address = [household.addressLine, household.town, household.subCounty, household.county].filter(Boolean).join(", ");
+  return <section style={{ ...panelStyle, display: "grid", gap: 14 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ flex: "1 1 260px", maxWidth: 420 }}><PlacesBar filled={activeCount} total={Number(household.childCount)} /></div>
+      {remaining > 0 && !adding && <button type="button" onClick={() => setAdding(true)} style={{ ...secondaryButton, borderColor: "#2E7DB5", color: "#2E7DB5", padding: "8px 12px", fontSize: 13 }}><FiUserPlus /> Add a child</button>}
+      {remaining === 0 && <span style={{ ...mutedText, fontSize: 12 }}>All places filled — change the package to add more children.</span>}
+    </div>
+    {adding && remaining > 0 && <AddChildPanel household={household} availableLearners={availableLearners} curricula={curricula} educators={educators} actions={actions} pending={pending} onClose={() => setAdding(false)} initialLearnerId={prefillLearnerId} />}
+    {children.length === 0 && !adding && <div style={{ ...mutedText, textAlign: "center", padding: 18, border: "1px dashed #D1D5DB", borderRadius: 12 }}>No children in this household yet.</div>}
+    {children.length > 0 && <div style={sectionGrid(300)}>
+      {children.map((item) => <ChildCard key={item.id} household={household} item={item} curricula={curricula} educators={educators} onSave={actions.saveEnrollment} onRemove={actions.removeLearner} saving={pending.enrolling} canAddActive={remaining > 0} />)}
+    </div>}
+  </section>;
+}
 
-  const startEdit = () => {
-    setDraft({ ...household, billingPeriod: household.billingPeriod, startDate: toDateInput(household.startDate), locationPhotos: household.locationPhotos || [], portalPassword: "" });
-    setEditing(true);
-  };
+const draftFrom = (household) => ({ ...household, billingPeriod: household.billingPeriod, startDate: toDateInput(household.startDate), locationPhotos: household.locationPhotos || [], portalPassword: "" });
+
+function DetailsTab({ household, packages, actions, pending, editing, setEditing }) {
+  // The form opens from here or from the header's "Edit details" — either way it starts from the
+  // household as it is now.
+  const [draft, setDraft] = useState(() => (editing ? draftFrom(household) : null));
+  const open = editing && draft;
+  const startEdit = () => { setDraft(draftFrom(household)); setEditing(true); };
+  if (editing && !draft) setDraft(draftFrom(household));
+  const close = () => { setEditing(false); setDraft(null); };
+  const address = [household.addressLine, household.town, household.subCounty, household.county].filter(Boolean).join(", ");
   const saveDetails = (event) => {
     event.preventDefault();
     // Only send the package when it actually changed — re-sending it re-prices the household at
@@ -329,48 +332,24 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
       locationPhotos: draft.locationPhotos || [],
       notes: draft.notes || "",
       ...(draft.portalPassword ? { portalPassword: draft.portalPassword } : {}),
-    }, () => setEditing(false));
+    }, close);
   };
 
-  return <article ref={cardRef} style={{ ...panelStyle, padding: 0, overflow: "hidden", ...(focused ? { borderColor: "#2E7DB5", boxShadow: "0 0 0 3px rgba(46,125,181,.18)" } : {}) }}>
-    <header style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "16px 22px", background: "#F8FAFC", borderBottom: "1px solid #EEF1F5", borderLeft: `4px solid ${status.color}` }}>
-      <Initials name={household.guardianName} size={46} />
-      <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <h3 style={{ margin: 0, fontSize: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>{household.guardianName} <HistoryButton type="home_learning_households" id={household.id} label={household.guardianName} iconOnly /></h3>
-          <Pill tone={status}>{status.label}</Pill>
-          {household.source === "website" && <Pill tone={{ color: "#1D4ED8", background: "#EFF6FF" }}><FiGlobe /> Website sign-up</Pill>}
-        </div>
-        <div style={{ ...mutedText, marginTop: 3 }}>
-          {household.package?.name || "No package"} · {children.length === 0 ? "No children yet" : `${activeCount} ${activeCount === 1 ? "child" : "children"} learning`}
-        </div>
-      </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(household.amount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/{pricePer(0, household.billingPeriod).split("/")[1]}</span></div>
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <select aria-label="Household status" value={household.status} onChange={(event) => actions.updateHousehold(household.id, { status: event.target.value })} style={{ ...inputStyle, width: "auto", padding: "7px 10px", fontSize: 13 }}>
-          <option value="pending">Pending</option><option value="active">Active</option><option value="paused">Paused</option><option value="cancelled">Cancelled</option>
-        </select>
-        <button type="button" onClick={editing ? () => setEditing(false) : startEdit} style={{ ...secondaryButton, padding: "8px 12px", fontSize: 13 }}>{editing ? <><FiX /> Close</> : <><FiEdit2 /> Edit details</>}</button>
-      </div>
-    </header>
-
-    {household.source === "website" && household.status === "pending" && <SignupBanner household={household} children={children} canApprove={canApprove} canDecline={canDecline} actions={actions} pending={pending} />}
-
-    {profileParentMismatches(household, children).map((parent) => <ParentMismatch key={parent.email} household={household} parent={parent} saving={pending.updating}
-      onUse={(p) => actions.updateHousehold(household.id, { guardianName: p.name || household.guardianName, guardianEmail: p.email, guardianPhone: p.phone || household.guardianPhone })} />)}
-
-    {editing && <form onSubmit={saveDetails} style={{ ...formGrid(200), padding: "18px 22px", borderBottom: "1px solid #EEF1F5", background: "#FCFDFE" }}>
+  if (open) {
+    return <form onSubmit={saveDetails} style={{ ...panelStyle, ...formGrid(200) }}>
+      <h3 style={{ gridColumn: "1/-1", margin: 0, fontSize: 16 }}>Edit household details</h3>
       <HouseholdFields values={draft} setValue={(key, value) => setDraft((current) => ({ ...current, [key]: value }))} packages={packages} currentPackageId={household.packageId} />
       <div style={{ gridColumn: "1/-1", display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <button type="button" onClick={() => setEditing(false)} style={{ ...secondaryButton, padding: "10px 14px", fontSize: 13 }}>Cancel</button>
+        <button type="button" onClick={close} style={{ ...secondaryButton, padding: "10px 14px", fontSize: 13 }}>Cancel</button>
         <button disabled={pending.updating} style={primaryButton}>{pending.updating ? "Saving…" : "Save household details"}</button>
       </div>
-    </form>}
+    </form>;
+  }
 
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14, padding: "18px 22px" }}>
-      <Tile icon={FiPhone} title="Contact">
+  return <section style={{ ...panelStyle, display: "grid", gap: 14 }}>
+    <div style={sectionGrid(250)}>
+      <Tile icon={FiPhone} title="Contact" action={<button type="button" onClick={startEdit} style={{ ...secondaryButton, padding: "4px 8px", fontSize: 11 }}><FiEdit2 /> Edit</button>}>
+        <IconLine icon={FiUser}>{household.guardianName}</IconLine>
         <IconLine icon={FiPhone}><a href={`tel:${household.guardianPhone}`} style={linkText}>{household.guardianPhone}</a></IconLine>
         <IconLine icon={FiMail}>{household.guardianEmail ? <a href={`mailto:${household.guardianEmail}`} style={linkText}>{household.guardianEmail}</a> : <span style={mutedText}>No email — add one to give the guardian portal access</span>}</IconLine>
         <IconLine icon={FiCalendar}>{household.startDate ? `Started ${formatDate(household.startDate)}` : <span style={mutedText}>Start date not set</span>}</IconLine>
@@ -388,25 +367,71 @@ export default function HouseholdCard({ household, focused, cardRef, packages, c
       <Tile icon={FiPackage} title="Package">
         <div style={{ fontWeight: 700, fontSize: 14 }}>{household.package?.name || "No package"}{household.package?.status === "archived" && <span style={{ ...mutedText, fontWeight: 500, fontSize: 12 }}> (archived)</span>}</div>
         <div style={mutedText}>{pricePer(household.amount, household.billingPeriod)} — {periodHow(household.billingPeriod).replace(" Can't be offered on the website.", "")}</div>
-        <PlacesBar filled={activeCount} total={Number(household.childCount)} />
+        <PlacesBar filled={(household.learners || []).filter((item) => item.status === "active").length} total={Number(household.childCount)} />
       </Tile>
-
-      <BillingTile household={household} canBill={canBill} onInvoice={actions.invoice} invoicing={pending.invoicing} />
     </div>
+    {household.notes
+      ? <div style={{ padding: "10px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 13, color: "#78350F", whiteSpace: "pre-wrap" }}><strong>Notes: </strong>{household.notes}</div>
+      : <span style={{ ...mutedText, fontSize: 12 }}>No notes. Use Edit to add any.</span>}
+  </section>;
+}
 
-    {household.notes && <div style={{ margin: "-4px 22px 16px", padding: "10px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, fontSize: 13, color: "#78350F", whiteSpace: "pre-wrap" }}><strong>Notes: </strong>{household.notes}</div>}
+// One family: header (who, status, price), anything waiting on you, then tabs — Children,
+// Billing, Family details. `tab`/`onTab` live in the page's address so a link can open a tab.
+export default function HouseholdDetail({ household, packages, curricula, educators, availableLearners, canBill, canApprove, canDecline, actions, pending, prefillLearnerId, tab, onTab, onDeclined }) {
+  const [editing, setEditing] = useState(false);
+  const children = household.learners || [];
+  const activeCount = children.filter((item) => item.status === "active").length;
+  const remaining = Math.max(0, Number(household.childCount) - activeCount);
+  const status = HOUSEHOLD_STATUS[household.status] || HOUSEHOLD_STATUS.pending;
+  const flags = householdFlags(household);
+  const mismatches = profileParentMismatches(household);
+  const unpaid = (household.billing?.invoices || []).filter((inv) => ["issued", "partially_paid", "overdue"].includes(inv.status)).length;
+  const portalNeedsWork = ["missing", "no_email", "conflict"].includes(household.parentPortal);
 
-    <section style={{ padding: "0 22px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}><FiUsers style={{ color: "#25476a" }} /> Children <span style={{ ...mutedText, fontWeight: 500 }}>· {activeCount} of {household.childCount} places filled</span></h4>
-        {remaining > 0 && !adding && <button type="button" onClick={() => setAdding(true)} style={{ ...secondaryButton, borderColor: "#2E7DB5", color: "#2E7DB5", padding: "8px 12px", fontSize: 13 }}><FiUserPlus /> Add a child</button>}
-        {remaining === 0 && <span style={{ ...mutedText, fontSize: 12 }}>All places filled — change the package to add more children.</span>}
+  const tabs = [
+    { key: "children", label: "Children", icon: FiUsers, count: children.filter((item) => item.status !== "removed").length, alert: flags.place + flags.timetable > 0 },
+    { key: "billing", label: "Billing", icon: FiFileText, count: unpaid || null, alert: !!household.billing?.overdue },
+    { key: "details", label: "Family details", icon: FiHome, ...(portalNeedsWork ? { count: 1, alert: true } : {}) },
+  ];
+
+  return <div style={{ display: "grid", gridTemplateColumns: "100%", gap: 16 }}>
+    {/* On a phone the tabs wrap rather than hide the last one off the edge. */}
+    <style>{".hl-tabs .ui-tab-scroll { flex-wrap: wrap; }"}</style>
+    <header style={{ ...panelStyle, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", borderLeft: `5px solid ${status.color}` }}>
+      <Initials name={household.guardianName} size={56} />
+      <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 8 }}>{household.guardianName} <HistoryButton type="home_learning_households" id={household.id} label={household.guardianName} iconOnly /></h1>
+          <Pill tone={status}>{status.label}</Pill>
+          {household.source === "website" && <Pill tone={{ color: "#1D4ED8", background: "#EFF6FF" }}><FiGlobe /> Website sign-up</Pill>}
+        </div>
+        <div style={{ ...mutedText, marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span>{household.package?.name || "No package"}</span><span aria-hidden>·</span>
+          <span>{activeCount === 0 ? "No children learning yet" : `${activeCount} ${activeCount === 1 ? "child" : "children"} learning`}</span>
+          {household.guardianPhone && <><span aria-hidden>·</span><a href={`tel:${household.guardianPhone}`} style={linkText}>{household.guardianPhone}</a></>}
+        </div>
       </div>
-      {children.length === 0 && !adding && <div style={{ ...mutedText, textAlign: "center", padding: 18, border: "1px dashed #D1D5DB", borderRadius: 12 }}>No children in this household yet.</div>}
-      {children.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>
-        {children.map((item) => <ChildCard key={item.id} household={household} item={item} curricula={curricula} educators={educators} onSave={actions.saveEnrollment} onRemove={actions.removeLearner} saving={pending.enrolling} canAddActive={remaining > 0} />)}
-      </div>}
-      {adding && remaining > 0 && <AddChildPanel household={household} availableLearners={availableLearners} curricula={curricula} educators={educators} actions={actions} pending={pending} onClose={() => setAdding(false)} initialLearnerId={prefillLearnerId} />}
-    </section>
-  </article>;
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#25476a" }}>{formatMoney(household.amount)}<span style={{ fontSize: 12, fontWeight: 500, color: "#6B7280" }}>/{pricePer(0, household.billingPeriod).split("/")[1]}</span></div>
+        {Number(household.billing?.outstanding) > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: household.billing.overdue ? "#B91C1C" : "#B45309" }}>{formatMoney(household.billing.outstanding)} owed{household.billing.overdue ? " · overdue" : ""}</div>}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <select aria-label="Household status" value={household.status} onChange={(event) => actions.updateHousehold(household.id, { status: event.target.value })} style={{ ...inputStyle, width: "auto", padding: "7px 10px", fontSize: 13 }}>
+          <option value="pending">Pending</option><option value="active">Active</option><option value="paused">Paused</option><option value="cancelled">Cancelled</option>
+        </select>
+        <button type="button" onClick={() => { onTab("details"); setEditing(true); }} style={{ ...secondaryButton, padding: "8px 12px", fontSize: 13 }}><FiEdit2 /> Edit details</button>
+      </div>
+    </header>
+
+    {household.source === "website" && household.status === "pending" && <SignupBanner household={household} children={children} canApprove={canApprove} canDecline={canDecline} actions={actions} pending={pending} onDeclined={onDeclined} />}
+    {mismatches.map((parent) => <ParentMismatch key={parent.email} household={household} parent={parent} saving={pending.updating}
+      onUse={(p) => actions.updateHousehold(household.id, { guardianName: p.name || household.guardianName, guardianEmail: p.email, guardianPhone: p.phone || household.guardianPhone })} />)}
+
+    <div className="hl-tabs"><Tabs label="Household sections" tabs={tabs} value={tab} onChange={onTab} /></div>
+
+    {tab === "children" && <ChildrenTab household={household} children={children} activeCount={activeCount} remaining={remaining} curricula={curricula} educators={educators} availableLearners={availableLearners} actions={actions} pending={pending} prefillLearnerId={prefillLearnerId} />}
+    {tab === "billing" && <div style={{ maxWidth: 720 }}><BillingTile household={household} canBill={canBill} onInvoice={actions.invoice} invoicing={pending.invoicing} /></div>}
+    {tab === "details" && <DetailsTab household={household} packages={packages} actions={actions} pending={pending} editing={editing} setEditing={setEditing} />}
+  </div>;
 }

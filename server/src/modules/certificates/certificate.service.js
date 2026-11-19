@@ -5,6 +5,7 @@ const CertificateSettingsModel = require("./certificate-settings.model");
 const ReportModel = require("../reports/report.model");
 const LearnerModel = require("../learners/learner.model");
 const CourseModel = require("../courses/course.model");
+const ModuleModel = require("../courses/module.model");
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
@@ -24,6 +25,7 @@ function fail(statusCode, message) {
 
 // What makes a certificate unique for a learner — see the migration.
 const courseKey = (courseId, classId) => `course:${courseId}:${classId}`;
+const moduleKey = (moduleId, classId) => `module:${moduleId}:${classId}`;
 const pathwayKey = (pathwayId) => `pathway:${pathwayId}`;
 const bootcampKey = (bootcampId, classId) => `bootcamp:${bootcampId}:${classId}`;
 
@@ -94,8 +96,11 @@ async function issueOrReinstate({ learnerId, identityKey, kind, subjectId, cours
   return insertCertificate({ learnerId, identityKey, kind, subjectId, courseId, classId, hubId, ownerAdminId, reportId, issuedAt, issuedBy, snapshot });
 }
 
-// A final course report is the one with no sessionId — session reports never earn a certificate.
-const isPublishedFinalReport = (report) => Boolean(report) && !report.sessionId && report.status === "published";
+// A final course report has neither a sessionId nor a moduleId; a module report (19 Nov 2026) has
+// a moduleId. Session reports never earn a certificate.
+const isPublishedFinalReport = (report) => ReportModel.isFinalCourseReport(report) && report.status === "published";
+const isPublishedModuleReport = (report) => ReportModel.isModuleReport(report) && report.status === "published";
+
 
 const CertificateService = {
   // ---- Course certificates --------------------------------------------------------------------
@@ -108,6 +113,7 @@ const CertificateService = {
   // after the fact — see ensureForReports — so nobody is emailed about a course they finished
   // long ago. A reinstatement never notifies: they were told the first time.
   async issueForReport(report, { issuedBy = null, notify = true } = {}) {
+    if (isPublishedModuleReport(report)) return CertificateService.issueForModuleReport(report, { issuedBy, notify });
     if (!isPublishedFinalReport(report)) return null;
     const [course, cls] = await Promise.all([CourseModel.findById(report.courseId), ClassModel.findById(report.classId)]);
     const { hubId, hubName, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
@@ -140,6 +146,12 @@ const CertificateService = {
   // pathway or bootcamp certificate that rested on it.
   async revokeForReport(report) {
     if (!report || report.sessionId) return null;
+    if (report.moduleId) {
+      // A module report withdrawn — its module certificate goes with it (nothing rests on one).
+      const held = await CertificateModel.findByIdentity(report.learnerId, moduleKey(report.moduleId, report.classId));
+      if (!held || held.status === "revoked") return held;
+      return CertificateModel.update(held.id, { status: "revoked", revokedAt: new Date(), revokeReason: null });
+    }
     const existing = await CertificateModel.findByIdentity(report.learnerId, courseKey(report.courseId, report.classId));
     if (!existing || existing.status === "revoked") return existing;
     const revoked = await CertificateModel.update(existing.id, { status: "revoked", revokedAt: new Date(), revokeReason: null });
@@ -172,20 +184,53 @@ const CertificateService = {
   // certificates are read (no cron, the same lazy pattern as ensureSessionReportsGenerated) and
   // never notifies: the certificate is dated to when the report was published.
   async ensureForReports(filter) {
-    const reports = (await ReportModel.findAll({ ...filter, status: "published" })).filter(isPublishedFinalReport);
+    const published = await ReportModel.findAll({ ...filter, status: "published" });
+    const reports = published.filter((r) => isPublishedFinalReport(r) || isPublishedModuleReport(r));
     if (reports.length === 0) return;
-    const existing = await CertificateModel.findAll({ ...filter, kind: "course" });
+    const existing = await CertificateModel.findAll({ ...filter });
     const have = new Set(existing.map((c) => c.identityKey + c.learnerId));
     // Oldest first, so certificate numbers run in the order the courses were completed.
     reports.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0));
     for (const report of reports) {
-      const key = courseKey(report.courseId, report.classId);
+      const key = report.moduleId ? moduleKey(report.moduleId, report.classId) : courseKey(report.courseId, report.classId);
       if (have.has(key + report.learnerId)) continue;
       // Belt and braces: this only ever creates. A certificate that already exists — above all
       // one a member of staff revoked by hand — is never brought back by a read.
       if (await CertificateModel.findByIdentity(report.learnerId, key)) continue;
       await CertificateService.issueForReportSafely(report, { notify: false });
     }
+  },
+
+  // ---- Module certificates (19 Nov 2026) ------------------------------------------------------
+  //
+  // Every module earns its own certificate ("Intro to Python" in the Python course): it follows the
+  // module's combined report exactly as a course certificate follows the final report — issued
+  // automatically when the educator publishes the module report, revoked when it's withdrawn,
+  // reinstated (same number) on re-publish.
+  async issueForModuleReport(report, { issuedBy = null, notify = true } = {}) {
+    const courseModule = await ModuleModel.findById(report.moduleId);
+    if (!courseModule) return null;
+    const [course, cls] = await Promise.all([CourseModel.findById(report.courseId), ClassModel.findById(report.classId)]);
+    const { hubId, hubName, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
+    // Names as the report froze them, else the live records.
+    const moduleName = report.content?.moduleName || courseModule.name;
+    const courseName = report.content?.courseName || course?.name || null;
+    const { certificate, isNew } = await issueOrReinstate({
+      learnerId: report.learnerId,
+      identityKey: moduleKey(report.moduleId, report.classId),
+      kind: "module",
+      subjectId: report.moduleId,
+      courseId: report.courseId,
+      classId: report.classId,
+      hubId,
+      ownerAdminId,
+      reportId: report.id,
+      issuedAt: report.publishedAt || new Date(),
+      issuedBy: issuedBy || report.publishedBy || null,
+      snapshot: { learnerName: await learnerName(report.learnerId), title: moduleName, moduleName, courseName, hubName, signatory: await currentSignatory(ownerAdminId) },
+    });
+    if (isNew && notify) await NotificationService.certificateIssued(certificate);
+    return certificate;
   },
 
   // ---- Pathway and bootcamp certificates ------------------------------------------------------
@@ -227,7 +272,7 @@ const CertificateService = {
       // First, everything they already hold: a pathway or bootcamp certificate stands for as long
       // as the course certificates it was earned on do — whichever class or curriculum it came
       // from, not only the one that triggered this.
-      for (const held of mine.filter((c) => c.kind !== "course" && c.status === "issued")) {
+      for (const held of mine.filter((c) => (c.kind === "pathway" || c.kind === "bootcamp") && c.status === "issued")) {
         const basis = held.kind === "bootcamp" ? standingCourses.filter((c) => c.classId === held.classId) : standingCourses;
         const stillHeld = new Set(basis.map((c) => c.courseId));
         if ((held.snapshot?.courseIds || []).some((courseId) => !stillHeld.has(courseId))) {
@@ -366,6 +411,7 @@ const CertificateService = {
     // Keyed by course: a learner in two classes that run the same course sees it once, at
     // whichever class they're furthest along in — and not at all once they hold its certificate.
     const courses = new Map();
+    const modules = new Map();
     const pathways = new Map();
     for (const link of links) {
       const cls = await ClassModel.findById(link.classId);
@@ -380,6 +426,18 @@ const CertificateService = {
         const entry = { kind: "course", id: course.id, classId: cls.id, title: course.name, hubName, done: progress.doneSessions, total: progress.totalSessions };
         const seen = courses.get(course.id);
         if (!seen || entry.done / entry.total > seen.done / seen.total) courses.set(course.id, entry);
+
+        // Its modules with their own certificate (19 Nov 2026) that they don't hold yet.
+        const { modules: reportable } = await ReportService.reportableModules(course.id);
+        if (reportable.length) {
+          const mp = await ReportService.getModulesProgress(cls.id, course.id, reportable.map((m) => m.id), [learnerId]);
+          for (const m of reportable) {
+            if (heldKeys.has(moduleKey(m.id, cls.id))) continue;
+            const p = mp.get(m.id).get(learnerId);
+            if (!p?.total) continue;
+            modules.set(`${m.id}:${cls.id}`, { kind: "module", id: m.id, classId: cls.id, title: m.name, partOf: course.name, hubName, done: p.done, total: p.total });
+          }
+        }
       }
 
       for (const pathway of cls.curriculumId ? await PathwayModel.findByCurriculumId(cls.curriculumId) : []) {
@@ -394,7 +452,7 @@ const CertificateService = {
     }
     // Closest to finished first — the one worth chasing sits at the top.
     const byNearest = (a, b) => b.done / b.total - a.done / a.total || a.title.localeCompare(b.title);
-    return { courses: [...courses.values()].sort(byNearest), pathways: [...pathways.values()].sort(byNearest) };
+    return { courses: [...courses.values()].sort(byNearest), modules: [...modules.values()].sort(byNearest), pathways: [...pathways.values()].sort(byNearest) };
   },
 
   // ---- Staff actions --------------------------------------------------------------------------
@@ -422,6 +480,9 @@ const CertificateService = {
     if (certificate.kind === "course") {
       const report = await ReportModel.findOne({ learnerId: certificate.learnerId, courseId: certificate.courseId, classId: certificate.classId });
       if (!isPublishedFinalReport(report)) fail(409, "Publish this learner's final course report first — the certificate follows the report.");
+    } else if (certificate.kind === "module") {
+      const report = await ReportModel.findOne({ learnerId: certificate.learnerId, courseId: certificate.courseId, classId: certificate.classId, moduleId: certificate.subjectId });
+      if (!isPublishedModuleReport(report)) fail(409, "Publish this learner's module report first — the certificate follows the report.");
     } else {
       const standing = new Set(
         (await CertificateModel.findAll({ learnerId: certificate.learnerId, kind: "course", status: "issued" })).map((c) => c.courseId)
@@ -458,6 +519,8 @@ const CertificateService = {
       status: certificate.status,
       learnerName: certificate.snapshot?.learnerName || null,
       title: certificate.snapshot?.title || certificate.snapshot?.courseName || null,
+      // A module certificate also names the course the module is part of.
+      courseName: certificate.kind === "module" ? certificate.snapshot?.courseName || null : null,
       hubName: certificate.snapshot?.hubName || null,
       issuedAt: certificate.issuedAt,
       revokedAt: certificate.status === "revoked" ? certificate.revokedAt : null,

@@ -55,9 +55,11 @@ export default function ReportDetailPage() {
 
   const content = report.content || {};
 
+  // A module's combined report (19 Nov 2026): no session, a moduleId.
+  const isModule = !report.sessionId && Boolean(report.moduleId);
   const reportLabel = report.sessionId
     ? content.sessionName || "Session"
-    : content.courseName || course?.name || "Course";
+    : isModule ? content.moduleName || "Module" : content.courseName || course?.name || "Course";
   const learnerLast = (learner?.lastName || "learner").replace(/\s+/g, "-");
   const filename = `${learnerLast}-${reportLabel.replace(/[^a-z0-9]+/gi, "-")}-report.pdf`.toLowerCase();
   const gradeName = selectedHub?.class?.gradeName || cls?.gradeName || null;
@@ -107,13 +109,13 @@ export default function ReportDetailPage() {
           <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
           <div style={{ position: "relative" }}>
             <p style={{ margin: "0 0 4px", fontSize: 11.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9BD7F2" }}>
-              {report.sessionId ? "Session report" : "Course report"}{viewOnly && learner?.firstName ? ` · ${learner.firstName}` : ""}
+              {report.sessionId ? "Session report" : isModule ? "Module report" : "Course report"}{viewOnly && learner?.firstName ? ` · ${learner.firstName}` : ""}
             </p>
             <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: "#fff" }}>
-              {report.sessionId ? content.sessionName || "Session" : content.courseName || course?.name || "Course"}
+              {reportLabel}
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
-              {[report.sessionId ? content.courseName || course?.name : null, report.publishedAt ? `Published ${new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" })}` : null].filter(Boolean).join(" · ")}
+              {[report.sessionId || isModule ? content.courseName || course?.name : null, report.publishedAt ? `Published ${new Date(report.publishedAt).toLocaleDateString("en-KE", { dateStyle: "medium" })}` : null].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>

@@ -118,7 +118,7 @@ async function getAssessments(scope) {
 
   // ---- Reports and certificates ----------------------------------------------------------------
   const reports = await inChunks([...scope.learnerIds], (ids) => {
-    const q = db("reports").whereIn("learnerId", ids).whereIn("hubId", scope.hubIds).select("id", "sessionId", "status", "publishedAt", "classId", "courseId");
+    const q = db("reports").whereIn("learnerId", ids).whereIn("hubId", scope.hubIds).select("id", "sessionId", "moduleId", "status", "publishedAt", "classId", "courseId");
     if (scope.filters.courseId) q.where({ courseId: scope.filters.courseId });
     return q;
   });
@@ -132,9 +132,13 @@ async function getAssessments(scope) {
   });
   const reportStats = {
     sessionReportsPublished: rs.filter((r) => r.sessionId && r.status === "published" && inRange(r.publishedAt, period.start, period.end)).length,
-    courseReportsPublished: rs.filter((r) => !r.sessionId && r.status === "published" && inRange(r.publishedAt, period.start, period.end)).length,
-    courseReportsDraft: rs.filter((r) => !r.sessionId && r.status === "draft").length,
-    certificatesIssued: certificates.filter((c) => !scope.narrowedByClass || !c.classId || scope.classById.has(c.classId)).length,
+    courseReportsPublished: rs.filter((r) => !r.sessionId && !r.moduleId && r.status === "published" && inRange(r.publishedAt, period.start, period.end)).length,
+    courseReportsDraft: rs.filter((r) => !r.sessionId && !r.moduleId && r.status === "draft").length,
+    // Module reports and certificates (19 Nov 2026) counted on their own, so the course figures
+    // keep meaning "courses finished".
+    moduleReportsPublished: rs.filter((r) => !r.sessionId && r.moduleId && r.status === "published" && inRange(r.publishedAt, period.start, period.end)).length,
+    certificatesIssued: certificates.filter((c) => c.kind !== "module" && (!scope.narrowedByClass || !c.classId || scope.classById.has(c.classId))).length,
+    moduleCertificatesIssued: certificates.filter((c) => c.kind === "module" && (!scope.narrowedByClass || !c.classId || scope.classById.has(c.classId))).length,
   };
 
   // ---- How each assessment went: score spread, and the questions most learners got wrong --------

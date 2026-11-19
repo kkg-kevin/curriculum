@@ -35,7 +35,9 @@ export default function AssessmentsTab({ data, links, isHub }) {
             <Stat icon={FiFileText} label="Session reports out" value={fmtNum(r.sessionReportsPublished)} />
             <Stat icon={FiBookOpen} label="Course reports published" value={fmtNum(r.courseReportsPublished)} tone="mid" />
             <Stat icon={FiEdit3} label="Course reports in draft" value={fmtNum(r.courseReportsDraft)} sub="ready to publish" tone="gold" />
-            <Stat icon={FiAward} label="Certificates issued" value={fmtNum(r.certificatesIssued)} tone="sky" />
+            <Stat icon={FiAward} label="Certificates issued" value={fmtNum(r.certificatesIssued)} sub="courses, pathways, bootcamps" tone="sky" />
+            <Stat icon={FiBookOpen} label="Module reports published" value={fmtNum(r.moduleReportsPublished)} tone="mid" />
+            <Stat icon={FiAward} label="Module certificates issued" value={fmtNum(r.moduleCertificatesIssued)} tone="sky" />
           </div>
         </Card>
       </div>

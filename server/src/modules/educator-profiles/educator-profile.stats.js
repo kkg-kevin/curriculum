@@ -56,7 +56,7 @@ async function standardMeasures({ teacherId, links, sessionKeys, attendance, sin
       const primaries = pairLinks.filter((p) => `${p.classId}|${p.courseId}` === key && p.isPrimary);
       return primaries.length ? primaries.some((p) => p.teacherId === teacherId) : true;
     }));
-    const reports = await db("reports").whereNull("sessionId").where({ status: "published" }).whereIn("classId", classIds)
+    const reports = await db("reports").whereNull("sessionId").whereNull("moduleId").where({ status: "published" }).whereIn("classId", classIds)
       .whereBetween("publishedAt", [new Date(`${addDays(today, -425)}T00:00:00Z`), new Date(`${addDays(today, -60)}T23:59:59Z`)])
       .select("learnerId", "classId", "courseId");
     const finished = uniq(reports.filter((r) => ownPairs.has(`${r.classId}|${r.courseId}`)).map((r) => r.learnerId));
@@ -194,7 +194,7 @@ async function computeStats(teacherId) {
     const c = credited.find((x) => x.classId === classId && x.courseId === courseId);
     const u = untimed.find((x) => x.classId === classId);
     const learners = Number((await db("learner_hub_links").where({ classId, status: "active" }).count({ n: "*" }).first())?.n || 0);
-    const finished = (await db("reports").where({ classId, courseId, status: "published" }).whereNull("sessionId").distinct("learnerId")).length;
+    const finished = (await db("reports").where({ classId, courseId, status: "published" }).whereNull("sessionId").whereNull("moduleId").distinct("learnerId")).length;
     const certificates = Number((await db("certificates").where({ classId, courseId, kind: "course", status: "issued" }).count({ n: "*" }).first())?.n || 0);
     const hub = hubById.get(cls.schoolId);
     coursesTaught.push({
@@ -252,7 +252,7 @@ async function computeStats(teacherId) {
 
   // Training of trainers.
   const trainee = await db("learners").where({ teacherId }).first("id");
-  const totCertificates = trainee ? Number((await db("certificates").where({ learnerId: trainee.id, status: "issued" }).count({ n: "*" }).first())?.n || 0) : 0;
+  const totCertificates = trainee ? Number((await db("certificates").where({ learnerId: trainee.id, status: "issued" }).whereNot({ kind: "module" }).count({ n: "*" }).first())?.n || 0) : 0;
 
   const availability = await db("teacher_availability_slots").where({ teacherId }).select("dayOfWeek", "startTime", "endTime");
 

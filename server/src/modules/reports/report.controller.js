@@ -5,7 +5,7 @@ const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
-const { generateReportSchema, updateRemarksSchema } = require("./report.validation");
+const { generateReportSchema, updateRemarksSchema, fileNotSubmittedSchema, bulkReportsSchema } = require("./report.validation");
 
 async function isOwnHubForAdmin(req, hubId) {
   if (!hubId) return false;
@@ -103,6 +103,25 @@ const generateReport = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: report });
 });
 
+// Files every session of a course (or one module) this learner never handed work in for as "not
+// submitted" — so they can still finish and get the report and certificate. 19 Nov 2026.
+const fileNotSubmitted = asyncHandler(async (req, res) => {
+  const data = fileNotSubmittedSchema.parse(req.body);
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const result = await ReportService.fileNotSubmittedForLearner({ ...data, actorId: req.ownTeacher?.id || req.user.id });
+  res.json({ success: true, data: result });
+});
+
+// Generate every ready learner's report, or publish every draft, for a class's course or one module.
+const bulkReports = asyncHandler(async (req, res) => {
+  const data = bulkReportsSchema.parse(req.body);
+  const cls = await ClassModel.findById(data.classId);
+  await assertClassAccess(req, cls);
+  const result = await ReportService.bulkReports({ ...data, moduleId: data.moduleId || null, actorId: req.ownTeacher?.id || req.user.id });
+  res.json({ success: true, data: result });
+});
+
 const listReportsForClassCourse = asyncHandler(async (req, res) => {
   const { classId, courseId } = req.query;
   if (!classId) {
@@ -195,6 +214,8 @@ module.exports = {
   getHubAnalytics,
   getPlatformAnalytics,
   generateReport,
+  fileNotSubmitted,
+  bulkReports,
   listReportsForClassCourse,
   listReportsForLearner,
   listReportsForLearnerAsStaff,

@@ -32,6 +32,16 @@ export function useClassDateWindow(classId) {
   });
 }
 
+// The class's dated run as the server's calendar engine sees it (19 Nov 2026) — a hub login can't
+// read Academic Years, so the Timetable page's start-date checks come from here.
+export function useClassPeriods(classId) {
+  return useQuery({
+    queryKey: ["timetable", "class-periods", classId],
+    queryFn:  () => timetableApi.getClassPeriods(classId),
+    enabled:  !!classId,
+  });
+}
+
 export function useCreateSlot(classId) {
   const qc = useQueryClient();
   return useMutation({
@@ -107,28 +117,8 @@ export function useSetCourseSchedule(classId) {
       qc.invalidateQueries({ queryKey: ["timetable", "calendar", "class", classId] });
       toast.success("Start date saved");
     },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save start date"),
-  });
-}
-
-// Same batching idea as useCreateSlotsBulk, for the start-date anchor — setting a course's start
-// date for a class that has no matching slots yet is harmless (TimetableService.resolveCalendar
-// just skips it until slots exist), so this doesn't need to validate anything per-class first.
-export function useSetCourseScheduleBulk() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payloads) => Promise.allSettled(payloads.map((p) => timetableApi.setCourseSchedule(p))),
-    onSuccess: (results) => {
-      qc.invalidateQueries({ queryKey: ["timetable"] });
-      const succeeded = results.filter((r) => r.status === "fulfilled").length;
-      const failed = results.length - succeeded;
-      if (failed === 0) {
-        toast.success(results.length > 1 ? `Start date set for ${results.length} classes` : "Start date saved");
-      } else {
-        toast.error(`Saved for ${succeeded} of ${results.length} classes — ${failed} failed`);
-      }
-    },
-    onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to save start date"),
+    // HAS_HELD_SESSIONS is a question for the page (move it anyway?), not a failure to shout about.
+    onError: (err) => { if (err.response?.data?.code !== "HAS_HELD_SESSIONS") toast.error(err.response?.data?.message || err.message || "Failed to save start date"); },
   });
 }
 
@@ -195,8 +185,8 @@ export function useSessionStatusBulk(occurrences, enabled = true) {
 
 // A single skip can ripple into the teacher/learner/hub merged calendars in ways the client
 // can't enumerate ahead of time — invalidating the whole ["timetable"] root (TanStack Query
-// matches by prefix) is the same broad-invalidation approach useCreateSlotsBulk/
-// useSetCourseScheduleBulk above already use for exactly this class of problem.
+// matches by prefix) is the same broad-invalidation approach useCreateSlotsBulk above already
+// uses for exactly this class of problem.
 export function useCreateSkip() {
   const qc = useQueryClient();
   return useMutation({

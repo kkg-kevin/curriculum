@@ -15,6 +15,8 @@ export const timetableApi = {
   // school-portal timetable explain non-schedulable dates without needing access to the
   // admin-only /api/bootcamps or /api/competitions routes.
   getClassDateWindow: (classId) => api.get(`${BASE}/classes/${classId}/date-window`).then((r) => r.data.data),
+  // The class's dated run (terms + breaks, or a programme's dates) — what a start date must fall in.
+  getClassPeriods:    (classId) => api.get(`${BASE}/classes/${classId}/periods`).then((r) => r.data.data),
 
   // Full response body ({data: events, breaks, count}), not just r.data.data — callers need the
   // sibling `breaks` array (curriculum break windows overlapping the range) alongside events.

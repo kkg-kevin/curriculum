@@ -106,10 +106,11 @@ export default function CertificatesListPage({ backTo = "/reports" }) {
           </button>
           <h1 style={{ margin: "10px 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Certificates</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 640 }}>
-            Every certificate of completion issued here. A course certificate is issued when a learner's final course report is published; pathway and bootcamp certificates follow once all of their courses are complete.
+            Every certificate of completion issued here. A course certificate is issued when a learner's final course report is published; pathway and bootcamp certificates follow once all of their courses are complete. A module that awards one is issued when that module's report is published.
           </p>
         </div>
       </div>
+
 
       <div style={{ ...cardStyle, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 220px", minWidth: 200 }}>
@@ -180,7 +181,7 @@ export default function CertificatesListPage({ backTo = "/reports" }) {
                       <td style={td}>{c.learnerName}</td>
                       <td style={td}>
                         {c.title}
-                        <span style={{ display: "block", fontSize: 11.5, color: T.inkFaint, marginTop: 2 }}>{c.kindLabel}</span>
+                        <span style={{ display: "block", fontSize: 11.5, color: T.inkFaint, marginTop: 2 }}>{c.kindLabel}{c.partOf ? ` · ${c.partOf}` : ""}</span>
                       </td>
                       <td style={td}>{c.hubName || "—"}</td>
                       <td style={{ ...td, whiteSpace: "nowrap" }}>{formatCertificateDate(c.issuedAt)}</td>
@@ -190,7 +191,7 @@ export default function CertificatesListPage({ backTo = "/reports" }) {
                         </span>
                         {revoked && (
                           <span style={{ display: "block", fontSize: 11.5, color: T.inkMuted, marginTop: 5, maxWidth: 220 }}>
-                            {c.revokeReason || (c.kind === "course" ? "Its final report was withdrawn." : "A course certificate it was earned on was revoked.")}
+                            {c.revokeReason || (c.kind === "course" ? "Its final report was withdrawn." : c.kind === "module" ? "Its module report was withdrawn." : "A course certificate it was earned on was revoked.")}
                           </span>
                         )}
                       </td>

@@ -237,10 +237,14 @@ const NotificationService = {
   // certificate, so a report withdrawn and published again doesn't announce it twice.
   async certificateIssued(certificate) {
     const title = certificate.snapshot?.title || certificate.snapshot?.courseName;
+    // A module certificate (19 Nov 2026) names the module and the course it is part of.
+    const what = certificate.kind === "module" && title
+      ? ` for completing the module "${title}"${certificate.snapshot?.courseName ? ` in ${certificate.snapshot.courseName}` : ""}`
+      : title ? ` for completing "${title}"` : "";
     await NotificationService.notifyLearner(certificate.learnerId, {
       type: "certificate_issued",
       title: "Certificate earned",
-      message: `You've earned a certificate${title ? ` for completing "${title}"` : ""}.`,
+      message: `You've earned a certificate${what}.`,
       payload: { certificateId: certificate.id, learnerId: certificate.learnerId },
       dedupeKey: `certificate:${certificate.id}`,
     });

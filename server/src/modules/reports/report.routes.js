@@ -11,6 +11,8 @@ const {
   updateRemarks,
   publishReport,
   unpublishReport,
+  fileNotSubmitted,
+  bulkReports,
 } = require("./report.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
@@ -25,6 +27,11 @@ router.get("/hub-analytics", authorize("admin", "school"), getHubAnalytics);
 // Platform-wide rollup across every hub, for the admin portal's own Reports page — admin only,
 // same "/:id" ordering requirement as hub-analytics above.
 router.get("/platform-analytics", authorize("admin"), getPlatformAnalytics);
+// A learner who never handed work in (19 Nov 2026): file every such session of a course or one
+// module as not submitted, so its report — and certificate — can still go out. Above "/:id".
+router.post("/not-submitted", authorize("admin", "school", "teacher"), fileNotSubmitted);
+// Whole class: generate every ready learner's report, or publish every draft (course or module).
+router.post("/bulk", authorize("admin", "school", "teacher"), bulkReports);
 router.post("/", authorize("admin", "school", "teacher"), generateReport);
 router.get("/", authorize("admin", "school", "teacher"), listReportsForClassCourse);
 router.patch("/:id", authorize("admin", "school", "teacher"), updateRemarks);

@@ -88,6 +88,7 @@ export default function CertificateDocument({ certificate, id }) {
         <p style={{ margin: "10px 0 0", fontSize: 30, lineHeight: 1.2, fontWeight: 700, color: INK, maxWidth: 860, overflowWrap: "anywhere" }}>
           {c.title}
         </p>
+        {c.partOf && <p style={{ margin: "8px 0 0", fontSize: 17, color: INK_MUTED }}>part of the course <strong style={{ color: INK }}>{c.partOf}</strong></p>}
         {c.hubName && <p style={{ margin: "12px 0 0", fontSize: 16, color: INK_MUTED }}>at {c.hubName}</p>}
 
         {/* foot: date · signatory · number and verification */}

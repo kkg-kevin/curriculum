@@ -64,6 +64,15 @@ const EMAIL_TYPES = {
     look: { tone: "info", icon: "pencil", eyebrow: "Session report" },
     path: (p) => (p.reportId ? `/learner-portal/reports/${p.reportId}${p.learnerId ? `?child=${p.learnerId}` : ""}` : "/learner-portal/reports"),
   },
+  // A learner finished a course or module (19 Nov 2026) — their report can be generated, which
+  // issues the certificate. Bell only by default: a class finishing at once would be a lot of mail.
+  report_ready: {
+    label: "A learner's report is ready to generate",
+    roles: ["teacher"],
+    default: false,
+    look: { tone: "info", icon: "document", eyebrow: "Reports" },
+    path: (p) => (typeof p.route === "string" && p.route.startsWith("/") ? p.route : "/teacher-portal/reports"),
+  },
   certificate_issued: {
     label: "A certificate is earned",
     roles: LEARNER_ROLES,

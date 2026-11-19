@@ -20,7 +20,7 @@ const latest = (dates) => dates.filter(Boolean).map((d) => new Date(d)).sort((a,
 async function pastProgrammes(learnerId, hubIds = null) {
   const [links, reports, certificates, marked, moves] = await Promise.all([
     db("learner_hub_links").where({ learnerId }).select("classId", "status"),
-    db("reports").where({ learnerId, status: "published" }).whereNotNull("classId").select("id", "classId", "courseId", "sessionId", "publishedAt"),
+    db("reports").where({ learnerId, status: "published" }).whereNotNull("classId").select("id", "classId", "courseId", "sessionId", "moduleId", "publishedAt"),
     db("certificates").where({ learnerId, status: "issued" }).whereNotNull("classId").select("id", "classId", "courseId", "kind", "certificateNumber", "snapshot", "issuedAt"),
     db("assessment_submissions").where({ learnerId, status: "graded" }).whereNotNull("classId").select("classId"),
     db("learner_transfers").where({ learnerId }).whereNotNull("fromClassId").orderBy("createdAt", "desc").select("fromClassId", "toLabel", "createdAt"),
@@ -54,7 +54,7 @@ async function pastProgrammes(learnerId, hubIds = null) {
     const classReports = mine(reports);
     const classCertificates = mine(certificates);
     const move = moves.find((m) => m.fromClassId === cls.id) || null;
-    const courseReports = classReports.filter((r) => !r.sessionId)
+    const courseReports = classReports.filter((r) => !r.sessionId && !r.moduleId)
       .map((r) => ({ id: r.id, courseName: courseName.get(r.courseId) || "Course", publishedAt: r.publishedAt }))
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     const certs = classCertificates.map((c) => {
@@ -70,6 +70,7 @@ async function pastProgrammes(learnerId, hubIds = null) {
       movedTo: move?.toLabel || null,
       lastActivityAt: latest([move?.createdAt, ...classReports.map((r) => r.publishedAt), ...classCertificates.map((c) => c.issuedAt)]),
       sessionReports: classReports.filter((r) => r.sessionId).length,
+      moduleReports: classReports.filter((r) => !r.sessionId && r.moduleId).length,
       markedWork: mine(marked).length,
       courseReports,
       certificates: certs,

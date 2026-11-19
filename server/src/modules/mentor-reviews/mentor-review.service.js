@@ -65,7 +65,7 @@ async function mentorsForLearner(learner, settingsCache = new Map()) {
       const teacher = await db("teachers").where({ id: t.teacherId }).first("id", "firstName", "lastName", "photo", "status");
       const course = await db("courses").where({ id: t.courseId }).first("id", "name");
       if (!teacher || !course || ["inactive", "removed"].includes(teacher.status)) continue;
-      const finalReport = await db("reports").where({ learnerId: learner.id, classId: cls.id, courseId: course.id, status: "published" }).whereNull("sessionId").first("id");
+      const finalReport = await db("reports").where({ learnerId: learner.id, classId: cls.id, courseId: course.id, status: "published" }).whereNull("sessionId").whereNull("moduleId").first("id");
       const stage = finalReport ? "end" : "mid";
       const eligible = stage === "end" || attended >= settings.minSessions;
       const review = await db("mentor_reviews").where({ learnerId: learner.id, teacherId: teacher.id, courseId: course.id, stage }).first();

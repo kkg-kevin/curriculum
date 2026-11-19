@@ -1,6 +1,6 @@
 // What each kind of certificate is called, on the sheet and in lists.
-export const KIND_LABELS = { course: "Course", pathway: "Pathway", bootcamp: "Bootcamp" };
-const KIND_NOUN = { course: "the course", pathway: "the pathway", bootcamp: "the bootcamp" };
+export const KIND_LABELS = { course: "Course", module: "Module", pathway: "Pathway", bootcamp: "Bootcamp" };
+const KIND_NOUN = { course: "the course", module: "the module", pathway: "the pathway", bootcamp: "the bootcamp" };
 
 // A certificate arrives in two shapes: the full record (signed-in reads — names under
 // `snapshot`) and the narrow public one (verification link, shared profile — names at the top
@@ -18,6 +18,8 @@ export function certificateFields(certificate) {
     status: certificate?.status || "issued",
     learnerName: certificate?.learnerName || s.learnerName || "",
     title: certificate?.title || s.title || s.courseName || "",
+    // A module certificate (19 Nov 2026) also names the course the module is part of.
+    partOf: kind === "module" ? certificate?.courseName || s.courseName || "" : "",
     hubName: certificate?.hubName || s.hubName || "",
     issuedAt: certificate?.issuedAt || null,
     revokeReason: certificate?.revokeReason || null,

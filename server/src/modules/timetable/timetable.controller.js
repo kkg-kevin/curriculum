@@ -130,11 +130,17 @@ const listCourseSchedules = asyncHandler(async (req, res) => {
 });
 
 const setCourseSchedule = asyncHandler(async (req, res) => {
-  const { classId, courseId, startDate } = setCourseScheduleSchema.parse(req.body);
+  const { classId, courseId, startDate, confirmMove } = setCourseScheduleSchema.parse(req.body);
   const cls = await ClassModel.findById(classId);
   await assertClassAccess(req, cls);
-  const schedule = await TimetableService.setCourseSchedule(classId, courseId, startDate);
-  res.json({ success: true, data: schedule });
+  try {
+    const schedule = await TimetableService.setCourseSchedule(classId, courseId, startDate, { confirmMove: Boolean(confirmMove) });
+    res.json({ success: true, data: schedule });
+  } catch (err) {
+    // The page acts on these codes (ask to confirm a move, show the class's run).
+    if (err.code) return res.status(err.statusCode || 409).json({ success: false, message: err.message, code: err.code, heldCount: err.heldCount, periods: err.periods });
+    throw err;
+  }
 });
 
 // A class's bootcamp/competition run-window, when it belongs to one — same class-ownership
@@ -148,6 +154,14 @@ const getClassDateWindow = asyncHandler(async (req, res) => {
   const window = (await BootcampHubService.getDateWindowForClass(req.params.classId))
     || (await CompetitionHubService.getDateWindowForClass(req.params.classId));
   res.json({ success: true, data: window });
+});
+
+// The class's dated run (terms + breaks, or a bootcamp/competition's dates) — what a start date
+// must fall inside. Readable by anyone who can reach the class (19 Nov 2026).
+const getClassPeriods = asyncHandler(async (req, res) => {
+  const cls = await ClassModel.findById(req.params.classId);
+  await assertClassAccess(req, cls);
+  res.json({ success: true, data: await TimetableService.getPeriodsForClass(req.params.classId) });
 });
 
 const getClassCalendar = asyncHandler(async (req, res) => {
@@ -335,6 +349,7 @@ module.exports = {
   getMyTeacherTimetable, getMyLearnerTimetable,
   listCourseSchedules, setCourseSchedule,
   getClassDateWindow,
+  getClassPeriods,
   getClassCalendar, getMyTeacherCalendar, getMyLearnerCalendar, getHubCalendar,
   getSessionSummary, getSessionStatusBulk,
   createSkip, deleteSkip, listSkips,

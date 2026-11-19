@@ -368,7 +368,7 @@ function LeadRow({ lead, highlighted, rowRef }) {
             <Link to={`/tech-clubs?membership=${lead.clubMembershipId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open membership</Link>
           )}
           {lead.interestedIn === "home_schooling" && (lead.homeLearningHouseholdId ? (
-            <Link to={`/home-learning?household=${lead.homeLearningHouseholdId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open household</Link>
+            <Link to={`/home-learning/${lead.homeLearningHouseholdId}`} style={{ fontSize: 11, fontWeight: 700, color: "#25476a", whiteSpace: "nowrap" }}>Open household</Link>
           ) : (
             <button type="button" onClick={() => convertHomeLearning.mutate(lead.id)} disabled={convertHomeLearning.isPending} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #2E7DB5", background: "#fff", color: "#2E7DB5", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
               {convertHomeLearning.isPending ? "Creating…" : "Create household"}

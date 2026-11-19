@@ -9,6 +9,9 @@ const {
 const TABLE = "reports";
 const JSON_FIELDS = ["content"];
 
+// Module reports (19 Nov 2026): moduleId set (sessionId null) = one module's combined report; the
+// final course report is the one with BOTH null. Helpers below: isFinalCourseReport / isModuleReport.
+//
 // One record per (learner, course, class, sessionId) — a point-in-time snapshot of that learner's
 // graded assessments, plus their indicator breakdown and any remarks. sessionId is null for a
 // course-level "final" report (combines every session) and a real id for a single session's own
@@ -35,10 +38,11 @@ const ReportModel = {
     return query.orderBy("updatedAt", "desc");
   },
 
-  // classId is required — see the identity note above. sessionId defaults to null (the course-
-  // level final report); pass a session's id to look up that session's own report instead.
-  findOne({ learnerId, courseId, classId, sessionId = null }) {
-    return firstOrNull(db(TABLE).where({ learnerId, courseId, classId, sessionId }));
+  // classId is required — see the identity note above. sessionId and moduleId default to null
+  // (the course-level final report); pass a session's id for that session's own report, or a
+  // module's id for that module's report (19 Nov 2026 — never both).
+  findOne({ learnerId, courseId, classId, sessionId = null, moduleId = null }) {
+    return firstOrNull(db(TABLE).where({ learnerId, courseId, classId, sessionId, moduleId }));
   },
 
   findById(id) {
@@ -60,5 +64,9 @@ const ReportModel = {
     return db(TABLE).where({ learnerId }).del();
   },
 };
+
+// Which kind a report row is (19 Nov 2026) — use these rather than testing sessionId alone.
+ReportModel.isFinalCourseReport = (report) => Boolean(report) && !report.sessionId && !report.moduleId;
+ReportModel.isModuleReport = (report) => Boolean(report) && !report.sessionId && Boolean(report.moduleId);
 
 module.exports = ReportModel;

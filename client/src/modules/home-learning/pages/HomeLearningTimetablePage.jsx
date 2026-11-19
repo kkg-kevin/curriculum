@@ -10,6 +10,8 @@ import TimetablePage from "../../school-portal/pages/TimetablePage";
 export default function HomeLearningTimetablePage() {
   const [searchParams] = useSearchParams();
   const classId = searchParams.get("class") || "";
+  // Opened from a family's page: Back returns to that family's Children tab.
+  const householdId = searchParams.get("household");
   const { data: hub, isLoading, isError } = useQuery({ queryKey: ["home-learning", "hub"], queryFn: homeLearningApi.getHub });
   // The household cards show each child's lesson count — refresh them when leaving this screen.
   const queryClient = useQueryClient();
@@ -17,8 +19,8 @@ export default function HomeLearningTimetablePage() {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <Link to="/home-learning" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none", width: "fit-content" }}>
-        <FiArrowLeft /> Back to Home Learning
+      <Link to={householdId ? `/home-learning/${householdId}` : "/home-learning"} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#25476a", fontSize: 13, fontWeight: 700, textDecoration: "none", width: "fit-content" }}>
+        <FiArrowLeft /> {householdId ? "Back to the family" : "Back to Home Learning"}
       </Link>
       {isLoading
         ? <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>

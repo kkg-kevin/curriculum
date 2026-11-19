@@ -14,7 +14,7 @@ const settingsSchema = z.object({
 
 const listSchema = z.object({
   hubId:  z.string().optional(),
-  kind:   z.enum(["course", "pathway", "bootcamp"]).optional(),
+  kind:   z.enum(["course", "module", "pathway", "bootcamp"]).optional(),
   status: z.enum(["issued", "revoked"]).optional(),
   q:      z.string().trim().max(100).optional(),
 });

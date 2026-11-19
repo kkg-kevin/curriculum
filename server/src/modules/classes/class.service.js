@@ -316,8 +316,9 @@ const ClassService = {
         pendingCount: unresolved.needsGrading.length,
       },
       reports: {
-        done: gradingTotal > 0 && unresolved.needsGrading.length === 0 && unresolved.notSubmitted.length === 0,
-        pendingCount: unresolved.notSubmitted.length,
+        // Work not handed in yet but still open (not due) counts as pending too (19 Nov 2026).
+        done: gradingTotal > 0 && unresolved.needsGrading.length === 0 && unresolved.notSubmitted.length === 0 && !(unresolved.stillOpen > 0),
+        pendingCount: unresolved.notSubmitted.length + (unresolved.stillOpen || 0),
       },
     };
 

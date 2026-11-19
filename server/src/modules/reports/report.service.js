@@ -4,6 +4,7 @@ const { getSessionAssessmentIds } = require("../courses/sessionAssessment.utils"
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const CourseModel = require("../courses/course.model");
+const ModuleModel = require("../courses/module.model");
 const LearnerModel = require("../learners/learner.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const AssessmentModel = require("../assessments/assessment.model");
@@ -81,10 +82,22 @@ async function getCourseAssessmentCounts(courseId) {
 
 // Same "still exists" filter as getCourseAssessmentCounts, scoped to one session's own attached
 // assessments — the unit a session report is built from.
+// The answer barely ever changes (an assessment deleted), but one Reports page asks it for every
+// learner × session × check — so it's kept for a few seconds (19 Nov 2026: ~1,200 queries for a
+// 6-learner class without it).
+const requiredIdsCache = new Map();
+const REQUIRED_IDS_TTL_MS = 10 * 1000;
 async function getSessionRequiredAssessmentIds(session) {
   const ids = getSessionAssessmentIds(session);
+  if (!ids.length) return ids;
+  const key = ids.join(",");
+  const hit = requiredIdsCache.get(key);
+  if (hit && Date.now() - hit.at < REQUIRED_IDS_TTL_MS) return hit.ids;
   const found = await Promise.all(ids.map((id) => AssessmentModel.findById(id)));
-  return ids.filter((id, i) => !!found[i]);
+  const result = ids.filter((id, i) => !!found[i]);
+  if (requiredIdsCache.size > 5000) requiredIdsCache.clear();
+  requiredIdsCache.set(key, { at: Date.now(), ids: result });
+  return result;
 }
 
 // Which work counts is one rule for every report (assessments/submissions/counted-work.js): its
@@ -100,10 +113,29 @@ function getPublishedGraded(learnerId) {
 // A session's required assessments for one learner: those revoked for them alone are no longer
 // asked of them (their session and course can still finish).
 // Nor are those the class issued to chosen learners only, without them (6 Nov 2026).
+// A class's revocations and chosen-learner issues, held for a few seconds (19 Nov 2026): a Reports
+// page asks for them per learner × session × check. Short enough that a change shows almost at once.
+const CLASS_LOOKUP_TTL_MS = 5 * 1000;
+const classLookupCache = new Map();
+async function classLookup(kind, classId, load) {
+  const key = `${kind}:${classId}`;
+  const hit = classLookupCache.get(key);
+  if (hit && Date.now() - hit.at < CLASS_LOOKUP_TTL_MS) return hit.value;
+  const value = await load();
+  if (classLookupCache.size > 2000) classLookupCache.clear();
+  classLookupCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
 async function getLearnerRequiredAssessmentIds(session, learnerId, classId) {
   const ids = await getSessionRequiredAssessmentIds(session);
   if (!ids.length || !learnerId) return ids;
-  const revoked = await AssessmentRevocationModel.revokedAssessmentIds(learnerId, classId, session.id);
+  const revocations = classId
+    ? await classLookup("revocations", classId, () => db("assessment_revocations").where({ classId }).select("learnerId", "sessionId", "assessmentId"))
+    : null;
+  const revoked = revocations
+    ? new Set(revocations.filter((r) => r.learnerId === learnerId && r.sessionId === session.id).map((r) => r.assessmentId))
+    : await AssessmentRevocationModel.revokedAssessmentIds(learnerId, classId, session.id);
   const notTheirs = await notIssuedToThem(learnerId, classId, session.id);
   return revoked.size || notTheirs.size ? ids.filter((id) => !revoked.has(id) && !notTheirs.has(id)) : ids;
 }
@@ -112,18 +144,20 @@ async function getLearnerRequiredAssessmentIds(session, learnerId, classId) {
 // session, or (no sessionId) anywhere in the class.
 async function notIssuedToThem(learnerId, classId, sessionId = null) {
   if (!classId || !learnerId) return new Set();
-  const q = db("assessment_issues").where({ classId }).whereNotNull("forLearnerIds").select("assessmentId", "forLearnerIds");
-  if (sessionId) q.where({ sessionId });
-  const rows = await q;
+  const all = await classLookup("chosen-issues", classId, () => db("assessment_issues").where({ classId }).whereNotNull("forLearnerIds").select("assessmentId", "forLearnerIds", "sessionId"));
+  const rows = sessionId ? all.filter((r) => r.sessionId === sessionId) : all;
   return new Set(rows.filter((r) => !AssessmentIssueModel.isForLearner(r, learnerId)).map((r) => r.assessmentId));
 }
 
-async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null) {
+async function buildReportContent(learnerId, requiredAssessmentIds, curriculumId, courseId, sessionId = null, scopeSessionIds = null) {
   // The work that counts (counted-work.js — a reissued assessment's latest released attempt), from
-  // this session only, or for a course report from the course's sessions.
+  // this session only, a module report's sessions (scopeSessionIds), or for a course report from
+  // the course's sessions.
   const sessionIds = sessionId
     ? new Set([sessionId])
-    : new Set((await SessionModel.findByCourseId(courseId)).map((s) => s.id));
+    : scopeSessionIds
+      ? new Set(scopeSessionIds)
+      : new Set((await SessionModel.findByCourseId(courseId)).map((s) => s.id));
   const { counted } = await CountedWork.sortLearnerWork(learnerId, { published: true });
   // One piece of work per assessment (the same assessment issued twice in a course — the latest marked).
   const latestByAssessment = new Map();
@@ -276,8 +310,22 @@ async function generateSessionReport({ learnerId, session, classId, curriculumId
     return null;
   }
 
+  // The marked work behind this report (19 Nov 2026): when it's the same as when the report was
+  // last built, there's nothing new — skip the rebuild (a Reports page load runs this for every
+  // learner × session). Marking a piece changes the key, so a new mark always rebuilds.
+  const { counted } = await CountedWork.sortLearnerWork(learnerId, { published: true });
+  const inThis = new Set([session.id]);
+  const sourceKey = [
+    requiredIds.join(","),
+    ...counted.filter((e) => requiredIds.includes(e.submission.assessmentId) && CountedWork.inSessions(e, inThis))
+      .map((e) => `${e.submission.id}:${e.submission.gradedAt ? new Date(e.submission.gradedAt).getTime() : ""}:${e.submission.totalScore}:${e.submission.maxScore}`)
+      .sort(),
+  ].join("|");
+  if (existing && existing.content?.sourceKey === sourceKey) return existing;
+
   const content = {
     ...(await buildReportContent(learnerId, requiredIds, curriculumId, session.courseId, session.id)),
+    sourceKey,
     complete,
     pendingCount: requiredIds.length - markedCount,
     // Where the session sits in its course, for the report's "What's next".
@@ -341,19 +389,41 @@ async function ensureSessionReportsGenerated(classId, courseId, learnerIds) {
 //   resolved_no_submit — a not-submitted report already stands for this pair. Counts as done.
 //   nothing_required   — the session attaches no still-existing assessment. Never blocks.
 // Deliberately read-only — it does not itself generate or file anything.
-async function classifySessionWork(learnerId, session, classId) {
+// Per-request memo for the learner-wide lookups classifySessionWork repeats for every session —
+// pass one Map through a whole readiness build (19 Nov 2026), or nothing for a single call.
+async function memo(cache, key, load) {
+  if (!cache) return load();
+  if (!cache.has(key)) cache.set(key, load());
+  return cache.get(key);
+}
+
+// The latest due date among this class's still-open issues of these assessments in this session,
+// for this learner — or null when none is still open. dueDate is stored as text ("YYYY-MM-DD",
+// sometimes with a time after it), so it's compared as text against today in Kenya: work stays
+// open through its due day. No due date counts as not open.
+async function stillOpenUntil(learnerId, classId, sessionId, assessmentIds) {
+  if (!assessmentIds.length) return null;
+  const { todayInKenya } = require("../checkins/checkin.dates");
+  const rows = await db("assessment_issues").where({ classId, sessionId }).whereIn("assessmentId", assessmentIds)
+    .whereNotNull("dueDate").where("dueDate", ">=", todayInKenya()).select("dueDate", "learnerId", "forLearnerIds");
+  const theirs = rows.filter((r) => (!r.learnerId || r.learnerId === learnerId) && AssessmentIssueModel.isForLearner(r, learnerId));
+  if (!theirs.length) return null;
+  return theirs.map((r) => String(r.dueDate).slice(0, 10)).sort().pop();
+}
+
+async function classifySessionWork(learnerId, session, classId, cache = null) {
   const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, classId);
   if (requiredIds.length === 0) return { state: "nothing_required", missingAssessmentIds: [], ungraded: [] };
 
   const existingReport = await ReportModel.findOne({ learnerId, courseId: session.courseId, classId, sessionId: session.id });
   if (existingReport?.content?.notSubmitted) return { state: "resolved_no_submit", missingAssessmentIds: [], ungraded: [] };
 
-  const publishedGradedIds = (await getPublishedGraded(learnerId)).forSession(session.id);
+  const publishedGradedIds = (await memo(cache, `graded:${learnerId}`, () => getPublishedGraded(learnerId))).forSession(session.id);
   // Only live work for this session (counted-work.js): work on an issue revoked for everyone is
   // gone from here, so its session can be filed "not submitted" or the assessment issued again —
   // it never sits as "needs grading" with nothing in any marking queue. Per assessment, the
   // learner's latest attempt.
-  const { live } = await CountedWork.sortLearnerWork(learnerId);
+  const { live } = await memo(cache, `live:${learnerId}`, () => CountedWork.sortLearnerWork(learnerId));
   const sessionIds = new Set([session.id]);
   const subByAssessment = new Map();
   for (const entry of live.filter((e) => CountedWork.inSessions(e, sessionIds))) {
@@ -374,7 +444,13 @@ async function classifySessionWork(learnerId, session, classId) {
   }
 
   if (ungraded.length > 0) return { state: "needs_grading", missingAssessmentIds, ungraded };
-  if (missingAssessmentIds.length > 0) return { state: "not_submitted", missingAssessmentIds, ungraded };
+  if (missingAssessmentIds.length > 0) {
+    // 19 Nov 2026: work not handed in whose due date hasn't passed is "open" — the learner may
+    // still hand it in, so it can't be filed "not submitted" yet.
+    const openUntil = await stillOpenUntil(learnerId, classId, session.id, missingAssessmentIds);
+    if (openUntil) return { state: "open", missingAssessmentIds, ungraded, openUntil };
+    return { state: "not_submitted", missingAssessmentIds, ungraded };
+  }
   return { state: "ready", missingAssessmentIds: [], ungraded: [] };
 }
 
@@ -390,7 +466,13 @@ async function buildCourseReportContent(learnerId, courseId, classId) {
   const requiredPerSession = await Promise.all(allSessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
   const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
 
-  content.sessionReports = await Promise.all(sessions.map(async (s) => {
+  content.sessionReports = await sessionReportsFor(sessions, { learnerId, courseId, classId });
+  return content;
+}
+
+// The session reports a combined (course or module) report lists, one per assessed session.
+function sessionReportsFor(sessions, { learnerId, courseId, classId }) {
+  return Promise.all(sessions.map(async (s) => {
     const report = await ReportModel.findOne({ learnerId, courseId, classId, sessionId: s.id });
     return {
       sessionId: s.id,
@@ -402,8 +484,82 @@ async function buildCourseReportContent(learnerId, courseId, classId) {
       publishedAt: report?.publishedAt || null,
     };
   }));
+}
+
+// ---- Module reports (19 Nov 2026) -------------------------------------------------------------
+// The final combined report, for one module of a course: the module's sessions only. Ready once
+// every one of its sessions with something to assess is done (sessionDone) — the course rule,
+// over the module. Publishing it issues the module's certificate.
+
+// The module's sessions, in order, and the assessments they attach that still exist.
+async function moduleScope(courseId, moduleId) {
+  const sessions = (await SessionModel.findByCourseId(courseId)).filter((s) => s.moduleId === moduleId);
+  const ids = new Set();
+  for (const s of sessions) (await getSessionRequiredAssessmentIds(s)).forEach((id) => ids.add(id));
+  return { sessions, requiredIds: [...ids] };
+}
+
+async function isModuleReadyForLearner(courseId, moduleId, classId, learnerId) {
+  const { sessions } = await moduleScope(courseId, moduleId);
+  const requiredPerSession = await Promise.all(sessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
+  const assessed = sessions.map((s, i) => ({ session: s, requiredIds: requiredPerSession[i] })).filter((x) => x.requiredIds.length > 0);
+  if (assessed.length === 0) return false;
+  const graded = await getPublishedGraded(learnerId);
+  const reports = await Promise.all(assessed.map(({ session }) => ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id })));
+  return assessed.every(({ session, requiredIds }, i) => sessionDone(reports[i], requiredIds, graded.forSession(session.id)));
+}
+
+async function buildModuleReportContent(learnerId, courseId, classId, moduleId) {
+  const courseModule = await ModuleModel.findById(moduleId);
+  const { sessions, requiredIds } = await moduleScope(courseId, moduleId);
+  const cls = await ClassModel.findById(classId);
+  const content = await buildReportContent(learnerId, requiredIds, cls?.curriculumId, courseId, null, sessions.map((s) => s.id));
+  const requiredPerSession = await Promise.all(sessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
+  content.sessionReports = await sessionReportsFor(sessions.filter((s, i) => requiredPerSession[i].length > 0), { learnerId, courseId, classId });
+  // Names frozen like courseName; and the module's place in the course for "What's next".
+  const modules = await ModuleModel.findByCourseId(courseId);
+  const index = modules.findIndex((m) => m.id === moduleId);
+  content.moduleName = courseModule?.name || null;
+  content.moduleNumber = index >= 0 ? index + 1 : null;
+  content.moduleCount = modules.length;
+  content.nextModuleName = index >= 0 ? modules[index + 1]?.name || null : null;
   return content;
 }
+
+// The modules of a course that get their own report and certificate (19 Nov 2026): those with
+// something to assess — and only when there are at least two of them. With one, the course's final
+// report already covers exactly that work, so a module report would just repeat it.
+// Returns { modules, unassessed: [names], coveredByFinal: name | null }.
+async function reportableModules(courseId) {
+  const all = await ModuleModel.findByCourseId(courseId);
+  const assessed = [];
+  const unassessed = [];
+  for (const m of all) ((await moduleScope(courseId, m.id)).requiredIds.length ? assessed : unassessed).push(m);
+  if (assessed.length < 2) return { modules: [], unassessed: unassessed.map((m) => m.name), coveredByFinal: assessed[0]?.name || null };
+  return { modules: assessed, unassessed: unassessed.map((m) => m.name), coveredByFinal: null };
+}
+
+// The class's educators of one course with a teacher login — who hears that a report is ready.
+async function educatorUserIdsFor(classId, courseId) {
+  const teacherIds = await db("class_course_teacher_links").where({ classId, courseId }).distinct("teacherId").pluck("teacherId");
+  if (!teacherIds.length) return [];
+  const teachers = await db("teachers").whereIn("id", teacherIds).select("email", "status");
+  const emails = teachers.filter((t) => !["inactive", "removed"].includes(t.status || "active")).map((t) => (t.email || "").toLowerCase()).filter(Boolean);
+  if (!emails.length) return [];
+  const { rolesOf } = require("../auth/account-roles");
+  const users = await db("users").whereIn(db.raw("LOWER(email)"), emails).whereNull("deactivatedAt").select("id", "role", "extraRoles");
+  return users.filter((u) => rolesOf(u).includes("teacher")).map((u) => u.id);
+}
+
+const assertModuleOfCourse = async (moduleId, courseId) => {
+  const courseModule = await ModuleModel.findById(moduleId);
+  if (!courseModule || courseModule.courseId !== courseId) {
+    const err = new Error("Module not found in this course");
+    err.statusCode = 404;
+    throw err;
+  }
+  return courseModule;
+};
 
 const ReportService = {
   // Same per-learner readiness getReadinessForClassCourse computes, narrowed to a single session
@@ -464,6 +620,13 @@ const ReportService = {
     // session reports (see generateSessionReport's doc comment).
     await ensureSessionReportsGenerated(classId, courseId, learnerIds);
 
+    // Module reports (19 Nov 2026): every module with sessions to assess, each learner's progress
+    // through it and their report for it.
+    const { modules: assessedModules, unassessed, coveredByFinal } = await reportableModules(courseId);
+    // One memo for the whole build — classifySessionWork's learner-wide lookups run once each.
+    const cache = new Map();
+    const moduleProgress = await ReportService.getModulesProgress(classId, courseId, assessedModules.map((m) => m.id), learnerIds);
+
     return Promise.all(learners.map(async (learner) => {
       const graded = await getPublishedGraded(learner.id);
       // What's asked of this learner: the course's required assessments less any revoked for them.
@@ -479,14 +642,24 @@ const ReportService = {
         const sessionRequiredIds = await getLearnerRequiredAssessmentIds(session, learner.id, classId);
         const sessionGraded = graded.forSession(session.id);
         const sessionGradedCount = sessionRequiredIds.filter((id) => sessionGraded.has(id)).length;
+        const sessionReport = await ReportModel.findOne({ learnerId: learner.id, courseId, classId, sessionId: session.id });
+        // What still stands in the way (19 Nov 2026), for the Reports page's "File as not handed
+        // in": "needs_grading" (work handed in, not marked) or "not_submitted" (never handed in).
+        // Worked out only for sessions not already done.
+        const finished = sessionRequiredIds.length === 0 || sessionGradedCount === sessionRequiredIds.length || Boolean(sessionReport?.content?.notSubmitted);
+        const work = finished ? null : await classifySessionWork(learner.id, session, classId, cache);
+        const state = work?.state || null;
         return {
           sessionId: session.id,
+          moduleId: session.moduleId || null,
+          state,
+          openUntil: work?.openUntil || null,
           sessionTitle: session.title || null,
           order: session.order,
           requiredCount: sessionRequiredIds.length,
           gradedCount: sessionGradedCount,
           ready: sessionRequiredIds.length > 0 && sessionGradedCount === sessionRequiredIds.length,
-          report: await ReportModel.findOne({ learnerId: learner.id, courseId, classId, sessionId: session.id }),
+          report: sessionReport,
         };
       }));
       const ready = await isCourseReadyForLearner(courseId, classId, learner.id);
@@ -502,6 +675,15 @@ const ReportService = {
         sessions: sessionRows,
         ready,
         report,
+        modules: await Promise.all(assessedModules.map(async (m) => ({
+          moduleId: m.id,
+          moduleName: m.name,
+          order: m.order,
+          ...moduleProgress.get(m.id).get(learner.id),
+          report: await ReportModel.findOne({ learnerId: learner.id, courseId, classId, moduleId: m.id }),
+        }))),
+        // Why some modules have no report: nothing to assess, or the final report covers the only one.
+        moduleInfo: { unassessed, coveredByFinal },
       };
     }));
   },
@@ -534,6 +716,8 @@ const ReportService = {
         });
       }
     }
+    // The mark may have finished a module or the course (19 Nov 2026) - in the background.
+    setImmediate(() => ReportService.notifyReadyReports(classId, courseId, learnerIds));
   },
 
   // earlierClassIds (17 Nov 2026): classes the learner was in before on the same curriculum + grade
@@ -554,6 +738,33 @@ const ReportService = {
     }));
     const counted = perSession.filter((s) => s.counts);
     return { totalSessions: counted.length, doneSessions: counted.filter((s) => s.done).length };
+  },
+
+  // Module certificates (19 Nov 2026): how far each learner is through each of these modules of a
+  // course, counted the way the course's final report is gated (isCourseReadyForLearner), but over
+  // the module's own sessions only — the sessions with something to assess for them, and how many
+  // are done (sessionDone). A module with nothing to assess is never finished, like a course.
+  // `refresh` first brings their session reports up to date, as the Reports page's readiness does.
+  // Returns Map moduleId → Map learnerId → { total, done, ready }.
+  async getModulesProgress(classId, courseId, moduleIds, learnerIds, { refresh = false } = {}) {
+    if (refresh && learnerIds.length) await ensureSessionReportsGenerated(classId, courseId, learnerIds);
+    const sessions = await SessionModel.findByCourseId(courseId);
+    const out = new Map(moduleIds.map((id) => [id, new Map()]));
+    for (const learnerId of learnerIds) {
+      const graded = await getPublishedGraded(learnerId);
+      const tally = new Map(moduleIds.map((id) => [id, { total: 0, done: 0 }]));
+      for (const session of sessions) {
+        const counts = tally.get(session.moduleId);
+        if (!counts) continue;
+        const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, classId);
+        if (!requiredIds.length) continue;
+        counts.total += 1;
+        const report = await ReportModel.findOne({ learnerId, courseId, classId, sessionId: session.id });
+        if (sessionDone(report, requiredIds, graded.forSession(session.id))) counts.done += 1;
+      }
+      for (const [moduleId, { total, done }] of tally) out.get(moduleId).set(learnerId, { total, done, ready: total > 0 && done === total });
+    }
+    return out;
   },
 
   // Batched sibling of getReadinessForClassCourse — one call covers every course in a class,
@@ -582,13 +793,16 @@ const ReportService = {
 
     const needsGrading = [];
     const notSubmitted = [];
+    let stillOpen = 0;
+    const cache = new Map();
 
     for (const courseId of courseIds) {
       const sessions = await SessionModel.findByCourseId(courseId);
       await ensureSessionReportsGenerated(classId, courseId, learnerIds);
       for (const session of sessions) {
         for (const learnerId of learnerIds) {
-          const { state, missingAssessmentIds, ungraded } = await classifySessionWork(learnerId, session, classId);
+          const { state, missingAssessmentIds, ungraded } = await classifySessionWork(learnerId, session, classId, cache);
+          if (state === "open") { stillOpen += 1; continue; }
           if (state !== "needs_grading" && state !== "not_submitted") continue;
           const base = {
             learnerId,
@@ -603,7 +817,97 @@ const ReportService = {
         }
       }
     }
-    return { classId, curriculumId: cls?.curriculumId || null, needsGrading, notSubmitted };
+    // stillOpen: (learner, session) pairs whose missing work isn't due yet (19 Nov 2026) — can't be filed.
+    return { classId, curriculumId: cls?.curriculumId || null, needsGrading, notSubmitted, stillOpen };
+  },
+
+  // Every session of a course — or of one module (moduleId) — that this learner never handed work
+  // in for, filed "not submitted" in one go (19 Nov 2026, the teacher Reports page's "File as not
+  // handed in"). That's what lets a learner who didn't submit still finish: the course (or module)
+  // becomes ready, its report can go out, and with it the certificate. Sessions with work handed
+  // in but not yet marked are left alone — they still need marking. Returns { filed, needsGrading }.
+  async fileNotSubmittedForLearner({ classId, courseId, learnerId, moduleId = null, actorId }) {
+    if (moduleId) await assertModuleOfCourse(moduleId, courseId);
+    const sessions = (await SessionModel.findByCourseId(courseId)).filter((s) => !moduleId || s.moduleId === moduleId);
+    let filed = 0;
+    let needsGrading = 0;
+    let stillOpen = 0;
+    const cache = new Map();
+    for (const session of sessions) {
+      const { state } = await classifySessionWork(learnerId, session, classId, cache);
+      if (state === "needs_grading") needsGrading += 1;
+      if (state === "open") stillOpen += 1;
+      if (state !== "not_submitted") continue;
+      await ReportService.markSessionNotSubmitted({ classId, courseId, sessionId: session.id, learnerId, actorId, notify: false });
+      filed += 1;
+    }
+    return { filed, needsGrading, stillOpen };
+  },
+
+  // Whole class at once (19 Nov 2026), for a course's final report or one module's:
+  //   generate - a draft for every learner who is ready and has no report yet;
+  //   publish  - every draft (each issues its certificate, as one by one).
+  // Returns { done, skipped } - skipped: learners not ready yet (generate).
+  async bulkReports({ action, classId, courseId, moduleId = null, actorId }) {
+    if (moduleId) await assertModuleOfCourse(moduleId, courseId);
+    const learnerIds = (await LearnerHubLinkModel.findByClassId(classId)).filter((l) => l.status === "active").map((l) => l.learnerId);
+    let done = 0;
+    let skipped = 0;
+    if (action === "generate") {
+      for (const learnerId of learnerIds) {
+        const existing = await ReportModel.findOne({ learnerId, courseId, classId, moduleId });
+        if (existing) continue;
+        const ready = moduleId ? await isModuleReadyForLearner(courseId, moduleId, classId, learnerId) : await isCourseReadyForLearner(courseId, classId, learnerId);
+        if (!ready) { skipped += 1; continue; }
+        await ReportService.generateReport({ learnerId, courseId, classId, moduleId, generatedBy: actorId });
+        done += 1;
+      }
+    } else {
+      const drafts = (await ReportModel.findAll({ classId, courseId, status: "draft" }))
+        .filter((r) => learnerIds.includes(r.learnerId) && (moduleId ? r.moduleId === moduleId && !r.sessionId : ReportModel.isFinalCourseReport(r)));
+      for (const r of drafts) { await ReportService.publishReport(r.id, actorId); done += 1; }
+    }
+    return { done, skipped };
+  },
+
+  // Tells the class's educators (bell; email off by default) that a learner has finished a course
+  // or a module and its report can be generated - and with it, their certificate (19 Nov 2026).
+  // Once per learner and report: deduped. Never throws.
+  async notifyReadyReports(classId, courseId, learnerIds) {
+    try {
+      const recipients = await educatorUserIdsFor(classId, courseId);
+      if (!recipients.length || !learnerIds.length) return;
+      const [course, cls] = await Promise.all([CourseModel.findById(courseId), ClassModel.findById(classId)]);
+      const hub = cls?.schoolId ? await LearningHubModel.findById(cls.schoolId) : null;
+      const { modules } = await reportableModules(courseId);
+      for (const learnerId of [...new Set(learnerIds)]) {
+        const learner = await LearnerModel.findById(learnerId);
+        const name = [learner?.firstName, learner?.lastName].filter(Boolean).join(" ") || "A learner";
+        const scopes = [];
+        if (!(await ReportModel.findOne({ learnerId, courseId, classId })) && await isCourseReadyForLearner(courseId, classId, learnerId)) {
+          scopes.push({ key: "final", what: course?.name || "their course" });
+        }
+        for (const m of modules) {
+          if (!(await ReportModel.findOne({ learnerId, courseId, classId, moduleId: m.id })) && await isModuleReadyForLearner(courseId, m.id, classId, learnerId)) {
+            scopes.push({ key: m.id, what: `${m.name} (${course?.name || "the course"})` });
+          }
+        }
+        for (const scope of scopes) {
+          for (const userId of recipients) {
+            await NotificationService.notifyPerson(userId, {
+              type: "report_ready",
+              title: "A report is ready to generate",
+              message: `${name} has finished ${scope.what}. Generate and publish their report so they get their certificate.`,
+              payload: { route: "/teacher-portal/reports", classId, courseId, learnerId },
+              dedupeKey: `report_ready:${classId}:${courseId}:${scope.key}:${learnerId}`,
+              ownerAdminId: hub?.ownerAdminId || null,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[reports] ready notice failed:", err.message);
+    }
   },
 
   // Files a "not submitted" session report for one (learner, session) pair — the resolution for a
@@ -613,7 +917,7 @@ const ReportService = {
   // stage) and carries content.notSubmitted so the report renderer shows "Not submitted" rather
   // than a zero score, and so classifySessionWork treats the pair as resolved on the next pass.
   // Idempotent: re-running for a pair that already has a not-submitted report returns it unchanged.
-  async markSessionNotSubmitted({ classId, courseId, sessionId, learnerId, actorId }) {
+  async markSessionNotSubmitted({ classId, courseId, sessionId, learnerId, actorId, notify = true }) {
     const session = await SessionModel.findById(sessionId);
     if (!session) notFound("Session not found");
     if (session.courseId !== courseId) {
@@ -636,6 +940,11 @@ const ReportService = {
       err.statusCode = 409;
       throw err;
     }
+    if (state === "open") {
+      const err = new Error("This work isn't due yet — the learner can still hand it in. File it as not submitted once the due date has passed.");
+      err.statusCode = 409;
+      throw err;
+    }
     if (state === "nothing_required") {
       const err = new Error("This session has no assessments to report on.");
       err.statusCode = 409;
@@ -652,28 +961,45 @@ const ReportService = {
     // A not-submitted report still carries the same shell shape an ordinary session report has
     // (empty assessments, zeroed overall) so every existing reader — the learner-portal list,
     // buildCourseReportContent's sessionReports summary — keeps working without a special case.
-    const content = {
-      notSubmitted: true,
-      notSubmittedAssessments: missingAssessments,
-      assessments: [],
-      overall: { totalScore: 0, maxScore: 0, percent: 0 },
-      indicatorBreakdown: [],
-      competencyScores: [],
-      courseName: (await CourseModel.findById(courseId))?.name || null,
-      sessionName: session.title || null,
-    };
+    // 19 Nov 2026: when some of the session's work WAS marked, the report keeps it (score, skills,
+    // feedback) and lists only the missing pieces as not handed in — before, filing wiped it.
+    const requiredIds = await getLearnerRequiredAssessmentIds(session, learnerId, classId);
+    const markedIds = (await getPublishedGraded(learnerId)).forSession(session.id);
+    const anyMarked = requiredIds.some((id) => markedIds.has(id));
+    const cls = await ClassModel.findById(classId);
+    const content = anyMarked
+      ? {
+        ...(await buildReportContent(learnerId, requiredIds, cls?.curriculumId, courseId, session.id)),
+        ...(await sessionPlace(session)),
+        notSubmitted: true,
+        notSubmittedAssessments: missingAssessments,
+      }
+      : {
+        notSubmitted: true,
+        notSubmittedAssessments: missingAssessments,
+        assessments: [],
+        overall: { totalScore: 0, maxScore: 0, percent: 0 },
+        indicatorBreakdown: [],
+        competencyScores: [],
+        courseName: (await CourseModel.findById(courseId))?.name || null,
+        sessionName: session.title || null,
+      };
 
     const existing = await ReportModel.findOne({ learnerId, courseId, classId, sessionId });
     const now = new Date();
+    // Filing can finish a module or the course: tell the educators (not from the bulk filing on the
+    // Reports page — they're looking at it).
+    const tellIfReady = () => { if (notify) setImmediate(() => ReportService.notifyReadyReports(classId, courseId, [learnerId])); };
     if (existing) {
-      return ReportModel.update(existing.id, {
+      const updated = await ReportModel.update(existing.id, {
         content,
         status: "published",
         publishedAt: existing.publishedAt || now,
         publishedBy: existing.publishedBy || actorId || "system",
       });
+      tellIfReady();
+      return updated;
     }
-    const cls = await ClassModel.findById(classId);
     const created = await ReportModel.create({
       learnerId,
       courseId,
@@ -693,13 +1019,15 @@ const ReportService = {
     // NOT notifying the learner here (unlike generateSessionReport) — a push announcing "new
     // report — 0%" for work that was never submitted reads as a punishment, not information; it
     // still appears in their reports list, which is the right level of visibility for this.
+    tellIfReady();
     return (await ReportModel.findById(created.id)) || created;
   },
 
   // Idempotent: re-generating an already-existing report updates its draft snapshot instead of
   // creating a duplicate (findOne on learnerId+courseId is the natural key). Throws 409 if the
   // learner isn't actually ready yet, so the client can't skip the readiness check.
-  async generateReport({ learnerId, courseId, classId, generatedBy }) {
+  async generateReport({ learnerId, courseId, classId, moduleId = null, generatedBy }) {
+    if (moduleId) return ReportService.generateModuleReport({ learnerId, courseId, classId, moduleId, generatedBy });
     const requiredAssessmentIds = await getCourseRequiredAssessmentIds(courseId);
     if (requiredAssessmentIds.length === 0) {
       const err = new Error("This course has no attached assessments to report on");
@@ -716,11 +1044,56 @@ const ReportService = {
     const content = await buildCourseReportContent(learnerId, courseId, classId);
 
     const existing = await ReportModel.findOne({ learnerId, courseId, classId });
+    // A published report is locked (19 Nov 2026) — withdraw it to draft to rebuild it.
+    if (existing?.status === "published") return existing;
     if (existing) return ReportModel.update(existing.id, { content });
 
     const cls = await ClassModel.findById(classId);
     return ReportModel.create({
       learnerId, courseId, classId,
+      hubId: cls?.schoolId || null,
+      status: "draft",
+      generatedAt: new Date(),
+      generatedBy,
+      publishedAt: null,
+      publishedBy: null,
+      remarks: "",
+      content,
+    });
+  },
+
+  // Which of a course's modules get their own report and certificate — see reportableModules.
+  reportableModules(courseId) {
+    return reportableModules(courseId);
+  },
+
+  // A module's combined report (19 Nov 2026), drafted like the course's: once every assessed
+  // session of the module is done for this learner. Generating again refreshes the draft.
+  async generateModuleReport({ learnerId, courseId, classId, moduleId, generatedBy }) {
+    await assertModuleOfCourse(moduleId, courseId);
+    const { modules: reportable } = await reportableModules(courseId);
+    if (!reportable.some((m) => m.id === moduleId)) {
+      const err = new Error("This module has no report of its own — it has nothing to assess, or it's the course's only module with assessments (the final course report covers it).");
+      err.statusCode = 409;
+      throw err;
+    }
+    const { requiredIds } = await moduleScope(courseId, moduleId);
+    if (requiredIds.length === 0) {
+      const err = new Error("This module has no attached assessments to report on");
+      err.statusCode = 409;
+      throw err;
+    }
+    if (!(await isModuleReadyForLearner(courseId, moduleId, classId, learnerId))) {
+      const err = new Error("This learner hasn't finished every session of this module yet — all its work must be marked first");
+      err.statusCode = 409;
+      throw err;
+    }
+    const content = await buildModuleReportContent(learnerId, courseId, classId, moduleId);
+    const existing = await ReportModel.findOne({ learnerId, courseId, classId, moduleId });
+    if (existing) return existing.status === "published" ? existing : ReportModel.update(existing.id, { content });
+    const cls = await ClassModel.findById(classId);
+    return ReportModel.create({
+      learnerId, courseId, classId, moduleId,
       hubId: cls?.schoolId || null,
       status: "draft",
       generatedAt: new Date(),
@@ -758,6 +1131,15 @@ const ReportService = {
     const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status === "published") return report;
+
+    // A module report (19 Nov 2026): rebuilt over the module, and it earns the module's
+    // certificate, automatically. No end-of-course mentor prompt — the course isn't over.
+    if (ReportModel.isModuleReport(report)) {
+      const content = await buildModuleReportContent(report.learnerId, report.courseId, report.classId, report.moduleId);
+      const published = await ReportModel.update(id, { content, status: "published", publishedAt: new Date(), publishedBy });
+      await CertificateService.issueForReportSafely(published, { issuedBy: publishedBy });
+      return published;
+    }
 
     const content = await buildCourseReportContent(report.learnerId, report.courseId, report.classId);
     const published = await ReportModel.update(id, {
@@ -890,7 +1272,7 @@ const ReportService = {
       activeLinksByClass[l.classId] = (activeLinksByClass[l.classId] || 0) + 1;
     });
 
-    const finalReports = allReports.filter((r) => r.sessionId === null);
+    const finalReports = allReports.filter(ReportModel.isFinalCourseReport);
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
     const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);
@@ -1006,7 +1388,7 @@ const ReportService = {
     });
 
     const allReports = (await ReportModel.findAll({})).filter((r) => hubIds.has(r.hubId));
-    const finalReports = allReports.filter((r) => r.sessionId === null);
+    const finalReports = allReports.filter(ReportModel.isFinalCourseReport);
     const publishedFinals = finalReports.filter((r) => r.status === "published");
     const draftFinals = finalReports.filter((r) => r.status === "draft");
     const scored = publishedFinals.filter((r) => r.content?.overall?.percent != null);

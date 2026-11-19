@@ -219,7 +219,7 @@ async function learnerAnalytics(learner, { staff = false, period: which = "term"
   }
 
   // ---- Reports and certificates ------------------------------------------------------------
-  const reports = await db("reports").where({ learnerId: learner.id, status: "published" }).orderBy("publishedAt", "desc").select("id", "courseId", "sessionId", "publishedAt");
+  const reports = await db("reports").where({ learnerId: learner.id, status: "published" }).orderBy("publishedAt", "desc").select("id", "courseId", "sessionId", "moduleId", "publishedAt");
   const reportCourses = await inChunks([...new Set(reports.map((r) => r.courseId).filter(Boolean))], (ids) => db("courses").whereIn("id", ids).select("id", "name"));
   const courseName = new Map(reportCourses.map((c) => [c.id, c.name]));
   const certificates = await db("certificates").where({ learnerId: learner.id }).whereNull("revokedAt").orderBy("issuedAt", "desc").select("id", "certificateNumber", "courseId", "issuedAt", "snapshot", "kind");
@@ -228,7 +228,7 @@ async function learnerAnalytics(learner, { staff = false, period: which = "term"
   const records = {
     reportsInPeriod: reports.filter((r) => r.publishedAt && new Date(r.publishedAt) >= start && new Date(r.publishedAt) <= end).length,
     reportsTotal: reports.length,
-    reports: reports.slice(0, 8).map((r) => ({ id: r.id, course: courseName.get(r.courseId) || "Report", kind: r.sessionId ? "Session report" : "Course report", publishedAt: r.publishedAt })),
+    reports: reports.slice(0, 8).map((r) => ({ id: r.id, course: courseName.get(r.courseId) || "Report", kind: r.sessionId ? "Session report" : r.moduleId ? "Module report" : "Course report", publishedAt: r.publishedAt })),
     certificates: certificates.map((c) => ({ id: c.id, number: c.certificateNumber, course: courseName.get(c.courseId) || json(c.snapshot)?.courseName || "Certificate", issuedAt: c.issuedAt })),
   };
 
