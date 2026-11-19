@@ -105,13 +105,13 @@ const isPublishedModuleReport = (report) => ReportModel.isModuleReport(report) &
 const CertificateService = {
   // ---- Course certificates --------------------------------------------------------------------
 
-  // Issues the certificate a published final course report earns — or reinstates the one revoked
+  // Issues the certificate a published final course report carries — or reinstates the one revoked
   // when that report was withdrawn — then checks whether it completes a pathway or a bootcamp.
-  // Returns the course certificate, or null for a report that doesn't earn one.
+  // Returns the course certificate, or null for a report that doesn't carry one. Called when the
+  // educator issues it (issueForReportByStaff) — never on publish since 19 Nov 2026.
   //
-  // `notify` tells the family (in-app + email). It is off when a certificate is being filled in
-  // after the fact — see ensureForReports — so nobody is emailed about a course they finished
-  // long ago. A reinstatement never notifies: they were told the first time.
+  // `notify` tells the family (in-app + email). A reinstatement never notifies: they were told the
+  // first time.
   async issueForReport(report, { issuedBy = null, notify = true } = {}) {
     if (isPublishedModuleReport(report)) return CertificateService.issueForModuleReport(report, { issuedBy, notify });
     if (!isPublishedFinalReport(report)) return null;
@@ -159,8 +159,7 @@ const CertificateService = {
     return revoked;
   },
 
-  // Never lets a certificate problem undo a publish: the report is the record, the certificate
-  // follows it, and ensureForReports below fills in any that were missed.
+  // Never lets a certificate problem undo the caller's own change.
   async issueForReportSafely(report, options) {
     try {
       return await CertificateService.issueForReport(report, options);
@@ -179,26 +178,26 @@ const CertificateService = {
     }
   },
 
-  // Fills in the certificate for every published final report that doesn't have one — reports
-  // published before certificates existed, or one whose certificate failed to issue. Runs when
-  // certificates are read (no cron, the same lazy pattern as ensureSessionReportsGenerated) and
-  // never notifies: the certificate is dated to when the report was published.
-  async ensureForReports(filter) {
-    const published = await ReportModel.findAll({ ...filter, status: "published" });
-    const reports = published.filter((r) => isPublishedFinalReport(r) || isPublishedModuleReport(r));
-    if (reports.length === 0) return;
-    const existing = await CertificateModel.findAll({ ...filter });
-    const have = new Set(existing.map((c) => c.identityKey + c.learnerId));
-    // Oldest first, so certificate numbers run in the order the courses were completed.
-    reports.sort((a, b) => new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0));
-    for (const report of reports) {
-      const key = report.moduleId ? moduleKey(report.moduleId, report.classId) : courseKey(report.courseId, report.classId);
-      if (have.has(key + report.learnerId)) continue;
-      // Belt and braces: this only ever creates. A certificate that already exists — above all
-      // one a member of staff revoked by hand — is never brought back by a read.
-      if (await CertificateModel.findByIdentity(report.learnerId, key)) continue;
-      await CertificateService.issueForReportSafely(report, { notify: false });
-    }
+  // ---- Issued by the educator (19 Nov 2026, user) -----------------------------------------------
+  //
+  // Certificates are no longer issued when a report is published (and no longer filled in when
+  // certificates are read): once a learner's module report or final course report is published, the
+  // educator (or an admin / hub) issues the certificate — one learner, or the whole class. Issuing
+  // a revoked one again brings it back with the same number (and doesn't tell the family again).
+  async issueForReportByStaff(reportId, issuedBy = null) {
+    const report = await ReportModel.findById(reportId);
+    if (!report) fail(404, "Report not found");
+    if (report.sessionId) fail(409, "Session reports don't carry a certificate — issue it from the module or final course report.");
+    if (report.status !== "published") fail(409, "Publish this report first — then issue the certificate.");
+    const certificate = await CertificateService.issueForReport(report, { issuedBy, notify: true });
+    if (!certificate) fail(409, "This report doesn't carry a certificate.");
+    return certificate;
+  },
+
+  // The module or course certificate a learner holds (issued or revoked) for one class's course
+  // (moduleId: that module's), or null.
+  async findForScope({ learnerId, courseId, classId, moduleId = null }) {
+    return CertificateModel.findByIdentity(learnerId, moduleId ? moduleKey(moduleId, classId) : courseKey(courseId, classId));
   },
 
   // ---- Module certificates (19 Nov 2026) ------------------------------------------------------
@@ -353,7 +352,6 @@ const CertificateService = {
   // A learner's own certificates — only ones still standing. hubId scopes to the hub the portal
   // switcher is on, like every other learner-portal list.
   async listForLearner(learnerId, hubId = null) {
-    await CertificateService.ensureForReports({ learnerId });
     const certificates = await CertificateModel.findAll({ learnerId, status: "issued" });
     return CertificateService.withSignatory(hubId ? certificates.filter((c) => c.hubId === hubId) : certificates);
   },
@@ -361,7 +359,6 @@ const CertificateService = {
   // Staff view of a class (optionally one course in it), revoked ones included.
   async listForClass(classId, courseId = null) {
     const filter = courseId ? { classId, courseId } : { classId };
-    await CertificateService.ensureForReports(filter);
     return CertificateService.withSignatory(await CertificateModel.findAll(filter));
   },
 
@@ -369,7 +366,6 @@ const CertificateService = {
   // revoked ones included. kind / status narrow it; the search box is applied by the caller.
   async listForHubs(hubIds, { kind = null, status = null } = {}) {
     if (hubIds.length === 0) return [];
-    for (const hubId of hubIds) await CertificateService.ensureForReports({ hubId });
     return CertificateService.withSignatory(
       await CertificateModel.findAll({ hubIds, kind: kind || undefined, status: status || undefined })
     );

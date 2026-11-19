@@ -417,6 +417,25 @@ function NotSubmitted({ view, audience, partial = false }) {
   );
 }
 
+// A module or course report made at the last session with some work missing (19 Nov 2026): the work
+// it leaves out — never handed in, or handed in but not marked yet.
+function MissingWork({ view, audience }) {
+  const whose = audience === "learner" ? "Your" : `${view.voice.name}'s`;
+  return (
+    <div style={{ ...card, backgroundColor: "#FFF5E1", borderColor: "#FDD89A" }}>
+      <CardTitle icon={<FiClock size={16} />} color="#9A6300">Not in this report</CardTitle>
+      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: T.ink }}>
+        {whose} marked work is below. These weren&apos;t part of it:
+      </p>
+      <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 13.5, color: T.muted }}>
+        {view.missingWork.map((a) => (
+          <li key={a.assessmentId}>{a.name}{a.sessionTitle ? ` (${a.sessionTitle})` : ""} — {a.reason === "not_marked" ? "handed in, not marked yet" : "not handed in"}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * report: the report as stored. audience: "learner" (the child), "parent" or "staff".
  * firstName: the learner's first name (for "Ama did well"). showMarks: staff only.
@@ -450,6 +469,7 @@ export default function ReportView({ report, audience = "learner", firstName = "
       <Summary view={view} showMarks={showMarks} title={title} />
       <div className="rv-col">
         {partialMissing && <NotSubmitted view={view} audience={audience} partial />}
+        {!view.isSession && view.missingWork.length > 0 && <MissingWork view={view} audience={audience} />}
         <Glance view={view} />
         <Skills view={view} showMarks={showMarks} />
         <Work view={view} showMarks={showMarks} onOpenAssessment={onOpenAssessment} onOpenSessionReport={onOpenSessionReport} />

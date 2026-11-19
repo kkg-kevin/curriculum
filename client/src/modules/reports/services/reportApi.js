@@ -12,13 +12,15 @@ export const reportApi = {
   // A learner who never handed work in: file every such session of the course (or one module,
   // payload.moduleId) as not submitted → { filed, needsGrading }.
   fileNotSubmitted: (payload)        => api.post(`${BASE}/not-submitted`, payload).then((r) => r.data.data),
-  // Whole class: { action: "generate" | "publish", classId, courseId, moduleId? } → { done, skipped }.
+  // Whole class: { action: "generate" | "publish" | "issue", classId, courseId, moduleId? } → { done, skipped }.
   bulk:          (payload)           => api.post(`${BASE}/bulk`, payload).then((r) => r.data.data),
   getById:       (id)                => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   // body: { remarks?, homeNote? }
   updateRemarks: (id, body)          => api.patch(`${BASE}/${id}`, body).then((r) => r.data.data),
   publish:       (id)                => api.post(`${BASE}/${id}/publish`).then((r) => r.data.data),
   unpublish:     (id)                => api.post(`${BASE}/${id}/unpublish`).then((r) => r.data.data),
+  // Issue the certificate a published module / final report carries (19 Nov 2026) → the certificate.
+  issueCertificate: (id)             => api.post(`${BASE}/${id}/certificate`).then((r) => r.data.data),
   // hubId scopes to the hub the portal switcher is on; omitted returns every hub's reports.
   getMine:       (hubId)             => api.get(`${BASE}/learner/mine`, { params: hubId ? { hubId } : {} }).then((r) => r.data),
   // Admin/school: one learner's published reports, for their profile.

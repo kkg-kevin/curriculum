@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const { recordView } = require("./report-views");
 const ReportService = require("./report.service");
+const CertificateService = require("../certificates/certificate.service");
 const ClassModel = require("../classes/class.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -172,7 +173,11 @@ const getReport = asyncHandler(async (req, res) => {
   }
   await ReportService.withAuthor(report);
   // Staff: module reports still to publish before this final one (their certificates follow them).
-  if (req.user.role !== "learner") report.moduleReportsOutstanding = await ReportService.moduleReportsOutstanding(report);
+  if (req.user.role !== "learner") {
+    report.moduleReportsOutstanding = await ReportService.moduleReportsOutstanding(report);
+    // Its certificate, if one has been issued on it (issued or revoked) — for Issue certificate.
+    if (!report.sessionId) report.certificate = await CertificateService.findForScope({ learnerId: report.learnerId, courseId: report.courseId, classId: report.classId, moduleId: report.moduleId || null });
+  }
   // The family opened it (Parent engagement) — fire and forget.
   if (req.user.role === "learner") recordView(report, req.user);
   res.json({ success: true, data: report });
@@ -205,6 +210,14 @@ const publishReport = asyncHandler(async (req, res) => {
   res.json({ success: true, data: updated });
 });
 
+// Issue certificate (19 Nov 2026): the module or course certificate for one learner, once their
+// module / final report is published. Whoever can publish the report can issue it.
+const issueCertificate = asyncHandler(async (req, res) => {
+  const report = await loadOwnedReportOrThrow(req);
+  const certificate = await CertificateService.issueForReportByStaff(report.id, req.ownTeacher?.id || req.user.id);
+  res.json({ success: true, data: certificate });
+});
+
 const unpublishReport = asyncHandler(async (req, res) => {
   await loadOwnedReportOrThrow(req);
   const updated = await ReportService.unpublishReport(req.params.id);
@@ -224,5 +237,6 @@ module.exports = {
   getReport,
   updateRemarks,
   publishReport,
+  issueCertificate,
   unpublishReport,
 };

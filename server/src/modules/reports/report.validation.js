@@ -25,7 +25,7 @@ const fileNotSubmittedSchema = z.object({
 // A whole class at once (19 Nov 2026): draft every ready learner's report, or publish every draft —
 // a course's final reports, or one module's.
 const bulkReportsSchema = z.object({
-  action:   z.enum(["generate", "publish"]),
+  action:   z.enum(["generate", "publish", "issue"]),
   courseId: z.string().min(1),
   classId:  z.string().min(1),
   moduleId: z.string().min(1).nullable().optional(),

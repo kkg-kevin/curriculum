@@ -73,7 +73,6 @@ const listCertificates = asyncHandler(async (req, res) => {
   const hubIds = await ownHubIds(req);
 
   if (learnerId) {
-    await CertificateService.ensureForReports({ learnerId });
     const all = await CertificateService.withSignatory(await CertificateModel.findAll({ learnerId }));
     const data = [];
     for (const certificate of all) if (await canAccess(req, certificate, hubIds)) data.push(certificate);

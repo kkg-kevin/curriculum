@@ -467,7 +467,30 @@ async function buildCourseReportContent(learnerId, courseId, classId) {
   const sessions = allSessions.filter((s, i) => requiredPerSession[i].length > 0);
 
   content.sessionReports = await sessionReportsFor(sessions, { learnerId, courseId, classId });
+  content.missingWork = await missingWorkFor(learnerId, classId, allSessions, content);
   return content;
+}
+
+// What a combined (module or course) report leaves out (19 Nov 2026): a report no longer waits for
+// every piece of work — the educator generates it at the last session — so it names the work that
+// isn't in it: never handed in, or handed in but not marked yet. [{ assessmentId, name,
+// sessionTitle, reason: "not_handed_in" | "not_marked" }]
+async function missingWorkFor(learnerId, classId, sessions, content) {
+  const marked = new Set((content.assessments || []).map((a) => a.assessmentId));
+  const { live } = await CountedWork.sortLearnerWork(learnerId);
+  const out = [];
+  const seen = new Set();
+  for (const session of sessions) {
+    for (const id of await getLearnerRequiredAssessmentIds(session, learnerId, classId)) {
+      if (marked.has(id) || seen.has(id)) continue;
+      seen.add(id);
+      const inSession = new Set([session.id]);
+      const handedIn = live.some((e) => e.submission.assessmentId === id && CountedWork.inSessions(e, inSession) && e.submission.status !== "in_progress");
+      const assessment = await AssessmentModel.findById(id);
+      out.push({ assessmentId: id, name: assessment?.name || "Assessment", sessionTitle: session.title || null, reason: handedIn ? "not_marked" : "not_handed_in" });
+    }
+  }
+  return out;
 }
 
 // The session reports a combined (course or module) report lists, one per assessed session.
@@ -516,6 +539,7 @@ async function buildModuleReportContent(learnerId, courseId, classId, moduleId) 
   const content = await buildReportContent(learnerId, requiredIds, cls?.curriculumId, courseId, null, sessions.map((s) => s.id));
   const requiredPerSession = await Promise.all(sessions.map((s) => getLearnerRequiredAssessmentIds(s, learnerId, classId)));
   content.sessionReports = await sessionReportsFor(sessions.filter((s, i) => requiredPerSession[i].length > 0), { learnerId, courseId, classId });
+  content.missingWork = await missingWorkFor(learnerId, classId, sessions, content);
   // Names frozen like courseName; and the module's place in the course for "What's next".
   const modules = await ModuleModel.findByCourseId(courseId);
   const index = modules.findIndex((m) => m.id === moduleId);
@@ -549,6 +573,94 @@ async function educatorUserIdsFor(classId, courseId) {
   const { rolesOf } = require("../auth/account-roles");
   const users = await db("users").whereIn(db.raw("LOWER(email)"), emails).whereNull("deactivatedAt").select("id", "role", "extraRoles");
   return users.filter((u) => rolesOf(u).includes("teacher")).map((u) => u.id);
+}
+
+// "File as not handed in" waits for the class to reach the last session (19 Nov 2026, user: "only
+// show at the final session of a module and the final course session"): for a module report, the
+// module's last session; for the final report, the course's last session. Before then, missing work
+// is mostly work still to come, so filing it isn't offered (or allowed). A session is reached once
+// the timetable has placed it on a day up to today (session_occurrences, not cancelled) or it was
+// marked taught. A class with no timetable for the course, or whose timetable never gets to that
+// session (no date for it within the year ahead), has nothing to wait for — open.
+// Returns { course, modules: Map(moduleId -> window) }, each window
+// { open, date (reached on, or the next date the timetable gives it), sessionTitle, timetabled }.
+const FILING_TTL_MS = 10 * 1000;
+const filingCache = new Map();
+const utcToday = () => new Date().toISOString().slice(0, 10);
+const utcAddDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+const dayOf = (v) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v || "").slice(0, 10));
+async function filingWindows(classId, courseId) {
+  const key = `${classId}:${courseId}`;
+  const hit = filingCache.get(key);
+  if (hit && Date.now() - hit.at < FILING_TTL_MS) return hit.value;
+  const value = await loadFilingWindows(classId, courseId);
+  filingCache.set(key, { at: Date.now(), value });
+  return value;
+}
+async function loadFilingWindows(classId, courseId) {
+  const sessions = await SessionModel.findByCourseId(courseId);
+  const always = { open: true, date: null, sessionTitle: null, timetabled: false };
+  if (!sessions.length) return { course: always, modules: new Map() };
+  // Required here, not at the top: timetable.service requires this file.
+  const TimetableService = require("../timetable/timetable.service");
+  const SessionOccurrenceService = require("../timetable/session-occurrence.service");
+  const resolveCalendar = (args) => TimetableService.resolveCalendar(args);
+  await SessionOccurrenceService.syncClassOccurrences(classId, resolveCalendar).catch(() => null);
+  const [occurrences, schedule, slot] = await Promise.all([
+    db("session_occurrences").where({ classId, courseId }).select("sessionId", "date", "status", "taughtAt"),
+    db("timetable_course_schedules").where({ classId, courseId }).first("id"),
+    db("timetable_slots").where({ classId, courseId }).first("id"),
+  ]);
+  const timetabled = Boolean(occurrences.length || schedule || slot);
+  const today = utcToday();
+  const reachedOn = new Map();
+  for (const o of occurrences) {
+    const d = dayOf(o.date);
+    if (!o.taughtAt && (o.status === "cancelled" || d > today)) continue;
+    if (!reachedOn.has(o.sessionId) || d < reachedOn.get(o.sessionId)) reachedOn.set(o.sessionId, d);
+  }
+  let upcoming = null;
+  const nextDate = async (sessionId) => {
+    if (!upcoming) {
+      upcoming = new Map();
+      try {
+        const { events } = await resolveCalendar({ classId, from: utcAddDays(today, 1), to: utcAddDays(today, 365) });
+        for (const e of events) if (e.courseId === courseId && !upcoming.has(e.sessionId)) upcoming.set(e.sessionId, e.date);
+      } catch { /* no timetable ahead — no date to give */ }
+    }
+    return upcoming.get(sessionId) || null;
+  };
+  const windowFor = async (last) => {
+    if (!timetabled) return { ...always, sessionTitle: last.title || null };
+    if (reachedOn.has(last.id)) return { open: true, date: reachedOn.get(last.id), sessionTitle: last.title || null, timetabled: true };
+    // Not reached yet: wait for the date the timetable gives it. With no date ahead (the terms end
+    // first, or it's been taken off the timetable) the class will never get there — nothing to wait for.
+    const date = await nextDate(last.id);
+    return { open: !date, date, sessionTitle: last.title || null, timetabled: true };
+  };
+  const modules = new Map();
+  const lastOfModule = new Map();
+  for (const session of sessions) if (session.moduleId) lastOfModule.set(session.moduleId, session); // ordered: the last one wins
+  for (const [moduleId, last] of lastOfModule) modules.set(moduleId, await windowFor(last));
+  return { course: await windowFor(sessions[sessions.length - 1]), modules };
+}
+
+// A module or final report can be made once the class reaches the module's (course's) last session
+// — or earlier for a learner who has already done every piece of work (19 Nov 2026, user: missing
+// work no longer holds anyone back; the report lists it).
+async function reportOpenFor({ classId, courseId, moduleId = null, learnerId }) {
+  const windows = await filingWindows(classId, courseId);
+  const window = moduleId ? windows.modules.get(moduleId) || windows.course : windows.course;
+  if (window.open) return true;
+  return moduleId ? isModuleReadyForLearner(courseId, moduleId, classId, learnerId) : isCourseReadyForLearner(courseId, classId, learnerId);
+}
+async function assertReportOpen(scope) {
+  if (await reportOpenFor(scope)) return;
+  const windows = await filingWindows(scope.classId, scope.courseId);
+  const window = scope.moduleId ? windows.modules.get(scope.moduleId) || windows.course : windows.course;
+  const err = new Error(`This report opens when the class reaches the ${scope.moduleId ? "module's" : "course's"} last session${window.date ? ` (${window.date})` : ""}.`);
+  err.statusCode = 409;
+  throw err;
 }
 
 const assertModuleOfCourse = async (moduleId, courseId) => {
@@ -626,6 +738,9 @@ const ReportService = {
     // One memo for the whole build — classifySessionWork's learner-wide lookups run once each.
     const cache = new Map();
     const moduleProgress = await ReportService.getModulesProgress(classId, courseId, assessedModules.map((m) => m.id), learnerIds);
+    // When "File as not handed in" opens — the last session of each module, and of the course.
+    const filing = await filingWindows(classId, courseId);
+    const certificateFor = (learnerId, moduleId = null) => CertificateService.findForScope({ learnerId, courseId, classId, moduleId });
 
     return Promise.all(learners.map(async (learner) => {
       const graded = await getPublishedGraded(learner.id);
@@ -662,7 +777,10 @@ const ReportService = {
           report: sessionReport,
         };
       }));
-      const ready = await isCourseReadyForLearner(courseId, classId, learner.id);
+      // Every piece of work done — and, either way, a report can be made once the class reaches the
+      // course's last session (19 Nov 2026: missing work doesn't hold a learner back any more).
+      const complete = await isCourseReadyForLearner(courseId, classId, learner.id);
+      const ready = complete || filing.course.open;
       const report = await ReportModel.findOne({ learnerId: learner.id, courseId, classId });
       return {
         learner,
@@ -674,13 +792,23 @@ const ReportService = {
         gradedCount,
         sessions: sessionRows,
         ready,
+        complete,
         report,
+        certificate: report?.status === "published" ? await certificateFor(learner.id) : null,
+        filing: filing.course,
         modules: await Promise.all(assessedModules.map(async (m) => ({
           moduleId: m.id,
           moduleName: m.name,
           order: m.order,
-          ...moduleProgress.get(m.id).get(learner.id),
-          report: await ReportModel.findOne({ learnerId: learner.id, courseId, classId, moduleId: m.id }),
+          ...(() => {
+            const progress = moduleProgress.get(m.id).get(learner.id);
+            const window = filing.modules.get(m.id) || filing.course;
+            return { ...progress, complete: Boolean(progress?.ready), ready: Boolean(progress?.ready) || window.open, filing: window };
+          })(),
+          ...(await (async () => {
+            const moduleReport = await ReportModel.findOne({ learnerId: learner.id, courseId, classId, moduleId: m.id });
+            return { report: moduleReport, certificate: moduleReport?.status === "published" ? await certificateFor(learner.id, m.id) : null };
+          })()),
         }))),
         // Why some modules have no report: nothing to assess, or the final report covers the only one.
         moduleInfo: { unassessed, coveredByFinal },
@@ -828,6 +956,14 @@ const ReportService = {
   // in but not yet marked are left alone — they still need marking. Returns { filed, needsGrading }.
   async fileNotSubmittedForLearner({ classId, courseId, learnerId, moduleId = null, actorId }) {
     if (moduleId) await assertModuleOfCourse(moduleId, courseId);
+    // Only from the module's (or course's) last session — see filingWindows.
+    const windows = await filingWindows(classId, courseId);
+    const window = moduleId ? windows.modules.get(moduleId) || windows.course : windows.course;
+    if (!window.open) {
+      const err = new Error(`Missing work can be filed once the class reaches the ${moduleId ? "module's" : "course's"} last session${window.date ? ` (${window.date})` : ""}.`);
+      err.statusCode = 409;
+      throw err;
+    }
     const sessions = (await SessionModel.findByCourseId(courseId)).filter((s) => !moduleId || s.moduleId === moduleId);
     let filed = 0;
     let needsGrading = 0;
@@ -857,9 +993,18 @@ const ReportService = {
       for (const learnerId of learnerIds) {
         const existing = await ReportModel.findOne({ learnerId, courseId, classId, moduleId });
         if (existing) continue;
-        const ready = moduleId ? await isModuleReadyForLearner(courseId, moduleId, classId, learnerId) : await isCourseReadyForLearner(courseId, classId, learnerId);
-        if (!ready) { skipped += 1; continue; }
+        if (!(await reportOpenFor({ classId, courseId, moduleId, learnerId }))) { skipped += 1; continue; }
         await ReportService.generateReport({ learnerId, courseId, classId, moduleId, generatedBy: actorId });
+        done += 1;
+      }
+    } else if (action === "issue") {
+      // Every learner whose report is published and who has no standing certificate for it.
+      const published = (await ReportModel.findAll({ classId, courseId, status: "published" }))
+        .filter((r) => learnerIds.includes(r.learnerId) && (moduleId ? r.moduleId === moduleId && !r.sessionId : ReportModel.isFinalCourseReport(r)));
+      for (const r of published) {
+        const held = await CertificateService.findForScope({ learnerId: r.learnerId, courseId, classId, moduleId });
+        if (held?.status === "issued") continue;
+        await CertificateService.issueForReportByStaff(r.id, actorId);
         done += 1;
       }
     } else {
@@ -1034,12 +1179,7 @@ const ReportService = {
       err.statusCode = 409;
       throw err;
     }
-    const ready = await isCourseReadyForLearner(courseId, classId, learnerId);
-    if (!ready) {
-      const err = new Error("Not every session has a published report for this learner yet");
-      err.statusCode = 409;
-      throw err;
-    }
+    await assertReportOpen({ classId, courseId, moduleId: null, learnerId });
 
     const content = await buildCourseReportContent(learnerId, courseId, classId);
 
@@ -1083,11 +1223,7 @@ const ReportService = {
       err.statusCode = 409;
       throw err;
     }
-    if (!(await isModuleReadyForLearner(courseId, moduleId, classId, learnerId))) {
-      const err = new Error("This learner hasn't finished every session of this module yet — all its work must be marked first");
-      err.statusCode = 409;
-      throw err;
-    }
+    await assertReportOpen({ classId, courseId, moduleId, learnerId });
     const content = await buildModuleReportContent(learnerId, courseId, classId, moduleId);
     const existing = await ReportModel.findOne({ learnerId, courseId, classId, moduleId });
     if (existing) return existing.status === "published" ? existing : ReportModel.update(existing.id, { content });
@@ -1132,13 +1268,12 @@ const ReportService = {
     if (!report) notFound("Report not found");
     if (report.status === "published") return report;
 
-    // A module report (19 Nov 2026): rebuilt over the module, and it earns the module's
-    // certificate, automatically. No end-of-course mentor prompt — the course isn't over.
+    // A module report (19 Nov 2026): rebuilt over the module. No end-of-course mentor prompt — the
+    // course isn't over. Publishing no longer issues a certificate (19 Nov 2026, user): once the
+    // report is out, the educator issues it — Issue certificate (CertificateService.issueForReportByStaff).
     if (ReportModel.isModuleReport(report)) {
       const content = await buildModuleReportContent(report.learnerId, report.courseId, report.classId, report.moduleId);
-      const published = await ReportModel.update(id, { content, status: "published", publishedAt: new Date(), publishedBy });
-      await CertificateService.issueForReportSafely(published, { issuedBy: publishedBy });
-      return published;
+      return ReportModel.update(id, { content, status: "published", publishedAt: new Date(), publishedBy });
     }
 
     const content = await buildCourseReportContent(report.learnerId, report.courseId, report.classId);
@@ -1148,9 +1283,8 @@ const ReportService = {
       publishedAt: new Date(),
       publishedBy,
     });
-    // Publishing the final report is the moment the learner has completed the course — it earns
-    // their certificate (and tells the family). Never fails the publish itself.
-    await CertificateService.issueForReportSafely(published, { issuedBy: publishedBy });
+    // The course certificate is issued by the educator once this is out (Issue certificate) — not
+    // automatically (19 Nov 2026, user).
     // And the end-of-course "how did the mentor do?" prompt to the family (modules/mentor-reviews/),
     // in the background — never failing the publish.
     setImmediate(() => require("../mentor-reviews/mentor-review.service").afterCourseReport(published)
@@ -1168,13 +1302,19 @@ const ReportService = {
     const report = await ReportModel.findById(id);
     if (!report) notFound("Report not found");
     if (report.status !== "published") return report;
-    // The certificate the report earned is revoked with it; re-publishing reinstates the same one.
+    // The certificate issued on it is revoked with it; issuing again after re-publishing brings back
+    // the same one (same number).
     await CertificateService.revokeForReportSafely(report);
     return ReportModel.update(id, { status: "draft", publishedAt: null, publishedBy: null });
   },
 
   async getById(id) {
     return ReportModel.findById(id);
+  },
+
+  // When "File as not handed in" opens for a class's course and each of its modules (filingWindows).
+  async filingWindows(classId, courseId) {
+    return filingWindows(classId, courseId);
   },
 
   // For a final course report: the course's module reports this learner hasn't had published yet

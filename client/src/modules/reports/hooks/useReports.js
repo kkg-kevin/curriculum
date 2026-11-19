@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { certificateApi } from "../../certificates/services/certificateApi";
 import { reportApi } from "../services/reportApi";
 
 const KEYS = {
@@ -68,8 +69,10 @@ export function useBulkReports() {
       qc.invalidateQueries({ queryKey: ["reports"] });
       qc.invalidateQueries({ queryKey: ["certificates"] });
       toast.success(action === "publish"
-        ? `${done} report${done === 1 ? "" : "s"} published — certificates issued`
-        : `${done} draft${done === 1 ? "" : "s"} generated — review, then publish`);
+        ? `${done} report${done === 1 ? "" : "s"} published — now issue the certificates`
+        : action === "issue"
+          ? `${done} certificate${done === 1 ? "" : "s"} issued — families told`
+          : `${done} draft${done === 1 ? "" : "s"} generated — review, then publish`);
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't finish that"),
   });
@@ -126,5 +129,34 @@ export function useUnpublishReport() {
       toast.success("Report withdrawn — it's back to draft and hidden from the learner");
     },
     onError: (err) => toast.error(err.message || "Failed to withdraw report"),
+  });
+}
+
+// Issue certificate (19 Nov 2026): one learner's module or course certificate, once their report is
+// published — certificates are no longer issued on publish. Takes the report's id.
+export function useIssueCertificate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reportApi.issueCertificate,
+    onSuccess: (certificate) => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      qc.invalidateQueries({ queryKey: ["certificates"] });
+      toast.success(`Certificate ${certificate?.certificateNumber || ""} issued`.replace("  ", " "));
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't issue the certificate"),
+  });
+}
+
+// Revoke from the Reports page (educators too since 19 Nov 2026) — refreshes the rows as well.
+export function useRevokeReportCertificate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }) => certificateApi.revoke(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      qc.invalidateQueries({ queryKey: ["certificates"] });
+      toast.success("Certificate revoked");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't revoke this certificate"),
   });
 }
