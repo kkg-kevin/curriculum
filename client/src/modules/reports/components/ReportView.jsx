@@ -367,9 +367,9 @@ function Work({ view, showMarks, onOpenAssessment, onOpenSessionReport }) {
 
 function nextLines(view, audience) {
   const lines = [];
-  if (view.isSession && view.sessionNumber && view.sessionCount) lines.push(`Session ${view.sessionNumber} of ${view.sessionCount} in ${view.courseName || "the course"}.`);
+  if (view.isSession && view.sessionNumber && view.sessionCount) lines.push(`Session ${view.sessionNumber} of ${view.sessionCount} in ${view.sessionModuleName || view.courseName || "the course"}.`);
   if (view.isSession && view.nextSessionTitle) lines.push(`Up next: ${view.nextSessionTitle}.`);
-  if (view.isSession && view.sessionNumber && view.sessionCount && view.sessionNumber === view.sessionCount) lines.push("This is the last session — the course report comes once everything is marked.");
+  if (view.isSession && view.sessionNumber && view.sessionCount && view.sessionNumber === view.sessionCount) lines.push(view.sessionModuleName ? `This is the last session of ${view.sessionModuleName}.` : "This is the last session of the course.");
   if (view.isModule && view.moduleNumber && view.moduleCount) lines.push(`Module ${view.moduleNumber} of ${view.moduleCount} in ${view.courseName || "the course"}.`);
   if (view.isModule && view.nextModuleName) lines.push(`Up next: ${view.nextModuleName}.`);
   if (view.isModule && view.moduleNumber && view.moduleCount && view.moduleNumber === view.moduleCount) lines.push("This is the last module — the course report comes once everything is marked.");

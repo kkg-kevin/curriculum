@@ -336,7 +336,7 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
               <Box>
                 <p style={{ margin: 0, fontSize: 11.5, color: INK }}>
                   <strong>What’s next: </strong>
-                  {[view.sessionNumber && view.sessionCount ? `session ${view.sessionNumber} of ${view.sessionCount}` : null, view.nextSessionTitle ? `up next, ${view.nextSessionTitle}` : null, view.practise[0] ? `practising ${view.practise[0].name} will help most` : null].filter(Boolean).join(" · ")}.
+                  {[view.sessionNumber && view.sessionCount ? `session ${view.sessionNumber} of ${view.sessionCount}${view.sessionModuleName ? ` in ${view.sessionModuleName}` : ""}` : null, view.nextSessionTitle ? `up next, ${view.nextSessionTitle}` : null, view.practise[0] ? `practising ${view.practise[0].name} will help most` : null].filter(Boolean).join(" · ")}.
                 </p>
               </Box>
             )}

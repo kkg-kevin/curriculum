@@ -110,7 +110,8 @@ async function summary(req) {
     for (const e of rawEvents) {
       const key = `${e.classId}|${e.courseId}|${e.startTime}`;
       const g = grouped.get(key) || { ...e, sessions: [] };
-      if (e.sessionTitle || e.sessionOrder != null) g.sessions.push({ order: e.sessionOrder, title: e.sessionTitle || null });
+      // order: the session's number within its module (19 Nov 2026), for display.
+      if (e.sessionTitle || e.sessionOrder != null) g.sessions.push({ order: e.sessionNumber ?? e.sessionOrder, title: e.sessionTitle || null, moduleName: e.moduleName || null });
       grouped.set(key, g);
     }
     const events = [...grouped.values()];

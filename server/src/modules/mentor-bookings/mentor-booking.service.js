@@ -175,8 +175,18 @@ async function learnerCourses(learnerId) {
   (await require("../pathway-subscriptions/pathway-access").openCourseIds(learnerId)).forEach((id) => ids.add(id));
   if (!ids.size) return [];
   const courses = await db("courses").whereIn("id", [...ids]).select("id", "name");
-  const sessions = await db("course_sessions").whereIn("courseId", [...ids]).select("id", "courseId", "title", "order").orderBy("order", "asc");
-  return courses.map((c) => ({ id: c.id, name: c.name, sessions: sessions.filter((s) => s.courseId === c.id).map((s, i) => ({ id: s.id, title: s.title || `Session ${i + 1}` })) }))
+  const sessions = await db("course_sessions").whereIn("courseId", [...ids]).select("id", "courseId", "title", "order", "moduleId").orderBy("order", "asc");
+  const modules = await db("course_modules").whereIn("courseId", [...ids]).select("id", "courseId", "name", "order");
+  const { numberSessions } = require("../courses/session-numbering");
+  // Untitled sessions are named by their number within their module (19 Nov 2026).
+  return courses.map((c) => {
+    const own = sessions.filter((s) => s.courseId === c.id);
+    const numbering = numberSessions(own, modules.filter((m) => m.courseId === c.id));
+    return { id: c.id, name: c.name, sessions: own.map((s, i) => {
+      const p = numbering.get(s.id);
+      return { id: s.id, title: s.title || `${p?.moduleName ? `${p.moduleName} · ` : ""}Session ${p?.number ?? i + 1}` };
+    }) };
+  })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
