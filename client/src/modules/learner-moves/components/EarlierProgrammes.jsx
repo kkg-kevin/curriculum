@@ -38,6 +38,7 @@ function Row({ icon: Icon, title, sub, onOpen, tone = T.accent }) {
 function Programme({ p, navigate }) {
   const facts = [
     p.sessionReports ? plural(p.sessionReports, "session report", "session reports") : null,
+    p.moduleReports ? plural(p.moduleReports, "module report", "module reports") : null,
     p.markedWork ? plural(p.markedWork, "piece of marked work", "pieces of marked work") : null,
   ].filter(Boolean);
   return (

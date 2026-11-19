@@ -304,7 +304,7 @@ function Work({ view, showMarks, onOpenAssessment, onOpenSessionReport }) {
     <div className="rv-o5" style={card}>
       {sessions.length > 0 && (
         <>
-          <CardTitle icon={<FiCheckCircle size={16} />}>Sessions in this course</CardTitle>
+          <CardTitle icon={<FiCheckCircle size={16} />}>{view.isModule ? "Sessions in this module" : "Sessions in this course"}</CardTitle>
           <div style={{ marginBottom: view.assessments.length ? 18 : 0 }}>
             {sessions.map((s) => (
               <div key={s.sessionId} style={row}>
@@ -370,6 +370,9 @@ function nextLines(view, audience) {
   if (view.isSession && view.sessionNumber && view.sessionCount) lines.push(`Session ${view.sessionNumber} of ${view.sessionCount} in ${view.courseName || "the course"}.`);
   if (view.isSession && view.nextSessionTitle) lines.push(`Up next: ${view.nextSessionTitle}.`);
   if (view.isSession && view.sessionNumber && view.sessionCount && view.sessionNumber === view.sessionCount) lines.push("This is the last session — the course report comes once everything is marked.");
+  if (view.isModule && view.moduleNumber && view.moduleCount) lines.push(`Module ${view.moduleNumber} of ${view.moduleCount} in ${view.courseName || "the course"}.`);
+  if (view.isModule && view.nextModuleName) lines.push(`Up next: ${view.nextModuleName}.`);
+  if (view.isModule && view.moduleNumber && view.moduleCount && view.moduleNumber === view.moduleCount) lines.push("This is the last module — the course report comes once everything is marked.");
   if (view.practise.length) lines.push(`${audience === "learner" ? "Practise" : "Practising"} ${view.practise[0].name} will help most.`);
   return lines;
 }
@@ -393,12 +396,17 @@ function Next({ view, audience, onOpenCourse }) {
   );
 }
 
-function NotSubmitted({ view, audience }) {
+// `partial`: some of the session's work was handed in and marked (shown as usual); this lists
+// only what wasn't (19 Nov 2026).
+function NotSubmitted({ view, audience, partial = false }) {
+  const whose = audience === "learner" ? "Your" : `${view.voice.name}'s`;
   return (
     <div style={{ ...card, backgroundColor: "#FFF5E1", borderColor: "#FDD89A" }}>
       <CardTitle icon={<FiClock size={16} />} color="#9A6300">Not handed in</CardTitle>
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: T.ink }}>
-        {audience === "learner" ? "Your work for this session wasn't handed in, so there's nothing to mark yet." : `${view.voice.name}'s work for this session wasn't handed in, so there's nothing to mark yet.`}
+        {partial
+          ? `${whose} work below was marked. ${audience === "learner" ? "These weren't handed in:" : "These weren't handed in:"}`
+          : audience === "learner" ? "Your work for this session wasn't handed in, so there's nothing to mark yet." : `${view.voice.name}'s work for this session wasn't handed in, so there's nothing to mark yet.`}
       </p>
       {view.notSubmittedAssessments.length > 0 && (
         <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 13.5, color: T.muted }}>
@@ -420,9 +428,12 @@ export { T as REPORT_T, card as reportCard, STYLES as REPORT_STYLES, KID_FONT, f
 export default function ReportView({ report, audience = "learner", firstName = "", showMarks = false, onOpenAssessment, onOpenSessionReport, onOpenCourse }) {
   const view = useMemo(() => buildReportView(report, { audience, firstName }), [report, audience, firstName]);
   const font = audience === "staff" ? "Inter, sans-serif" : KID_FONT;
-  const title = view.isSession ? "How this session went" : "How the course went";
+  const title = view.isSession ? "How this session went" : view.isModule ? "How this module went" : "How the course went";
 
-  if (view.notSubmitted) {
+  // A session filed "not handed in" with nothing marked: just the note. With some work marked
+  // (19 Nov 2026), the usual report plus the note listing what's missing.
+  const partialMissing = view.notSubmitted && view.assessments.length > 0;
+  if (view.notSubmitted && !partialMissing) {
     return (
       <div style={{ fontFamily: font, display: "flex", flexDirection: "column", gap: 16 }}>
         <NotSubmitted view={view} audience={audience} />
@@ -438,6 +449,7 @@ export default function ReportView({ report, audience = "learner", firstName = "
       <style>{STYLES}</style>
       <Summary view={view} showMarks={showMarks} title={title} />
       <div className="rv-col">
+        {partialMissing && <NotSubmitted view={view} audience={audience} partial />}
         <Glance view={view} />
         <Skills view={view} showMarks={showMarks} />
         <Work view={view} showMarks={showMarks} onOpenAssessment={onOpenAssessment} onOpenSessionReport={onOpenSessionReport} />

@@ -43,6 +43,38 @@ export function useMyReports(hubId = null, learnerId = null) {
   });
 }
 
+// "File as not handed in" (19 Nov 2026): the learner's missing sessions are filed, so the course or
+// module can be reported on — and its certificate issued — once published.
+export function useFileNotSubmitted() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reportApi.fileNotSubmitted,
+    onSuccess: ({ filed, needsGrading }) => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      const what = `${filed} session${filed === 1 ? "" : "s"} filed as not handed in`;
+      if (needsGrading) toast(`${what} — ${needsGrading} still ${needsGrading === 1 ? "has" : "have"} work to mark first`);
+      else toast.success(`${what} — the report can be generated now`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't file the missing work"),
+  });
+}
+
+// Whole class at once (19 Nov 2026): draft every ready learner's report, or publish every draft.
+export function useBulkReports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reportApi.bulk,
+    onSuccess: ({ done }, { action }) => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      qc.invalidateQueries({ queryKey: ["certificates"] });
+      toast.success(action === "publish"
+        ? `${done} report${done === 1 ? "" : "s"} published — certificates issued`
+        : `${done} draft${done === 1 ? "" : "s"} generated — review, then publish`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't finish that"),
+  });
+}
+
 export function useGenerateReport() {
   const qc = useQueryClient();
   return useMutation({

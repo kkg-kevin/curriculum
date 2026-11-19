@@ -9,6 +9,11 @@ export const reportApi = {
   getReadinessBatch: (classId, courseIds) =>
     api.get(`${BASE}/readiness`, { params: { classId, courseIds: courseIds.join(",") } }).then((r) => r.data),
   generate:      (payload)           => api.post(BASE, payload).then((r) => r.data.data),
+  // A learner who never handed work in: file every such session of the course (or one module,
+  // payload.moduleId) as not submitted → { filed, needsGrading }.
+  fileNotSubmitted: (payload)        => api.post(`${BASE}/not-submitted`, payload).then((r) => r.data.data),
+  // Whole class: { action: "generate" | "publish", classId, courseId, moduleId? } → { done, skipped }.
+  bulk:          (payload)           => api.post(`${BASE}/bulk`, payload).then((r) => r.data.data),
   getById:       (id)                => api.get(`${BASE}/${id}`).then((r) => r.data.data),
   // body: { remarks?, homeNote? }
   updateRemarks: (id, body)          => api.patch(`${BASE}/${id}`, body).then((r) => r.data.data),

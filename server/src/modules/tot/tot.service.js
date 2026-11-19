@@ -205,7 +205,7 @@ const TotService = {
     const courses = await Promise.all((progress?.courses || []).filter((item) => totClassIds.has(item.classId)).map(async (item) => {
       await ReportService.refreshSessionReports(learner.id, item.classId, item.id).catch(() => {});
       const now = await ReportService.getCourseProgressForLearner(item.id, item.classId, learner.id);
-      const report = await db("reports").where({ learnerId: learner.id, courseId: item.id, classId: item.classId }).whereNull("sessionId").first("id", "status");
+      const report = await db("reports").where({ learnerId: learner.id, courseId: item.id, classId: item.classId }).whereNull("sessionId").whereNull("moduleId").first("id", "status");
       return { ...item, done: now.doneSessions, total: now.totalSessions, ready: now.totalSessions > 0 && now.doneSessions === now.totalSessions, reportStatus: report?.status || "none" };
     }));
     return {

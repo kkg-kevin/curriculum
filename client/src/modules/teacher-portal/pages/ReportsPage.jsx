@@ -1,46 +1,19 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
-  Assignment as AssignmentIcon,
   CheckCircle as CheckCircleIcon,
   Description as DescriptionIcon,
   HourglassEmpty as HourglassEmptyIcon,
-  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { reportApi } from "../../reports/services/reportApi";
-import { useGenerateReport } from "../../reports/hooks/useReports";
-import { classLabel } from "../../../utils/classLabel";
+import { CourseReportCard, NeedsPublishingSection, T, cardStyle, flattenReportRows, rowStatus } from "../../reports/components/CourseReportCards";
 
-const T = {
-  accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
-  tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
-};
-const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
-
-const STATUS_CONFIG = {
-  not_ready: { label: "Not Ready", bg: "#F9FAFB", color: T.inkMuted, border: T.border },
-  ready:     { label: "Ready to Generate", bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
-  draft:     { label: "Draft", bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
-  published: { label: "Published", bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_CONFIG[status] || STATUS_CONFIG.not_ready;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: s.bg, color: s.color, border: `1.5px solid ${s.border}` }}>
-      {s.label}
-    </span>
-  );
-}
-
-function rowStatus(row) {
-  if (row.report?.status === "published") return "published";
-  if (row.report?.status === "draft") return "draft";
-  return row.ready ? "ready" : "not_ready";
-}
+// The course report cards (sessions, module reports, final report, every action on them) are shared
+// with the admin and hub class page — reports/components/CourseReportCards.jsx (19 Nov 2026).
+const reportPath = (id) => `/teacher-portal/reports/${id}`;
 
 function KpiTile({ icon, num, label, sub }) {
   return (
@@ -55,203 +28,7 @@ function KpiTile({ icon, num, label, sub }) {
   );
 }
 
-// One learner's status for whichever session is currently selected in the navigator below — a
-// plain row (name + status + View once published) rather than a per-learner chip stack, so every
-// student's standing for THAT session reads as a single grouped list, the same shape the
-// learner's own "My Reports" list uses per report (see ReportRow in ReportsOverview.jsx).
-function SessionLearnerRow({ learner, session, navigate }) {
-  const published = session?.report?.status === "published";
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px", borderBottom: `1px solid #F9FAFB` }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
-        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
-          {!session || session.requiredCount === 0 ? "no assessments to report on" : `${session.gradedCount}/${session.requiredCount} assessments graded`}
-        </p>
-      </div>
-      <StatusBadge status={published ? "published" : "not_ready"} />
-      {published && (
-        <button
-          type="button"
-          onClick={() => navigate(`/teacher-portal/reports/${session.report.id}`)}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          <VisibilityIcon sx={{ fontSize: 13 }} /> View
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Prev/next between a course's sessions — 16 tabs would be unusable, so this pages one session
-// at a time instead, same pattern as any paginated list.
-function SessionNavigator({ sessions, index, onChange }) {
-  const current = sessions[index];
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 16px", backgroundColor: "#FAFBFF", borderBottom: `1px solid ${T.border}` }}>
-      <button
-        type="button"
-        onClick={() => onChange(index - 1)}
-        disabled={index === 0}
-        style={{ padding: "6px 12px", backgroundColor: "#fff", color: index === 0 ? T.inkFaint : T.accent, border: `1.5px solid ${T.border}`, borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: index === 0 ? "not-allowed" : "pointer" }}
-      >
-        ‹ Prev
-      </button>
-      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink, textAlign: "center" }}>
-        Session {index + 1} of {sessions.length}{current?.sessionTitle ? ` — ${current.sessionTitle}` : ""}
-      </p>
-      <button
-        type="button"
-        onClick={() => onChange(index + 1)}
-        disabled={index === sessions.length - 1}
-        style={{ padding: "6px 12px", backgroundColor: "#fff", color: index === sessions.length - 1 ? T.inkFaint : T.accent, border: `1.5px solid ${T.border}`, borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: index === sessions.length - 1 ? "not-allowed" : "pointer" }}
-      >
-        Next ›
-      </button>
-    </div>
-  );
-}
-
-// The course-level final report row — Generate/Review/View, unchanged logic from before the
-// per-session breakdown existed; session status now lives in the navigator above instead of
-// nested under each learner here.
-function ReportRow({ row, cls, course, onGenerate, isGenerating, navigate }) {
-  const status = rowStatus(row);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid #F9FAFB` }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
-        <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
-          {course.name} · {row.requiredCount === 0
-            ? "no assessments to report on"
-            : `${row.gradedCount}/${row.requiredCount} assessments graded`}
-        </p>
-      </div>
-      <StatusBadge status={status} />
-      {status === "ready" && (
-        <button
-          type="button"
-          onClick={() => onGenerate({ learnerId: row.learner.id, courseId: course.id, classId: cls.id })}
-          disabled={isGenerating}
-          style={{ padding: "6px 14px", backgroundColor: isGenerating ? "#F9FAFB" : "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: isGenerating ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
-        >
-          Generate
-        </button>
-      )}
-      {(status === "draft" || status === "published") && (
-        <button
-          type="button"
-          onClick={() => navigate(`/teacher-portal/reports/${row.report.id}`)}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", backgroundColor: T.tintBg, color: T.accent, border: `1.5px solid ${T.tintBorder}`, borderRadius: 20, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          <VisibilityIcon sx={{ fontSize: 13 }} /> {status === "draft" ? "Review" : "View"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Every generated-but-not-yet-published final report across the teacher's classes, surfaced up
-// front rather than left to a passive KPI count — "Generate" only creates a draft (so a teacher
-// can review it first, see report.model.js), and it's easy to generate one, get distracted, and
-// never come back to actually publish it, leaving the learner/guardian with nothing to see
-// despite the report existing. Same "can't-miss pending queue" shape as AssessmentsPage.jsx's
-// own NeedsGradingSection.
-function NeedsPublishingSection({ rows, navigate }) {
-  if (rows.length === 0) return null;
-  return (
-    <div style={{ ...cardStyle, overflow: "hidden", border: "1.5px solid #FED7AA" }}>
-      <div style={{ padding: "14px 20px", backgroundColor: "#FFF7ED", borderBottom: `1px solid ${T.border}` }}>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.05em" }}>Needs Publishing</p>
-        <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkMuted }}>
-          {rows.length} report{rows.length === 1 ? "" : "s"} generated but not yet visible to the learner or guardian
-        </p>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {rows.map((row) => (
-          <div key={row.report.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid #F9FAFB", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
-              <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{row.course.name} · {classLabel(row.cls)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate(`/teacher-portal/reports/${row.report.id}`)}
-              style={{ padding: "7px 16px", backgroundColor: "#feb139", color: "#25476a", border: "none", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              Review & Publish →
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// One (class, course) card — a session browser (all learners' standing for one session at a
-// time, paged via SessionNavigator) sitting above the existing per-learner final-report list.
-// Session identity/order is the same across every learner's row, so it's read off the first row.
-function CourseReportCard({ cls, course, rows, onGenerate, isGeneratingRow, navigate }) {
-  const { requiredCount = 0, attachedCount = 0 } = rows[0] || {};
-  const missingCount = attachedCount - requiredCount;
-  const sessions = (rows[0]?.sessions || []).filter((s) => s.requiredCount > 0);
-  const [sessionIndex, setSessionIndex] = useState(0);
-  const activeSession = sessions[Math.min(sessionIndex, sessions.length - 1)];
-
-  return (
-    <div style={{ ...cardStyle, overflow: "hidden" }}>
-      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
-        <AssignmentIcon sx={{ fontSize: 18, color: T.accentLight }} />
-        <div>
-          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{course.name}</p>
-          <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{classLabel(cls)}</p>
-        </div>
-      </div>
-      {/* A course's sessions can keep referencing assessments that were later deleted —
-          those can never be graded, so they're excluded from the requirement. Without
-          saying so, the count silently disagrees with the course's own content. */}
-      {missingCount > 0 && (
-        <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid #FDE68A`, fontSize: 11.5, color: "#B45309", fontWeight: 600 }}>
-          {requiredCount === 0
-            ? `All ${attachedCount} assessment${attachedCount === 1 ? "" : "s"} attached to this course have been deleted — there's nothing left to report on.`
-            : `${missingCount} of ${attachedCount} attached assessment${attachedCount === 1 ? " has" : "s have"} been deleted and ${missingCount === 1 ? "is" : "are"} excluded from the ${requiredCount} required here.`}
-        </div>
-      )}
-
-      {sessions.length > 0 && (
-        <>
-          <SessionNavigator sessions={sessions} index={Math.min(sessionIndex, sessions.length - 1)} onChange={setSessionIndex} />
-          {rows.map((row) => (
-            <SessionLearnerRow
-              key={row.learner.id}
-              learner={row.learner}
-              session={row.sessions?.find((s) => s.sessionId === activeSession?.sessionId)}
-              navigate={navigate}
-            />
-          ))}
-        </>
-      )}
-
-      <div style={{ padding: "10px 20px", backgroundColor: "#F9FAFB", borderTop: sessions.length > 0 ? `1px solid ${T.border}` : "none", borderBottom: `1px solid ${T.border}` }}>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>Final Combined Report</p>
-      </div>
-      {rows.map((row) => (
-        <ReportRow
-          key={row.learner.id}
-          row={row}
-          cls={cls}
-          course={course}
-          onGenerate={onGenerate}
-          isGenerating={isGeneratingRow(row, course.id)}
-          navigate={navigate}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function ReportsPage() {
-  const navigate = useNavigate();
   const { teacher, teacherLoading, selectedHub, selectedHubId } = useOutletContext();
 
   const { data: classesData, isLoading: classesLoading, isError: classesError } = useQuery({
@@ -306,23 +83,12 @@ export default function ReportsPage() {
     cls, course, rows: readinessByClass.get(cls.id)?.[course.id] || [],
   })).filter((s) => s.rows.length > 0);
 
-  const allRows = sections.flatMap((s) => s.rows.map((r) => ({ ...r, cls: s.cls, course: s.course })));
+  // Final course reports and module reports alike — each counts in the tiles and in "Needs publishing".
+  const allRows = flattenReportRows(sections);
   const readyCount = allRows.filter((r) => rowStatus(r) === "ready").length;
-  // The actual rows, not just the count — feeds NeedsPublishingSection below.
   const draftRows = allRows.filter((r) => rowStatus(r) === "draft");
   const draftCount = draftRows.length;
   const publishedCount = allRows.filter((r) => rowStatus(r) === "published").length;
-
-  const { mutate: generateReport, isPending: generating, variables: generatingVars } = useGenerateReport();
-  // courseId is passed in explicitly rather than read off `row` — the readiness rows the server
-  // returns are {learner, requiredCount, gradedCount, ready, report} with no course on them (only
-  // the derived `allRows` above attaches one, and that's used purely for the KPI counts), so
-  // reaching for row.course.id here threw the moment a teacher actually clicked Generate.
-  const isGeneratingRow = (row, courseId) => generating && generatingVars?.learnerId === row.learner.id && generatingVars?.courseId === courseId;
-
-  const handleGenerate = (payload) => {
-    generateReport(payload, { onSuccess: (report) => navigate(`/teacher-portal/reports/${report.id}`) });
-  };
 
   const isLoading = teacherLoading || (!!teacher && (classesLoading || readinessResults.some((r) => r.isLoading)));
   const isError = classesError || readinessResults.some((r) => r.isError);
@@ -358,7 +124,7 @@ export default function ReportsPage() {
         <KpiTile icon={<CheckCircleIcon fontSize="small" />} num={publishedCount} label="Published" sub="Visible to learner & guardian" />
       </div>
 
-      <NeedsPublishingSection rows={draftRows} navigate={navigate} />
+      <NeedsPublishingSection rows={draftRows} reportPath={reportPath} />
 
       {sections.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", padding: "60px 24px" }}>
@@ -367,15 +133,7 @@ export default function ReportsPage() {
         </div>
       ) : (
         sections.map(({ cls, course, rows }) => (
-          <CourseReportCard
-            key={`${cls.id}:${course.id}`}
-            cls={cls}
-            course={course}
-            rows={rows}
-            onGenerate={handleGenerate}
-            isGeneratingRow={isGeneratingRow}
-            navigate={navigate}
-          />
+          <CourseReportCard key={`${cls.id}:${course.id}`} cls={cls} course={course} rows={rows} reportPath={reportPath} />
         ))
       )}
     </div>

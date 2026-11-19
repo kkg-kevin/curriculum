@@ -7,10 +7,10 @@ const { authorize } = require("../../shared/middleware/auth.middleware");
 
 const router = express.Router();
 
-// Certificates are never created or edited through the API — a course certificate is issued when
-// a learner's final course report is published and revoked when it is withdrawn, and pathway and
-// bootcamp certificates follow from those (see certificate.service.js). Staff can read them, and
-// revoke or reinstate one by hand.
+// A course certificate is issued when a learner's final course report is published and revoked
+// when it is withdrawn, and pathway and bootcamp certificates follow from those (see
+// certificate.service.js). A module certificate follows its module report the same way (19 Nov
+// 2026). Staff can read them all, and revoke or reinstate one by hand.
 
 // Learner-facing: this learner's own certificates. Above "/:id" so "learner" isn't read as an id.
 router.get("/learner/mine", authorize("learner"), listMyCertificates);

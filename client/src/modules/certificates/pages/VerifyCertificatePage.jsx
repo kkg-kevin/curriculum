@@ -59,7 +59,7 @@ export default function VerifyCertificatePage() {
             </h1>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: INK, lineHeight: 1.55 }}>
               {valid ? (
-                <>{BRAND_NAME} awarded certificate <strong>{c.number}</strong> to <strong>{c.learnerName}</strong> for completing {c.kindNoun} <strong>{c.title}</strong>{c.hubName ? <> at {c.hubName}</> : null} on {formatCertificateDate(c.issuedAt)}.</>
+                <>{BRAND_NAME} awarded certificate <strong>{c.number}</strong> to <strong>{c.learnerName}</strong> for completing {c.kindNoun} <strong>{c.title}</strong>{c.partOf ? <> (part of the course <strong>{c.partOf}</strong>)</> : null}{c.hubName ? <> at {c.hubName}</> : null} on {formatCertificateDate(c.issuedAt)}.</>
               ) : (
                 <>Certificate <strong>{c.number}</strong> was issued by {BRAND_NAME} but is no longer valid. Ask the learner or their learning hub for a current one.</>
               )}

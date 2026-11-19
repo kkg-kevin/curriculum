@@ -146,6 +146,9 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "report_ready":
+      // A learner finished a course or module (19 Nov 2026) — the educator's Reports page.
+      return p.route || "/teacher-portal/reports";
     case "mentor_standard_below":
       // A mentor below one of the workspace's mentor standards — their page (admin or supervisor).
       return p.route || "/teachers";

@@ -50,11 +50,13 @@ const list = (names) => (names.length <= 1 ? names[0] || "" : `${names.slice(0, 
 export function buildReportView(report, { audience = "learner", firstName = "" } = {}) {
   const content = report?.content || {};
   const isSession = Boolean(report?.sessionId);
+  // A module's combined report (19 Nov 2026): no session, a moduleId.
+  const isModule = !isSession && Boolean(report?.moduleId);
   const overall = content.overall || { totalScore: 0, maxScore: 0, percent: 0 };
   const percent = Math.round(Number(overall.percent) || 0);
   const level = levelFor(percent);
   const v = voice(audience, firstName);
-  const scope = isSession ? "this session" : "this course";
+  const scope = isSession ? "this session" : isModule ? "this module" : "this course";
 
   const assessments = (content.assessments || []).map((a) => ({ ...a, level: levelFor(a.percent) }));
   const indicators = (content.indicatorBreakdown || []).map((i) => ({
@@ -103,7 +105,7 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
 
   // What the teacher said: the report's own remarks, then each marked piece's comment.
   const comments = [];
-  if (report?.remarks?.trim()) comments.push({ key: "remarks", text: report.remarks.trim(), about: isSession ? "This session" : "This course", by: report.publishedByName?.replace(/\s+/g, " ").trim() || null, photo: report.publishedByPhoto || null });
+  if (report?.remarks?.trim()) comments.push({ key: "remarks", text: report.remarks.trim(), about: isSession ? "This session" : isModule ? "This module" : "This course", by: report.publishedByName?.replace(/\s+/g, " ").trim() || null, photo: report.publishedByPhoto || null });
   for (const a of assessments) {
     if (a.feedback?.trim()) comments.push({ key: a.assessmentId, text: a.feedback.trim(), about: a.name, by: a.gradedByName?.replace(/\s+/g, " ").trim() || null, photo: a.gradedByPhoto || null, at: a.gradedAt || null });
   }
@@ -113,6 +115,7 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
 
   return {
     isSession,
+    isModule,
     notSubmitted: Boolean(content.notSubmitted),
     notSubmittedAssessments: content.notSubmittedAssessments || [],
     percent,
@@ -135,6 +138,10 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
     sessionReports: (content.sessionReports || []).map((s) => ({ ...s, level: levelFor(s.percent) })),
     courseName: content.courseName || null,
     sessionName: content.sessionName || null,
+    moduleName: content.moduleName || null,
+    moduleNumber: content.moduleNumber || null,
+    moduleCount: content.moduleCount || null,
+    nextModuleName: content.nextModuleName || null,
     voice: v,
   };
 }

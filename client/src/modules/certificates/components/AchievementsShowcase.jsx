@@ -41,7 +41,7 @@ const MILESTONES = [
   { at: 20, name: "Legend" },
 ];
 
-const KIND_COLOR = { course: SKY, pathway: "#7C3AED", bootcamp: "#059669" };
+const KIND_COLOR = { course: SKY, module: "#D97706", pathway: "#7C3AED", bootcamp: "#059669" };
 const NEW_FOR_DAYS = 14;
 const COLLECTION_PREVIEW = 6;
 const NEXT_PREVIEW = 3;
@@ -103,8 +103,10 @@ function CertificateTile({ certificate, onOpen }) {
 // Something still to earn, with how far along they really are.
 function NextTile({ item }) {
   const course = item.kind === "course";
+  // A module (19 Nov 2026) counts sessions like a course.
+  const bySession = course || item.kind === "module";
   const ready = item.done >= item.total;
-  const unit = course ? "session" : "course";
+  const unit = bySession ? "session" : "course";
   return (
     <div style={{ padding: "14px 16px", borderRadius: 14, border: `1.5px dashed ${BORDER}`, backgroundColor: "#FAFBFC", display: "flex", gap: 12, alignItems: "flex-start" }}>
       <div style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: ready ? "#FEF3E2" : "#F1F5F9", color: ready ? GOLD_DEEP : INK_FAINT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -115,12 +117,13 @@ function NextTile({ item }) {
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{item.title}</p>
           <KindChip kind={item.kind} />
         </div>
+        {item.partOf && <p style={{ margin: "2px 0 0", fontSize: 11.5, color: INK_MUTED }}>Part of {item.partOf}</p>}
         <div style={{ margin: "9px 0 6px" }}>
           <ProgressBar done={item.done} total={item.total} color={ready ? GOLD : KIND_COLOR[item.kind]} />
         </div>
         <p style={{ margin: 0, fontSize: 12, color: INK_MUTED }}>
-          {ready && course
-            ? "Every session is done. Your certificate arrives when your teacher publishes your final report."
+          {ready && bySession
+            ? `Every session is done. Your certificate arrives when your teacher publishes your ${course ? "final" : "module"} report.`
             : `${item.done} of ${item.total} ${unit}${item.total === 1 ? "" : "s"} done${item.done === 0 ? "" : item.total - item.done === 1 ? ` · just 1 ${unit} to go` : ` · ${item.total - item.done} to go`}`}
         </p>
       </div>
@@ -200,8 +203,11 @@ export default function AchievementsShowcase({ certificates = [], progress, isLo
   const reached = [...MILESTONES].reverse().find((m) => earned.length >= m.at) || null;
   const nextMilestone = MILESTONES.find((m) => earned.length < m.at) || null;
 
-  // What to chase next: courses under way first (closest to done), then pathways.
-  const next = useMemo(() => [...(progress?.courses || []), ...(progress?.pathways || [])], [progress]);
+  // What to chase next: modules and courses under way (closest to done first), then pathways.
+  const next = useMemo(() => {
+    const nearest = (a, b) => b.done / b.total - a.done / a.total;
+    return [...[...(progress?.modules || []), ...(progress?.courses || [])].sort(nearest), ...(progress?.pathways || [])];
+  }, [progress]);
   const nextShown = showAllNext ? next : next.slice(0, NEXT_PREVIEW);
   const collection = showAll ? rest : rest.slice(0, COLLECTION_PREVIEW);
 

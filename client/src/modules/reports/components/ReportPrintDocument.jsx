@@ -106,11 +106,16 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
   const view = buildReportView(report, { audience, firstName: learner?.firstName || "" });
 
   const isSession = !!report.sessionId;
+  // A module's combined report (19 Nov 2026).
+  const isModule = !isSession && !!report.moduleId;
   const courseName = content.courseName || "Course";
   const sessionName = content.sessionName || null;
+  const moduleName = content.moduleName || null;
   const title = isSession
     ? (sessionName ? `${courseName} · ${sessionName}` : `${courseName} · Session Report`)
-    : `${courseName} · Progress Report`;
+    : isModule
+      ? `${courseName} · ${moduleName || "Module"}`
+      : `${courseName} · Progress Report`;
 
   const learnerName = learner ? `${learner.firstName || ""} ${learner.lastName || ""}`.trim() : "Learner";
   const hubName = hub?.name || "Learning Hub";
@@ -151,7 +156,7 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
           <Avatar src={learner?.photo} fallback={initials(learner?.firstName, learner?.lastName)} size={66} />
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: "#9BD7F2" }}>
-              {isSession ? "Session Report" : "Progress Report"}
+              {isSession ? "Session Report" : isModule ? "Module Report" : "Progress Report"}
             </p>
             <h1 style={{ margin: "4px 0 3px", fontSize: 21, fontWeight: 900, lineHeight: 1.2 }}>{learnerName}</h1>
             <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.78)" }}>{title}</p>
@@ -167,19 +172,27 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
         {gradeName && <IdentityField label="Class" value={gradeName} />}
         <IdentityField label="Course" value={courseName} />
         {isSession && <IdentityField label="Session" value={sessionName || "—"} />}
+        {isModule && <IdentityField label="Module" value={moduleName || "—"} />}
         <IdentityField label="Published" value={fmtDate(report.publishedAt)} />
       </div>
 
       {/* ── Body ──────────────────────────────────────────────────── */}
       <div style={{ padding: "24px 32px 30px", display: "flex", flexDirection: "column", gap: 24 }}>
 
-        {view.notSubmitted ? (
+        {view.notSubmitted && view.assessments.length === 0 ? (
           <Box tone="warm">
             <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: INK }}>Not handed in</p>
             <p style={{ margin: "4px 0 0", fontSize: 11.5, color: INK_MUTED }}>The work for this session wasn’t handed in, so there was nothing to mark: {view.notSubmittedAssessments.map((x) => x.name).join(", ") || "—"}.</p>
           </Box>
         ) : (
           <>
+            {/* Some work marked, the rest filed "not handed in" (19 Nov 2026). */}
+            {view.notSubmitted && (
+              <Box tone="warm">
+                <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: INK }}>Not handed in</p>
+                <p style={{ margin: "4px 0 0", fontSize: 11.5, color: INK_MUTED }}>{view.notSubmittedAssessments.map((x) => x.name).join(", ") || "—"}. The rest of this session’s work was marked and is below.</p>
+              </Box>
+            )}
             {/* How it went */}
             <div style={{ padding: "18px 22px", border: `1.5px solid ${TINT_BORDER}`, background: TINT, borderRadius: 12, breakInside: "avoid" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -187,7 +200,7 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
                   <span style={{ fontSize: 22, fontWeight: 900, color: INK }}>{view.percent}%</span>
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: INK_MUTED }}>{isSession ? "How this session went" : "How the course went"}</p>
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: INK_MUTED }}>{isSession ? "How this session went" : isModule ? "How this module went" : "How the course went"}</p>
                   <p style={{ margin: "3px 0 4px", fontSize: 20, fontWeight: 900, color: view.level.color }}>
                     {view.level.label}
                     {view.band && <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 700, color: NAVY, background: "#fff", border: `1px solid ${TINT_BORDER}`, borderRadius: 20, padding: "2px 9px", verticalAlign: "middle" }}>Level: {view.band}</span>}
@@ -285,7 +298,7 @@ export default function ReportPrintDocument({ report, learner, hub, gradeName, a
             )}
 
             {/* Sessions (course report) and assessments */}
-            {[["Sessions in this course", view.sessionReports.map((x) => ({ key: x.sessionId, name: x.sessionTitle || "Session", percent: x.percent, level: x.level }))],
+            {[[isModule ? "Sessions in this module" : "Sessions in this course", view.sessionReports.map((x) => ({ key: x.sessionId, name: x.sessionTitle || "Session", percent: x.percent, level: x.level }))],
               [isSession ? "This session’s work" : "Assessments", view.assessments.map((x) => ({
                 key: x.assessmentId, name: x.name, percent: x.percent, level: x.level,
                 // A project's milestones, in a line under it (16 Nov 2026).

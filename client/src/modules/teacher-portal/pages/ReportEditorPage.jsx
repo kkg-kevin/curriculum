@@ -9,7 +9,9 @@ const T = { accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", acce
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 const fieldStyle = { boxSizing: "border-box", padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "Inter, sans-serif", color: T.ink, outline: "none" };
 
-export default function ReportEditorPage() {
+// `backTo`: where "Back" goes — the teacher's Reports page by default; opened from the admin or hub
+// class page (19 Nov 2026) it's -1, back to that class.
+export default function ReportEditorPage({ backTo = "/teacher-portal/reports" }) {
   const { reportId } = useParams();
   const navigate = useNavigate();
   const { data: report, isLoading, isError } = useReport(reportId);
@@ -50,7 +52,7 @@ export default function ReportEditorPage() {
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
-      <button type="button" onClick={() => navigate("/teacher-portal/reports")} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 20, color: T.inkMuted, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+      <button type="button" onClick={() => navigate(backTo)} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#fff", border: `1.5px solid ${T.border}`, borderRadius: 20, color: T.inkMuted, fontSize: 13, fontWeight: 600, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
         ← Course Reports
       </button>
 
@@ -61,7 +63,11 @@ export default function ReportEditorPage() {
             {learner ? `${learner.firstName} ${learner.lastName}` : "Course Report"}
           </h1>
           <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-            {report.sessionId ? `Session Report — ${content.sessionName || "Session"}` : (content.courseName || course?.name || "Course report")}
+            {report.sessionId
+              ? `Session Report — ${content.sessionName || "Session"}`
+              : report.moduleId
+                ? `Module Report — ${content.moduleName || "Module"} · ${content.courseName || course?.name || "Course"}`
+                : (content.courseName || course?.name || "Course report")}
           </p>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>
             {overall.totalScore}/{overall.maxScore} overall · {overall.percent}% · {isPublished ? "Published" : "Draft — not yet visible to the learner"}
@@ -140,7 +146,7 @@ export default function ReportEditorPage() {
             <button
               type="button"
               onClick={() => {
-                const go = () => publish(report.id, { onSuccess: () => navigate("/teacher-portal/reports") });
+                const go = () => publish(report.id, { onSuccess: () => navigate(backTo) });
                 if (remarks !== (report.remarks || "") || homeNote !== (report.homeNote || "")) saveRemarks({ id: report.id, remarks, homeNote }, { onSuccess: go });
                 else go();
               }}

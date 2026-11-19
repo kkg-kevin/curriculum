@@ -82,3 +82,9 @@ export function sectionPath(role, courseId, sessionId, sectionKey, itemId) {
     : `/courses/${courseId}`;
   return `${base}/sessions/${sessionId}/sections/${sectionKey}${itemId ? `/${itemId}` : ""}`;
 }
+
+// A learner's course / module / session report opened from the class page (19 Nov 2026) — the
+// report editor, in the admin console or the hub portal.
+export function learnerReportPath(role, reportId) {
+  return role === "school" ? `/school-portal/reports/learner/${reportId}` : `/reports/learner/${reportId}`;
+}
