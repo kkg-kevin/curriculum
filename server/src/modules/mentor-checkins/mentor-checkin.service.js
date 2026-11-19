@@ -880,6 +880,34 @@ const MentorCheckinService = {
     const writerOf = new Map(rows.map((m) => [m.id, writers.get(m.reportSubmittedBy) || null]));
     return decorated.filter((m) => !m.roundCancelled).map((m) => ({ ...m, kind: kinds.get(m.id), writtenBy: writerOf.get(m.id) }));
   },
+
+  // An educator joined a class (ClassCourseTeacherLinkModel.link, 19 Nov 2026). A round keeps the
+  // class's educators as they were when it was published, so someone added afterwards saw none of
+  // its check-ins. Every educator of the class attends, so they join its rounds that are still
+  // running (window not over), and get the same "Parent check-ins for …" notice the others had.
+  // Returns how many rounds they were added to. Ended rounds are left as they were.
+  async addEducatorToClassRounds(classId, teacherId, { notify = true } = {}) {
+    if (!classId || !teacherId) return 0;
+    const teacher = await db("teachers").where({ id: teacherId }).first("id", "status");
+    if (!teacher || ["inactive", "removed"].includes(teacher.status || "active")) return 0;
+    const rounds = (await db(ROUNDS).where({ classId, status: "published" }).where("windowEnd", ">=", todayInKenya())).map(shapeRound);
+    const joined = rounds.filter((round) => !round.educatorIds.includes(teacherId));
+    if (!joined.length) return 0;
+    for (const round of joined) {
+      await db(ROUNDS).where({ id: round.id }).update({ educatorIds: JSON.stringify([...round.educatorIds, teacherId]), updatedAt: new Date() });
+    }
+    if (notify) {
+      const userIds = await educatorUserIds([teacherId]);
+      if (userIds.length) {
+        const cls = await db("classes").where({ id: classId }).first("gradeName", "streamName");
+        for (const round of joined) {
+          const count = Number((await db(MEETINGS).where({ roundId: round.id }).whereNot({ status: "cancelled" }).count({ n: "*" }).first())?.n) || 0;
+          await Notify.roundScheduled(round, userIds, { className: classLabel(cls), count });
+        }
+      }
+    }
+    return joined.length;
+  },
 };
 
 module.exports = MentorCheckinService;

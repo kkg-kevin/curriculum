@@ -42,6 +42,11 @@ const ClassCourseTeacherLinkModel = {
       createdAt: new Date(),
     };
     await db(TABLE).insert(item);
+    // A new educator of the class attends its parent check-ins still running — the rounds were
+    // published with the educators the class had then. Never fails the link itself.
+    await require("../mentor-checkins/mentor-checkin.service").addEducatorToClassRounds(classId, teacherId).catch((err) => {
+      console.error("[class-links] could not add the educator to the class's parent check-ins:", err.message);
+    });
     return item;
   },
 
