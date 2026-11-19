@@ -4,17 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { classApi } from "../../classes/services/classApi";
 import { useClassCourseTeachers } from "../../classes/hooks/useClasses";
 import { useCurriculumCurrentCourses, useCurriculumCoursesByGrade } from "../../curriculum/hooks/useCurriculumVersion";
-import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
-import { useAcademicYears } from "../../curriculum/hooks/useAcademicYear";
 import {
   useClassTimetable, useCreateSlot, useCreateSlotsBulk, useUpdateSlot, useDeleteSlot,
-  useCourseSchedules, useSetCourseSchedule, useSetCourseScheduleBulk, useClassCalendar, useHubCalendar,
-  useClassDateWindow,
+  useCourseSchedules, useSetCourseSchedule, useClassCalendar, useHubCalendar,
+  useClassDateWindow, useClassPeriods,
 } from "../../timetable/hooks/useTimetable";
 import { DAYS_OF_WEEK, DAY_LABELS } from "../../timetable/schemas/timetable.schema";
 import CalendarView from "../../timetable/components/CalendarView";
 import { useRoomsByHub, useRoomAvailability } from "../../rooms/hooks/useRooms";
 import { useTeacherAvailabilityConflicts } from "../../timetable/hooks/useTimetable";
+import { askConfirm } from "../../../components/ui/AskDialog";
+import toast from "react-hot-toast";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
@@ -245,40 +245,86 @@ function describeNonSchedulable(dateStr, periods, isOfferingWindow) {
   return "Falls outside any configured term — pick a date covered by a published Academic Year term, or go to Academic Year to add/extend one.";
 }
 
-// A course's Sessions only start landing on the calendar once its start date is set — this row
-// is how a school anchors "Session 1 lines up with this date" for a course that already has
-// weekday slots configured above.
-function CourseStartDateRow({ courseName, startDate, onSave, isSaving, siblingClasses = [], periods = [], isOfferingWindow = false }) {
+// Where a course's Session 1 will land: the first day on or after `startDate` that has one of
+// this course's weekly slots AND is in session (inside the class's run, not in a break) — the same
+// walk the server's calendar engine does (timetable.service.js resolveCoursePlacements). Returns
+// { date, slot } or null when no such day comes within a year.
+const WEEKDAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+function inSession(dateStr, periods) {
+  if (!periods.length) return true;
+  return periods.some((p) => p.startDate && p.endDate && dateStr >= p.startDate && dateStr <= p.endDate
+    && !(p.breakStartDate && p.breakEndDate && dateStr >= p.breakStartDate && dateStr <= p.breakEndDate));
+}
+function firstSessionFrom(startDate, courseSlots, periods) {
+  if (!startDate || !courseSlots.length) return null;
+  const byDay = new Map();
+  [...courseSlots].sort((x, y) => x.startTime.localeCompare(y.startTime)).forEach((sl) => { if (!byDay.has(sl.dayOfWeek)) byDay.set(sl.dayOfWeek, sl); });
+  const d = new Date(`${startDate}T00:00:00`);
+  for (let i = 0; i < 370; i += 1, d.setDate(d.getDate() + 1)) {
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const slot = byDay.get(WEEKDAY_NAMES[d.getDay()]);
+    if (slot && inSession(iso, periods)) return { date: iso, slot };
+  }
+  return null;
+}
+const fmtDayLong = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+
+// One course's start date for THIS class only (19 Nov 2026: no longer copied to other classes — a
+// bootcamp's cohort classes share a grade and curriculum but each runs on its own dates). Shows
+// whether it's set, where Session 1 will land, refuses a date outside the class's run, and offers
+// the programme's first day for a bootcamp/competition class.
+function CourseStartDateRow({ courseName, startDate, courseSlots, periods = [], isOfferingWindow = false, runStart = "", onSave, isSaving }) {
   const [value, setValue] = useState(startDate || "");
-  const [applyToClassIds, setApplyToClassIds] = useState([]);
   useEffect(() => setValue(startDate || ""), [startDate]);
   const dirty = value !== (startDate || "");
   const hint = describeNonSchedulable(value, periods, isOfferingWindow);
+  const outside = Boolean(hint) && !hint.startsWith("Falls inside");
+  const first = firstSessionFrom(value, courseSlots, periods);
+  const blocked = !value || !dirty || outside || isSaving;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 14px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 14px", backgroundColor: startDate ? "#FAFBFF" : "#FFFBEB", border: `1px solid ${startDate ? T.border : "#FDE68A"}`, borderRadius: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink, flex: 1, minWidth: 140 }}>{courseName}</p>
-        <input type="date" value={value} onChange={(e) => setValue(e.target.value)} style={{ ...inputStyle, padding: "6px 8px" }} />
-        <button
-          type="button"
-          onClick={() => onSave(value, applyToClassIds)}
-          disabled={!value || (!dirty && applyToClassIds.length === 0) || isSaving}
-          style={{
-            padding: "6px 14px", borderRadius: 8, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif",
-            border: "none", cursor: !value || (!dirty && applyToClassIds.length === 0) || isSaving ? "not-allowed" : "pointer",
-            backgroundColor: !value || (!dirty && applyToClassIds.length === 0) || isSaving ? "#b8d9ee" : T.accent, color: "#fff",
-          }}
-        >
-          {isSaving ? "Saving…" : startDate ? "Update" : "Set start date"}{applyToClassIds.length > 0 ? ` (${applyToClassIds.length + 1} classes)` : ""}
+        <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: T.ink }}>{courseName}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: startDate ? "#047857" : "#B45309" }}>
+            {startDate ? `Starts ${fmtShort(startDate)}` : "Not set — its sessions aren't on the calendar yet"}
+          </p>
+        </div>
+        <input type="date" value={value} min={isOfferingWindow ? runStart || undefined : undefined} onChange={(e) => setValue(e.target.value)} aria-label={`${courseName} start date`} style={{ ...inputStyle, padding: "6px 8px", borderColor: outside ? "#FCA5A5" : T.border }} />
+        <button type="button" onClick={() => onSave(value)} disabled={blocked}
+          style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", border: "none", cursor: blocked ? "not-allowed" : "pointer", backgroundColor: blocked ? "#b8d9ee" : T.accent, color: "#fff" }}>
+          {isSaving ? "Saving…" : startDate ? "Update" : "Set start date"}
         </button>
       </div>
-      {hint && <p style={{ margin: 0, fontSize: 11, color: "#B91C1C" }}>{hint}</p>}
-      <ClassMultiPicker
-        siblings={siblingClasses}
-        selectedIds={applyToClassIds}
-        onChange={setApplyToClassIds}
-        label={`Also set for other ${siblingClasses[0]?.gradeName || "grade"} classes`}
-      />
+      {isOfferingWindow && runStart && value !== runStart && (
+        <button type="button" onClick={() => setValue(runStart)} style={{ alignSelf: "flex-start", background: "none", border: "none", padding: 0, color: T.accentMid, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>
+          Use the programme's first day ({fmtShort(runStart)})
+        </button>
+      )}
+      {hint && <p style={{ margin: 0, fontSize: 11, color: outside ? "#B91C1C" : "#92400E" }}>{hint}</p>}
+      {value && !outside && (first
+        ? <p style={{ margin: 0, fontSize: 11.5, color: T.inkMuted }}>Session 1 lands on <strong style={{ color: T.ink }}>{fmtDayLong(first.date)}</strong> at {formatTime(first.slot.startTime)}{first.date !== value ? " — the first timetabled day from this date" : ""}.</p>
+        : <p style={{ margin: 0, fontSize: 11.5, color: "#B91C1C" }}>None of this course's weekly slots falls inside the class's run after this date — check the slots or the date.</p>)}
+    </div>
+  );
+}
+
+// Every course of this class at once — one date for all of them (a bootcamp's courses usually start
+// together). Still this class only.
+function AllCoursesStartRow({ count, periods, isOfferingWindow, runStart, onApply, isSaving }) {
+  const [value, setValue] = useState(isOfferingWindow && runStart ? runStart : "");
+  const hint = describeNonSchedulable(value, periods, isOfferingWindow);
+  const outside = Boolean(hint) && !hint.startsWith("Falls inside");
+  const blocked = !value || outside || isSaving;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 14px", border: `1px dashed ${T.tintBorder}`, borderRadius: 10, backgroundColor: "#F8FBFE" }}>
+      <p style={{ margin: 0, flex: "1 1 200px", fontSize: 12, fontWeight: 700, color: T.accent }}>Same start date for all {count} courses in this class</p>
+      <input type="date" value={value} onChange={(e) => setValue(e.target.value)} aria-label="Start date for every course" style={{ ...inputStyle, padding: "6px 8px", borderColor: outside ? "#FCA5A5" : T.border }} />
+      <button type="button" disabled={blocked} onClick={() => onApply(value)}
+        style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11.5, fontWeight: 700, fontFamily: "Inter, sans-serif", border: "none", cursor: blocked ? "not-allowed" : "pointer", backgroundColor: blocked ? "#b8d9ee" : T.accent, color: "#fff" }}>
+        {isSaving ? "Saving…" : `Set for all ${count}`}
+      </button>
+      {hint && outside && <p style={{ margin: 0, flexBasis: "100%", fontSize: 11, color: "#B91C1C" }}>{hint}</p>}
     </div>
   );
 }
@@ -329,20 +375,15 @@ export default function TimetablePage({ hub, initialClassId = "", heading = "Tim
   });
 
   const { data: courses = [] } = useCurriculumCurrentCourses(selectedClass?.curriculumId, selectedClass?.gradeId);
-  const { data: selectedCurriculum } = useCurriculumQuery(selectedClass?.curriculumId);
 
-  // A class created by a bootcamp/competition hub-offering runs on that offering's parent
-  // dates, not an academic-year cycle — checked first, since those dates are the more specific
-  // signal (mirrors getPeriodsForClass in timetable.service.js: this must agree with it or the
-  // hint below would lie about what the server is actually going to schedule). Every other
-  // class's real term/break dates live on whichever Academic Year version is currently
-  // published for its curriculum — curriculum.periods itself only ever holds period *names*,
-  // never dates.
+  // A bootcamp/competition class runs on its programme's dates (offeringWindow — for "Use the
+  // programme's first day"); every class's dated run, whichever it is, comes from `periods` below.
   const { data: offeringWindow } = useClassDateWindow(selectedClassId);
-  const { data: ayData } = useAcademicYears(!offeringWindow && selectedCurriculum ? selectedClass?.curriculumId : undefined);
-  const periods = offeringWindow?.startDate && offeringWindow?.endDate
-    ? [{ name: selectedCurriculum?.name, startDate: offeringWindow.startDate, endDate: offeringWindow.endDate, breakStartDate: "", breakEndDate: "" }]
-    : ayData?.publishedVersion?.periods || [];
+  // The class's dated run straight from the server's calendar engine (19 Nov 2026) — the same dates
+  // it schedules with and checks a start date against. (Reading Academic Years here 403'd for a hub
+  // login, so hubs never saw a date flagged.)
+  const { data: classPeriods } = useClassPeriods(selectedClassId);
+  const periods = Array.isArray(classPeriods) ? classPeriods : [];
   const { data: courseLinks = [] } = useClassCourseTeachers(selectedClassId);
   const { data: slotsData, isLoading: slotsLoading } = useClassTimetable(selectedClassId);
   const slots = slotsData?.data || [];
@@ -368,8 +409,7 @@ export default function TimetablePage({ hub, initialClassId = "", heading = "Tim
   const { mutate: deleteSlot } = useDeleteSlot(selectedClassId);
 
   const { data: schedules = [] } = useCourseSchedules(selectedClassId);
-  const { mutate: saveCourseSchedule, isPending: savingSchedule } = useSetCourseSchedule(selectedClassId);
-  const { mutate: saveCourseScheduleBulk, isPending: savingScheduleBulk } = useSetCourseScheduleBulk();
+  const { mutateAsync: saveCourseScheduleAsync, isPending: savingSchedule } = useSetCourseSchedule(selectedClassId);
   const startDateByCourseId = new Map(schedules.map((s) => [s.courseId, s.startDate]));
   const courseIdsWithSlots = [...new Set(slots.map((s) => s.courseId))];
 
@@ -431,17 +471,46 @@ export default function TimetablePage({ hub, initialClassId = "", heading = "Tim
   const handleUpdate = (data) => {
     updateSlot({ id: editingSlotId, data }, { onSuccess: () => setEditingSlotId(null) });
   };
-  const handleSaveCourseSchedule = (courseId, startDate, applyToClassIds = []) => {
-    if (applyToClassIds.length === 0) {
-      saveCourseSchedule({ classId: selectedClassId, courseId, startDate });
-      return;
+  // One course's start date, for this class only. A course that sessions were already taught or
+  // registered against asks first (the server says so with HAS_HELD_SESSIONS). Returns true on save.
+  const handleSaveCourseSchedule = async (courseId, startDate, { quiet = false } = {}) => {
+    const payload = { classId: selectedClassId, courseId, startDate };
+    try {
+      await saveCourseScheduleAsync(payload);
+      return true;
+    } catch (err) {
+      const data = err.response?.data || {};
+      if (data.code !== "HAS_HELD_SESSIONS" || quiet) return false;
+      const ok = await askConfirm({
+        title: `Move ${courseNameById.get(courseId) || "this course"}'s start date?`,
+        message: `${data.message} Only do this to correct a wrong start date.`,
+        confirmLabel: "Move it anyway",
+        tone: "danger",
+      });
+      if (!ok) return false;
+      try { await saveCourseScheduleAsync({ ...payload, confirmMove: true }); return true; } catch { return false; }
     }
-    const payloads = [
-      { classId: selectedClassId, courseId, startDate },
-      ...applyToClassIds.map((classId) => ({ classId, courseId, startDate })),
-    ];
-    saveCourseScheduleBulk(payloads);
   };
+  // Every course of this class to one date. Courses with sessions already taught are left alone
+  // (moved one by one, after their own confirmation).
+  const [savingAll, setSavingAll] = useState(false);
+  const handleSaveAllStartDates = async (startDate) => {
+    setSavingAll(true);
+    let saved = 0;
+    for (const courseId of courseIdsWithSlots) {
+      if (startDateByCourseId.get(courseId) === startDate) { saved += 1; continue; }
+      if (await handleSaveCourseSchedule(courseId, startDate, { quiet: true })) saved += 1;
+    }
+    setSavingAll(false);
+    const left = courseIdsWithSlots.length - saved;
+    if (left) toast.error(`${left} course${left === 1 ? "" : "s"} kept ${left === 1 ? "its" : "their"} start date — change ${left === 1 ? "it" : "them"} on ${left === 1 ? "its" : "their"} own row.`);
+  };
+  const selectedLabel = selectedClass ? `${selectedClass.gradeName}${selectedClass.streamName ? ` — ${selectedClass.streamName}` : ""}` : "";
+  const runStart = offeringWindow?.startDate || "";
+  const datedPeriods = periods.filter((p) => p.startDate && p.endDate);
+  const runLine = offeringWindow?.startDate && offeringWindow?.endDate
+    ? `This class runs ${fmtShort(offeringWindow.startDate)} – ${fmtShort(offeringWindow.endDate)}.`
+    : datedPeriods.length ? `Terms: ${fmtShort(datedPeriods[0].startDate)} – ${fmtShort(datedPeriods[datedPeriods.length - 1].endDate)}.` : "";
 
   if (schoolLoading) {
     return <div style={{ padding: "60px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14, fontFamily: "Inter, sans-serif" }}>Loading…</div>;
@@ -588,20 +657,35 @@ export default function TimetablePage({ hub, initialClassId = "", heading = "Tim
           {!slotsLoading && courseIdsWithSlots.length > 0 && (
             <div style={{ ...cardStyle, overflow: "hidden" }}>
               <div style={{ padding: "12px 18px", borderBottom: `1px solid ${T.border}` }}>
-                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: T.ink }}>Course Start Dates</p>
-                <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>Anchors each course's Session 1 to a real date so it can appear on the calendar below.</p>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: T.ink }}>Course Start Dates <span style={{ fontWeight: 600, color: T.inkMuted }}>· {selectedLabel} only</span></p>
+                <p style={{ margin: "2px 0 0", fontSize: 11.5, color: T.inkMuted }}>
+                  Anchors each course's Session 1 to a real date so its sessions appear on the calendar below. {runLine}
+                  {" "}{courseIdsWithSlots.filter((id) => !startDateByCourseId.get(id)).length > 0 && <strong style={{ color: "#B45309" }}>{courseIdsWithSlots.filter((id) => !startDateByCourseId.get(id)).length} not set yet.</strong>}
+                </p>
               </div>
               <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {courseIdsWithSlots.map((courseId) => (
-                  <CourseStartDateRow
-                    key={courseId}
-                    courseName={courseNameById.get(courseId) || "Course"}
-                    startDate={startDateByCourseId.get(courseId)}
-                    isSaving={savingSchedule || savingScheduleBulk}
-                    siblingClasses={siblingClasses}
+                {courseIdsWithSlots.length > 1 && (
+                  <AllCoursesStartRow
+                    key={selectedClassId}
+                    count={courseIdsWithSlots.length}
                     periods={periods}
                     isOfferingWindow={!!offeringWindow?.startDate}
-                    onSave={(startDate, applyToClassIds) => handleSaveCourseSchedule(courseId, startDate, applyToClassIds)}
+                    runStart={runStart}
+                    isSaving={savingAll}
+                    onApply={handleSaveAllStartDates}
+                  />
+                )}
+                {courseIdsWithSlots.map((courseId) => (
+                  <CourseStartDateRow
+                    key={`${selectedClassId}:${courseId}`}
+                    courseName={courseNameById.get(courseId) || "Course"}
+                    startDate={startDateByCourseId.get(courseId)}
+                    courseSlots={slots.filter((sl) => sl.courseId === courseId)}
+                    isSaving={savingSchedule && !savingAll}
+                    periods={periods}
+                    isOfferingWindow={!!offeringWindow?.startDate}
+                    runStart={runStart}
+                    onSave={(startDate) => handleSaveCourseSchedule(courseId, startDate)}
                   />
                 ))}
               </div>

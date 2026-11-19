@@ -350,7 +350,45 @@ const TimetableService = {
     return CourseScheduleModel.findByClassId(classId);
   },
 
-  async setCourseSchedule(classId, courseId, startDate) {
+  // One class's start date for one course (19 Nov 2026: checked here, not only hinted in the UI).
+  //   - the course needs a weekly slot in this class first (nothing to anchor otherwise);
+  //   - the date must fall inside the class's run: its bootcamp/competition dates, or its published
+  //     Academic Year terms (a date in a break is fine - Session 1 moves to after it). A class with
+  //     no dates configured anywhere is unrestricted, as the calendar engine is;
+  //   - moving a start date that sessions were already taught or registered against moves every
+  //     session's date, while those records stay on the old dates - so that needs `confirmMove`.
+  // Errors carry a `code` the page acts on (OUTSIDE_RUN, NO_SLOT, HAS_HELD_SESSIONS).
+  // The class's dated run as the calendar engine sees it (bootcamp/competition dates, else its
+  // published Academic Year terms with their breaks) — for the Timetable page's start-date checks,
+  // which a hub login can't read from the admin-only Academic Year routes (19 Nov 2026).
+  getPeriodsForClass(classId) {
+    return getPeriodsForClass(classId);
+  },
+
+  async setCourseSchedule(classId, courseId, startDate, { confirmMove = false } = {}) {
+    const fail = (message, code, extra = {}) => { throw Object.assign(new Error(message), { statusCode: 409, code, ...extra }); };
+    const slots = await TimetableModel.findAll({ classId });
+    if (!slots.some((s) => s.courseId === courseId)) {
+      fail("Add a weekly slot for this course in this class first - the start date anchors its Session 1 to one of those slots.", "NO_SLOT");
+    }
+    const periods = await getPeriodsForClass(classId);
+    if (periods.length) {
+      const ms = toUtcMs(startDate);
+      const inside = periods.some((p) => p.startDate && p.endDate && ms >= toUtcMs(p.startDate) && ms <= toUtcMs(p.endDate));
+      if (!inside) {
+        const dated = periods.filter((p) => p.startDate && p.endDate);
+        const span = dated.length ? `${dated[0].startDate} to ${dated[dated.length - 1].endDate}` : "";
+        fail(`That date is outside this class's run${span ? ` (${span})` : ""} - pick a date inside it.`, "OUTSIDE_RUN", { periods: dated.map((p) => ({ name: p.name, startDate: p.startDate, endDate: p.endDate })) });
+      }
+    }
+    const existing = await CourseScheduleModel.findOne(classId, courseId);
+    if (existing && existing.startDate !== startDate && !confirmMove) {
+      const held = await SessionOccurrenceModel.findByClassAndCourse(classId, courseId);
+      const heldCount = held.filter((o) => o.taughtAt || o.attendanceLockedAt || o.status === "taught").length;
+      if (heldCount > 0) {
+        fail(`${heldCount} session${heldCount === 1 ? " has" : "s have"} already been taught or registered for this course in this class. Moving the start date moves every session to new dates, but those records stay on the old ones.`, "HAS_HELD_SESSIONS", { heldCount });
+      }
+    }
     return CourseScheduleModel.setSchedule(classId, courseId, startDate);
   },
 

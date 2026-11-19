@@ -34,6 +34,8 @@ const setCourseScheduleSchema = z.object({
   classId: z.string().min(1, "Class is required"),
   courseId: z.string().min(1, "Course is required"),
   startDate: dateOnly,
+  // Moving a start date that sessions were already taught against needs saying so (19 Nov 2026).
+  confirmMove: z.boolean().optional(),
 });
 
 const calendarRangeSchema = z.object({
