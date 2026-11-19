@@ -143,6 +143,46 @@ const isFullTime = (teacher) => teacher?.employmentType === "full_time";
 
 // A claim for mentor sessions: its sessions, and freeing them when it's declined or withdrawn.
 const releaseBookings = (claimId) => db("mentor_bookings").where({ claimId }).update({ claimId: null });
+
+// A claim for sessions covered for another educator (modules/session-covers/, 19 Nov 2026): its
+// covers, and freeing them when it's declined or withdrawn.
+const releaseCovers = (claimId) => db("session_covers").where({ claimId }).update({ claimId: null, educatorPay: null });
+const releaseFor = (claim) => (claim.type === "bookings" ? releaseBookings(claim.id) : claim.type === "covers" ? releaseCovers(claim.id) : null);
+
+// What one covered session pays this educator: their own way of being paid (in their order), at
+// the workspace's rates — per session, Base plus (with the class's learners), by the hour (the
+// session's slot), or a day. Null when none of theirs has a rate.
+function coverPay(teacher, cover, settings, learnerCount) {
+  for (const t of rateTypesOf(teacher)) {
+    if (t === "session" && settings.sessionRate) return { rateType: t, amount: wholeShillings(settings.sessionRate) };
+    if (t === "base_plus" && settings.basePlusSessionRate && settings.commissionRate) return { rateType: t, amount: wholeShillings(settings.basePlusSessionRate + learnerCount * settings.commissionRate) };
+    const hours = hoursBetween(cover.startTime, cover.endTime);
+    if (t === "hourly" && settings.hourlyRate && hours > 0) return { rateType: t, amount: wholeShillings(hours * settings.hourlyRate) };
+    if (t === "daily" && settings.dailyRate) return { rateType: t, amount: wholeShillings(settings.dailyRate) };
+  }
+  return null;
+}
+
+// The covers this educator taught and hasn't claimed yet: accepted, the day has come, and the
+// session wasn't cancelled. Each with what it pays.
+async function unclaimedCovers(teacher) {
+  const rows = await db("session_covers").where({ coverTeacherId: teacher.id, status: "accepted" }).whereNull("claimId").where("date", "<=", todayStr()).orderBy("date", "asc");
+  const out = [];
+  for (const cover of rows) {
+    const occurrence = (await occurrencesFor(cover.classId)).find((o) => o.sessionId === cover.sessionId && String(o.date).slice(0, 10) === cover.date);
+    if (occurrence?.status === "cancelled") continue;
+    const [settings, learners, course, cls, original] = await Promise.all([
+      ClaimSettingsModel.get(cover.ownerAdminId),
+      enrolledCounts([cover.classId]),
+      CourseModel.findById(cover.courseId),
+      ClassModel.findById(cover.classId),
+      cover.originalTeacherId ? TeacherModel.findById(cover.originalTeacherId) : null,
+    ]);
+    const pay = coverPay(teacher, cover, settings, learners.get(cover.classId) || 0);
+    out.push({ ...cover, pay, courseName: course?.name || "Course", className: classLabel(cls), originalTeacherName: original ? teacherName(original) : null });
+  }
+  return out;
+}
 async function bookingsOfClaim(claimId) {
   const rows = await db("mentor_bookings").where({ claimId }).orderBy("date", "asc").select("id", "date", "startTime", "minutes", "status", "learnerId", "courseName", "sessionTitle", "educatorPay");
   const learners = new Map((rows.length ? await db("learners").whereIn("id", [...new Set(rows.map((r) => r.learnerId))]).select("id", "firstName", "lastName") : []).map((l) => [l.id, [l.firstName, l.lastName].filter(Boolean).join(" ")]));
@@ -358,6 +398,9 @@ const ClaimService = {
     const settingsList = await Promise.all(adminIds.map((id) => ClaimSettingsModel.get(id)));
     const settingsByAdmin = new Map(adminIds.map((id, i) => [id, settingsList[i]]));
 
+    // Sessions someone else taught as cover come off this educator's courses (session-covers/).
+    const coveredAway = await require("../session-covers/session-cover.service").coveredByOthers(teacher.id, [...classById.keys()]);
+
     const rows = [];
     for (const link of links) {
       const cls = classById.get(link.classId);
@@ -369,7 +412,7 @@ const ClaimService = {
       const figures = buildOptions({
         teacher,
         course,
-        sessions: allSessions.filter((s) => s.courseId === course.id),
+        sessions: allSessions.filter((s) => s.courseId === course.id && !coveredAway.has(`${cls.id}|${s.id}`)),
         occurrences: occurrencesByClass.get(cls.id) || [],
         slots: allSlots.filter((s) => s.classId === cls.id),
         settings,
@@ -437,7 +480,10 @@ const ClaimService = {
       enrolledCounts([classId]),
     ]);
 
-    const figures = buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims, learnerCount: learnersByClass.get(classId) || 0 });
+    // Sessions someone else taught as cover aren't this educator's to claim (session-covers/).
+    const coveredAway = teacher ? await require("../session-covers/session-cover.service").coveredByOthers(teacher.id, [classId]) : new Set();
+    const ownSessions = sessions.filter((s) => !coveredAway.has(`${classId}|${s.id}`));
+    const figures = buildOptions({ teacher, course, sessions: ownSessions, occurrences, slots, settings, claims, learnerCount: learnersByClass.get(classId) || 0 });
     const today = todayStr();
 
     // Where each session that hasn't happened yet is due to fall.
@@ -624,7 +670,7 @@ const ClaimService = {
     if (!PENDING.includes(claim.status)) fail("This claim has already been reviewed and can't be withdrawn", 409);
     const removed = await ClaimModel.deleteIfStatus(id, claim.status);
     if (!removed) fail("This claim has already been reviewed and can't be withdrawn", 409);
-    if (claim.type === "bookings") await releaseBookings(id);
+    await releaseFor(claim);
     return { message: "Claim withdrawn" };
   },
 
@@ -700,6 +746,8 @@ const ClaimService = {
   async withCourse(claim) {
     // A claim for mentor sessions has no course — it carries the sessions it was for.
     if (claim.type === "bookings") return { ...claim, course: null, bookings: await bookingsOfClaim(claim.id) };
+    // Covered sessions (session-covers/): the sessions it's for, as fixed when claimed.
+    if (claim.type === "covers") return { ...claim, course: null, covers: claim.evidence?.covers || [] };
     let course = null;
     try {
       course = await ClaimService.getCourseDetail({ teacherId: claim.teacherId, classId: claim.classId, courseId: claim.courseId, requireLink: false });
@@ -726,7 +774,7 @@ const ClaimService = {
       ? await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "approved" })
       : await ClaimModel.transition(id, "pending_supervisor", { ...stamp, status: "rejected", rejectedStage: "supervisor", rejectionReason: reason });
     if (!updated) fail("Someone else has just reviewed this claim", 409);
-    if (decision !== "approve" && updated.type === "bookings") await releaseBookings(id);
+    if (decision !== "approve") await releaseFor(updated);
     if (decision === "approve") await ClaimNotifications.forwarded(updated);
     else await ClaimNotifications.rejected(updated);
     return updated;
@@ -741,7 +789,7 @@ const ClaimService = {
       ? await ClaimModel.transition(id, "pending_admin", { ...stamp, status: "approved" })
       : await ClaimModel.transition(id, "pending_admin", { ...stamp, status: "rejected", rejectedStage: "admin", rejectionReason: reason });
     if (!updated) fail("Someone else has just reviewed this claim", 409);
-    if (decision !== "approve" && updated.type === "bookings") await releaseBookings(id);
+    if (decision !== "approve") await releaseFor(updated);
     if (decision === "approve") await ClaimNotifications.approved(updated);
     else await ClaimNotifications.rejected(updated);
     return updated;
@@ -826,6 +874,76 @@ const ClaimService = {
     const taken = await db("mentor_bookings").whereIn("id", rows.map((b) => b.id)).whereNull("claimId").update({ claimId: claim.id });
     if (taken !== rows.length) {
       await releaseBookings(claim.id);
+      await ClaimModel.deleteIfStatus(claim.id, claim.status);
+      fail("Some of these sessions were just claimed — refresh and try again", 409);
+    }
+    await ClaimNotifications.submitted(claim);
+    return claim;
+  },
+
+  // Sessions taught as cover for another educator (modules/session-covers/, 19 Nov 2026) — each
+  // pays at the cover educator's own rate (coverPay), claimed together per workspace with an eTIMS
+  // invoice like mentor sessions. Full-time educators don't claim.
+  async myCoverEarnings(teacher) {
+    const rows = isFullTime(teacher) ? [] : await unclaimedCovers(teacher);
+    const byOwner = new Map();
+    const unpriced = [];
+    for (const c of rows) {
+      if (!c.pay) { unpriced.push({ id: c.id, date: c.date, courseName: c.courseName }); continue; }
+      if (!byOwner.has(c.ownerAdminId)) byOwner.set(c.ownerAdminId, { ownerAdminId: c.ownerAdminId, count: 0, amount: 0, covers: [] });
+      const group = byOwner.get(c.ownerAdminId);
+      group.count += 1;
+      group.amount += c.pay.amount;
+      group.covers.push({ id: c.id, date: c.date, startTime: c.startTime, endTime: c.endTime, courseName: c.courseName, className: c.className, originalTeacherName: c.originalTeacherName, rateType: c.pay.rateType, amount: c.pay.amount });
+    }
+    return { fullTime: isFullTime(teacher), groups: [...byOwner.values()], unpriced };
+  },
+
+  async submitCoversClaim(teacher, { ownerAdminId, invoiceUrl, invoiceFilename, note }) {
+    if (isFullTime(teacher)) fail("Full-time educators don't claim payment for covered sessions", 403);
+    const rows = (await unclaimedCovers(teacher)).filter((c) => c.ownerAdminId === ownerAdminId && c.pay);
+    if (!rows.length) fail("There are no covered sessions to claim yet", 409);
+    const amount = rows.reduce((n, c) => n + c.pay.amount, 0);
+    const supervisor = await supervisorOf(teacher);
+    const dates = rows.map((c) => c.date).sort();
+    const claim = await ClaimModel.create({
+      ownerAdminId,
+      teacherId: teacher.id,
+      classId: null,
+      courseId: null,
+      hubId: null,
+      claimNumber: `CLM-${todayStr().replace(/-/g, "")}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
+      teacherName: teacherName(teacher),
+      teacherEmail: teacher.email || null,
+      teacherPhone: teacher.phone || null,
+      courseName: "Covered sessions",
+      className: dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} – ${dates[dates.length - 1]}`,
+      hubName: null,
+      type: "covers",
+      status: supervisor ? "pending_supervisor" : "pending_admin",
+      supervisorId: supervisor?.id || null,
+      supervisorName: supervisor?.name || null,
+      currency: "KES",
+      rateType: rows[0].pay.rateType,
+      rate: Math.round((amount / rows.length) * 100) / 100,
+      unitsTotal: rows.length,
+      unitsDelivered: rows.length,
+      sessionRate: Math.round((amount / rows.length) * 1000) / 1000,
+      sessionsTotal: rows.length,
+      sessionsDelivered: rows.length,
+      courseAmount: amount,
+      advanceDeducted: 0,
+      amount,
+      invoiceUrl,
+      invoiceFilename: invoiceFilename || null,
+      note: note || null,
+      evidence: { covers: rows.map((c) => ({ id: c.id, date: c.date, startTime: c.startTime, endTime: c.endTime, courseName: c.courseName, className: c.className, originalTeacherName: c.originalTeacherName, rateType: c.pay.rateType, amount: c.pay.amount })) },
+    });
+    // Each covered session is claimed once — a second claim racing this one finds them taken.
+    let taken = 0;
+    for (const c of rows) taken += await db("session_covers").where({ id: c.id }).whereNull("claimId").update({ claimId: claim.id, educatorPay: c.pay.amount });
+    if (taken !== rows.length) {
+      await releaseCovers(claim.id);
       await ClaimModel.deleteIfStatus(claim.id, claim.status);
       fail("Some of these sessions were just claimed — refresh and try again", 409);
     }

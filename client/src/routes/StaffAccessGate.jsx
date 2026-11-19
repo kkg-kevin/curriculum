@@ -39,6 +39,8 @@ const PATH_MODULES = [
   ["/expenses", "expenses"],
   ["/qa", "qa"],
   ["/mentor-checkins", "mentor-checkins"],
+  // Session covers ride on Timetable access (the API is /api/covers → timetable).
+  ["/covers", "timetable"],
   ["/mentor-bookings", "mentor-bookings"],
   ["/activity", "activity"],
   ["/settings", "settings"],

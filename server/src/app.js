@@ -66,6 +66,7 @@ const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
 const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
+const sessionCoverRoutes = require("./modules/session-covers/session-cover.routes");
 const mentorBookingRoutes = require("./modules/mentor-bookings/mentor-booking.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standards.routes");
@@ -413,6 +414,9 @@ app.use("/api/qa", protect, attachOwnRecords, qaRoutes);
 // child; set up by an admin, times drawn at random, the parent confirms or picks another time and
 // approves the report. See modules/mentor-checkins/ (mentor-checkin.access.js for who sees what).
 app.use("/api/mentor-checkins", protect, attachOwnRecords, mentorCheckinRoutes);
+// Session covers (19 Nov 2026): one educator teaches one session of another's class — asked from
+// the calendar, accepted by the cover educator. See modules/session-covers/.
+app.use("/api/covers", protect, attachOwnRecords, sessionCoverRoutes);
 // Mentor bookings (11 Nov 2026): a parent books a mentor for a child stuck on a session — pay
 // first, online or at a hub's space; partner hubs' desk fees settled from their statement. See
 // modules/mentor-bookings/ (mentor-booking.service.js for who sees what).

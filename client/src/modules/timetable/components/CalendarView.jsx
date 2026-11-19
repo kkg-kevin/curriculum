@@ -6,6 +6,14 @@ import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip, 
 import { useAuth } from "../../../context/AuthContext";
 import { sectionPath } from "../../../routes/portalPaths";
 import { JoinOnlineButton, isLive } from "./OnlineClass";
+import { CoverSection, CoveringPanel } from "../../session-covers/components/CoverSection";
+
+// A session's cover (modules/session-covers/, 19 Nov 2026), as a short tag on its card.
+function coverTag(e) {
+  if (e.coveringFor) return `Covering${e.coveringFor.originalTeacherName ? ` for ${e.coveringFor.originalTeacherName}` : ""}`;
+  if (e.cover) return e.cover.status === "accepted" ? `Covered by ${e.cover.coverTeacherName}` : `Cover asked: ${e.cover.coverTeacherName}`;
+  return null;
+}
 
 const T = {
   accent: "#25476a", accentMid: "#2e7db5", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
@@ -455,7 +463,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                       </p>
                       {resolveTeacherLabel && (
                         <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {resolveTeacherLabel(e)}{e.room ? ` · ${e.room}` : ""}
+                          {coverTag(e) || resolveTeacherLabel(e)}{e.room ? ` · ${e.room}` : ""}
                         </p>
                       )}
                       {enableSessionDetail && hoverReadyKey === key && (
@@ -531,7 +539,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
                     return (
                       <div
                         key={eventKey(e)}
-                        title={`${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}`}
+                        title={`${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}${coverTag(e) ? ` · ${coverTag(e)}` : ""}`}
                         onClick={() => enableSessionDetail && onOpenDetail(e)}
                         style={{
                           position: "relative", backgroundColor: color.bg, border: `1px solid ${color.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: color.text,
@@ -541,7 +549,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
                         {health && health !== "neutral" && (
                           <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", backgroundColor: HEALTH[health].dot, marginRight: 4 }} />
                         )}
-                        {resolveCourseName(e.courseId)}
+                        {resolveCourseName(e.courseId)}{coverTag(e) && <span title={coverTag(e)}> · {e.coveringFor ? "covering" : "cover"}</span>}
                       </div>
                     );
                   })}
@@ -765,7 +773,9 @@ function RescheduleSection({ event, onDone }) {
 // progress for that exact (class, session, date). Fetches independently of the calendar's own
 // range query (see the enableSessionDetail doc comment on CalendarView above).
 function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedule = false }) {
-  const { data: summary, isLoading } = useSessionSummary(event?.sessionId, event?.classId, event?.date, !!event);
+  // A session they're covering for someone else: no class-wide summary — the cover page has theirs.
+  const covering = Boolean(event?.coveringFor);
+  const { data: summary, isLoading } = useSessionSummary(event?.sessionId, event?.classId, event?.date, !!event && !covering);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -820,14 +830,16 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
           </button>
         </div>
 
-        {isLoading || !summary ? (
+        {covering ? (
+          <CoveringPanel event={event} onClose={onClose} />
+        ) : isLoading || !summary ? (
           <div style={{ padding: "50px 20px", textAlign: "center", color: T.inkFaint, fontSize: 13 }}>Loading…</div>
         ) : (
           <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 18, animation: "cv-fadein 0.2s ease" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: T.inkMuted }}>
                 <span><strong style={{ color: T.ink }}>Class:</strong> {summary.class.gradeName}{summary.class.streamName ? ` — ${summary.class.streamName}` : ""}</span>
-                <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}</span>
+                <span><strong style={{ color: T.ink }}>Educator:</strong> {summary.teacher?.name || "Not assigned"}{event.cover?.status === "accepted" ? ` — covered by ${event.cover.coverTeacherName}` : ""}</span>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {event.meetingLink && <JoinOnlineButton href={event.meetingLink} live={isLive(event)} label="Join online class" />}
@@ -906,6 +918,8 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
             )}
 
             {enableReschedule && <RescheduleSection event={event} onDone={onClose} />}
+
+            {enableReschedule && <CoverSection event={event} onDone={onClose} />}
           </div>
         )}
       </div>

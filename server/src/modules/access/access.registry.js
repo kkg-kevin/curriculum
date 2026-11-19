@@ -88,6 +88,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/courses": "courses",
   "/api/attendance": "attendance",
   "/api/timetable": "timetable",
+  "/api/covers": "timetable",
   "/api/assessments": "assessments",
   "/api/assessment-submissions": "assessments",
   "/api/reports": "reports",

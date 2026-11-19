@@ -244,6 +244,8 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
       return "Hub Check-ins";
     if (/^\/(supervisor-portal\/|teacher-portal\/|school-portal\/|parent\/)?mentor-checkins(\/|$)/.test(pathname))
       return pathname.startsWith("/parent") ? "Mentor Check-ins" : "Parent–Mentor Check-ins";
+    if (/^\/(teacher-portal\/|school-portal\/)?covers(\/|$)/.test(pathname))
+      return "Covers";
     if (pathname.startsWith("/teacher-portal/claims/"))
       return "Payments";
     if (pathname.startsWith("/teacher-portal/course-content/") || pathname.startsWith("/learner-portal/courses/"))

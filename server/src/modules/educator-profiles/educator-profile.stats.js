@@ -136,6 +136,26 @@ async function computeStats(teacherId) {
   const shifts = skips.filter((s) => s.mode === "shift" && s.newDate);
   const credited = R.creditSessions({ slots, held, shifts });
 
+  // Covers (modules/session-covers/, 19 Nov 2026): a session someone else taught as cover comes off
+  // this educator's hours; one they covered for someone else is added below, at its slot's length.
+  const coverRows = await db("session_covers").where({ status: "accepted" }).where("date", "<=", today)
+    .where((w) => { w.where({ coverTeacherId: teacherId }); if (classIds.length) w.orWhereIn("classId", classIds); })
+    .select("classId", "courseId", "sessionId", "date", "startTime", "endTime", "coverTeacherId")
+    .catch(() => []);
+  const coveredAway = new Set(coverRows.filter((c) => c.coverTeacherId !== teacherId).map((c) => `${c.classId}|${c.courseId}|${c.date}`));
+  for (const c of credited) {
+    const before = c.sessions.length;
+    c.sessions = c.sessions.filter((d) => !coveredAway.has(`${c.classId}|${c.courseId}|${d}`));
+    if (before && c.sessions.length !== before) c.minutes = (c.minutes * c.sessions.length) / before;
+  }
+  // Covered for others: held (attendance taken that day, or the session marked taught).
+  const coveredForOthers = [];
+  for (const c of coverRows.filter((r) => r.coverTeacherId === teacherId)) {
+    const attended = await db("attendance").where({ classId: c.classId }).whereRaw("DATE(date) = ?", [c.date]).first("id");
+    const taught = attended ? null : await db("session_occurrences").where({ classId: c.classId, sessionId: c.sessionId, date: c.date }).whereNotNull("taughtAt").first("id");
+    if (attended || taught) coveredForOthers.push({ date: c.date, minutes: R.minutesBetween(c.startTime, c.endTime) });
+  }
+
   // Classes with no timetable at all, taught by this educator alone: their sessions, untimed.
   const timetabled = new Set(slots.map((s) => s.classId));
   const untimed = [];
@@ -161,6 +181,12 @@ async function computeStats(teacherId) {
   // Mentor sessions held (modules/mentor-bookings/, 11 Nov 2026) are verified teaching too: each
   // at its booked length, its learner taught.
   const booked = await require("../mentor-bookings/mentor-booking.service").heldSessions(teacherId).catch(() => []);
+  // Sessions they taught as cover for another educator.
+  for (const c of coveredForOthers) {
+    minutes += c.minutes;
+    if (c.date >= since90) minutes90 += c.minutes;
+    if (c.date >= since12m) byMonth.set(c.date.slice(0, 7), (byMonth.get(c.date.slice(0, 7)) || 0) + c.minutes);
+  }
   for (const b of booked) {
     minutes += b.minutes;
     if (b.date >= since90) minutes90 += b.minutes;

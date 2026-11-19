@@ -49,6 +49,8 @@ export const ADMIN_SECTIONS = [
           // Every educator page except Work to mark (an educator's own page, the forms) sits here.
           { name: "All educators", path: "/teachers", match: (l) => l.pathname.startsWith("/teachers") && !l.pathname.startsWith("/teachers/training") },
           { name: "Work to mark", path: "/teachers/training", match: (l) => l.pathname.startsWith("/teachers/training") },
+          // Sessions taught by another educator in place of the class's own (session-covers/).
+          { name: "Covers", path: "/covers", match: (l) => l.pathname.startsWith("/covers") },
           // How each educator performs, side by side — Reports & Analytics' Educators tab (owner only).
           { name: "Performance", path: "/reports?tab=educators", ownerOnly: true },
           // What families say — Reports & Analytics' Parent feedback tab (owner only, like Reports).

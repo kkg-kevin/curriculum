@@ -45,7 +45,9 @@ async function assertCourseAccess(req, courseId) {
     const classes = await Promise.all(links.map((l) => ClassModel.findById(l.classId)));
     const classCurriculumIds = classes.map((c) => c?.curriculumId).filter(Boolean);
     const homeCurriculumIds = await HomeLearningModel.findCurriculaForEducator(req.ownTeacher?.id);
-    assertOwn(classCurriculumIds.concat(homeCurriculumIds).some((cid) => curriculumIds.includes(cid)));
+    // A class they're covering a session of (modules/session-covers/, 19 Nov 2026): its course content.
+    const coverCurriculumIds = await require("../session-covers/session-cover.service").coverCurriculumIds(req.ownTeacher?.id);
+    assertOwn(classCurriculumIds.concat(homeCurriculumIds, coverCurriculumIds).some((cid) => curriculumIds.includes(cid)));
     return;
   }
   if (req.user.role === "learner") {

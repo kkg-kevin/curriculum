@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiRepeat, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -12,6 +12,7 @@ const menuItems = [
   { name: "Reports",         path: "/teacher-portal/reports", icon: FiBarChart2 },
   { name: "Attendance",      path: "/teacher-portal/attendance", icon: FiCheckSquare },
   { name: "Timetable",       path: "/teacher-portal/timetable", icon: FiCalendar },
+  { name: "Covers",          path: "/teacher-portal/covers", icon: FiRepeat },
   // Claims and Invoices — two tabs of one page (PaymentsPage), so either address lights it up.
   { name: "Payments",        path: "/teacher-portal/claims", icon: FiCreditCard, also: ["/teacher-portal/invoices", "/teacher-portal/expenses"] },
   { name: "QA Reviews",      path: "/teacher-portal/qa", icon: FiStar },

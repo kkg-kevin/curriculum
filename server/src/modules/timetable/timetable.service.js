@@ -425,7 +425,12 @@ const TimetableService = {
       });
     }));
     const meetingLink = await onlineLinkForClass(classId);
-    const events = eventLists.flat().map((e) => (meetingLink ? { ...e, meetingLink } : e));
+    // Sessions someone else has been asked to cover, or is covering (modules/session-covers/).
+    const covers = await require("../session-covers/session-cover.service").labelsForClass(classId, from, to).catch(() => new Map());
+    const events = eventLists.flat().map((e) => {
+      const cover = covers.get(`${e.sessionId}|${e.date}`);
+      return { ...e, ...(meetingLink ? { meetingLink } : {}), ...(cover ? { cover } : {}) };
+    });
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
       breaks: breaksInRange(periods, from, to, classId),
@@ -446,7 +451,9 @@ const TimetableService = {
       .flatMap((r) => r.events)
       .filter((e) => linkedPairs.has(pairKey(e.classId, e.courseId)))
       .filter((e) => !e.teacherId || e.teacherId === teacherId);
-    return { events, breaks: dedupeBreaks(results.flatMap((r) => r.breaks)), skippedSessions: results.flatMap((r) => r.skippedSessions) };
+    // Sessions of other classes they've agreed to cover (modules/session-covers/).
+    const covering = await require("../session-covers/session-cover.service").coveringEvents(teacherId, from, to).catch(() => []);
+    return { events: [...events, ...covering], breaks: dedupeBreaks(results.flatMap((r) => r.breaks)), skippedSessions: results.flatMap((r) => r.skippedSessions) };
   },
 
   // Same class-resolution as listForLearner, but returning calendar events instead of slots.

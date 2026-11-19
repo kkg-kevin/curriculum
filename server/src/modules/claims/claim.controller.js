@@ -37,6 +37,16 @@ const getMyBookingEarnings = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await ClaimService.myBookingEarnings(ownTeacher(req)) });
 });
 
+// Sessions taught as cover for another educator (session-covers/, 19 Nov 2026).
+const getMyCoverEarnings = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await ClaimService.myCoverEarnings(ownTeacher(req)) });
+});
+
+const submitCoversClaim = asyncHandler(async (req, res) => {
+  const data = submitBookingsClaimSchema.parse(req.body);
+  res.status(201).json({ success: true, data: await ClaimService.submitCoversClaim(ownTeacher(req), data) });
+});
+
 const submitBookingsClaim = asyncHandler(async (req, res) => {
   const data = submitBookingsClaimSchema.parse(req.body);
   res.status(201).json({ success: true, data: await ClaimService.submitBookingsClaim(ownTeacher(req), data) });
@@ -146,6 +156,7 @@ const removeSupervisor = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getMyCoverEarnings, submitCoversClaim,
   listSupervisors, createSupervisor, updateSupervisor, removeSupervisor, getSupervisor, supervisorEducatorOptions, supervisorCandidates, setSupervisorEducators,
   getMyCourses, getMyCourse, submitClaim, withdrawClaim, listClaims, getMyBookingEarnings, submitBookingsClaim,
   getClaim, supervisorDecision, adminDecision, markPaid, getSettings, updateSettings,

@@ -237,8 +237,8 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
         </div>
       </div>
 
-      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>{claim.type === "bookings" ? "Sessions held" : "Records for delivered sessions"}</p>
-      {claim.type !== "bookings" && (
+      <p style={{ margin: "20px 0 8px", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: T.inkMuted }}>{claim.type === "bookings" ? "Sessions held" : claim.type === "covers" ? "Sessions covered" : "Records for delivered sessions"}</p>
+      {claim.type !== "bookings" && claim.type !== "covers" && (
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Record label="Attendance marked" then={then?.attendance} now={now?.attendance} empty="—" />
           <Record label="Assignments graded" then={then?.assignments} now={now?.assignments} empty="None set" />
@@ -254,6 +254,16 @@ export function ClaimReview({ claimId, canSupervise, canApprove, onDone, frame, 
               <div key={b.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "9px 12px", borderRadius: 10, background: "#fff", border: `1px solid ${T.border}`, fontSize: 13 }}>
                 <span>{b.date} {b.startTime} · {b.minutes} min · {b.learnerName || "Learner"}{b.sessionTitle || b.courseName ? ` — ${b.sessionTitle || b.courseName}` : ""}{b.status === "no_show" ? " (didn't join)" : ""}</span>
                 <strong>{money(b.educatorPay)}</strong>
+              </div>
+            ))}
+          </div>
+        ) : claim.type === "covers" ? (
+          // Sessions taught as cover for another educator (modules/session-covers).
+          <div style={{ display: "grid", gap: 6, gridTemplateColumns: "100%" }}>
+            {(claim.covers || []).map((c) => (
+              <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "9px 12px", borderRadius: 10, background: "#fff", border: `1px solid ${T.border}`, fontSize: 13 }}>
+                <span>{c.date}{c.startTime ? ` ${c.startTime}` : ""} · {c.courseName}, {c.className}{c.originalTeacherName ? ` — for ${c.originalTeacherName}` : ""}</span>
+                <strong>{money(c.amount)}</strong>
               </div>
             ))}
           </div>

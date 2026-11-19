@@ -146,6 +146,15 @@ function resolveNotificationPath(n) {
     case "checkin_action_escalated":
       // Hub check-ins: the check-in's own page (an older follow-up link opens the check-ins page).
       return p.route || "/checkins";
+    case "cover_requested":
+    case "cover_accepted":
+    case "cover_declined":
+    case "cover_withdrawn":
+    case "cover_cancelled":
+      // Session covers — the educator's Covers page (hubs and admins: their overview).
+      return p.route || "/teacher-portal/covers";
+    case "cover_family_notice":
+      return "/learner-portal/timetable";
     case "report_ready":
       // A learner finished a course or module (19 Nov 2026) — the educator's Reports page.
       return p.route || "/teacher-portal/reports";
