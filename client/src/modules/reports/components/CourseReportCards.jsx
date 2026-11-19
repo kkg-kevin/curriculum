@@ -248,13 +248,27 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
   const missingCount = attachedCount - requiredCount;
   const sessions = (rows[0]?.sessions || []).filter((s) => s.requiredCount > 0);
   const [sessionIndex, setSessionIndex] = useState(0);
-  const activeSession = sessions[Math.min(sessionIndex, sessions.length - 1)];
+  const activeIndex = Math.min(sessionIndex, sessions.length - 1);
+  const activeSession = sessions[activeIndex];
   const modules = rows[0]?.modules || [];
-  const [moduleIndex, setModuleIndex] = useState(0);
-  const activeModule = modules[Math.min(moduleIndex, modules.length - 1)];
   const moduleInfo = rows[0]?.moduleInfo || {};
+  // Reports sit on the session they belong to (19 Nov 2026, user): a module's report on that
+  // module's last session, the final combined report on the course's last session (the last
+  // session of the last module). Elsewhere a line points to where they are.
+  const lastIndexOf = (moduleId) => sessions.reduce((last, s, i) => (s.moduleId === moduleId ? i : last), -1);
+  const activeModule = activeSession ? modules.find((m) => m.moduleId === activeSession.moduleId) || null : null;
+  const moduleLast = activeModule ? lastIndexOf(activeModule.moduleId) : -1;
+  const atModuleEnd = Boolean(activeModule) && moduleLast === activeIndex;
+  const atCourseEnd = sessions.length === 0 || activeIndex === sessions.length - 1;
   const moduleRows = rows.map((row) => ({ row, moduleRow: row.modules?.find((m) => m.moduleId === activeModule?.moduleId) })).filter((x) => x.moduleRow);
   const shared = { cls, course, reportPath, navigate, generate };
+  const sessionLabel = (i) => `session ${i + 1}${sessions[i]?.sessionTitle ? ` — ${sessions[i].sessionTitle}` : ""}`;
+  const Pointer = ({ text, to }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 20px", backgroundColor: "#F8FAFC", borderTop: `1px solid ${T.border}`, fontSize: 12, color: T.inkMuted }}>
+      <span style={{ flex: 1, minWidth: 200 }}>{text}</span>
+      <button type="button" onClick={() => setSessionIndex(to)} style={pillButton(T.tintBg, T.accent, `1.5px solid ${T.tintBorder}`)}>Go to {sessionLabel(to).split(" — ")[0]} →</button>
+    </div>
+  );
 
   return (
     <div style={{ ...cardStyle, overflow: "hidden" }}>
@@ -285,31 +299,46 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
         </>
       )}
 
-      {modules.length > 0 && (
+      {/* This module's report — on its last session only. */}
+      {activeModule && atModuleEnd && (
         <>
           <div style={sectionHead}>
-            <p style={sectionLabel}>Module Reports</p>
-            <BulkActions cls={cls} course={course} moduleId={activeModule?.moduleId} subjects={moduleRows.map((x) => x.moduleRow)} what={`${activeModule?.moduleName || "module"} reports`} />
+            <p style={sectionLabel}>Module Report — {activeModule.moduleName}</p>
+            <BulkActions cls={cls} course={course} moduleId={activeModule.moduleId} subjects={moduleRows.map((x) => x.moduleRow)} what={`${activeModule.moduleName} reports`} />
           </div>
-          <Navigator items={modules} index={Math.min(moduleIndex, modules.length - 1)} onChange={setModuleIndex}
-            label={(m, i) => `Module ${i + 1} of ${modules.length}${m?.moduleName ? ` — ${m.moduleName}` : ""}`}
-            extra="At the module's last session: generate the reports, publish them, then issue the certificates" />
+          <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid ${T.border}`, fontSize: 11.5, fontWeight: 600, color: "#B45309" }}>
+            The last session of {activeModule.moduleName}: generate the reports, publish them, then issue the certificates.
+          </div>
           {moduleRows.map(({ row, moduleRow }) => <ReportRow key={`${row.learner.id}:${moduleRow.moduleId}`} row={row} moduleRow={moduleRow} {...shared} />)}
         </>
       )}
-      {/* Why some modules have no report of their own (19 Nov 2026). */}
-      {(moduleInfo.coveredByFinal || moduleInfo.unassessed?.length > 0) && (
-        <div style={{ padding: "8px 20px", backgroundColor: "#F8FAFC", borderTop: `1px solid ${T.border}`, fontSize: 11.5, color: T.inkMuted }}>
-          {moduleInfo.coveredByFinal && <>Only one module has assessments ({moduleInfo.coveredByFinal}), so the final report below covers it — with the course certificate. </>}
-          {moduleInfo.unassessed?.length > 0 && <>{moduleInfo.unassessed.join(", ")} {moduleInfo.unassessed.length === 1 ? "has" : "have"} no assessments, so no module report or certificate.</>}
-        </div>
+      {activeModule && !atModuleEnd && moduleLast >= 0 && (
+        <Pointer text={`The ${activeModule.moduleName} report and certificates are at this module's last session (${sessionLabel(moduleLast)}).`} to={moduleLast} />
       )}
 
-      <div style={{ ...sectionHead, borderTop: sessions.length > 0 || modules.length > 0 ? `1px solid ${T.border}` : "none" }}>
-        <p style={sectionLabel}>Final Combined Report</p>
-        <BulkActions cls={cls} course={course} subjects={rows} what={`${course.name} final reports`} />
-      </div>
-      {rows.map((row) => <ReportRow key={row.learner.id} row={row} {...shared} />)}
+      {/* The final combined report — on the course's last session only. */}
+      {atCourseEnd ? (
+        <>
+          {(moduleInfo.coveredByFinal || moduleInfo.unassessed?.length > 0) && (
+            <div style={{ padding: "8px 20px", backgroundColor: "#F8FAFC", borderTop: `1px solid ${T.border}`, fontSize: 11.5, color: T.inkMuted }}>
+              {moduleInfo.coveredByFinal && <>Only one module has assessments ({moduleInfo.coveredByFinal}), so the final report below covers it — with the course certificate. </>}
+              {moduleInfo.unassessed?.length > 0 && <>{moduleInfo.unassessed.join(", ")} {moduleInfo.unassessed.length === 1 ? "has" : "have"} no assessments, so no module report or certificate.</>}
+            </div>
+          )}
+          <div style={{ ...sectionHead, borderTop: sessions.length > 0 ? `1px solid ${T.border}` : "none" }}>
+            <p style={sectionLabel}>Final Combined Report — {course.name}</p>
+            <BulkActions cls={cls} course={course} subjects={rows} what={`${course.name} final reports`} />
+          </div>
+          {sessions.length > 0 && (
+            <div style={{ padding: "8px 20px", backgroundColor: "#FFFBEB", borderBottom: `1px solid ${T.border}`, fontSize: 11.5, fontWeight: 600, color: "#B45309" }}>
+              The course&apos;s last session: generate the final reports, publish them, then issue the course certificates.
+            </div>
+          )}
+          {rows.map((row) => <ReportRow key={row.learner.id} row={row} {...shared} />)}
+        </>
+      ) : (
+        <Pointer text={`The final combined report and course certificates are at the course's last session (${sessionLabel(sessions.length - 1)}).`} to={sessions.length - 1} />
+      )}
     </div>
   );
 }
