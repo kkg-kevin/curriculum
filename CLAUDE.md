@@ -434,6 +434,10 @@ A can-do check (item kind `canDo`) is no longer answered by the learner or auto-
 
 **Marking state belongs to one submission** (same day): `GradingPanel` is keyed by `submission.id` (a wrapper), and the roster's `MilestonesPanel` / `MilestoneRow` by submission + learner — before, switching learner kept the previous learner's typed remarks on screen and saving put them on the new learner's work. Any new marking component must reset when the submission changes.
 
+### A course's session order is the course pages' order (20 Nov 2026)
+
+`courses/session-numbering.js`'s `courseOrder(sessions, modules)`: modules in their order, each module's sessions in their `order`, module-less sessions last — exactly as the course pages list them (`groupSessionsByModule`). Reports (the session navigator — `getReadinessForClassCourse`; module / course last sessions — `loadFilingWindows`) and certificates (`certificateScopes`) use it, and `numberSessions` too. Sorting the whole course by each session's own `order` broke when those numbers restart in each module or a module was moved after its sessions were made (live: Code Foundations' certificate pointers went to Game Creators). Tested in `test/course-order.test.js`. Not changed: the timetable's teaching sequence (`resolveCalendar`) still follows `order` course-wide.
+
 ### Projects tab on the learner profile (16 Nov 2026)
 
 The profile tabs (`PROFILE_TABS`) have **Projects** between Assessments and Reports — on the learner's own profile, the parent's view and the staff learner page. `learner-portal/components/ProjectsOverview.jsx`: every project (assessment type `project`) from the same list as the Assessments tab (`useIssuedForLearner`, so only released marks show), as a portfolio — the brief (description, instructions, what to hand in, milestones), milestones marked so far with the educator's notes, the work handed in, and once marked the full `AssessmentResultView`. Projects keep the normal assessment workflow; this is only a view.

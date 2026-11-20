@@ -8,11 +8,26 @@ const db = require("../../config/db");
 // numberSessions(sessions, modules) → Map(sessionId → { number, count, moduleId, moduleName,
 // moduleNumber }); `number` is 1-based within the module, `count` that module's session count,
 // moduleName / moduleNumber null for module-less sessions (and for a course with no modules).
+// A course's sessions in the order the course pages list them (client courses/sectionConfig.js's
+// groupSessionsByModule): the modules in their order, each module's sessions in their order, then
+// sessions with no module (or a deleted one). Since 20 Nov 2026 everything that asks "which is a
+// module's / the course's last session" or lists a course's sessions in turn uses this — sorting the
+// whole course by each session's own `order` disagreed with the course pages whenever those numbers
+// restart in each module or a module was moved after its sessions were made (Reports pointed at the
+// wrong module's sessions, and a module's certificates couldn't be found).
+function courseOrder(sessions, modules = []) {
+  const position = new Map([...modules].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((m, i) => [m.id, i]));
+  const rank = (s) => (s.moduleId && position.has(s.moduleId) ? position.get(s.moduleId) : Number.MAX_SAFE_INTEGER);
+  return [...sessions].map((s, i) => ({ s, i })).sort((a, b) =>
+    rank(a.s) - rank(b.s) || (Number(a.s.order) || 0) - (Number(b.s.order) || 0) || a.i - b.i,
+  ).map(({ s }) => s);
+}
+
 function numberSessions(sessions, modules = []) {
   const ordered = [...modules].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
   const moduleById = new Map(ordered.map((m, i) => [m.id, { ...m, number: i + 1 }]));
   const keyOf = (s) => (s.moduleId && moduleById.has(s.moduleId) ? s.moduleId : null);
-  const byOrder = [...sessions].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  const byOrder = courseOrder(sessions, modules);
   const totals = new Map();
   for (const s of byOrder) totals.set(keyOf(s), (totals.get(keyOf(s)) || 0) + 1);
   const seen = new Map();
@@ -51,4 +66,4 @@ function placeFields(numbering, sessionId) {
   return { sessionNumber: p?.number ?? null, sessionCount: p?.count ?? null, moduleName: p?.moduleName ?? null, moduleNumber: p?.moduleNumber ?? null };
 }
 
-module.exports = { numberSessions, sessionNumbering, placeFields };
+module.exports = { courseOrder, numberSessions, sessionNumbering, placeFields };

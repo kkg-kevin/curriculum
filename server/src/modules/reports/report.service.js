@@ -19,7 +19,7 @@ const NotificationService = require("../notifications/notification.service");
 const CertificateService = require("../certificates/certificate.service");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const db = require("../../config/db");
-const { sessionNumbering, placeFields } = require("../courses/session-numbering");
+const { sessionNumbering, placeFields, courseOrder } = require("../courses/session-numbering");
 
 function notFound(message) {
   const err = new Error(message);
@@ -606,7 +606,7 @@ async function filingWindows(classId, courseId) {
   return value;
 }
 async function loadFilingWindows(classId, courseId) {
-  const sessions = await SessionModel.findByCourseId(courseId);
+  const sessions = courseOrder(await SessionModel.findByCourseId(courseId), await ModuleModel.findByCourseId(courseId));
   const always = { open: true, date: null, sessionTitle: null, timetabled: false };
   if (!sessions.length) return { course: always, modules: new Map() };
   // Required here, not at the top: timetable.service requires this file.
@@ -730,7 +730,8 @@ const ReportService = {
   // page everything it needs per learner.
   async getReadinessForClassCourse(classId, courseId) {
     const { attachedCount, requiredIds: requiredAssessmentIds } = await getCourseAssessmentCounts(courseId);
-    const sessions = await SessionModel.findByCourseId(courseId);
+    // In the course pages' order — the Reports navigator steps through them in turn.
+    const sessions = courseOrder(await SessionModel.findByCourseId(courseId), await ModuleModel.findByCourseId(courseId));
     const numbering = await sessionNumbering(courseId);
     const links = await LearnerHubLinkModel.findByClassId(classId);
     const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
