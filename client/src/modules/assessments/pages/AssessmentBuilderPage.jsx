@@ -1094,6 +1094,11 @@ function ItemConfigForm({ type, entry, onChange, indicatorOptions }) {
       {entry.kind === "canDo" && (
         <div>
           <Label>Levels</Label>
+          {/* Who picks the level (20 Nov 2026): the educator, for each learner, while marking —
+              learners don't answer can-do checks; in a survey (no marks) the learner rates themself. */}
+          <p style={{ margin: "0 0 8px", fontSize: "12px", color: "#6B7280" }}>
+            The educator picks one of these for each learner while marking. In a survey, the learner picks.
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {CAN_DO_LEVELS.map((level, i) => (
               <div key={level.key} style={{ display: "flex", alignItems: "center", gap: "8px" }}>

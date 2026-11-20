@@ -8,6 +8,8 @@ const {
   listOfferings,
   createOffering,
   deleteOffering,
+  listRegistrations,
+  cancelRegistration,
 } = require("./competition.controller");
 
 const router = express.Router();
@@ -19,5 +21,8 @@ router.route("/:id").get(getCompetitionById).put(updateCompetition).delete(delet
 // flow. Nested under the parent since an offering has no identity outside its competition.
 router.route("/:id/hubs").get(listOfferings).post(createOffering);
 router.route("/:id/hubs/:offeringId").delete(deleteOffering);
+// Registrations made on the website (20 Nov 2026).
+router.get("/:id/registrations", listRegistrations);
+router.post("/:id/registrations/:registrationId/cancel", cancelRegistration);
 
 module.exports = router;

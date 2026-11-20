@@ -128,6 +128,43 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (20 Nov 2026) — Certificates redesigned; educators view them in a pop-up
+
+**Portal and backend** from `curriculum` (branch `modules`) at `08dcd954`. **Website: no change.** **No new migration, npm
+package, environment variable or cron job.** If the 19 Nov final release below isn't up yet, these files include it: follow
+its steps too (and any earlier 19 Nov release's).
+
+### Upload in this order
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/`.
+1. **Backend** — `backend-deploy.zip` (795 files, 194 migrations — none new). **Stop App → Start App**.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-BIhdhb25.js`), after the backend. In `curriculum.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's.
+
+### What changed
+
+**A new look for every certificate** (module, course, pathway, bootcamp — certificates already issued take it too; nothing is
+reissued): a navy frame with circuit-board lines in the corners, faint wave lines and the logo as a watermark; a larger logo
+(no "Module certificate" heading); the learner's name in a serif with a gold line under it; the **course as the large title** —
+a module certificate reads "has successfully completed Module 2 of **Code Foundations 1**" with the course's modules as steps
+(done · this one · still to come) and "Module 2 of 3 · (module name)" under them, a course certificate shows every module
+ticked; a **seal** between the date and the signature in the kind's colour (module sky blue, course gold, pathway navy,
+bootcamp mid blue); and a strip along the bottom with **"In partnership with" + the school's logo** (school hubs with a logo —
+the hub's photo — otherwise "Learning hub: (name)") and the certificate number with its QR code. No sessions or hours are shown.
+The verification page's sentence and Download PDF follow the same layout.
+
+**Educators view a certificate in a pop-up** — Reports → a module's or the course's last session → **View** beside a learner's
+certificate (issued or revoked; a revoked one shows its reason): the certificate as the family sees it, with Download PDF and
+Copy verification link. Admins and hubs have the same on the class page.
+
+### Verify
+
+1. Sign in as an educator → Reports → a course → a module's last session → **View** on a learner with a certificate: the new
+   certificate opens over the page; Download PDF saves it.
+2. Open a certificate's verification link (its QR code): "This certificate is genuine" and the new certificate.
+
+---
+
 ## This release (19 Nov 2026, final) — Certificates generated at the last session; sessions numbered within each module
 
 **Portal and backend** from `curriculum` (branch `modules`) at `3b7fc000`. **Website: no change.** **No new migration, npm

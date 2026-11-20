@@ -3,7 +3,9 @@ const CompetitionService = require("./competition.service");
 const CompetitionHubService = require("./competition-hub.service");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
-const { createCompetitionSchema, updateCompetitionSchema } = require("./competition.validation");
+const { createCompetitionSchema, updateCompetitionSchema, cancelRegistrationSchema } = require("./competition.validation");
+const CompetitionRegistrationService = require("./competition-registration.service");
+const UsageService = require("../usage/usage.service");
 const { createOfferingSchema } = require("./competition-hub.validation");
 const { parsePatch } = require("../../shared/validators/common.validator");
 
@@ -49,6 +51,8 @@ const updateCompetition = asyncHandler(async (req, res) => {
 
 const deleteCompetition = asyncHandler(async (req, res) => {
   assertOwn(isOwn(req, await CompetitionService.getCompetitionById(req.params.id)));
+  // People registered for it → refused (close it instead); ?check=1 only asks.
+  if (await UsageService.guardDelete(req, res, "competition", req.params.id, "This competition")) return;
   const result = await CompetitionService.deleteCompetition(req.params.id);
   res.json({ success: true, ...result });
 });
@@ -73,7 +77,23 @@ const deleteOffering = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+// Registrations (20 Nov 2026) — the competition page's Registrations tab.
+const listRegistrations = asyncHandler(async (req, res) => {
+  assertOwn(isOwn(req, await CompetitionService.getCompetitionById(req.params.id)));
+  const records = await CompetitionRegistrationService.listForCompetition(req.params.id);
+  res.json({ success: true, data: records, count: records.length });
+});
+
+const cancelRegistration = asyncHandler(async (req, res) => {
+  assertOwn(isOwn(req, await CompetitionService.getCompetitionById(req.params.id)));
+  const { reason } = cancelRegistrationSchema.parse(req.body);
+  const record = await CompetitionRegistrationService.cancel(req.params.id, req.params.registrationId, { reason, actorUserId: req.user.id });
+  res.json({ success: true, data: record });
+});
+
 module.exports = {
+  listRegistrations,
+  cancelRegistration,
   createCompetition,
   getAllCompetitions,
   getCompetitionById,

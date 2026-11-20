@@ -11,7 +11,7 @@ const TABLE = "competitions";
 // `tracks`/`coursePricing` are stored as JSON columns — mysql2 auto-parses them back on read,
 // but doesn't auto-serialize a raw JS array on write (see CLAUDE.md), so they go through
 // stringifyJsonFields.
-const JSON_FIELDS = ["tracks", "coursePricing"];
+const JSON_FIELDS = ["tracks", "coursePricing", "info"];
 
 const CompetitionModel = {
   create(data) {

@@ -21,6 +21,7 @@ const NAME = {
   classes: "CONCAT_WS(' ', gradeName, NULLIF(streamName, ''), CONCAT('(', academicYear, ')'))",
   learners: "CONCAT_WS(' ', firstName, lastName)",
   teachers: "CONCAT_WS(' ', firstName, lastName)",
+  competition_registrations: "CONCAT_WS(' · ', registrationNumber, COALESCE(CONCAT('Team ', teamName), contactName))",
 };
 const nameOf = (table) => db.raw(`${NAME[table] || "name"} as label`);
 const jsonHas = (column, id) => [`CAST(?? AS CHAR) LIKE ?`, [column, `%${id}%`]];
@@ -338,6 +339,16 @@ const CHECKS = {
     ],
   },
 
+  // A competition people have registered for is closed, never deleted (their entries, invoices
+  // and payments are kept).
+  competition: {
+    name: "competitions",
+    alternative: "close it instead — its registrations and invoices are kept",
+    uses: (id) => [
+      usage("registrations", ["registration", "registrations"], db("competition_registrations").where({ competitionId: id }), { table: "competition_registrations" }),
+    ],
+  },
+
   game: {
     name: "event_games",
     alternative: null,
@@ -410,6 +421,7 @@ const OWNER = {
   room: (id) => db("learning_hubs").whereIn("id", db("rooms").where({ id }).select("hubId")).first("ownerAdminId"),
   accessRole: (id) => db("access_roles").where({ id }).first("ownerAdminId"),
   bootcamp: (id) => db("bootcamps").where({ id }).first("ownerAdminId"),
+  competition: (id) => db("competitions").where({ id }).first("ownerAdminId"),
   game: (id) => db("event_games").where({ id }).first("ownerAdminId"),
   generalEvent: (id) => db("general_events").where({ id }).first("ownerAdminId"),
   supervisor: (id) => db("users").where({ id }).first("invitedByAdminId as ownerAdminId"),

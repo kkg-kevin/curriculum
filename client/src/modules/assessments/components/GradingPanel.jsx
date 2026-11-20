@@ -1,12 +1,17 @@
 import { useMemo, useState } from "react";
 import { FiCheck, FiX } from "react-icons/fi";
-import { normalizeLegacyItem, entryMarks, canDoLevelFor } from "../schemas/assessment.schema";
+import { normalizeLegacyItem, entryMarks, canDoLevelFor, CAN_DO_LEVELS } from "../schemas/assessment.schema";
 import { useAssessmentCompetencies } from "../hooks/useAssessment";
 import RichContent from "./RichContent";
 
 const T = { accent: "#25476a", accentLight: "#38aae1", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
-// Marked automatically from the learner's answer — mirrors the server's grading.utils.js.
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
+// Marked automatically from the learner's answer — mirrors the server's grading.utils.js. Can-do
+// checks aren't: the educator marks them here (20 Nov 2026).
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+
+// How the educator's three choices read on the marking page (the item's own wording is the
+// learner's "I can…", shown on their result).
+const CAN_DO_MARKING = { independent: "Does it independently", withHelp: "Does it with help", cannot: "Can't do it yet" };
 const OBSERVATION_KIND_LABELS = { checklist: "Checklist", rating: "Rating", practicalSkill: "Practical Skill", behaviour: "Behaviour", note: "Note" };
 
 const fieldStyle = {
@@ -213,7 +218,50 @@ function MarksInputs({ entry, feedback, indicatorNameById, onChange }) {
   );
 }
 
+// A can-do check, marked by the educator (20 Nov 2026): one of three levels for this learner —
+// all of the item's marks, half, or none. A learner's own answer from before then is shown as a hint.
+function CanDoMarkRow({ index, item, response, feedback, onChange }) {
+  const max = entryMarks(item);
+  const learnerSaid = canDoLevelFor(item, response);
+  return (
+    <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: T.accent }}>{index + 1}.</span>
+        <div style={{ flex: 1, fontSize: 13 }}><RichContent html={item.question} /></div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: feedback.level ? T.accent : T.inkFaint, whiteSpace: "nowrap" }}>
+          {feedback.level ? `${feedback.marks ?? 0}/${max}` : `Not marked · /${max}`}
+        </span>
+      </div>
+      <div role="radiogroup" aria-label="Can-do level" style={{ marginLeft: 20, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {CAN_DO_LEVELS.map((level) => {
+          const on = feedback.level === level.key;
+          const marks = Math.round(max * level.credit * 10) / 10;
+          return (
+            <button
+              key={level.key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onChange({ ...feedback, level: level.key, marks, indicatorMarks: [] })}
+              style={{
+                padding: "8px 12px", borderRadius: 999, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 12.5, fontWeight: 700,
+                border: `1.5px solid ${on ? level.color : T.border}`, backgroundColor: on ? level.bg : "#fff", color: on ? level.color : T.ink,
+              }}
+            >
+              {CAN_DO_MARKING[level.key]} · {marks}
+            </button>
+          );
+        })}
+      </div>
+      {learnerSaid && (
+        <p style={{ margin: "0 0 0 20px", fontSize: 11.5, color: T.inkMuted }}>The learner said: &ldquo;{learnerSaid.label}&rdquo;</p>
+      )}
+    </div>
+  );
+}
+
 function ManualGradeRow({ index, item, response, feedback, indicatorNameById, onChange }) {
+  if (item.kind === "canDo") return <CanDoMarkRow index={index} item={item} response={response} feedback={feedback} onChange={onChange} />;
   return (
     <div style={{ padding: "14px 16px", backgroundColor: "#FAFBFF", border: `1px solid ${T.border}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -303,7 +351,14 @@ function ObservationRow({ index, indicator, feedback, indicatorNameById, onChang
 // — short-answer/unstructured/submission items and every rubric criterion — gets a marks input
 // here. Feedback is deliberately only the single Overall Feedback field below, not per-question —
 // that one note is what the learner/guardian sees, and what feeds into the course report.
-export default function GradingPanel({ assessment, submission, onSave, isSaving }) {
+// Each submission gets its own marking state: switching learner (or attempt) starts fresh from that
+// submission's own marks and remarks — never the previous learner's (bug fixed 20 Nov 2026:
+// remarks typed for one learner showed, and were saved, for the next).
+export default function GradingPanel(props) {
+  return <GradingPanelFor key={props.submission?.id || "none"} {...props} />;
+}
+
+function GradingPanelFor({ assessment, submission, onSave, isSaving }) {
   const items = useMemo(() => (assessment.items || []).map(normalizeLegacyItem), [assessment.items]);
   const rubric = assessment.rubric || [];
   const deliverables = assessment.deliverables || [];
@@ -336,7 +391,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
     const map = new Map();
     items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind)).forEach((i) => {
       const existing = existingFeedback.get(i.id);
-      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [], comment: existing?.comment ?? "" });
+      map.set(i.id, { marks: existing?.marks ?? 0, checkedCriteriaIds: existing?.checkedCriteriaIds ?? [], indicatorMarks: existing?.indicatorMarks ?? [], comment: existing?.comment ?? "", ...(existing?.level ? { level: existing.level } : {}) });
     });
     rubric.forEach((c) => {
       const key = `rubric:${c.id}`;
@@ -363,6 +418,11 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
   const manualItems = items.filter((i) => !AUTO_GRADABLE_KINDS.includes(i.kind));
 
   const manualScore = [...itemFeedback.values()].reduce((sum, f) => sum + (Number(f.marks) || 0), 0);
+  // The automatic part, from the kinds still marked automatically — work handed in before can-do
+  // checks became the educator's carried their marks there (the server recounts it on saving).
+  const autoKindIds = new Set(autoItems.map((i) => i.id));
+  const autoNow = Math.round((submission.autoItemResults || []).filter((r) => autoKindIds.has(r.itemId)).reduce((sum, r) => sum + (Number(r.marksAwarded) || 0), 0) * 10) / 10;
+  const autoMaxNow = Math.round(autoItems.reduce((sum, i) => sum + entryMarks(i), 0) * 10) / 10;
   // A project's milestones, marked on their own (the roster's Milestones panel), count in the total.
   const milestoneById = new Map((submission.milestoneProgress || []).map((p) => [p.milestoneId, p]));
   const milestonesMarked = (assessment.milestones || []).filter((m) => milestoneById.has(m.id)).length;
@@ -373,16 +433,16 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
 
   const handleSave = () => {
     // A note kept on an item (an observation's, or one written elsewhere) goes back as it is.
-    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [], indicatorMarks: f.indicatorMarks || [], comment: f.comment || "" }));
+    const payload = [...itemFeedback.entries()].map(([itemId, f]) => ({ itemId, marks: f.marks, checkedCriteriaIds: f.checkedCriteriaIds || [], indicatorMarks: f.indicatorMarks || [], comment: f.comment || "", ...(f.level ? { level: f.level } : {}) }));
     onSave({ itemFeedback: payload, overallFeedback, manualScore });
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      {submission.autoMax > 0 && (
+      {autoItems.length > 0 && autoMaxNow > 0 && (
         <div>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Auto-graded · {submission.autoScore}/{submission.autoMax}
+            Auto-graded · {autoNow}/{autoMaxNow}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {autoItems.map((item, i) => (
@@ -461,7 +521,7 @@ export default function GradingPanel({ assessment, submission, onSave, isSaving 
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 6, borderTop: `1px solid ${T.border}` }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.ink }}>
-          Total: {Math.round(((submission.autoScore || 0) + manualScore + milestoneMarks) * 10) / 10} / {submission.maxScore}
+          Total: {Math.round((autoNow + manualScore + milestoneMarks) * 10) / 10} / {submission.maxScore}
           {/* A project's milestone marks count in its total (16 Nov 2026) — marked separately, above. */}
           {(assessment.milestones || []).length > 0 && (
             <span style={{ display: "block", fontSize: 11.5, fontWeight: 500, color: T.inkMuted }}>

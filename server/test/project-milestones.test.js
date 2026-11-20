@@ -43,7 +43,9 @@ test("an unmarked tagged milestone still counts its possible marks (earned nothi
 test("a project with only milestones to mark is finished by its milestones", () => {
   assert.equal(G.nothingButMilestonesToMark(project()), false); // has a rubric
   assert.equal(G.nothingButMilestonesToMark(project({ rubric: [] })), true);
-  assert.equal(G.nothingButMilestonesToMark(project({ rubric: [], items: [{ id: "q", kind: "canDo" }] })), true); // auto-marked
+  // Can-do checks are the educator's to mark (20 Nov 2026), so they need the final mark too.
+  assert.equal(G.nothingButMilestonesToMark(project({ rubric: [], items: [{ id: "q", kind: "canDo" }] })), false);
+  assert.equal(G.nothingButMilestonesToMark(project({ rubric: [], items: [{ id: "q", kind: "mcqSingle" }] })), true); // auto-marked
   assert.equal(G.nothingButMilestonesToMark(project({ rubric: [], items: [{ id: "q", kind: "longAnswer" }] })), false);
   assert.equal(G.nothingButMilestonesToMark(project({ rubric: [], milestones: [] })), false);
   assert.equal(G.nothingButMilestonesToMark({ type: "quiz", milestones: [{ id: "m" }] }), false);

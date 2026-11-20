@@ -6,8 +6,9 @@ import { T, STATUS_CONFIG, StatusBadge, reissueBlockerOf, fullName, ReissueDialo
 import GradingPanel from "../../assessments/components/GradingPanel";
 import { entryMarks, normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
 
-// Questions marked automatically (GradingPanel.jsx / grading.utils.js keep the same list).
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
+// Questions marked automatically (GradingPanel.jsx / grading.utils.js keep the same list) — can-do
+// checks aren't: the educator marks them (20 Nov 2026).
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
 
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
@@ -118,7 +119,7 @@ function MilestonesPanel({ assessment, submission, issueId, learnerId, onGraded 
       </div>
       {milestones.map((m) => (
         <MilestoneRow
-          key={m.id}
+          key={`${submission?.id || learnerId}:${m.id}`}
           milestone={m}
           progress={progressByMilestone.get(m.id)}
           isSaving={isPending && variables?.milestoneId === m.id}
@@ -386,7 +387,10 @@ export default function AssessmentRosterPage() {
           {!selectedGroupRow && <AttemptSwitcher attempts={attempts} index={shownAttempt} onChange={(i) => { setAttemptIndex(i); setStartedSubmission(null); }} />}
           {hasMilestones && selectedSubmission && (
             <MilestonesPanel
-              key={selectedGroupRow ? issue.id : attemptIssueId}
+              /* Its own per learner and attempt: milestone marks and feedback typed for one learner
+                 must never show (or be saved) for the next (fixed 20 Nov 2026 — keyed by the issue
+                 alone, the rows kept the last learner's text). */
+              key={`${selectedSubmission.id}:${selectedGroupRow ? selectedGroupRow.group.id : selectedLearnerRow?.learner.id}`}
               assessment={assessment}
               submission={selectedSubmission}
               issueId={selectedGroupRow ? issue.id : attemptIssueId}

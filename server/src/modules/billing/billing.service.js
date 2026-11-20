@@ -68,6 +68,11 @@ async function resolvePayerIdentity(invoice) {
       return { name: order.customerName, email: order.customerEmail, phone: order.customerPhone, address };
     }
   }
+  // A competition entry is billed to whoever registered it (no login exists for them).
+  if (invoice.invoiceType === "competition") {
+    const payer = await require("../competitions/competition-registration.service").payerFor(invoice.id);
+    if (payer) return payer;
+  }
   if (invoice.payerHubId) {
     const hub = await LearningHubService.getLearningHubById(invoice.payerHubId).catch(() => null);
     if (!hub) return null;

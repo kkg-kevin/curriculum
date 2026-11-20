@@ -38,6 +38,7 @@ function runInvoiceActivationHooks(invoice, { amount = null, paidByUserId = null
 function runInvoicePaidHooks(invoice) {
   return runHooks(invoice, [
     () => require("../orders/orders.service").activateForPaidInvoice(invoice),
+    () => require("../competitions/competition-registration.service").onInvoicePaid(invoice),
     // "I've paid" notices still waiting on it have nothing left to confirm.
     () => require("../payments/payment-notices.service").closeForPaidInvoice(invoice),
     // A referred family's invoice earns its affiliate a commission (modules/affiliates/).

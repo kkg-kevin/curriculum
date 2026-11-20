@@ -2,10 +2,35 @@ const { computeEntryMarks, roundMarks } = require("../assessment.utils");
 const { CAN_DO_LEVELS } = require("../builder.constants");
 
 // Item kinds marked automatically from the learner's answer: the ones with a single, unambiguous
-// correct answer stored on the item itself, and can-do checks (marked by the level the learner
-// picks). Everything else (free text, uploads, observation indicators, rubric-graded work) needs
-// a human to score it.
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
+// correct answer stored on the item itself. Everything else (free text, uploads, observation
+// indicators, rubric-graded work) needs a human to score it — can-do checks included since 20 Nov
+// 2026 (user: "they are supposed to be on the educator side — they give the marks"): the educator
+// picks the level for each learner while marking (canDoMarks below); the learner no longer answers
+// them, except in a survey, which has no marks and stays the learner's own rating.
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+
+// An educator's can-do level (itemFeedback.level) as marks: the level's share of the item's marks
+// (independently = all, with help = half, can't yet = none). Null for an unknown level.
+function canDoMarks(item, level) {
+  const found = CAN_DO_LEVELS.find((l) => l.key === level);
+  return found ? roundMarks(computeEntryMarks(item) * found.credit) : null;
+}
+
+// The educator's marking as saved: each can-do check's marks follow from the level picked, whatever
+// the page sent, and the manual total moves by the difference. { itemFeedback, manualScore }.
+function applyCanDoLevels(assessment, itemFeedback = [], manualScore = 0) {
+  const itemsById = new Map((assessment?.items || []).map((it) => [it.id, it]));
+  let total = Number(manualScore) || 0;
+  const feedback = itemFeedback.map((f) => {
+    const item = itemsById.get(f.itemId);
+    if (!item || item.kind !== "canDo" || !f.level) return f;
+    const marks = canDoMarks(item, f.level);
+    if (marks === null) return f;
+    total += marks - (Number(f.marks) || 0);
+    return { ...f, marks };
+  });
+  return { itemFeedback: feedback, manualScore: roundMarks(total) };
+}
 
 // A Multiple Choice (Multiple) question's correct options, as trimmed option texts. Saved as a
 // list since 28 Oct 2026, so an option may contain a comma; before that as one comma-joined
@@ -269,10 +294,16 @@ function isBlankResponse(response) {
 // The written questions left blank in these answers, each with its number as the learner sees it
 // (1-based, in the assessment's order). A survey's open questions stay optional — it's feedback,
 // not work — so a survey never has any.
+// What the learner answers: every item, except can-do checks outside a survey — the educator marks
+// those (20 Nov 2026). Question numbers count only these, as the learner sees them.
+function learnerItems(assessment) {
+  return (assessment?.items || []).filter((item) => assessment.type === "survey" || item.kind !== "canDo");
+}
+
 function unansweredWrittenItems(assessment, answers = []) {
   if (!assessment || assessment.type === "survey") return [];
   const byItem = new Map((answers || []).map((a) => [a?.itemId, a?.response]));
-  return (assessment.items || [])
+  return learnerItems(assessment)
     .map((item, index) => ({ item, number: index + 1 }))
     .filter(({ item }) => WRITTEN_KINDS.includes(item.kind) && isBlankResponse(byItem.get(item.id)))
     .map(({ item, number }) => ({ itemId: item.id, number }));
@@ -287,10 +318,13 @@ function questionList(numbers) {
 module.exports = {
   WRITTEN_KINDS,
   unansweredWrittenItems,
+  learnerItems,
   questionList,
   redactUnpublishedReport,
   AUTO_GRADABLE_KINDS,
   isAutoGradableItem,
+  canDoMarks,
+  applyCanDoLevels,
   correctOptionsOf,
   requiresManualGrading,
   gradeItem,

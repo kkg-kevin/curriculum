@@ -23,8 +23,11 @@ import { LEVELS, levelFor, voice, summarySentence } from "../../reports/utils/re
  * A survey isn't marked: it says the answers were recorded and lists them.
  */
 
-// Marked automatically from the learner's answer — mirrors the server's grading.utils.js.
-const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank", "canDo"];
+// Marked automatically from the learner's answer — mirrors the server's grading.utils.js. Can-do
+// checks are the teacher's to mark (20 Nov 2026).
+const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching", "ordering", "fillBlank"];
+// A can-do check as the teacher judged it, read by the learner or their family.
+const CAN_DO_RESULT = { independent: "Can do it independently", withHelp: "Can do it with help", cannot: "Not yet" };
 const pct = (earned, possible) => (possible > 0 ? Math.round((earned / possible) * 100) : 0);
 const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
 const marksOf = (earned, possible) => `${round1(earned)} / ${round1(possible)} ${round1(possible) === 1 ? "mark" : "marks"}`;
@@ -81,13 +84,23 @@ function QuestionRow({ number, item, response, autoResult, feedback, survey }) {
 
   if (survey) return <div style={box}>{head(null)}{answer(<Answer response={response} />)}</div>;
 
-  // A can-do check: the level they picked, in its own colour.
+  // A can-do check: the teacher's judgement (20 Nov 2026), in the level's own colour. Work marked
+  // before then shows the level the learner picked and what it earned.
   if (item.kind === "canDo") {
-    const picked = canDoLevelFor(item, response);
+    const byTeacher = feedback?.level ? canDoLevelFor(item, feedback.level) : null;
+    const picked = byTeacher || canDoLevelFor(item, response);
+    const earned = byTeacher ? feedback.marks : autoResult?.marksAwarded;
+    const possible = entryMarks(item);
     return (
       <div style={box}>
-        {head(autoResult ? <span style={{ fontSize: 12, color: T.faint, whiteSpace: "nowrap" }}>{marksOf(autoResult.marksAwarded, autoResult.maxMarks ?? entryMarks(item))}</span> : null)}
-        {answer(picked ? <strong style={{ color: picked.color }}>{picked.label}</strong> : <em style={{ color: T.faint }}>No answer given</em>)}
+        {head(earned != null && possible > 0 ? <span style={{ fontSize: 12, color: T.faint, whiteSpace: "nowrap" }}>{marksOf(earned, possible)}</span> : null)}
+        <p style={{ margin: "8px 0 0 36px", fontSize: 13.5, lineHeight: 1.5 }}>
+          <span style={{ fontWeight: 800, color: T.faint, fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 6 }}>{byTeacher ? "Teacher's check" : "Answer"}</span>
+          {picked
+            ? <strong style={{ color: picked.color }}>{byTeacher ? CAN_DO_RESULT[picked.key] : picked.label}</strong>
+            : <em style={{ color: T.faint }}>Not checked yet</em>}
+        </p>
+        <div style={{ marginLeft: 36 }}><TeacherNote text={feedback?.comment} /></div>
       </div>
     );
   }
