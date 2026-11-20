@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const db = require("../../config/db");
+const { sessionNumbering, placeFields } = require("../courses/session-numbering");
 const ClaimModel = require("./claim.model");
 const ClaimSettingsModel = require("./claim-settings.model");
 const ClaimNotifications = require("./claim.notifications");
@@ -512,6 +513,7 @@ const ClaimService = {
 
     const totals = { attendanceMarked: 0, assignmentsGraded: 0, assignmentsExpected: 0, reportsDone: 0, reportsExpected: 0 };
 
+    const numbering = await sessionNumbering(courseId);
     const sessionRows = sessions.map((session, index) => {
       const own = occurrences.filter((o) => o.courseId === courseId && o.sessionId === session.id && o.date <= today);
       const occurrence = own.find((o) => o.status !== "cancelled") || own[0] || null;
@@ -562,7 +564,9 @@ const ClaimService = {
 
       return {
         id: session.id,
-        number: index + 1,
+        // Within its module (19 Nov 2026).
+        number: numbering.get(session.id)?.number ?? index + 1,
+        moduleName: numbering.get(session.id)?.moduleName ?? null,
         title: session.title || null,
         date,
         state,

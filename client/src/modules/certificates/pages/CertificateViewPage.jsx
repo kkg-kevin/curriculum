@@ -22,7 +22,7 @@ export default function CertificateViewPage() {
     return <div style={{ padding: 40, fontFamily: "Inter, sans-serif", color: "#B91C1C" }}>We couldn't open this certificate. It may have been withdrawn — check your profile for your current certificates.</div>;
   }
 
-  const { title } = certificateFields(certificate);
+  const { title, partOf, heading } = certificateFields(certificate);
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column", gap: 18 }}>
@@ -34,8 +34,8 @@ export default function CertificateViewPage() {
         >
           <FiArrowLeft size={15} /> {portalBase ? "Back" : "Back to profile"}
         </button>
-        <h1 style={{ margin: "12px 0 4px", fontSize: 22, fontWeight: 800, color: T.ink }}>Certificate of Completion</h1>
-        <p style={{ margin: 0, fontSize: 14, color: T.inkMuted }}>{title}</p>
+        <h1 style={{ margin: "12px 0 4px", fontSize: 22, fontWeight: 800, color: T.ink }}>{heading}</h1>
+        <p style={{ margin: 0, fontSize: 14, color: T.inkMuted }}>{partOf ? `${partOf} · ${title}` : title}</p>
       </div>
 
       <CertificateViewer certificate={certificate} />

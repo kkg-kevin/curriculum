@@ -1,4 +1,5 @@
 const db = require("../../config/db");
+const { sessionNumbering, placeFields } = require("../courses/session-numbering");
 const { generateId } = require("../../shared/utils/model.utils");
 const { todayInKenya, addDays } = require("../checkins/checkin.dates");
 const { rolesOf } = require("../auth/account-roles");
@@ -61,7 +62,8 @@ async function loadContext(cover) {
     cover.originalTeacherId ? db("teachers").where({ id: cover.originalTeacherId }).first("id", "firstName", "lastName", "email") : null,
   ]);
   const hub = cls?.schoolId ? await db("learning_hubs").where({ id: cls.schoolId }).first("id", "name") : null;
-  return { cls, course, session, coverTeacher, original, hub };
+  const place = session ? placeFields(await sessionNumbering(cover.courseId), session.id) : null;
+  return { cls, course, session, coverTeacher, original, hub, place };
 }
 
 // What a list or page shows about one cover.
@@ -84,6 +86,8 @@ function shape(cover, ctx) {
     courseName: ctx.course?.name || "Course",
     sessionTitle: ctx.session?.title || null,
     sessionOrder: ctx.session?.order ?? null,
+    sessionNumber: ctx.place?.sessionNumber ?? null,
+    moduleName: ctx.place?.moduleName ?? null,
     coverTeacherId: cover.coverTeacherId,
     coverTeacherName: personName(ctx.coverTeacher) || "Educator",
     originalTeacherId: cover.originalTeacherId,

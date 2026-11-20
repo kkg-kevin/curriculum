@@ -136,6 +136,8 @@ export function buildReportView(report, { audience = "learner", firstName = "" }
     pending,
     sessionNumber: content.sessionNumber || null,
     sessionCount: content.sessionCount || null,
+    // The module the session's number counts within (19 Nov 2026) — numbers restart per module.
+    sessionModuleName: content.sessionModuleName || null,
     nextSessionTitle: content.nextSessionTitle || null,
     sessionReports: (content.sessionReports || []).map((s) => ({ ...s, level: levelFor(s.percent) })),
     courseName: content.courseName || null,

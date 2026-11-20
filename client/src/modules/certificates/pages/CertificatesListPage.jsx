@@ -106,7 +106,7 @@ export default function CertificatesListPage({ backTo = "/reports" }) {
           </button>
           <h1 style={{ margin: "10px 0 6px", fontSize: 24, fontWeight: 900, color: "#fff", letterSpacing: "-0.4px" }}>Certificates</h1>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)", maxWidth: 640 }}>
-            Every certificate of completion issued here. Educators issue module and course certificates from Reports once a learner's module or final report is published; pathway and bootcamp certificates follow once all of their courses' certificates are issued.
+            Every certificate of completion issued here. Educators generate module and course certificates on Reports at the last session of each module and of the course; pathway and bootcamp certificates follow once all of their courses' certificates are issued.
           </p>
         </div>
       </div>

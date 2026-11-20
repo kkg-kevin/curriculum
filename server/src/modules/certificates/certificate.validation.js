@@ -19,4 +19,13 @@ const listSchema = z.object({
   q:      z.string().trim().max(100).optional(),
 });
 
-module.exports = { revokeSchema, settingsSchema, listSchema };
+// Generate certificates (19 Nov 2026): a module's (moduleId) or the course's, for the whole class or
+// chosen learners.
+const generateSchema = z.object({
+  classId:    z.string().min(1),
+  courseId:   z.string().min(1),
+  moduleId:   z.string().min(1).nullable().optional(),
+  learnerIds: z.array(z.string().min(1)).max(500).optional(),
+});
+
+module.exports = { revokeSchema, settingsSchema, listSchema, generateSchema };

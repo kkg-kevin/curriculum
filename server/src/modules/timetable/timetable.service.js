@@ -3,6 +3,7 @@ const CourseScheduleModel = require("./course-schedule.model");
 const SessionSkipModel = require("./session-skip.model");
 const RoomModel = require("../rooms/room.model");
 const SessionModel = require("../courses/session.model");
+const { sessionNumbering, placeFields } = require("../courses/session-numbering");
 const CourseModel = require("../courses/course.model");
 const ClassModel = require("../classes/class.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
@@ -192,6 +193,9 @@ function isDateSchedulable(date, periods) {
 async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDate, from, to, periods, skipsByDate = {}, roomNameById = new Map() }) {
   const sessions = await SessionModel.findByCourseId(courseId);
   if (sessions.length === 0) return [];
+  // Each event also carries the session's number within its module (19 Nov 2026) — sessionOrder
+  // stays the course-wide order, for sorting.
+  const numbering = await sessionNumbering(courseId);
   const events = [];
   let cursor = 0;
   let pendingMerge = [];
@@ -231,7 +235,7 @@ async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDat
       if (movedSession) {
         events.push({
           date, dayOfWeek: day, classId, courseId,
-          sessionId: movedSession.id, sessionTitle: movedSession.title, sessionOrder: movedSession.order,
+          sessionId: movedSession.id, sessionTitle: movedSession.title, sessionOrder: movedSession.order, ...placeFields(numbering, movedSession.id),
           teacherId: moveTarget.teacherId || null, startTime: moveTarget.startTime, endTime: moveTarget.endTime,
           room: roomNameById.get(moveTarget.roomId) || "",
           merged: false, moved: true,
@@ -264,7 +268,7 @@ async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDat
     for (const session of toEmit) {
       events.push({
         date, dayOfWeek: day, classId, courseId,
-        sessionId: session.id, sessionTitle: session.title, sessionOrder: session.order,
+        sessionId: session.id, sessionTitle: session.title, sessionOrder: session.order, ...placeFields(numbering, session.id),
         teacherId: slot.teacherId || null, startTime: slot.startTime, endTime: slot.endTime, room: roomNameById.get(slot.roomId) || "",
         merged: toEmit.length > 1,
       });
@@ -608,6 +612,7 @@ const TimetableService = {
     const course = await CourseModel.findById(session.courseId);
     const courseSessions = await SessionModel.findByCourseId(session.courseId);
     const totalSessions = courseSessions.length;
+    const numbering = await sessionNumbering(session.courseId);
 
     // Same teacher-resolution order as TimetablePage.jsx's resolveTeacherLabel: an explicit
     // override on that day's slot wins, otherwise whichever educator is primary for this course
@@ -647,7 +652,8 @@ const TimetableService = {
     }
 
     return {
-      session: { id: session.id, title: session.title, order: session.order, totalSessions },
+      // number / count: within its module (19 Nov 2026); order / totalSessions: the whole course.
+      session: { id: session.id, title: session.title, order: session.order, totalSessions, ...(() => { const p = placeFields(numbering, session.id); return { number: p.sessionNumber, count: p.sessionCount, moduleName: p.moduleName }; })() },
       course: course ? { id: course.id, name: course.name } : null,
       class: { id: cls.id, gradeName: cls.gradeName, streamName: cls.streamName || "" },
       date,

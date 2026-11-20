@@ -13,6 +13,7 @@
 // (stage, pathway, gender) don't apply — coverage belongs to the class, not to a learner.
 
 const db = require("../../config/db");
+const { sessionNumbering, placeFields } = require("../courses/session-numbering");
 const CurriculumVersionService = require("../curriculum/versions/curriculum-versions.service");
 const TimetableService = require("../timetable/timetable.service");
 const SessionOccurrenceService = require("../timetable/session-occurrence.service");
@@ -237,6 +238,7 @@ async function getCoverageDetail(scope, classId, courseId) {
     db("session_occurrences").where({ classId, courseId }).select("sessionId", "date", "status", "attendanceState"),
   ]);
   const states = sessionStates(occurrences, today);
+  const numbering = await sessionNumbering(courseId);
   // Upcoming dates: the timetable walked forward a year from tomorrow.
   const upcoming = new Map();
   try {
@@ -250,7 +252,8 @@ async function getCoverageDetail(scope, classId, courseId) {
       const st = states.get(s.id);
       const state = !st ? (upcoming.has(s.id) ? "upcoming" : "unscheduled") : st.covered ? "covered" : st.allCancelled ? "cancelled" : "open";
       return {
-        sessionId: s.id, number: i + 1, title: s.title || `Session ${i + 1}`, state,
+        // Numbered within its module (19 Nov 2026).
+        ...(() => { const n = numbering.get(s.id)?.number ?? i + 1; return { sessionId: s.id, number: n, moduleName: numbering.get(s.id)?.moduleName ?? null, title: s.title || `Session ${n}` }; })(), state,
         date: st ? (st.covered ? st.coveredOn : st.lastDate) : upcoming.get(s.id) || null,
         via: st?.via || null,
       };

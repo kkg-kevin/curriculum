@@ -438,7 +438,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                   return (
                     <div
                       key={key}
-                      title={enableSessionDetail ? undefined : `${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}`}
+                      title={enableSessionDetail ? undefined : `${resolveCourseName(e.courseId)}${e.moduleName ? ` · ${e.moduleName}` : ""} · Session ${e.sessionNumber ?? e.sessionOrder}: ${e.sessionTitle}`}
                       onMouseEnter={() => handleEventEnter(key)}
                       onMouseLeave={handleEventLeave}
                       onClick={() => enableSessionDetail && onOpenDetail(e)}
@@ -459,7 +459,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                         {resolveCourseName(e.courseId)}{e.merged && <span title="Combined with another session"> · 2 sessions</span>}{e.moved && <span title="Moved from another date"> · moved</span>}
                       </p>
                       <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        Session {e.sessionOrder}: {e.sessionTitle}
+                        Session {e.sessionNumber ?? e.sessionOrder}: {e.sessionTitle}
                       </p>
                       {resolveTeacherLabel && (
                         <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -539,7 +539,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
                     return (
                       <div
                         key={eventKey(e)}
-                        title={`${resolveCourseName(e.courseId)} · Session ${e.sessionOrder}: ${e.sessionTitle}${coverTag(e) ? ` · ${coverTag(e)}` : ""}`}
+                        title={`${resolveCourseName(e.courseId)}${e.moduleName ? ` · ${e.moduleName}` : ""} · Session ${e.sessionNumber ?? e.sessionOrder}: ${e.sessionTitle}${coverTag(e) ? ` · ${coverTag(e)}` : ""}`}
                         onClick={() => enableSessionDetail && onOpenDetail(e)}
                         style={{
                           position: "relative", backgroundColor: color.bg, border: `1px solid ${color.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: color.text,
@@ -617,7 +617,7 @@ function SessionHoverCard({ summary, isLoading }) {
     <div ref={ref} style={baseStyle}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
         <p style={{ margin: 0, fontSize: 10.5, fontWeight: 800, color: T.ink }}>
-          Session {summary.session.order} of {summary.session.totalSessions}
+          {summary.session.moduleName ? `${summary.session.moduleName} · ` : ""}Session {summary.session.number ?? summary.session.order} of {summary.session.count ?? summary.session.totalSessions}
         </p>
         <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: hc.dot, flexShrink: 0 }} />
       </div>
@@ -819,7 +819,7 @@ function SessionDetailModal({ event, resolveCourseName, onClose, enableReschedul
               {resolveCourseName(event.courseId)}
             </h3>
             <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
-              Session {event.sessionOrder}{event.sessionTitle ? `: ${event.sessionTitle}` : ""}
+              {event.moduleName ? `${event.moduleName} · ` : ""}Session {event.sessionNumber ?? event.sessionOrder}{event.sessionTitle ? `: ${event.sessionTitle}` : ""}
             </p>
           </div>
           <button

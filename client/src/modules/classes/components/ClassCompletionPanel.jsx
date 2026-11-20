@@ -155,7 +155,8 @@ export default function ClassCompletionPanel({ classId }) {
 }
 
 function sessionLabel(item) {
-  const name = item.sessionTitle || (item.sessionOrder != null ? `Session ${item.sessionOrder}` : "Session");
+  const number = item.sessionNumber ?? item.sessionOrder;
+  const name = item.sessionTitle || (number != null ? `${item.moduleName ? `${item.moduleName} · ` : ""}Session ${number}` : "Session");
   return item.courseName ? `${item.courseName} · ${name}` : name;
 }
 

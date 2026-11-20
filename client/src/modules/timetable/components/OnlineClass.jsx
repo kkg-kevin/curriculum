@@ -163,7 +163,7 @@ export function NextOnlineClassCard({ who, resolveCourseName }) {
           {live ? "Online class — live now" : "Next online class"}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 14.5, fontWeight: 800, color: T.ink }}>
-          {courseName || `Session ${event.sessionOrder}`}{event.sessionTitle ? ` · ${event.sessionTitle}` : ""}
+          {courseName || `Session ${event.sessionNumber ?? event.sessionOrder}`}{event.sessionTitle ? ` · ${event.sessionTitle}` : ""}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 12.5, color: T.inkMuted }}>
           {whenText(event)}

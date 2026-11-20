@@ -444,14 +444,14 @@ const QaService = {
       const c = classById.get(e.classId);
       if (seen.has(key)) {
         const row = upcoming.find((u) => u.key === key);
-        if (row && e.sessionOrder != null) row.sessions.push(e.sessionOrder);
+        if (row && e.sessionOrder != null) row.sessions.push(e.sessionNumber ?? e.sessionOrder);
         continue;
       }
       seen.add(key);
       upcoming.push({
         key, kind: "class", date: e.date, startTime: String(e.startTime).slice(0, 5), endTime: String(e.endTime).slice(0, 5),
         title: `${courseById.get(e.courseId) || "Class"} · ${className(c)}${e.moved ? " (moved)" : ""}`,
-        sessions: e.sessionOrder != null ? [e.sessionOrder] : [], sessionTitle: e.sessionTitle || null,
+        sessions: e.sessionOrder != null ? [e.sessionNumber ?? e.sessionOrder] : [], sessionTitle: e.sessionTitle || null, moduleName: e.moduleName || null,
         hubId: c?.schoolId || w?.hubId || null, hubName: hubById.get(c?.schoolId) || w?.hubName || null, roomName: e.room || w?.roomName || null,
       });
     }

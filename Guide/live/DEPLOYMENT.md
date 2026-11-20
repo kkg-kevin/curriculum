@@ -128,6 +128,50 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (19 Nov 2026, final) — Certificates generated at the last session; sessions numbered within each module
+
+**Portal and backend** from `curriculum` (branch `modules`) at `3b7fc000`. **Website: no change.** **No new migration, npm
+package, environment variable or cron job.** If any earlier 19 Nov release below isn't up yet, these files include it: follow
+its steps too (the "later" release's four migrations, the morning's rankings cron).
+
+### Before you upload: tell the educators
+
+Certificates are now **generated at the last session** — no module report, final report or publishing:
+Reports → the course → step to a **module's last session** → **Generate certificates for all** (or **Generate certificate**
+per learner); the same at **the course's last session** for the course certificate. Session reports still go to families by
+themselves once work is marked. Module reports and the final combined report are no longer on the Reports page (ones already
+published stay visible to families).
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/`.
+1. **Backend** — `backend-deploy.zip` (795 files, 194 migrations — none new). **Stop App → Start App**.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-DWhyOf3t.js`), after the backend. In `dcf.digifunzi.com`: delete the old `assets/`
+   folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's.
+
+### What changed
+
+**Certificates at the last session** — assessment issued → marked → the session report goes to the family → at a module's last
+session the educator generates each learner's certificate (course and module named on it); at the course's last session, the
+course certificate. One learner or the whole class; the family is told. It opens when the class reaches that session on the
+timetable ("Opens when the class reaches this session (date)" before then; straight away for a class with no timetable ahead).
+**Revoke** (educators, admins, hubs) and **Generate again** (same number). A course with only one module gets the course
+certificate only. Pathway and bootcamp certificates still follow from the course certificates. The Reports tiles are now
+Session reports sent · Certificates to generate · Certificates issued.
+
+**Sessions numbered within each module** — Module 2 starts at Session 1 again everywhere: calendar and session window, online
+class, class completion, claim evidence, curriculum coverage, Today across hubs, QA timetables, the Assessments page, the
+Reports navigator ("Module 2 · Session 1 of 12"), session reports and the mentor-booking session list. The timetable's order
+is unchanged — no session moves.
+
+### Verify
+
+1. Sign in as an educator → Reports → a course with modules → step to a module's last session: **Module certificate —
+   (module)** lists the learners; **Generate certificates for all** → Certificates lists them as Module.
+2. The calendar shows Module 2's first session as "Session 1".
+
+---
+
 ## This release (19 Nov 2026, night) — Module and final reports on their last session
 
 **Portal only** from `curriculum` (branch `modules`) at `d00cd7d0`. **Backend: no change** — the `backend-deploy.zip` here is

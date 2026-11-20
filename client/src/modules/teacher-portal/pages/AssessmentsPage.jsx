@@ -23,6 +23,7 @@ import { LearnerChecklist, usePicked, RevokeIssueDialog } from "../components/Is
 import { assessmentSubmissionApi } from "../../assessments/services/assessmentSubmissionApi";
 import DiagnosticGradingModal from "../../assessments/components/DiagnosticGradingModal";
 import { classLabel } from "../../../utils/classLabel";
+import { buildModuleLocalSessionIndex } from "../../courses/sectionConfig";
 
 const T = {
   accent: "#25476a",
@@ -375,14 +376,18 @@ function buildCourseCarousels(courses, allSessionsByCourse, attachments, modules
     const moduleIndex = new Map(modules.map((m, i) => [m.id, i]));
     const moduleById = new Map(modules.map((m) => [m.id, m]));
     const rank = (session) => (moduleIndex.has(session.moduleId) ? moduleIndex.get(session.moduleId) : modules.length);
-    const sessions = [...(allSessionsByCourse.get(course.id) || [])]
-      .sort((a, b) => rank(a) - rank(b) || (a.order || 0) - (b.order || 0))
+    const sorted = [...(allSessionsByCourse.get(course.id) || [])].sort((a, b) => rank(a) - rank(b) || (a.order || 0) - (b.order || 0));
+    // Numbered within each module (19 Nov 2026) — Module 2 starts at Session 1 again.
+    const place = buildModuleLocalSessionIndex(sorted, modules);
+    const sessions = sorted
       .map((session) => {
         const atts = attByCourseSession.get(`${course.id}:${session.id}`) || [];
         const module = moduleById.get(session.moduleId) || null;
         return {
           sessionId: session.id,
-          sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
+          sessionLabel: session.title?.trim() || `Session ${(place.get(session.id)?.index ?? 0) + 1}`,
+          number: (place.get(session.id)?.index ?? 0) + 1,
+          countInModule: place.get(session.id)?.total ?? sorted.length,
           order: session.order || 0,
           moduleId: module?.id || null,
           moduleName: module ? module.name || `Module ${moduleIndex.get(module.id) + 1}` : null,
@@ -491,7 +496,7 @@ function CourseCarousel({ carousels, issuesByKey, onIssue, issuingKey }) {
           )}
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.sessionLabel}</h3>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: T.inkFaint }}>
-            Session {sIdx + 1} of {course.sessions.length} · {session.assessments.length} assessment{session.assessments.length === 1 ? "" : "s"}
+            Session {session.number ?? sIdx + 1} of {session.countInModule ?? course.sessions.length} · {session.assessments.length} assessment{session.assessments.length === 1 ? "" : "s"}
           </p>
         </div>
         <button type="button" onClick={() => canNext && setSessionIdx(sIdx + 1)} disabled={!canNext} style={navBtn(!canNext)} title="Next session">
@@ -696,6 +701,7 @@ export default function AssessmentsPage() {
     sessionsResults.forEach((result, index) => {
       const course = courses[index];
       const eligibleClasses = myClasses.filter((cls) => forClass(cls).some((c) => c.id === course.id));
+      const place = buildModuleLocalSessionIndex([...(result.data || [])].sort((a, b) => (a.order || 0) - (b.order || 0)), modulesResults[index]?.data || []);
       (result.data || []).forEach((session) => {
         (session.attachedAssessments || []).forEach((assessment) => {
           rows.push({
@@ -704,14 +710,14 @@ export default function AssessmentsPage() {
             courseName: course.name,
             sessionId: session.id,
             sessionOrder: session.order || 0,
-            sessionLabel: session.title?.trim() || `Session ${session.order || 1}`,
+            sessionLabel: session.title?.trim() || `Session ${(place.get(session.id)?.index ?? 0) + 1}`,
             eligibleClasses,
           });
         });
       });
     });
     return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }, [courses, sessionsResults, myClasses, forClass]);
+  }, [courses, sessionsResults, modulesResults, myClasses, forClass]);
 
   // Full session list per course (every session, not just ones with assessments) — the carousel
   // needs to page through all of them in order. Keyed to the same sessionsResults the attachments

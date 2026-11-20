@@ -3,6 +3,7 @@ const CourseScheduleModel = require("./course-schedule.model");
 const AttendanceModel = require("../attendance/attendance.model");
 const ClassModel = require("../classes/class.model");
 const SessionModel = require("../courses/session.model");
+const { sessionNumbering, placeFields } = require("../courses/session-numbering");
 const CourseModel = require("../courses/course.model");
 
 // How long after a session's date an un-marked attendance auto-locks. A teacher gets this many
@@ -163,10 +164,12 @@ const SessionOccurrenceService = {
     const courses = await Promise.all(courseIds.map((id) => CourseModel.findById(id)));
     const sessionById = new Map(sessions.filter(Boolean).map((s) => [s.id, s]));
     const courseById = new Map(courses.filter(Boolean).map((c) => [c.id, c]));
+    const numberingByCourse = new Map(await Promise.all(courseIds.map(async (id) => [id, await sessionNumbering(id)])));
     return occ.map((o) => ({
       ...o,
       sessionTitle: sessionById.get(o.sessionId)?.title || null,
       sessionOrder: sessionById.get(o.sessionId)?.order ?? null,
+      ...placeFields(numberingByCourse.get(o.courseId) || new Map(), o.sessionId),
       courseName: courseById.get(o.courseId)?.name || null,
     }));
   },
@@ -266,7 +269,7 @@ const SessionOccurrenceService = {
     const sample = (rows) =>
       rows.slice(0, 25).map((o) => ({
         id: o.id, sessionId: o.sessionId, courseId: o.courseId, date: o.date,
-        sessionTitle: o.sessionTitle, sessionOrder: o.sessionOrder, courseName: o.courseName,
+        sessionTitle: o.sessionTitle, sessionOrder: o.sessionOrder, sessionNumber: o.sessionNumber ?? null, moduleName: o.moduleName ?? null, courseName: o.courseName,
       }));
 
     return {

@@ -88,7 +88,7 @@ export default function SessionEvidence({ course }) {
       <div style={{ padding: "16px 18px", borderBottom: `1px solid ${T.border}`, background: "#F8FBFE" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>Session {session.number}{session.title ? ` · ${session.title}` : ""}</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink }}>{session.moduleName ? `${session.moduleName} · ` : ""}Session {session.number}{session.title ? ` · ${session.title}` : ""}</p>
             <p style={{ margin: "3px 0 0", fontSize: 12, color: T.inkMuted, display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: state.dot }} />
               <span style={{ color: state.color, fontWeight: 700 }}>{state.label}</span>
@@ -108,7 +108,7 @@ export default function SessionEvidence({ course }) {
             <button
               key={s.id}
               type="button"
-              title={`Session ${s.number} — ${SESSION_STATE[s.state].label}${s.date ? `, ${formatDate(s.date)}` : ""}`}
+              title={`${s.moduleName ? `${s.moduleName} · ` : ""}Session ${s.number} — ${SESSION_STATE[s.state].label}${s.date ? `, ${formatDate(s.date)}` : ""}`}
               onClick={() => setIndex(i)}
               style={{ width: 26, height: 26, borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "Inter, sans-serif", border: i === index ? `2px solid ${T.accent}` : "2px solid transparent", background: s.state === "delivered" ? "#DCFCE7" : s.state === "cancelled" ? "#FEE2E2" : "#EEF2F7", color: s.state === "delivered" ? "#166534" : s.state === "cancelled" ? "#991B1B" : T.inkFaint }}
             >
