@@ -50,6 +50,39 @@ async function learnerName(learnerId) {
   return [learner?.firstName, learner?.lastName].filter(Boolean).join(" ").trim() || "Learner";
 }
 
+// The modules a certificate names (20 Nov 2026): each course's modules that have sessions, in
+// order — the same modules certificateScopes gives a certificate of their own, so empty when the
+// course has fewer than two. Map courseId → [{ id, name }]. Two queries for any number of courses.
+async function courseOutlines(courseIds) {
+  const ids = [...new Set((courseIds || []).filter(Boolean))];
+  const out = new Map(ids.map((id) => [id, []]));
+  if (ids.length === 0) return out;
+  const [modules, sessionModules] = await Promise.all([
+    db("course_modules").whereIn("courseId", ids).select("id", "courseId", "name", "order"),
+    db("course_sessions").whereIn("courseId", ids).whereNotNull("moduleId").distinct("moduleId"),
+  ]);
+  const withSessions = new Set(sessionModules.map((s) => s.moduleId));
+  for (const courseId of ids) {
+    const list = modules
+      .filter((m) => m.courseId === courseId && withSessions.has(m.id))
+      .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
+      .map((m) => ({ id: m.id, name: m.name }));
+    out.set(courseId, list.length >= 2 ? list : []);
+  }
+  return out;
+}
+
+// What a module or course certificate records about the course's shape: a module's place in it
+// ("Module 2 of 3"), a course's module names. Frozen into the snapshot at issue.
+function outlineFields(kind, outline, moduleId = null) {
+  if (kind === "module") {
+    const at = outline.findIndex((m) => m.id === moduleId);
+    return at >= 0 ? { moduleNumber: at + 1, moduleCount: outline.length } : {};
+  }
+  if (kind === "course") return outline.length ? { modules: outline.map((m) => m.name) } : {};
+  return {};
+}
+
 async function hubFor(hubId) {
   const hub = hubId ? await LearningHubModel.findById(hubId) : null;
   return { hubId: hub?.id || hubId || null, hubName: hub?.name || null, ownerAdminId: hub?.ownerAdminId || null };
@@ -133,7 +166,10 @@ const CertificateService = {
       reportId: report.id,
       issuedAt: report.publishedAt || new Date(),
       issuedBy: issuedBy || report.publishedBy || null,
-      snapshot: { learnerName: await learnerName(report.learnerId), title, courseName: title, hubName, signatory: await currentSignatory(ownerAdminId) },
+      snapshot: {
+        learnerName: await learnerName(report.learnerId), title, courseName: title, hubName, signatory: await currentSignatory(ownerAdminId),
+        ...outlineFields("course", (await courseOutlines([report.courseId])).get(report.courseId) || []),
+      },
     });
     if (isNew && notify) await NotificationService.certificateIssued(certificate);
     // An educator in training (modules/tot/) who has finished a whole TOT curriculum moves up a level.
@@ -214,14 +250,15 @@ const CertificateService = {
     const courseName = course?.name || "Course";
     const base = { learnerId, courseId, classId, hubId, ownerAdminId, reportId: null, issuedAt: new Date(), issuedBy };
     const people = { learnerName: await learnerName(learnerId), hubName, signatory: await currentSignatory(ownerAdminId) };
+    const outline = (await courseOutlines([courseId])).get(courseId) || [];
     if (kind === "module") {
       const courseModule = await ModuleModel.findById(moduleId);
       const moduleName = courseModule?.name || "Module";
-      const result = await issueOrReinstate({ ...base, identityKey: moduleKey(moduleId, classId), kind: "module", subjectId: moduleId, snapshot: { ...people, title: moduleName, moduleName, courseName } });
+      const result = await issueOrReinstate({ ...base, identityKey: moduleKey(moduleId, classId), kind: "module", subjectId: moduleId, snapshot: { ...people, title: moduleName, moduleName, courseName, ...outlineFields("module", outline, moduleId) } });
       if (result.isNew && notify) await NotificationService.certificateIssued(result.certificate);
       return result;
     }
-    const result = await issueOrReinstate({ ...base, identityKey: courseKey(courseId, classId), kind: "course", subjectId: courseId, snapshot: { ...people, title: courseName, courseName } });
+    const result = await issueOrReinstate({ ...base, identityKey: courseKey(courseId, classId), kind: "course", subjectId: courseId, snapshot: { ...people, title: courseName, courseName, ...outlineFields("course", outline) } });
     if (result.isNew && notify) await NotificationService.certificateIssued(result.certificate);
     await require("../tot/tot.service").onCourseCertificate(result.certificate);
     await CertificateService.syncProgrammes(learnerId, classId, { notify });
@@ -304,7 +341,10 @@ const CertificateService = {
       reportId: report.id,
       issuedAt: report.publishedAt || new Date(),
       issuedBy: issuedBy || report.publishedBy || null,
-      snapshot: { learnerName: await learnerName(report.learnerId), title: moduleName, moduleName, courseName, hubName, signatory: await currentSignatory(ownerAdminId) },
+      snapshot: {
+        learnerName: await learnerName(report.learnerId), title: moduleName, moduleName, courseName, hubName, signatory: await currentSignatory(ownerAdminId),
+        ...outlineFields("module", (await courseOutlines([report.courseId])).get(report.courseId) || [], report.moduleId),
+      },
     });
     if (isNew && notify) await NotificationService.certificateIssued(certificate);
     return certificate;
@@ -413,8 +453,14 @@ const CertificateService = {
 
   // Adds `signatory` — the one frozen into the certificate when it was issued, or, for one issued
   // before the workspace set a signatory, the current one.
+  //
+  // Also fills in the course outline (a module's "Module 2 of 3", a course's module names) on
+  // module and course certificates issued before 20 Nov 2026, from the course as it is now, so
+  // every sheet reads the same way. Newer certificates carry their own, frozen at issue.
   async withSignatory(certificates) {
     const current = new Map();
+    const needsOutline = (c) => (c.kind === "module" && c.snapshot?.moduleNumber == null) || (c.kind === "course" && !c.snapshot?.modules);
+    const outlines = await courseOutlines(certificates.filter(needsOutline).map((c) => c.courseId));
     const out = [];
     for (const certificate of certificates) {
       let signatory = certificate.snapshot?.signatory || null;
@@ -422,7 +468,10 @@ const CertificateService = {
         if (!current.has(certificate.ownerAdminId)) current.set(certificate.ownerAdminId, await currentSignatory(certificate.ownerAdminId));
         signatory = current.get(certificate.ownerAdminId);
       }
-      out.push({ ...certificate, signatory });
+      const snapshot = needsOutline(certificate)
+        ? { ...(certificate.snapshot || {}), ...outlineFields(certificate.kind, outlines.get(certificate.courseId) || [], certificate.subjectId) }
+        : certificate.snapshot;
+      out.push({ ...certificate, snapshot, signatory });
     }
     return out;
   },
@@ -590,6 +639,10 @@ const CertificateService = {
       title: certificate.snapshot?.title || certificate.snapshot?.courseName || null,
       // A module certificate also names the course the module is part of.
       courseName: certificate.kind === "module" ? certificate.snapshot?.courseName || null : null,
+      // The course's shape (20 Nov 2026): "Module 2 of 3" on a module's, the modules on a course's.
+      moduleNumber: certificate.kind === "module" ? certificate.snapshot?.moduleNumber ?? null : null,
+      moduleCount: certificate.kind === "module" ? certificate.snapshot?.moduleCount ?? null : null,
+      modules: certificate.kind === "course" ? certificate.snapshot?.modules || [] : [],
       hubName: certificate.snapshot?.hubName || null,
       issuedAt: certificate.issuedAt,
       revokedAt: certificate.status === "revoked" ? certificate.revokedAt : null,

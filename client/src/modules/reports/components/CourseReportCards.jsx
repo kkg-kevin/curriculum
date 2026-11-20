@@ -3,6 +3,7 @@ import { Assignment as AssignmentIcon, Visibility as VisibilityIcon } from "@mui
 import { useNavigate } from "react-router-dom";
 import { useGenerateCertificates, useRevokeReportCertificate } from "../hooks/useReports";
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
+import CertificatePreviewDialog from "../../certificates/components/CertificatePreviewDialog";
 import { classLabel } from "../../../utils/classLabel";
 
 /*
@@ -102,7 +103,9 @@ function Navigator({ items, index, onChange, label }) {
 function CertificateSection({ cls, course, rows, moduleId = null, name, window: win }) {
   const generate = useGenerateCertificates();
   const revoke = useRevokeReportCertificate();
-  const what = moduleId ? `${name} certificate` : `${course.name} certificate`;
+  // The certificate open over the page (its id) — "View" on an issued or revoked row.
+  const [viewing, setViewing] = useState(null);
+  const what =moduleId ? `${name} certificate` : `${course.name} certificate`;
   const certOf = (row) => (moduleId ? row.certificates?.modules?.[moduleId] : row.certificates?.course) || null;
   const open = Boolean(win?.open);
   const missing = rows.filter((row) => certOf(row)?.status !== "issued");
@@ -161,6 +164,12 @@ function CertificateSection({ cls, course, rows, moduleId = null, name, window: 
                     : "No certificate yet"}
               </p>
             </div>
+            {cert?.id && (
+              <button type="button" onClick={() => setViewing(cert.id)} title={`View ${row.learner.firstName}'s certificate`}
+                style={{ ...pillButton("#fff", T.accent, `1.5px solid ${T.tintBorder}`), display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <VisibilityIcon sx={{ fontSize: 14 }} /> View
+              </button>
+            )}
             {cert?.status === "issued" ? (
               <button type="button" disabled={revoke.isPending} onClick={() => revokeOne(row)} style={pillButton("#fff", "#B91C1C", "1.5px solid #FECACA", revoke.isPending)}>Revoke</button>
             ) : (
@@ -172,6 +181,7 @@ function CertificateSection({ cls, course, rows, moduleId = null, name, window: 
           </div>
         );
       })}
+      {viewing && <CertificatePreviewDialog certificateId={viewing} onClose={() => setViewing(null)} />}
     </>
   );
 }
