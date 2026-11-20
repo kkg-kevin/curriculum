@@ -83,9 +83,15 @@ function outlineFields(kind, outline, moduleId = null) {
   return {};
 }
 
+// A partner school's logo for the certificate's foot ("In partnership with", 20 Nov 2026): only a
+// school hub (B2B) with a logo of its own — never a club, co-working space or Home Learning holder.
+function hubLogoOf(hub) {
+  return hub && hub.hubType === "school" && hub.photo ? hub.photo : null;
+}
+
 async function hubFor(hubId) {
   const hub = hubId ? await LearningHubModel.findById(hubId) : null;
-  return { hubId: hub?.id || hubId || null, hubName: hub?.name || null, ownerAdminId: hub?.ownerAdminId || null };
+  return { hubId: hub?.id || hubId || null, hubName: hub?.name || null, hubLogo: hubLogoOf(hub), ownerAdminId: hub?.ownerAdminId || null };
 }
 
 // Inserts a certificate, retrying when two issued at the same moment pick the same next number —
@@ -149,7 +155,7 @@ const CertificateService = {
     if (isPublishedModuleReport(report)) return CertificateService.issueForModuleReport(report, { issuedBy, notify });
     if (!isPublishedFinalReport(report)) return null;
     const [course, cls] = await Promise.all([CourseModel.findById(report.courseId), ClassModel.findById(report.classId)]);
-    const { hubId, hubName, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
+    const { hubId, hubName, hubLogo, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
     // The published report already carries the course's name as it was when the learner finished;
     // fall back to the live record for older reports that predate that snapshot.
     const title = report.content?.courseName || course?.name || "Course";
@@ -167,7 +173,7 @@ const CertificateService = {
       issuedAt: report.publishedAt || new Date(),
       issuedBy: issuedBy || report.publishedBy || null,
       snapshot: {
-        learnerName: await learnerName(report.learnerId), title, courseName: title, hubName, signatory: await currentSignatory(ownerAdminId),
+        learnerName: await learnerName(report.learnerId), title, courseName: title, hubName, hubLogo, signatory: await currentSignatory(ownerAdminId),
         ...outlineFields("course", (await courseOutlines([report.courseId])).get(report.courseId) || []),
       },
     });
@@ -246,10 +252,10 @@ const CertificateService = {
   // A revoked one comes back with its number. Returns { certificate, isNew }.
   async issueDirect({ kind, learnerId, classId, courseId, moduleId = null, issuedBy = null, notify = true }) {
     const [course, cls] = await Promise.all([CourseModel.findById(courseId), ClassModel.findById(classId)]);
-    const { hubId, hubName, ownerAdminId } = await hubFor(cls?.schoolId);
+    const { hubId, hubName, hubLogo, ownerAdminId } = await hubFor(cls?.schoolId);
     const courseName = course?.name || "Course";
     const base = { learnerId, courseId, classId, hubId, ownerAdminId, reportId: null, issuedAt: new Date(), issuedBy };
-    const people = { learnerName: await learnerName(learnerId), hubName, signatory: await currentSignatory(ownerAdminId) };
+    const people = { learnerName: await learnerName(learnerId), hubName, hubLogo, signatory: await currentSignatory(ownerAdminId) };
     const outline = (await courseOutlines([courseId])).get(courseId) || [];
     if (kind === "module") {
       const courseModule = await ModuleModel.findById(moduleId);
@@ -325,7 +331,7 @@ const CertificateService = {
     const courseModule = await ModuleModel.findById(report.moduleId);
     if (!courseModule) return null;
     const [course, cls] = await Promise.all([CourseModel.findById(report.courseId), ClassModel.findById(report.classId)]);
-    const { hubId, hubName, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
+    const { hubId, hubName, hubLogo, ownerAdminId } = await hubFor(report.hubId || cls?.schoolId);
     // Names as the report froze them, else the live records.
     const moduleName = report.content?.moduleName || courseModule.name;
     const courseName = report.content?.courseName || course?.name || null;
@@ -342,7 +348,7 @@ const CertificateService = {
       issuedAt: report.publishedAt || new Date(),
       issuedBy: issuedBy || report.publishedBy || null,
       snapshot: {
-        learnerName: await learnerName(report.learnerId), title: moduleName, moduleName, courseName, hubName, signatory: await currentSignatory(ownerAdminId),
+        learnerName: await learnerName(report.learnerId), title: moduleName, moduleName, courseName, hubName, hubLogo, signatory: await currentSignatory(ownerAdminId),
         ...outlineFields("module", (await courseOutlines([report.courseId])).get(report.courseId) || [], report.moduleId),
       },
     });
@@ -370,7 +376,7 @@ const CertificateService = {
       if (!cls) return;
       const mine = await CertificateModel.findAll({ learnerId });
       const standingCourses = mine.filter((c) => c.kind === "course" && c.status === "issued");
-      const { hubId, hubName, ownerAdminId } = await hubFor(cls.schoolId);
+      const { hubId, hubName, hubLogo, ownerAdminId } = await hubFor(cls.schoolId);
 
       const programmes = [];
       const pathways = cls.curriculumId ? await PathwayModel.findByCurriculumId(cls.curriculumId) : [];
@@ -425,6 +431,7 @@ const CertificateService = {
             learnerName: await learnerName(learnerId),
             title: programme.title,
             hubName,
+            hubLogo,
             courseIds: programme.courseIds,
             signatory: await currentSignatory(ownerAdminId),
           },
@@ -461,6 +468,12 @@ const CertificateService = {
     const current = new Map();
     const needsOutline = (c) => (c.kind === "module" && c.snapshot?.moduleNumber == null) || (c.kind === "course" && !c.snapshot?.modules);
     const outlines = await courseOutlines(certificates.filter(needsOutline).map((c) => c.courseId));
+    // Certificates from before the partner-school logo (20 Nov 2026) take the hub's logo as it is now.
+    const needsLogo = (c) => c.hubId && c.snapshot && !("hubLogo" in c.snapshot);
+    const logoHubIds = [...new Set(certificates.filter(needsLogo).map((c) => c.hubId))];
+    const hubLogos = new Map(logoHubIds.length
+      ? (await db("learning_hubs").whereIn("id", logoHubIds).select("id", "hubType", "photo")).map((h) => [h.id, hubLogoOf(h)])
+      : []);
     const out = [];
     for (const certificate of certificates) {
       let signatory = certificate.snapshot?.signatory || null;
@@ -468,9 +481,10 @@ const CertificateService = {
         if (!current.has(certificate.ownerAdminId)) current.set(certificate.ownerAdminId, await currentSignatory(certificate.ownerAdminId));
         signatory = current.get(certificate.ownerAdminId);
       }
-      const snapshot = needsOutline(certificate)
+      let snapshot = needsOutline(certificate)
         ? { ...(certificate.snapshot || {}), ...outlineFields(certificate.kind, outlines.get(certificate.courseId) || [], certificate.subjectId) }
         : certificate.snapshot;
+      if (needsLogo(certificate)) snapshot = { ...snapshot, hubLogo: hubLogos.get(certificate.hubId) || null };
       out.push({ ...certificate, snapshot, signatory });
     }
     return out;
@@ -644,6 +658,8 @@ const CertificateService = {
       moduleCount: certificate.kind === "module" ? certificate.snapshot?.moduleCount ?? null : null,
       modules: certificate.kind === "course" ? certificate.snapshot?.modules || [] : [],
       hubName: certificate.snapshot?.hubName || null,
+      // A partner school's logo ("In partnership with") — school hubs only.
+      hubLogo: certificate.snapshot?.hubLogo || null,
       issuedAt: certificate.issuedAt,
       revokedAt: certificate.status === "revoked" ? certificate.revokedAt : null,
       signatory: certificate.signatory || null,

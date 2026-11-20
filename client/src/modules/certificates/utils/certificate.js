@@ -26,6 +26,8 @@ export function certificateFields(certificate) {
     modules: kind === "course" ? (certificate?.modules?.length ? certificate.modules : s.modules || []) : [],
     heading: `${KIND_LABELS[kind] || "Course"} Certificate`,
     hubName: certificate?.hubName || s.hubName || "",
+    // A partner school's logo for the foot ("In partnership with") — school hubs only.
+    hubLogo: certificate?.hubLogo || s.hubLogo || "",
     issuedAt: certificate?.issuedAt || null,
     revokeReason: certificate?.revokeReason || null,
     verifyToken: certificate?.verifyToken || "",
