@@ -57,6 +57,8 @@ const itemFeedbackSchema = z.object({
   // ScoringCriteriaChecklist) — purely so reopening a graded submission restores checkbox
   // state. `marks` above is still the number scoring actually runs on.
   checkedCriteriaIds: z.array(z.string()).optional().default([]),
+  // A can-do check's level as the educator judged it (20 Nov 2026) — its marks follow from it.
+  level: z.enum(["independent", "withHelp", "cannot"]).optional(),
 });
 
 const gradeSubmissionSchema = z.object({

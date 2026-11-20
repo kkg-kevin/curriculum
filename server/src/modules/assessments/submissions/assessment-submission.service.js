@@ -17,7 +17,7 @@ const ClassGroupModel = require("../../classes/groups/class-group.model");
 const TeacherModel = require("../../teachers/teacher.model");
 const UserModel = require("../../auth/user.model");
 const NotificationService = require("../../notifications/notification.service");
-const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown, milestoneEarned, nothingButMilestonesToMark, unansweredWrittenItems, questionList } = require("./grading.utils");
+const { requiresManualGrading, computeAutoScore, computeMaxScore, computeIndicatorBreakdown, milestoneEarned, nothingButMilestonesToMark, unansweredWrittenItems, questionList, applyCanDoLevels } = require("./grading.utils");
 const { reissueBlockerFrom } = require("./reissue.rules");
 const db = require("../../../config/db");
 
@@ -1255,6 +1255,13 @@ const AssessmentSubmissionService = {
     // Revoked for them: give it back before marking.
     await assertNotRevoked(await AssessmentIssueModel.findById(submission.issueId), submission.learnerId);
     const assessment = await loadAssessmentOrThrow(submission.assessmentId);
+    // Can-do checks are the educator's to mark (20 Nov 2026): a level's marks are worked out here,
+    // whatever the page sent, and the total follows.
+    ({ itemFeedback, manualScore } = applyCanDoLevels(assessment, itemFeedback, manualScore));
+    // The automatic part again, from the learner's answers: work handed in before can-do checks
+    // became the educator's carried their marks in autoScore — recounting stops them counting twice.
+    const { autoScore, autoMax, itemResults: autoItemResults } = computeAutoScore(assessment, submission.answers);
+    submission = { ...submission, autoScore, autoMax, autoItemResults };
     // A project's milestone marks are part of its score (and of the skills they're tagged to) —
     // its maximum always counted them (computeMaxScore); the score now does too (16 Nov 2026).
     const totalScore = Math.round(((submission.autoScore || 0) + (Number(manualScore) || 0) + milestoneEarned(assessment, submission.milestoneProgress)) * 10) / 10;
@@ -1264,6 +1271,9 @@ const AssessmentSubmissionService = {
     const updates = {
       itemFeedback,
       overallFeedback,
+      autoScore,
+      autoMax,
+      autoItemResults,
       manualScore: Number(manualScore) || 0,
       totalScore,
       status: "graded",

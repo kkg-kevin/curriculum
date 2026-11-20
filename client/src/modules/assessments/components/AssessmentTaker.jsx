@@ -22,11 +22,17 @@ const TEXT_KINDS = ["shortAnswer", "longAnswer", "essay", "reflection", "scenari
 export const WRITTEN_KINDS = TEXT_KINDS;
 
 // The written questions still blank in these answers ([{ itemId, response }]): [{ itemId, number }].
+// What the learner answers: every item, except can-do checks outside a survey — the educator marks
+// those (20 Nov 2026; the server's learnerItems). Question numbers count only these.
+export function learnerItems(assessment) {
+  return (assessment?.items || []).filter((item) => assessment.type === "survey" || normalizeLegacyItem(item).kind !== "canDo");
+}
+
 export function unansweredWrittenItems(assessment, answers = []) {
   if (!assessment || assessment.type === "survey") return [];
   const byItem = new Map((answers || []).map((a) => [a?.itemId, a?.response]));
   const blank = (r) => r === undefined || r === null || (typeof r === "string" && r.trim() === "");
-  return (assessment.items || [])
+  return learnerItems(assessment)
     .map((item, index) => ({ item, number: index + 1 }))
     .filter(({ item }) => WRITTEN_KINDS.includes(item.kind) && blank(byItem.get(item.id)))
     .map(({ item, number }) => ({ itemId: item.id, number }));
@@ -336,7 +342,9 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
     return map;
   });
 
-  const items = (assessment.items || []).map(normalizeLegacyItem);
+  const items = learnerItems(assessment).map(normalizeLegacyItem);
+  // Can-do checks are the teacher's to mark (not in a survey) — the learner just hears there are some.
+  const teacherChecks = assessment.type === "survey" ? 0 : (assessment.items || []).filter((item) => normalizeLegacyItem(item).kind === "canDo").length;
   const deliverables = assessment.deliverables || [];
 
   const setResponse = (itemId, response) => {
@@ -346,12 +354,22 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
     onChange?.([...next.entries()].map(([id, resp]) => ({ itemId: id, response: resp })));
   };
 
+  const checksNote = teacherChecks > 0 && (
+    <div style={{ padding: "12px 16px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 12 }}>
+      <p style={{ margin: 0, fontSize: 13, color: T.accent }}>
+        Your teacher will also check {teacherChecks === 1 ? "one thing you can do" : `${teacherChecks} things you can do`} as part of marking this — nothing to fill in for those.
+      </p>
+    </div>
+  );
+
   if (items.length === 0 && deliverables.length === 0) {
     return (
-      <div style={{ padding: "18px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 12 }}>
-        <p style={{ margin: 0, fontSize: 13.5, color: T.accent }}>
-          This assessment doesn't have questions to answer here — it's graded from your teacher's own in-class observation. Submit when you're ready for your teacher to grade it.
-        </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ padding: "18px 20px", backgroundColor: T.tintBg, border: `1.5px solid ${T.tintBorder}`, borderRadius: 12 }}>
+          <p style={{ margin: 0, fontSize: 13.5, color: T.accent }}>
+            This assessment doesn't have questions to answer here — your teacher marks it{teacherChecks ? ", checking what you can do" : " from what they see in class"}. Submit when you're ready for your teacher to mark it.
+          </p>
+        </div>
       </div>
     );
   }
@@ -370,6 +388,7 @@ export default function AssessmentTaker({ assessment, initialAnswers = [], onCha
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {checksNote}
       {groups.map((g) => (
         <div key={g.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {g.name && <h3 style={{ margin: "8px 0 0", fontSize: 15, fontWeight: 800, color: T.accent }}>{g.name}</h3>}

@@ -7,9 +7,10 @@ const STRUCTURED_ITEM_KINDS   = ["mcqSingle", "mcqMultiple", "trueFalse", "match
 const UNSTRUCTURED_ITEM_KINDS = ["longAnswer", "essay", "reflection", "scenarioResponse", "practicalTask", "openEnded"];
 const SUBMISSION_ITEM_KINDS   = ["documentUpload", "imageUpload", "videoUpload", "audioUpload", "codeUpload", "externalLink"];
 const OBSERVATION_ITEM_KINDS  = ["checklist", "rating", "note", "practicalSkill", "behaviour"];
-// "canDo" (a structured item): the learner reads a statement ("I can write a loop that repeats
-// 5 times") and says how well they can do it. Unlike a Survey (Scale) question it is marked —
-// automatically, from the level picked (see grading.utils.js). Offered in every assessment type.
+// "canDo" (a structured item): a statement ("I can write a loop that repeats 5 times") and how
+// well the learner can do it. Since 20 Nov 2026 the EDUCATOR picks the level for each learner while
+// marking (itemFeedback.level → grading.utils.js's canDoMarks); learners don't answer it — except
+// in a survey, where it carries no marks and the learner rates themself. Offered in every type.
 // The levels, in order, with the share of the question's marks each earns. The shares are fixed;
 // the wording can be changed per question (an item's `levelLabels`, same order). A learner's
 // answer is stored as the level's key, so changing the wording never breaks answers given.
