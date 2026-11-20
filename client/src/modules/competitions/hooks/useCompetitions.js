@@ -6,7 +6,25 @@ export const COMPETITION_KEYS = {
   all:          ["competitions"],
   detail:       (id) => ["competitions", "detail", id],
   byCurriculum: (curriculumId) => ["competitions", "byCurriculum", curriculumId],
+  registrations: (id) => ["competitions", "registrations", id],
 };
+
+// Registrations made on the website (20 Nov 2026).
+export function useCompetitionRegistrations(id) {
+  return useQuery({ queryKey: COMPETITION_KEYS.registrations(id), queryFn: () => competitionApi.registrations(id), enabled: !!id });
+}
+
+export function useCancelCompetitionRegistration(id) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ registrationId, reason }) => competitionApi.cancelRegistration(id, registrationId, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: COMPETITION_KEYS.registrations(id) });
+      toast.success("Registration cancelled — they've been emailed");
+    },
+    onError: (err) => toast.error(err.response?.data?.message || err.message || "Couldn't cancel the registration"),
+  });
+}
 
 export function useCompetitionsQuery(params) {
   return useQuery({

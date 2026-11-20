@@ -41,11 +41,23 @@ function asArray(value) {
   return [];
 }
 
+// The "Competition information" JSON (20 Nov 2026) — an object, or entry modes worked out from
+// the old single `format` for a competition saved before it.
+function infoObject(competition) {
+  let info = competition.info;
+  if (typeof info === "string") {
+    try { info = JSON.parse(info); } catch { info = null; }
+  }
+  const base = info && typeof info === "object" && !Array.isArray(info) ? info : {};
+  return { ...base, entryModes: require("./competition-registration.rules").entryModesOf({ ...competition, info: base }) };
+}
+
 async function enrich(competition) {
   if (!competition) return competition;
   const tracks = tracksArray(competition.tracks);
   return {
     ...competition,
+    info: infoObject(competition),
     tracks,
     trackCount: tracks.length,
     coursePricing: asArray(competition.coursePricing),

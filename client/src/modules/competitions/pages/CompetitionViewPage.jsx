@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FiFlag, FiEdit2, FiExternalLink, FiPlus, FiX } from "react-icons/fi";
 import { useCompetitionQuery, useDeleteCompetition, useUpdateCompetition } from "../hooks/useCompetitions";
 import { useCompetitionHubsQuery, useCreateCompetitionHub, useDeleteCompetitionHub } from "../hooks/useCompetitionHubs";
@@ -8,9 +8,15 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import RecordStamp from "../../activity/components/RecordStamp";
+import CompetitionRegistrations from "../components/CompetitionRegistrations";
+import { competitionApi } from "../services/competitionApi";
 
 const STATUS_LABEL = { draft: "Draft", open: "Open", closed: "Closed" };
-const FORMAT_LABEL = { individual: "Individual", pairs: "Pairs", team: "Team" };
+const NEWLINE = String.fromCharCode(10); // DetailRow keeps line breaks (pre-wrap)
+const ENTRY_LABEL ={ individual: "Individuals", group: "Teams" };
+const MODE_LABEL = { online: "Online", in_person: "In person", both: "Online and in person" };
+const kes = (n, c = "KES") => (n == null ? "Free" : Number(n) === 0 ? "Free" : `${c} ${Number(n).toLocaleString("en-KE")}`);
+const agesOf = (min, max) => (min != null && max != null ? `Ages ${min}–${max}` : min != null ? `Ages ${min}+` : max != null ? `Up to age ${max}` : "");
 const CADENCE_LABEL = { one_off: "One-off", annual: "Annual", termly: "Termly" };
 
 function DetailRow({ label, value, empty = "—" }) {
@@ -133,7 +139,11 @@ function RunsAtHubsSection({ competition }) {
   );
 }
 
-function TrackCard({ track, index }) {
+function TrackCard({ track, index, entryModes }) {
+  const e = track.entry || {};
+  const individual = entryModes.includes("individual") && e.individual !== false;
+  const group = entryModes.includes("group") && e.group !== false;
+  const page = [track.overview, track.whatToDo, track.rules].some((h) => !isEmptyHtml(h)) || (track.judging || []).length || (track.faqs || []).length;
   return (
     <div style={{ border: "1.5px solid #E5E7EB", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -149,6 +159,15 @@ function TrackCard({ track, index }) {
           ))}
         </ul>
       )}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
+        {individual && <span style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#EAF6FD", color: "#1F6F9E" }}>Individuals</span>}
+        {group && <span style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#FFF5E1", color: "#7A4F00" }}>Teams of {e.teamMin || 2}–{e.teamMax || 5}</span>}
+        {agesOf(track.ageMin, track.ageMax) && <span style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#F3F4F6", color: "#4B5563" }}>{agesOf(track.ageMin, track.ageMax)}</span>}
+        <span style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#F3F4F6", color: "#4B5563" }}>
+          {track.registerUrl ? "Registers on an outside form" : "Registers here, with payment"}
+        </span>
+        {!page && <span style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: "#FFF5E1", color: "#7A4F00" }}>Track page not filled in yet</span>}
+      </div>
       {(track.knowMoreUrl || track.registerUrl) && (
         <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
           {track.knowMoreUrl && (
@@ -171,6 +190,9 @@ export default function CompetitionViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: competition, isLoading } = useCompetitionQuery(id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "registrations" ? "registrations" : "overview";
+  const setTab = (t) => setSearchParams((p) => { const n = new URLSearchParams(p); if (t === "overview") n.delete("tab"); else n.set("tab", t); return n; }, { replace: true });
   const { mutate: deleteCompetition } = useDeleteCompetition();
   const { mutate: updateCompetition, isPending: saving } = useUpdateCompetition();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -186,6 +208,7 @@ export default function CompetitionViewPage() {
   }
 
   const tracks = competition.tracks || [];
+  const info = competition.info || {};
   const coursePricing = competition.coursePricing || [];
   const dateRange = [formatDate(competition.startDate), formatDate(competition.endDate)].filter(Boolean).join(" – ");
   const registrationRange = [formatDate(competition.registrationOpenDate), formatDate(competition.registrationCloseDate)].filter(Boolean).join(" – ");
@@ -239,7 +262,18 @@ export default function CompetitionViewPage() {
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="competitions" id={id} style={{ marginBottom: 16 }} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div role="tablist" style={{ display: "flex", gap: 4, borderBottom: "1.5px solid #E5E7EB", marginBottom: 16, overflowX: "auto" }}>
+        {[["overview", "Overview"], ["registrations", "Registrations"]].map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+            style={{ padding: "10px 16px", border: "none", background: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "Inter, sans-serif", whiteSpace: "nowrap", color: tab === key ? "#25476a" : "#6B7280", borderBottom: `2.5px solid ${tab === key ? "#25476a" : "transparent"}`, marginBottom: -1.5 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "registrations" ? <CompetitionRegistrations competition={competition} /> : (<>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 16, marginBottom: 16 }}>
         <div style={{ backgroundColor: "#ffffff", borderRadius: 16, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: "#38aae1", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition Info</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -256,9 +290,17 @@ export default function CompetitionViewPage() {
               <DetailRow label="Level" value={competition.level} />
             </div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              <DetailRow label="Format" value={FORMAT_LABEL[competition.format]} />
+              <DetailRow label="How you can enter" value={(info.entryModes || []).map((m) => ENTRY_LABEL[m]).join(" and ")} />
+              <DetailRow label="Entry fees (every track)" value={[(info.entryModes || []).includes("individual") && `Individual ${kes(info.individualPrice, info.currency)}`, (info.entryModes || []).includes("group") && `Team ${kes(info.teamPrice, info.currency)}`].filter(Boolean).join(" · ")} />
+              <DetailRow label="Who can enter" value={[agesOf(info.ageMin, info.ageMax), info.eligibilityNote].filter(Boolean).join(" · ")} />
+            </div>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+              <DetailRow label="Where" value={[MODE_LABEL[info.mode], info.venue].filter(Boolean).join(" · ")} />
               <DetailRow label="Cadence" value={CADENCE_LABEL[competition.cadence]} />
             </div>
+            {(info.milestones || []).length > 0 && <DetailRow label="Key dates" value={info.milestones.map((m) => `${m.label}${m.date ? ` — ${formatDate(m.date)}` : ""}`).join(NEWLINE)} />}
+            {(info.prizes || []).length > 0 && <DetailRow label="Prizes" value={info.prizes.join(NEWLINE)} />}
+            {(info.extras || []).map((x, i) => <DetailRow key={i} label={x.label} value={x.value} />)}
             <DetailRow label="Dates" value={dateRange} />
             <DetailRow label="Registration" value={registrationRange} empty="Not set" />
             <DetailRow label="Curriculum" value={competition.curriculumName} empty="Standalone" />
@@ -314,15 +356,18 @@ export default function CompetitionViewPage() {
           </p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
-            {tracks.map((track, i) => <TrackCard key={track.id || i} track={track} index={i} />)}
+            {tracks.map((track, i) => <TrackCard key={track.id || i} track={track} index={i} entryModes={info.entryModes || []} />)}
           </div>
         )}
       </div>
+      </>)}
 
       <ConfirmDialog
         isOpen={confirmDelete}
         title="Delete Competition"
         message={`"${competition.name}" and its tracks will be removed. This can't be undone.`}
+        usageCheck={() => competitionApi.checkRemove(id)}
+        onAlternative={() => { setConfirmDelete(false); updateCompetition({ id, data: { status: "closed" } }); }}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"

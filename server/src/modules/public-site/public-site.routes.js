@@ -52,6 +52,21 @@ router.get("/hubs/:id", getPublicRunHub);
 // public-competition.service.js) — the Track cards on africa.digifunzi.com/competitions.
 router.get("/competitions", getPublicCompetitions);
 router.get("/competitions/:idOrSlug", getPublicCompetition);
+// Registering for a track (20 Nov 2026): one participant or a whole team, one invoice, then the
+// Payment step (competitions/competition-registration.service.js). Rate-limited like the sign-ups.
+const competitionRegistrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many registrations from here. Please try again later." },
+});
+router.post("/competitions/:idOrSlug/registrations", competitionRegistrationLimiter, asyncHandler(async (req, res) => {
+  const { registrationSchema } = require("../competitions/competition.validation");
+  const data = registrationSchema.parse(req.body);
+  const result = await require("../competitions/competition-registration.service").register(req.params.idOrSlug, data, visitSourceFrom(req));
+  res.status(201).json({ success: true, data: result });
+}));
 
 // Home Learning packages = the designated admin's packages marked "Show on website" in the
 // portal's Home Learning → Packages (see home-learning.service.js). The same records households
