@@ -128,6 +128,32 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (21 Nov 2026) — Every module's certificate on Reports
+
+**Portal only**, from `curriculum` (branch `modules`) at `9017c4df`. The backend (`6ecbfb10`) and website zips are unchanged. **No migration, no new
+npm package, no new environment variable, no new cron job.**
+
+### Upload
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/`.
+1. **Backend, only if the 20 Nov later release isn't up yet** — follow that release's steps below first (it has one migration). This
+   portal includes that release's screens, so it must go up after that backend.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-DI-FIFSH.js`). In `curriculum.digifunzi.com`: delete the old `assets/` folder and `index.html`,
+   upload both and Extract `assets.zip`. Leave the `.htaccess` as it is (the 17 Nov morning's).
+
+### What changed
+
+**Reports → a course card** has a **Certificates** strip listing every module and the whole course, each with where it stands
+(Ready to generate, Opens on a date, N of M issued, All issued). Tapping one goes to the last session where it is generated. Before,
+a session linked only to its own module and the end of the course, so a four-module course looked as if it offered two certificates.
+
+### Verify
+
+Press **Ctrl + F5**, then open Educator → Reports → a course with several modules: the strip lists each module plus **Whole course**, and
+each one opens its certificates. A module with no sessions has no certificate, so it isn't listed.
+
+---
+
 ## This release (20 Nov 2026, later) — Competitions: information, team entry and registration with payment; educators mark can-do checks
 
 > **Backend updated (20 Nov 2026, evening)** — `backend-deploy.zip` is now from `6ecbfb10`: it also has the **Reports and
