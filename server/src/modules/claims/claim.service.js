@@ -15,6 +15,8 @@ const UserModel = require("../auth/user.model");
 const { rolesOf } = require("../auth/account-roles");
 const AttendanceModel = require("../attendance/attendance.model");
 const TimetableModel = require("../timetable/timetable.model");
+const TimetableVersionModel = require("../timetable/timetable-version.model");
+const { validOn } = require("../timetable/timetable.rules");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
 const TimetableService = require("../timetable/timetable.service");
 const SessionOccurrenceService = require("../timetable/session-occurrence.service");
@@ -211,7 +213,7 @@ function requiredCoverage(settings, sessionsTotal) {
   return options.length ? Math.min(...options) : 0;
 }
 
-function buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType = "session", learnerCount = 0 }) {
+function buildFigures({ course, sessions, occurrences, slots, pastSlots = [], settings, claims, rateType = "session", learnerCount = 0 }) {
   const today = todayStr();
   const sessionIds = new Set(sessions.map((s) => s.id));
   const past = occurrences.filter((o) => o.courseId === course.id && sessionIds.has(o.sessionId) && o.date <= today);
@@ -227,7 +229,9 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
   // Time actually spent teaching: each delivered session's slot length on the day it ran.
   const courseSlots = slots.filter((s) => s.courseId === course.id);
   const hours = delivered.reduce((total, o) => {
-    const slot = courseSlots.find((s) => s.dayOfWeek === weekdayOf(o.date)) || courseSlots[0];
+    // The lesson as it was on that day: a later change never alters hours already taught.
+    const onDay = [...courseSlots, ...pastSlots.filter((s) => s.courseId === course.id)].find((s) => s.dayOfWeek === weekdayOf(o.date) && validOn(s, o.date));
+    const slot = onDay || courseSlots[0];
     return total + (slot ? hoursBetween(slot.startTime, slot.endTime) : 0);
   }, 0);
   const slotHours = courseSlots.map((s) => hoursBetween(s.startTime, s.endTime)).filter((h) => h > 0);
@@ -333,10 +337,10 @@ function buildFigures({ course, sessions, occurrences, slots, settings, claims, 
 
 // The figures for every way this educator may be paid on this course, and the one to show first.
 // A course with a live claim stays on that claim's way of paying.
-function buildOptions({ teacher, course, sessions, occurrences, slots, settings, claims, learnerCount = 0 }) {
+function buildOptions({ teacher, course, sessions, occurrences, slots, pastSlots = [], settings, claims, learnerCount = 0 }) {
   const locked = claims.find((c) => c.status !== "rejected")?.rateType || null;
   const types = locked ? [locked] : rateTypesOf(teacher);
-  const options = types.map((rateType) => buildFigures({ course, sessions, occurrences, slots, settings, claims, rateType, learnerCount }));
+  const options = types.map((rateType) => buildFigures({ course, sessions, occurrences, slots, pastSlots, settings, claims, rateType, learnerCount }));
   // Show first the one that can be claimed on now, else the first.
   const primary = options.find((o) => o.canRequestFull || o.canRequestAdvance) || options[0];
   return { ...primary, rateLocked: Boolean(locked), rateOptions: options };
@@ -378,11 +382,12 @@ const ClaimService = {
 
     const classIds = [...new Set(links.map((l) => l.classId))];
     const courseIds = [...new Set(links.map((l) => l.courseId))];
-    const [classes, courses, allSessions, allSlots] = await Promise.all([
+    const [classes, courses, allSessions, allSlots, allPastSlots] = await Promise.all([
       Promise.all(classIds.map((id) => ClassModel.findById(id))),
       Promise.all(courseIds.map((id) => CourseModel.findById(id))),
       SessionModel.findByCourseIds(courseIds),
       TimetableModel.findByClassIds(classIds),
+      TimetableVersionModel.findByClassIds(classIds),
     ]);
     const classById = new Map(classes.filter(Boolean).map((c) => [c.id, c]));
     const courseById = new Map(courses.filter(Boolean).map((c) => [c.id, c]));
@@ -416,6 +421,7 @@ const ClaimService = {
         sessions: allSessions.filter((s) => s.courseId === course.id && !coveredAway.has(`${cls.id}|${s.id}`)),
         occurrences: occurrencesByClass.get(cls.id) || [],
         slots: allSlots.filter((s) => s.classId === cls.id),
+        pastSlots: allPastSlots.filter((s) => s.classId === cls.id),
         settings,
         claims: courseClaims,
         learnerCount: learnersByClass.get(cls.id) || 0,
@@ -484,7 +490,8 @@ const ClaimService = {
     // Sessions someone else taught as cover aren't this educator's to claim (session-covers/).
     const coveredAway = teacher ? await require("../session-covers/session-cover.service").coveredByOthers(teacher.id, [classId]) : new Set();
     const ownSessions = sessions.filter((s) => !coveredAway.has(`${classId}|${s.id}`));
-    const figures = buildOptions({ teacher, course, sessions: ownSessions, occurrences, slots, settings, claims, learnerCount: learnersByClass.get(classId) || 0 });
+    const pastSlots = await TimetableVersionModel.findByClassId(classId);
+    const figures = buildOptions({ teacher, course, sessions: ownSessions, occurrences, slots, pastSlots, settings, claims, learnerCount: learnersByClass.get(classId) || 0 });
     const today = todayStr();
 
     // Where each session that hasn't happened yet is due to fall.

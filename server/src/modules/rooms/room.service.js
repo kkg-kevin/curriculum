@@ -61,6 +61,7 @@ const RoomService = {
     // stale reference, keep the record" posture as teacher.service.js's clearMarkedBy/
     // clearCreatedBy.
     await TimetableModel.clearRoomId(id);
+    await require("../timetable/timetable-version.model").clearRoomId(id);
     return { message: "Room deleted successfully" };
   },
 

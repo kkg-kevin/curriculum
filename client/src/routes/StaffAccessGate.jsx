@@ -20,6 +20,7 @@ const PATH_MODULES = [
   ["/teachers", "teachers"],
   ["/supervisors", ["claims-approval", "teachers"]],
   ["/classes", "classes"],
+  ["/timetable", "timetable"],
   ["/events/general", "general-events"],
   ["/events", ["competitions", "bootcamps", "general-events"]],
   ["/courses", "courses"],

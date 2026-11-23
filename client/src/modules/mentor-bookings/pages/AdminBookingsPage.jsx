@@ -21,7 +21,7 @@ const TABS = [
   { key: "refunds", label: "Refunds", icon: FiRotateCcw },
   { key: "hubs", label: "Hub settlements", icon: FiHome },
 ];
-const FILTERS = [["all", "All"], ["coming", "Coming up"], ["to_mark", "To mark"], ["held", "Waiting for payment"], ["done", "Held"], ["cancelled", "Cancelled"]];
+const FILTERS = [["all", "All"], ["coming", "Coming up"], ["needs_new_time", "Needs a new time"], ["to_mark", "To mark"], ["held", "Waiting for payment"], ["done", "Held"], ["cancelled", "Cancelled"]];
 const control = { padding: "9px 11px", borderRadius: 9, border: `1.5px solid ${BRAND.border}`, fontSize: 13, fontFamily: FONT, background: "#fff", minWidth: 0 };
 
 function BookingsTab() {
@@ -31,7 +31,8 @@ function BookingsTab() {
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
     return data.filter((b) => {
-      if (filter === "coming" && !["confirmed", "today"].includes(b.state)) return false;
+      if (filter === "coming" && !["confirmed", "today", "needs_new_time"].includes(b.state)) return false;
+      if (filter === "needs_new_time" && b.state !== "needs_new_time") return false;
       if (filter === "to_mark" && b.state !== "to_mark") return false;
       if (filter === "held" && b.state !== "held") return false;
       if (filter === "done" && !["completed", "no_show"].includes(b.state)) return false;

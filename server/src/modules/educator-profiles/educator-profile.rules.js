@@ -11,6 +11,7 @@ const minutesBetween = (start, end) => {
   return Number.isFinite(d) && d > 0 ? d : 0;
 };
 const round1 = (n) => Math.round(n * 10) / 10;
+const { validOn } = require("../timetable/timetable.rules");
 
 // Teaching time actually given, per course: each day a class's attendance was taken counts as that
 // class's session on that day, credited to the educator whose timetable slot is on that weekday (a
@@ -34,7 +35,8 @@ function creditSessions({ slots, held, shifts = [] }) {
     for (const date of days) {
       const wd = weekdayOf(date);
       for (const s of classSlots) {
-        if (s.dayOfWeek !== wd || shiftedAway.has(`${classId}|${s.courseId}|${date}`)) continue;
+        // A lesson changed since counts on the days its old version applied (validFrom / validTo).
+        if (s.dayOfWeek !== wd || !validOn(s, date) || shiftedAway.has(`${classId}|${s.courseId}|${date}`)) continue;
         add(classId, s.courseId, date, minutesBetween(s.startTime, s.endTime));
       }
       for (const sh of shifts.filter((x) => x.classId === classId && dayKey(x.newDate) === date)) {
@@ -58,7 +60,7 @@ function reliability({ slots, held, shifts = [], startOf, from, to }) {
     if (!start) continue;
     for (let d = new Date(`${start}T12:00:00Z`); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const date = d.toISOString().slice(0, 10);
-      if (DAYS[d.getUTCDay()] !== s.dayOfWeek) continue;
+      if (DAYS[d.getUTCDay()] !== s.dayOfWeek || !validOn(s, date)) continue;
       const moved = shifts.find((x) => x.classId === s.classId && x.courseId === s.courseId && dayKey(x.date) === date);
       if (moved && !moved.newDate) continue; // merged away — not due
       const due = moved ? dayKey(moved.newDate) : date;

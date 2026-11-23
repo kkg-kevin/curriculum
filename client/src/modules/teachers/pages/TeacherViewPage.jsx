@@ -3,7 +3,7 @@ import { FiAlertTriangle, FiAward, FiBookOpen, FiCalendar, FiChevronDown, FiChev
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeacherQuery, useUpdateTeacherStatus, useTeacherHubsQuery, useLinkTeacherHub, useUnlinkTeacherHub, useTeacherAvailability } from "../hooks/useTeacher";
-import WeeklyAvailabilityGrid from "../components/WeeklyAvailabilityGrid";
+import EducatorAvailabilitySection from "../../availability/components/EducatorAvailabilitySection";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import { learningHubApi } from "../../learning-hubs/services/learningHubApi";
 import { LEARNING_HUB_TYPES } from "../../learning-hubs/schemas/learningHub.schema";
@@ -198,12 +198,12 @@ function Section({ title, action, children }) {
 }
 
 // The weekly availability calendar is tall — folded until asked for.
-function AvailabilitySection({ slots }) {
+function AvailabilitySection({ teacherId, slots }) {
   const [open, setOpen] = useState(false);
   const days = new Set(slots.map((x) => x.dayOfWeek)).size;
   return (
     <Section
-      title="Availability"
+      title="Availability for mentor bookings"
       action={slots.length > 0 && (
         <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "#2e7db5", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
           {open ? <FiChevronUp /> : <FiChevronDown />} {open ? "Hide the week" : "Show the week"}
@@ -211,8 +211,8 @@ function AvailabilitySection({ slots }) {
       )}
     >
       {slots.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF" }}>They haven&apos;t set their availability yet.</p>
-        : open ? <WeeklyAvailabilityGrid slots={slots} />
-          : <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Available on {days} day{days === 1 ? "" : "s"} a week, in {slots.length} time window{slots.length === 1 ? "" : "s"}.</p>}
+        : open ? <EducatorAvailabilitySection teacherId={teacherId} />
+          : <p style={{ margin: 0, fontSize: 13, color: "#6B7280" }}>Offers families {days} day{days === 1 ? "" : "s"} a week, in {slots.length} block{slots.length === 1 ? "" : "s"} of time. Classes always come first.</p>}
     </Section>
   );
 }
@@ -422,7 +422,7 @@ export default function TeacherViewPage() {
                 {(isAdmin || isSchool) && hubs.length > 0 && <AssignCourseControl teacherId={id} hubs={hubs} qualifiedCourseIds={teacher.qualifiedCourseIds} />}
               </Section>
               {profile && <TeachingPanel profile={profile} />}
-              <AvailabilitySection slots={availabilitySlots} />
+              <AvailabilitySection teacherId={id} slots={availabilitySlots} />
             </>
           )}
 

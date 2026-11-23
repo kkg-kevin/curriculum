@@ -2,6 +2,7 @@ const ClassModel   = require("./class.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 const TimetableModel = require("../timetable/timetable.model");
+const TimetableVersionModel = require("../timetable/timetable-version.model");
 const CourseScheduleModel = require("../timetable/course-schedule.model");
 const SessionSkipModel = require("../timetable/session-skip.model");
 const AttendanceModel = require("../attendance/attendance.model");
@@ -380,6 +381,7 @@ const ClassService = {
     await LearnerHubLinkModel.clearClassId(id);
     await ClassCourseTeacherLinkModel.deleteByClassId(id);
     await TimetableModel.deleteByClassId(id);
+    await TimetableVersionModel.deleteByClassId(id);
     await CourseScheduleModel.deleteByClassId(id);
     await SessionSkipModel.deleteByClassId(id);
     await AttendanceModel.deleteByClassId(id);

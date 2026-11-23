@@ -28,6 +28,7 @@ export function Toggle({ checked, disabled, onChange, label }) {
 const GROUPS = [
   { key: "mentor-checkins", label: "Parent check-ins", icon: FiMessageCircle, match: (t) => t.startsWith("mentor_checkin_") },
   { key: "covers", label: "Covers", icon: FiCalendar, match: (t) => t.startsWith("cover_") },
+  { key: "timetable", label: "Timetable", icon: FiCalendar, match: (t) => t.startsWith("timetable_") },
   { key: "mentor-bookings", label: "Mentor sessions", icon: FiCalendar, match: (t) => t.startsWith("mentor_booking_") || t === "mentor_help_requested" },
   { key: "checkins", label: "Hub check-ins", icon: FiClipboard, match: (t) => t.startsWith("checkin_") },
   { key: "quality", label: "Quality reviews", icon: FiShield, match: (t) => t.startsWith("qa_") },

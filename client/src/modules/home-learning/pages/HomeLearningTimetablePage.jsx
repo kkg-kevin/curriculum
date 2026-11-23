@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FiArrowLeft } from "react-icons/fi";
 import { homeLearningApi } from "../services/homeLearningApi";
-import TimetablePage from "../../school-portal/pages/TimetablePage";
+import TimetablePlannerPage from "../../timetable/pages/TimetablePlannerPage";
 
 // A home-schooled child's weekly timetable. Each child has their own class in the Home Learning
 // hub, so this is the hub portal's timetable editor opened on that hub and that child's class.
@@ -26,9 +26,9 @@ export default function HomeLearningTimetablePage() {
         ? <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>
         : isError || !hub
           ? <div style={{ padding: "40px 20px", textAlign: "center", color: "#B91C1C", fontSize: 14 }}>Couldn't load the Home Learning hub.</div>
-          : <TimetablePage
+          : <TimetablePlannerPage
             key={classId}
-            hub={hub}
+            fixedHub={hub}
             initialClassId={classId}
             heading="Home Learning timetable"
             intro="Each child's weekly lessons — set the day, time and course once and it repeats every week. The educator, the child and the parent all see these sessions on their timetables."

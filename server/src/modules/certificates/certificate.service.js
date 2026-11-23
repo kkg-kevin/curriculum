@@ -11,6 +11,7 @@ const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const PathwayModel = require("../curriculum/competency-framework/pathway.model");
 const LearnerPathwayModel = require("../curriculum/competency-framework/learner-pathway.model");
 const NotificationService = require("../notifications/notification.service");
+const { courseOrder } = require("../courses/session-numbering");
 const logger = require("../../shared/utils/logger");
 
 const NUMBER_PREFIX = "DF";
@@ -232,13 +233,15 @@ const CertificateService = {
   // { modules: [{ moduleId, moduleName, lastSessionId, window }], course: { lastSessionId, window } }
   async certificateScopes(classId, courseId) {
     const ReportService = require("../reports/report.service");
-    const [modules, sessions, windows] = await Promise.all([
+    let [modules, sessions, windows] = await Promise.all([
       ModuleModel.findByCourseId(courseId),
-      db("course_sessions").where({ courseId }).orderBy("order", "asc").select("id", "moduleId"),
+      db("course_sessions").where({ courseId }).orderBy("order", "asc").select("id", "moduleId", "order"),
       ReportService.filingWindows(classId, courseId),
     ]);
     const ordered = [...modules].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
     const withSessions = ordered.filter((m) => sessions.some((s) => s.moduleId === m.id));
+    // The course order the course pages show (modules in order, then each module's sessions).
+    sessions = courseOrder(sessions, modules);
     const lastOf = (moduleId) => sessions.filter((s) => s.moduleId === moduleId).pop();
     return {
       modules: withSessions.length >= 2

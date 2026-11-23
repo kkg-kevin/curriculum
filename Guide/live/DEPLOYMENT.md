@@ -128,6 +128,106 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## This release (21 Nov 2026) — Every module's certificate on Reports
+
+**Portal only**, from `curriculum` (branch `modules`) at `9017c4df`. The backend (`6ecbfb10`) and website zips are unchanged. **No migration, no new
+npm package, no new environment variable, no new cron job.**
+
+### Upload
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/`.
+1. **Backend, only if the 20 Nov later release isn't up yet** — follow that release's steps below first (it has one migration). This
+   portal includes that release's screens, so it must go up after that backend.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-D_aZrjDh.js`). In `dcf.digifunzi.com`: delete the old `assets/` folder and `index.html`,
+   upload both and Extract `assets.zip`. Leave the `.htaccess` as it is (the 17 Nov morning's).
+
+### What changed
+
+**Reports → a course card** has a **Certificates** strip listing every module and the whole course, each with where it stands
+(Ready to generate, Opens on a date, N of M issued, All issued). Tapping one goes to the last session where it is generated. Before,
+a session linked only to its own module and the end of the course, so a four-module course looked as if it offered two certificates.
+
+### Verify
+
+Press **Ctrl + F5**, then open Educator → Reports → a course with several modules: the strip lists each module plus **Whole course**, and
+each one opens its certificates. A module with no sessions has no certificate, so it isn't listed.
+
+---
+
+## This release (20 Nov 2026, later) — Competitions: information, team entry and registration with payment; educators mark can-do checks
+
+> **Backend updated (20 Nov 2026, evening)** — `backend-deploy.zip` is now from `6ecbfb10`: it also has the **Reports and
+> certificates module-order fix** (below). Portal and website unchanged. If you already uploaded this release's backend, upload
+> `backend-deploy.zip` again and **Stop App → Start App** — no migration, nothing else to do.
+
+**Portal** from `curriculum` (branch `modules`) at `03cc980b`, **backend** at `6ecbfb10`. **Website** from `curriculum-web` (branch `new`) at
+`bc2b622`. **One new migration, no new npm package, no new environment variable, no new cron job.** If the earlier 20 Nov
+release below isn't up yet, these files include it.
+
+### Before you upload: tell the educators
+
+**Can-do checks are now marked by the educator**, not answered by learners: on the marking page each can-do check has three
+buttons — Does it independently (all its marks) · Does it with help (half) · Can't do it yet (none). Assessments with can-do
+checks now wait for marking. Learners just see a note that their teacher checks those (a survey's can-do questions are
+unchanged — the learner still rates themself). Also fixed: switching learner on the marking page no longer carries the previous
+learner's typed remarks over.
+
+### Upload in this order
+
+0. **Take a database backup** of the Live database into `Guide/live/backup/`.
+1. **Backend** — `backend-deploy.zip` (799 files, 195 migrations — one new). **Stop App → Start App** (no new package). The
+   migration runs on start:
+   - `20261120100000` competitions — `competitions.info` (existing competitions get their entry modes from their old format),
+     the new `competition_registrations` table, invoice type and enquiry source `competition`, `CR-` registration numbers
+
+   Check: `SHOW TABLES LIKE 'competition_registrations';` and `SHOW COLUMNS FROM competitions LIKE 'info';` (1 row each). If
+   either is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-H4vNabmS.js`), after the backend. In `dcf.digifunzi.com`: delete the old
+   `assets/` folder and `index.html`, upload both and Extract `assets.zip`. The `.htaccess` is the 17 Nov morning's.
+3. **Website** — `digifunzi-co-ke-dist.zip` to https://digifunzi.co.ke (entry `index-CkTcE1tI.js`, 29 pages), after the backend. Unzip over the old
+   files. The competition pages and registration need the new backend.
+
+### Then, in the portal
+
+Open each competition you show on the website (Events → the competition → Edit) and fill in **Competition information** —
+especially **Entry fees** (one fee per individual and one per team, the same for every track; empty = free). Competitions saved
+with prices on their tracks before get those filled in for you. Set each track's **Entry** (individuals / teams, team size,
+ages) and its **Track page** (overview, rules, judging, prizes…). People can register only while a competition is **Open**,
+shown on the website, and inside its registration dates.
+
+### What changed
+
+**Competitions, on the website** — the list opens with the competition taking registrations as a photo banner, and every card
+is its photo with the details on top. A competition's page opens with its photo, the full description (Read more) and a
+**Competition information** panel on the right (who can enter, how, entry fees, where, prizes, key dates), then straight to the
+tracks. Each track has **Register now** and **Know more** — its own page with all its details.
+
+**Registering** — pick the track, individual or team, enter the participant (or the team name and every member, within the
+team size), then who is registering; then the usual Payment step (M-Pesa, bank, "I've paid"). A team pays one fee. Paying in
+full confirms the registration and emails them; a free entry is confirmed at once. No accounts are made — each registration
+is also an enquiry for follow-up. Admins: the competition's page → **Registrations** tab (filters, members, invoices, Cancel —
+an unpaid invoice is cancelled with it — and a spreadsheet); a bell for every registration and payment. A competition people
+registered for can't be deleted (close it instead).
+
+**Marking** — can-do checks marked by the educator (above); the marking page keeps each learner's remarks to that learner.
+
+**Reports and certificates follow the course's module order** — the Reports page steps through a course's sessions in the
+order the course page shows (modules in order, each module's sessions in turn), and each module's certificates are on that
+module's own last session, the course's on the last module's last session. Before, a course whose session numbers restart in
+each module (or whose module was moved to the top after its sessions were made) sent a module's certificates to another
+module (Junior Coders Academy: Code Foundations pointed to Game Creators session 12). The timetable is unchanged.
+
+### Verify
+
+1. The website → Competitions → a competition: the photo header with the information panel, the tracks below; **Know more**
+   opens a track's page.
+2. Register for a free track (or a paid one and stop at the Payment step): the admin's **Registrations** tab lists it.
+3. Educator → an assessment with can-do checks → mark a learner: the three level buttons; switch learner — the boxes are theirs.
+4. Educator → Reports → a course with several modules: the first module's last session shows its certificates; the course's
+   certificates are on the last module's last session.
+
+---
+
 ## This release (20 Nov 2026) — Certificates redesigned; educators view them in a pop-up
 
 **Portal and backend** from `curriculum` (branch `modules`) at `08dcd954`. **Website: no change.** **No new migration, npm

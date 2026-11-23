@@ -103,6 +103,12 @@ const TeacherService = {
   },
 
   async updateAvailabilitySlot(id, data) {
+    const current = await TeacherAvailabilityModel.findById(id);
+    if (current && (data.startTime || current.startTime) >= (data.endTime || current.endTime)) {
+      const err = new Error("End time must be after start time");
+      err.statusCode = 400;
+      throw err;
+    }
     const slot = await TeacherAvailabilityModel.update(id, data);
     if (!slot) {
       const err = new Error("Availability window not found");

@@ -1,9 +1,8 @@
 const { z } = require("zod");
 
-const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
-// An educator's availability also takes weekends (11 Nov 2026 — families book mentor sessions on
-// evenings and weekends); class timetables stay Monday–Friday.
-const AVAILABILITY_DAYS = [...DAYS_OF_WEEK, "saturday", "sunday"];
+// Classes can run any day of the week (23 Nov 2026), as educators' availability always could.
+const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const AVAILABILITY_DAYS = DAYS_OF_WEEK;
 
 // A recurring weekly slot — "Math, Monday 9:00-10:00, every week" — not a specific calendar
 // date. teacherId is an optional override: when omitted, the class's primary educator for this
@@ -27,6 +26,37 @@ const createSlotSchema = baseSlotSchema.refine((d) => d.startTime < d.endTime, {
 const updateSlotSchema = baseSlotSchema.partial();
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be in YYYY-MM-DD format");
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Enter a time as HH:MM");
+const dayEnum = z.enum(DAYS_OF_WEEK, { errorMap: () => ({ message: "Select a valid day" }) });
+
+// How a change to a lesson that has already run applies: from a date (past sessions stay as they
+// happened), or `correctPast` when the old time was simply a mistake.
+const slotChangeSchema = z.object({
+  applyFrom: dateOnly.optional(),
+  correctPast: z.preprocess((v) => v === true || v === "true" || v === "1", z.boolean()).optional(),
+});
+
+// The Timetable Planner: one lesson on one or more days, with its educator and start date.
+const plannerLessonSchema = z.object({
+  classId: z.string().min(1, "Choose a class"),
+  courseId: z.string().min(1, "Choose a course"),
+  teacherId: z.string().nullable().optional(),
+  roomId: z.string().nullable().optional(),
+  days: z.array(dayEnum).min(1, "Choose at least one day").max(7),
+  startTime: hhmm,
+  endTime: hhmm,
+  startDate: dateOnly.nullable().optional(),
+  slotId: z.string().nullable().optional(),
+  applyFrom: dateOnly.nullable().optional(),
+  correctPast: z.boolean().optional(),
+  confirmMove: z.boolean().optional(),
+});
+
+const plannerCopySchema = z.object({
+  fromClassId: z.string().min(1),
+  toClassIds: z.array(z.string().min(1)).min(1, "Choose at least one class").max(200),
+  withDates: z.boolean().optional().default(true),
+});
 
 // The calendar anchor: "this course's Session 1 lines up with this date" for a (classId,
 // courseId) pair. See course-schedule.model.js / TimetableService.resolveCalendar.
@@ -92,7 +122,7 @@ const occurrenceActionSchema = z.object({
 });
 
 module.exports = {
-  AVAILABILITY_DAYS,
+  AVAILABILITY_DAYS, slotChangeSchema, plannerLessonSchema, plannerCopySchema,
   createSlotSchema, updateSlotSchema, DAYS_OF_WEEK,
   setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema,
   createSkipSchema, SKIP_MODES,

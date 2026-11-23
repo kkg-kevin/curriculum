@@ -18,6 +18,7 @@ import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
 import { attendanceApi } from "../../attendance/services/attendanceApi";
 import Avatar from "../../../components/ui/Avatar";
 import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
+import AvailabilityPrompt from "../../availability/components/AvailabilityPrompt";
 import { classLabel } from "../../../utils/classLabel";
 
 const ACCENT = "#25476a";
@@ -122,6 +123,8 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {teacher?.id && <AvailabilityPrompt teacherId={teacher.id} />}
 
       {isLoading ? (
         <div style={{ padding: "60px 20px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>Loading…</div>

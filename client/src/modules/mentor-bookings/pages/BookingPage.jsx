@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { FiArrowLeft, FiBookOpen, FiClock, FiCreditCard, FiExternalLink, FiMapPin, FiMessageSquare, FiStar, FiVideo, FiXCircle } from "react-icons/fi";
+import { FiAlertCircle, FiArrowLeft, FiBookOpen, FiCalendar, FiClock, FiCreditCard, FiExternalLink, FiMapPin, FiMessageSquare, FiStar, FiVideo, FiXCircle } from "react-icons/fi";
 import Avatar from "../../../components/ui/Avatar";
 import { Modal, QaStyles as CheckinStyles, btn, input, label } from "../../qa/shared";
-import { useBooking, useCancelBooking, useMarkBooking, useMarkRefunded, useSetBookingLink } from "../hooks/useMentorBookings";
+import { errorText, useBooking, useCancelBooking, useMarkBooking, useMarkRefunded, useNewTimes, useRescheduleBooking, useSetBookingLink } from "../hooks/useMentorBookings";
 import { StatePill, dayLabel, ksh, lengthLabel, useBookingsBase, whereLabel } from "../shared";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import RecordStamp from "../../activity/components/RecordStamp";
@@ -35,10 +35,63 @@ function CancelDialog({ booking, base, onClose }) {
     >
       <CheckinStyles />
       <p style={{ margin: "0 0 12px", fontSize: 13.5, color: BRAND.inkSoft, lineHeight: 1.6 }}>
-        {booking.status === "held" ? "The time goes back and the invoice is cancelled." : paid > 0 ? `${ksh(paid)} was paid — it's refunded to the family.` : "The time goes back to the mentor."}
+        {booking.status === "held" ? "The time goes back and the invoice is cancelled." : paid > 0 ? `${ksh(paid)} was paid — it's refunded to the family${booking.clashAt ? " in full" : ""}.` : "The time goes back to the mentor."}
       </p>
       <label htmlFor="bk-reason" style={label}>{family ? "Why? (optional)" : "Why? The family sees this."}</label>
       <textarea id="bk-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} style={{ ...input, resize: "vertical" }} />
+    </Modal>
+  );
+}
+
+// A class took this session's time: pick another of the mentor's free times, at no extra cost.
+function RescheduleDialog({ booking, onClose, onCancelInstead }) {
+  const { data, isLoading, error } = useNewTimes(booking.id);
+  const move = useRescheduleBooking();
+  const [day, setDay] = useState(null);
+  const [slot, setSlot] = useState(null);
+  const byDay = useMemo(() => {
+    const map = new Map();
+    for (const s of data?.slots || []) map.set(s.date, [...(map.get(s.date) || []), s]);
+    return map;
+  }, [data]);
+  const shownDay = day || [...byDay.keys()][0] || null;
+  const chip = (on) => ({ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "9px 13px", borderRadius: 10, border: `1.5px solid ${on ? BRAND.navy : BRAND.border}`, background: on ? BRAND.navy : "#fff", color: on ? "#fff" : BRAND.inkSoft, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", flexShrink: 0 });
+  return (
+    <Modal
+      title="Pick a new time"
+      onClose={onClose}
+      width={600}
+      footer={(
+        <>
+          <button type="button" className="ci-btn" onClick={onClose} style={btn("secondary")}>Not now</button>
+          <button type="button" className="ci-btn" disabled={!slot || move.isPending} onClick={() => move.mutate({ id: booking.id, date: slot.date, startTime: slot.startTime }, { onSuccess: onClose })} style={btn("primary", { disabled: !slot || move.isPending })}>{move.isPending ? "Moving…" : "Move to this time"}</button>
+        </>
+      )}
+    >
+      <CheckinStyles />
+      <p style={{ margin: "0 0 12px", fontSize: 13.5, color: BRAND.inkSoft, lineHeight: 1.55 }}>Same mentor, same length ({lengthLabel(booking.minutes)}), {whereLabel(booking).toLowerCase() === "online" ? "online" : `at ${whereLabel(booking)}`}. There&apos;s nothing more to pay.</p>
+      {isLoading ? <p style={{ margin: 0, fontSize: 13, color: BRAND.faint }}>Finding free times…</p>
+        : error ? <p role="alert" style={{ margin: 0, fontSize: 13, color: BRAND.danger }}>{errorText(error)}</p>
+          : !byDay.size ? (
+            <div style={{ padding: "12px 14px", borderRadius: 10, background: BRAND.goldTint, color: BRAND.goldText, fontSize: 13.5, lineHeight: 1.55 }}>
+              There are no free times with this mentor in the next few weeks. You can cancel for a full refund.
+              <button type="button" onClick={onCancelInstead} style={{ display: "block", marginTop: 8, padding: 0, border: "none", background: "none", color: BRAND.navy, fontWeight: 800, fontSize: 13.5, cursor: "pointer", fontFamily: FONT }}>Cancel for a full refund</button>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                {[...byDay.keys()].map((d) => (
+                  <button key={d} type="button" onClick={() => { setDay(d); setSlot(null); }} style={{ ...chip(shownDay === d), flexDirection: "column", padding: "7px 12px" }}>
+                    <span style={{ fontSize: 11, opacity: 0.8 }}>{dayLabel(d, { weekday: "short" })}</span>
+                    <span>{dayLabel(d, { day: "numeric", month: "short" })}</span>
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                {(byDay.get(shownDay) || []).map((s) => <button key={s.key} type="button" onClick={() => setSlot(s)} style={chip(slot?.key === s.key)}>{s.startTime}–{s.endTime}</button>)}
+              </div>
+            </>
+          )}
     </Modal>
   );
 }
@@ -153,6 +206,7 @@ export default function BookingPage() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {join && <a href={b.meetingLink} target="_blank" rel="noreferrer" style={{ ...actionBtn, background: BRAND.gold, color: BRAND.navy, border: "none", textDecoration: "none" }}><FiVideo size={14} /> Join</a>}
               {b.can?.pay && <Link to={invoicePath(base, b.invoice.id)} style={{ ...actionBtn, background: BRAND.gold, color: BRAND.navy, border: "none", textDecoration: "none" }}><FiCreditCard size={14} /> Pay {ksh(b.invoice.total - b.invoice.amountPaid)}</Link>}
+              {b.can?.reschedule && <button type="button" onClick={() => setDialog("reschedule")} style={{ ...actionBtn, background: BRAND.gold, color: BRAND.navy, border: "none" }}><FiCalendar size={14} /> Pick a new time</button>}
               {b.can?.mark && <button type="button" onClick={() => setDialog("mark")} style={{ ...actionBtn, background: BRAND.gold, color: BRAND.navy, border: "none" }}><FiMessageSquare size={14} /> How did it go?</button>}
               {b.can?.editLink && <button type="button" onClick={() => setDialog("link")} style={{ ...actionBtn, background: "rgba(255,255,255,0.14)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.35)" }}>{b.meetingLink ? "Change join link" : "Add join link"}</button>}
               {b.can?.refund && <button type="button" onClick={() => setDialog("refund")} style={{ ...actionBtn, background: "rgba(255,255,255,0.14)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.35)" }}>Mark refunded</button>}
@@ -164,6 +218,16 @@ export default function BookingPage() {
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="mentor_bookings" id={id} />
 
+      {b.state === "needs_new_time" && (
+        <div role="status" style={{ ...box, display: "flex", gap: 10, alignItems: "flex-start", background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, color: BRAND.goldText, fontSize: 13.5, lineHeight: 1.55 }}>
+          <FiAlertCircle size={17} style={{ flexShrink: 0, marginTop: 2 }} />
+          <span>
+            {family ? "The mentor now has a class at this time. Pick another free time at no extra cost, or cancel for a full refund. If no new time is picked before the session, it's cancelled and refunded automatically."
+              : mentorView ? "A class of yours now falls at this time, and your class comes first. The family has been asked to pick a new time, or they can cancel for a full refund."
+                : "The mentor now has a class at this time. The family has been asked to pick a new time. You can pick one for them, or cancel it for a full refund."}
+          </span>
+        </div>
+      )}
       {b.state === "held" && family && (
         <div style={{ ...box, background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, color: BRAND.goldText, fontSize: 13.5 }}>
           This time is held for you until {b.holdExpiresAt ? new Date(b.holdExpiresAt).toLocaleString("en-KE", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "soon"}. Pay to confirm it — after that it&apos;s released.
@@ -221,8 +285,12 @@ export default function BookingPage() {
           <section style={{ ...box, gridColumn: "1 / -1" }}>
             <h2 style={{ ...cardHeading, marginBottom: 8 }}><FiXCircle size={12} /> Cancelled</h2>
             <p style={{ margin: 0, fontSize: 13.5, color: BRAND.inkSoft }}>
-              {{ parent: "By the family", mentor: "By the mentor", staff: "By our team", system: "Not paid in time" }[b.cancelledBy] || "Cancelled"}
-              {b.cancelReason && b.cancelledBy !== "system" ? ` — "${b.cancelReason}"` : ""}
+              {b.cancelledBy === "clash" || (b.cancelledBy === "system" && b.cancelReason && b.cancelReason !== "Not paid in time")
+                ? b.cancelReason
+                : <>
+                  {{ parent: "By the family", mentor: "By the mentor", staff: "By our team", system: "Not paid in time" }[b.cancelledBy] || "Cancelled"}
+                  {b.cancelReason && b.cancelledBy !== "system" ? ` — "${b.cancelReason}"` : ""}
+                </>}
             </p>
           </section>
         )}
@@ -237,6 +305,7 @@ export default function BookingPage() {
       </div>
 
       {dialog === "cancel" && <CancelDialog booking={b} base={base} onClose={() => setDialog(null)} />}
+      {dialog === "reschedule" && <RescheduleDialog booking={b} onClose={() => setDialog(null)} onCancelInstead={() => setDialog("cancel")} />}
       {dialog === "mark" && <MarkDialog booking={b} onClose={() => setDialog(null)} />}
       {dialog === "link" && <LinkDialog booking={b} onClose={() => setDialog(null)} />}
       {dialog === "refund" && <RefundDialog booking={b} onClose={() => setDialog(null)} />}

@@ -6,6 +6,7 @@ const { workspaceTeacherIds } = require("../qa/qa.access");
 const { can } = require("../access/access.service");
 const R = require("./mentor-booking.rules");
 const Notify = require("./mentor-booking.notifications");
+const EducatorBusy = require("./educator-busy");
 
 // Mentor bookings (11 Nov 2026). Pathway learners learn on their own; their mentors mark the work.
 // When a learner is stuck on a session, they ask for help (a help request — a child's login never
@@ -231,17 +232,19 @@ async function holdingBookings(where, from, to, { exceptId = null } = {}) {
   return (await q.select("id", "date", "startTime", "endTime", "status", "holdExpiresAt", "spaceId", "hubId")).map(shapeRow).filter((b) => R.holdsTime(b, now));
 }
 
-// Everything that makes a mentor busy: their weekly classes, their parent check-ins, their other
-// bookings — and the learner's other bookings.
-async function busyFor(teacherId, learnerId, from, to) {
-  const weekly = await db("timetable_slots").where({ teacherId }).select("dayOfWeek", "startTime", "endTime");
-  const checkins = await require("../mentor-checkins/mentor-checkin.service")._internal.busyFor([teacherId], from, to, { withBookings: false });
+// Everything that makes a mentor busy: their classes as the calendar really places them
+// (educator-busy.js), their parent check-ins, their other bookings — and the learner's other
+// bookings. `exceptId`: a booking being moved doesn't block its own new time.
+async function busyFor(teacherId, learnerId, from, to, { exceptId = null } = {}) {
+  const classes = await EducatorBusy.classTimes(teacherId, from, to);
+  const checkins = await require("../mentor-checkins/mentor-checkin.service")._internal.busyFor([teacherId], from, to, { withBookings: false, withClasses: false });
   const dated = [
+    ...classes,
     ...(checkins.dated || []),
-    ...(await holdingBookings({ teacherId }, from, to)),
-    ...(learnerId ? await holdingBookings({ learnerId }, from, to) : []),
+    ...(await holdingBookings({ teacherId }, from, to, { exceptId })),
+    ...(learnerId ? await holdingBookings({ learnerId }, from, to, { exceptId }) : []),
   ];
-  return { weekly: [...weekly, ...(checkins.weekly || [])], dated };
+  return { weekly: checkins.weekly || [], dated };
 }
 
 // A space is full at a time when its capacity of bookings overlap it.
@@ -283,6 +286,8 @@ async function decorate(rows, ctx) {
         mark: (manager && ctx.canManage || mine) && R.canMark(b, now),
         editLink: (manager && ctx.canManage || mine) && live && b.mode === "online",
         refund: manager && ctx.canManage && b.refundStatus === "due",
+        // A class took its time: the family (or staff, for them) picks a new one.
+        reschedule: state === "needs_new_time" && (family || (manager && ctx.canManage)),
       },
     };
     // What each side may see: the family and the hub never see the mentor's pay or the hub split;
@@ -349,6 +354,32 @@ async function confirm(b) {
   const fresh = shapeRow(await db(B).where({ id: b.id }).first());
   await Notify.confirmed(fresh, await peopleOf(fresh));
   return fresh;
+}
+
+/* ── A class took a session's time ───────────────────────────────────────────────────────── */
+
+function assertCanReschedule(ctx, b) {
+  if (!(ctx.kind === "parent" || (ctx.kind === "manager" && ctx.canManage))) fail("Not allowed", 403);
+  if (b.status !== "confirmed" || !b.clashAt) fail("This session doesn't need a new time", 409);
+}
+
+// The mentor's free times for this booking's length and place (its own old time doesn't count).
+async function openTimesFor(b, { from = null, to = null } = {}) {
+  const settings = await settingsFor(b.ownerAdminId);
+  const windows = await db("teacher_availability_slots").where({ teacherId: b.teacherId }).select("dayOfWeek", "startTime", "endTime");
+  const today = R.kenyaNow().date;
+  const end = require("../checkins/checkin.dates").addDays(today, settings.horizonDays);
+  const busy = await busyFor(b.teacherId, b.learnerId, from || today, to || end, { exceptId: b.id });
+  let slots = R.freeSlots({ windows, minutes: b.minutes, busy, noticeHours: settings.noticeHours, horizonDays: settings.horizonDays, from, to });
+  if (b.mode === "hub" && b.spaceId) {
+    const hub = (await bookableHubs(b.ownerAdminId)).find((h) => h.id === b.hubId);
+    const space = hub?.spaces.find((s) => s.id === b.spaceId);
+    if (!space) return [];
+    const out = [];
+    for (const s of slots) if (!(await spaceFull(b.hubId, b.spaceId, s, R.spaceCapacity(space), { exceptId: b.id }))) out.push(s);
+    slots = out;
+  }
+  return slots;
 }
 
 /* ── The service ─────────────────────────────────────────────────────────────────────────── */
@@ -583,6 +614,55 @@ const MentorBookingService = {
     return (await decorate([fresh], ctx))[0];
   },
 
+  // A class took this session's time: the mentor's other free times for the same length and place.
+  async newTimes(req, id) {
+    const ctx = await contextOf(req);
+    const b = await load(ctx, id);
+    assertCanReschedule(ctx, b);
+    return { slots: await openTimesFor(b), minutes: b.minutes };
+  },
+
+  // The family (or staff) moves it to one of those times: same price, nothing to pay again.
+  async reschedule(req, id, { date, startTime }) {
+    const ctx = await contextOf(req);
+    const b = await load(ctx, id);
+    assertCanReschedule(ctx, b);
+    const slot = (await openTimesFor(b, { from: date, to: date })).find((s) => s.startTime === startTime);
+    if (!slot) fail("That time isn't free any more — pick another", 409);
+    let changed = 0;
+    try {
+      changed = await db(B).where({ id, status: "confirmed" }).whereNotNull("clashAt").update({
+        date: slot.date, startTime: slot.startTime, endTime: slot.endTime, slotKey: `${slot.date} ${slot.startTime}`,
+        clashAt: null, clashReason: null, remindedFor: null, updatedAt: new Date(),
+      });
+    } catch (err) {
+      if (err.code === "ER_DUP_ENTRY") fail("That time was just taken — pick another", 409);
+      throw err;
+    }
+    if (!changed) fail("This session no longer needs a new time", 409);
+    const fresh = shapeRow(await db(B).where({ id }).first());
+    await Notify.rescheduled(fresh, await peopleOf(fresh), { fromDate: b.date, fromTime: b.startTime });
+    return (await decorate([fresh], ctx))[0];
+  },
+
+  // Still flagged when its time came: it can't happen, so it's cancelled and what was paid is due back.
+  async cancelForClash(b) {
+    const inv = b.invoiceId ? await db("billing_invoices").where({ id: b.invoiceId }).first("amountPaid") : null;
+    const refund = Number(inv?.amountPaid) || 0;
+    const reason = "The mentor had a class at this time and no new time was picked";
+    const changed = await db(B).where({ id: b.id, status: "confirmed" }).whereNotNull("clashAt").update({
+      status: "cancelled", slotKey: null, cancelledAt: new Date(), cancelledBy: "clash", cancelReason: reason,
+      hubShare: 0, refundStatus: refund > 0 ? "due" : null, refundAmount: refund > 0 ? refund : null, updatedAt: new Date(),
+    });
+    if (!changed) return;
+    if (b.helpRequestId) await db(H).where({ id: b.helpRequestId, bookingId: b.id }).update({ status: "open", bookingId: null, updatedAt: new Date() });
+    const fresh = shapeRow(await db(B).where({ id: b.id }).first());
+    await Notify.cancelled(fresh, { ...(await peopleOf(fresh)), by: "system", refund });
+    if (refund > 0) await Notify.refundDue(fresh, refund);
+  },
+
+  peopleOf,
+
   // Staff hand a booking still to come to another mentor (removing an educator — modules/removals/):
   // same time, place and price; the new mentor's pay is theirs when it's held. Refused when the new
   // mentor can't teach or is busy then (their classes, parent check-ins, other bookings — the
@@ -746,7 +826,8 @@ const MentorBookingService = {
   // npm run checkins:process — "it's today" to the family and the mentor.
   async sendTodayNotices(today = R.kenyaNow().date) {
     let sent = 0;
-    for (const row of await db(B).where({ status: "confirmed", date: today }).where((q) => q.whereNull("remindedFor").orWhereNot({ remindedFor: today }))) {
+    // Not one a class has taken over: it won't happen at that time.
+    for (const row of await db(B).where({ status: "confirmed", date: today }).whereNull("clashAt").where((q) => q.whereNull("remindedFor").orWhereNot({ remindedFor: today }))) {
       const b = shapeRow(row);
       await Notify.today(b, await peopleOf(b));
       await db(B).where({ id: b.id }).update({ remindedFor: today });

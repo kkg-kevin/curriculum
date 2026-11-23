@@ -15,7 +15,10 @@ export default function ParentBookingsPage() {
   const { data: help = [] } = useHelpRequests();
   const close = useCloseHelp();
   const open = help.filter((h) => h.status === "open");
-  const { coming, past } = splitBookings(bookings);
+  const { coming: allComing, past } = splitBookings(bookings);
+  // A class took these sessions' time: they come first, because they need the family.
+  const needNewTime = allComing.filter((b) => b.state === "needs_new_time");
+  const coming = allComing.filter((b) => b.state !== "needs_new_time");
 
   return (
     <div style={{ fontFamily: FONT, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -27,6 +30,13 @@ export default function ParentBookingsPage() {
         </div>
         <Link to="/parent/bookings/new" style={goldBtn}><FiPlus /> Book a mentor</Link>
       </div>
+
+      {needNewTime.length > 0 && (
+        <>
+          <SectionHead title="Please pick a new time" note="The mentor now has a class at these times. Move them at no extra cost, or cancel for a full refund." />
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "100%" }}>{needNewTime.map((b) => <BookingRow key={b.id} booking={b} base="/parent/bookings" show="both" />)}</div>
+        </>
+      )}
 
       {open.length > 0 && (
         <>
@@ -50,7 +60,7 @@ export default function ParentBookingsPage() {
       <SectionHead title="Coming up" />
       {isLoading ? <p style={{ margin: 0, color: BRAND.faint, fontSize: 13 }}>Loading…</p>
         : coming.length ? <div style={{ display: "grid", gap: 10, gridTemplateColumns: "100%" }}>{coming.map((b) => <BookingRow key={b.id} booking={b} base="/parent/bookings" show="both" />)}</div>
-          : <EmptyNote title="No sessions booked" line="Book a mentor whenever your child needs a hand." action={<Link to="/parent/bookings/new" style={{ ...goldBtn, padding: "8px 14px", fontSize: 13 }}><FiPlus /> Book a mentor</Link>} />}
+          : needNewTime.length ? <p style={{ margin: 0, fontSize: 13, color: BRAND.muted }}>Nothing else coming up.</p> : <EmptyNote title="No sessions booked" line="Book a mentor whenever your child needs a hand." action={<Link to="/parent/bookings/new" style={{ ...goldBtn, padding: "8px 14px", fontSize: 13 }}><FiPlus /> Book a mentor</Link>} />}
 
       {past.length > 0 && (
         <>

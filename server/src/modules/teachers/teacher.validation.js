@@ -69,10 +69,9 @@ const updateTeacherStatusSchema = z.object({
   status: z.enum(TEACHER_STATUSES),
 });
 
-// A weekly recurring "I can teach during this window" row — same day/time shape timetable
-// slots use, minus the class/course/room fields that don't apply to a standing availability
-// declaration. See teacher-availability.model.js / TimetableService's hasConflict extension for
-// how this feeds into actual scheduling.
+// A weekly recurring "families can book me then" row — same day/time shape timetable slots use,
+// minus the class/course/room fields. It never limits the class timetable: bookable time is these
+// hours minus whatever the educator is busy with (mentor-bookings/availability.rules.js).
 const baseAvailabilitySchema = z.object({
   dayOfWeek: z.enum(AVAILABILITY_DAYS, { errorMap: () => ({ message: "Select a valid day" }) }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Start time must be in HH:MM format"),
@@ -86,7 +85,12 @@ const createAvailabilitySlotSchema = baseAvailabilitySchema.refine((d) => d.star
 
 const updateAvailabilitySlotSchema = baseAvailabilitySchema.partial();
 
+// The whole weekly pattern at once (My Availability): tidied and joined on the server.
+const replaceAvailabilitySchema = z.object({ windows: z.array(baseAvailabilitySchema).max(120) });
+const availabilityWeekSchema = z.object({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date").optional() });
+
 module.exports = {
+  replaceAvailabilitySchema, availabilityWeekSchema,
   createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, TEACHER_STATUSES, cantTeachReason,
   EMPLOYMENT_TYPES, TEACHER_LEVELS, PAYMENT_TERMS,
   createAvailabilitySlotSchema, updateAvailabilitySlotSchema,

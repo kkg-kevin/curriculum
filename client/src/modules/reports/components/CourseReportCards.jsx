@@ -186,16 +186,44 @@ function CertificateSection({ cls, course, rows, moduleId = null, name, window: 
   );
 }
 
-// A line pointing to the session where something happens, with a jump to it.
-function Pointer({ text, to, sessions, onGo }) {
+// Every certificate this course offers — each module's, then the whole course's — with how far
+// each has got. Tapping one goes to the last session where it is generated.
+function CertificateStrip({ scopes, rows, course, sessions, activeSessionId, onGo }) {
+  const issuedCount = (certOf) => rows.filter((row) => certOf(row)?.status === "issued").length;
+  const items = [
+    ...scopes.modules.map((m) => ({
+      key: m.moduleId, name: m.moduleName, lastSessionId: m.lastSessionId, window: m.window,
+      issued: issuedCount((row) => row.certificates?.modules?.[m.moduleId]),
+    })),
+    {
+      key: "course", name: scopes.modules.length ? "Whole course" : course.name, lastSessionId: scopes.course?.lastSessionId, window: scopes.course?.window,
+      issued: issuedCount((row) => row.certificates?.course),
+    },
+  ];
+  const statusOf = ({ issued, window: win }) => {
+    if (rows.length > 0 && issued === rows.length) return { text: `All ${issued} issued`, color: "#059669" };
+    if (issued > 0) return { text: `${issued} of ${rows.length} issued`, color: "#059669" };
+    if (win?.open) return { text: "Ready to generate", color: T.accentMid };
+    return { text: win?.date ? `Opens ${fmtDay(win.date)}` : "Not open yet", color: T.inkMuted };
+  };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 20px", backgroundColor: "#F8FAFC", borderTop: `1px solid ${T.border}`, fontSize: 12, color: T.inkMuted }}>
-      <span style={{ flex: 1, minWidth: 200 }}>{text}</span>
-      {to >= 0 && (
-        <button type="button" onClick={() => onGo(to)} style={pillButton(T.tintBg, T.accent, `1.5px solid ${T.tintBorder}`)}>
-          Go to {sessions[to]?.moduleName ? `${sessions[to].moduleName} · ` : ""}session {sessions[to]?.sessionNumber ?? to + 1} →
-        </button>
-      )}
+    <div style={{ padding: "12px 20px", backgroundColor: "#F8FAFC", borderBottom: `1px solid ${T.border}` }}>
+      <p style={{ ...sectionLabel, marginBottom: 8 }}>Certificates</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {items.map((item) => {
+          const to = sessions.findIndex((s) => s.sessionId === item.lastSessionId);
+          const here = item.lastSessionId === activeSessionId;
+          const status = statusOf(item);
+          return (
+            <button key={item.key} type="button" disabled={to < 0} onClick={() => onGo(to)} aria-current={here ? "true" : undefined}
+              title={`Go to the last session of ${item.key === "course" ? "the course" : item.name}`}
+              style={{ flex: "0 1 auto", maxWidth: "100%", padding: "7px 13px", textAlign: "left", backgroundColor: here ? T.tintBg : "#fff", border: `1.5px solid ${here ? T.accentMid : T.border}`, borderRadius: 10, fontFamily: "Inter, sans-serif", cursor: to < 0 ? "not-allowed" : "pointer" }}>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: T.accent }}>{item.name}</span>
+              <span style={{ display: "block", marginTop: 1, fontSize: 11, fontWeight: 600, color: status.color }}>{status.text}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -211,11 +239,8 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
   const activeIndex = Math.min(sessionIndex, Math.max(sessions.length - 1, 0));
   const activeSession = sessions[activeIndex];
   const scopes = rows[0]?.certificateScopes || { modules: [], course: {} };
-  const indexOf = (sessionId) => sessions.findIndex((s) => s.sessionId === sessionId);
   const moduleScope = scopes.modules.find((m) => m.lastSessionId === activeSession?.sessionId) || null;
   const courseHere = Boolean(activeSession) && scopes.course?.lastSessionId === activeSession.sessionId;
-  // This session's module, when it has a certificate of its own — for the "Go to" line.
-  const ownModule = activeSession ? scopes.modules.find((m) => m.moduleId === activeSession.moduleId) || null : null;
   const assessedHere = rows.some((r) => (r.sessions || []).find((s) => s.sessionId === activeSession?.sessionId)?.requiredCount > 0);
   // Numbers restart in each module: "Module 2 · Session 1 of 12".
   const label = (s, i) => `${s?.moduleName ? `${s.moduleName} · ` : ""}Session ${s?.sessionNumber ?? i + 1}${s?.sessionCount ? ` of ${s.sessionCount}` : ""}${s?.sessionTitle ? ` — ${s.sessionTitle}` : ""}`;
@@ -241,6 +266,7 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
 
       {sessions.length > 0 && (
         <>
+          <CertificateStrip scopes={scopes} rows={rows} course={course} sessions={sessions} activeSessionId={activeSession?.sessionId} onGo={setSessionIndex} />
           <Navigator items={sessions} index={activeIndex} onChange={setSessionIndex} label={label} />
           {assessedHere
             ? rows.map((row) => (
@@ -252,16 +278,9 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
 
       {/* The module's certificates — on its last session. */}
       {moduleScope && <CertificateSection cls={cls} course={course} rows={rows} moduleId={moduleScope.moduleId} name={moduleScope.moduleName} window={moduleScope.window} />}
-      {!moduleScope && ownModule && (
-        <Pointer text={`${ownModule.moduleName} certificates are generated at this module's last session.`} to={indexOf(ownModule.lastSessionId)} sessions={sessions} onGo={setSessionIndex} />
-      )}
 
       {/* The course's certificates — on its last session. */}
-      {courseHere
-        ? <CertificateSection cls={cls} course={course} rows={rows} window={scopes.course.window} />
-        : sessions.length > 0 && (
-          <Pointer text={`${course.name} course certificates are generated at the course's last session.`} to={indexOf(scopes.course?.lastSessionId)} sessions={sessions} onGo={setSessionIndex} />
-        )}
+      {courseHere && <CertificateSection cls={cls} course={course} rows={rows} window={scopes.course.window} />}
     </div>
   );
 }

@@ -17,6 +17,9 @@ export const mentorBookingsApi = {
   list: (params) => api.get(BASE, { params }).then(data),
   get: (id) => api.get(`${BASE}/${id}`).then(data),
   cancel: (id, body) => api.post(`${BASE}/${id}/cancel`, body).then(data),
+  // A class took its time: the mentor's other free times, and moving it to one.
+  newTimes: (id) => api.get(`${BASE}/${id}/new-times`).then(data),
+  reschedule: (id, body) => api.post(`${BASE}/${id}/reschedule`, body).then(data),
   mark: (id, body) => api.post(`${BASE}/${id}/mark`, body).then(data),
   setLink: (id, meetingLink) => api.put(`${BASE}/${id}/link`, { meetingLink }).then(data),
   refunded: (id, body) => api.post(`${BASE}/${id}/refunded`, body).then(data),

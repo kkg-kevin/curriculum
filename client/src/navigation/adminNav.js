@@ -28,6 +28,8 @@ export const ADMIN_SECTIONS = [
       { name: "Courses", path: "/courses", icon: FiBook, module: "courses" },
       { name: "Assessments", path: "/assessments", icon: FiClipboard, module: "assessments" },
       { name: "Classes", path: "/classes", icon: FiLayers, module: "classes" },
+      // Every hub's timetable: plan the week, see who is where, copy across hubs (modules/timetable).
+      { name: "Timetable", path: "/timetable", icon: FiCalendar, module: "timetable" },
     ],
   },
   {
