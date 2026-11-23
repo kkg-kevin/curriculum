@@ -41,6 +41,7 @@ const listSchema = z.object({
 });
 
 const cancelSchema = z.object({ reason: z.string().max(500).optional().default("") });
+const rescheduleSchema = z.object({ date, startTime: time });
 const markSchema = z.object({ outcome: z.enum(["completed", "no_show"]), note: z.string().max(5000).optional().default("") });
 const linkSchema = z.object({ meetingLink: z.string().trim().max(500).refine((v) => !v || /^https?:\/\//i.test(v), "Paste the full link, starting with https://").nullable() });
 const refundSchema = z.object({ reference: z.string().max(120).optional().default("") });
@@ -72,4 +73,4 @@ const settingsSchema = z.object({
   horizonDays: z.coerce.number().int().min(3).max(90).optional(),
 });
 
-module.exports = { optionsSchema, freeTimesSchema, bookSchema, listSchema, cancelSchema, markSchema, linkSchema, refundSchema, helpSchema, settleSchema, settingsSchema };
+module.exports = { optionsSchema, freeTimesSchema, bookSchema, listSchema, cancelSchema, rescheduleSchema, markSchema, linkSchema, refundSchema, helpSchema, settleSchema, settingsSchema };

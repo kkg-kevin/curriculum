@@ -36,6 +36,7 @@ const CoverSessionPage = lazyPage(() => import("../modules/session-covers/pages/
 const CoversOverviewPage = lazyPage(() => import("../modules/session-covers/pages/CoversOverviewPage"));
 const TeacherAttendancePage = lazyPage(() => import("../modules/teacher-portal/pages/AttendancePage"));
 const TeacherTimetablePage = lazyPage(() => import("../modules/teacher-portal/pages/TimetablePage"));
+const TeacherAvailabilityPage = lazyPage(() => import("../modules/availability/pages/AvailabilityPage"));
 const TeacherClaimCoursePage = lazyPage(() => import("../modules/teacher-portal/pages/ClaimCoursePage"));
 const TeacherPaymentsPage = lazyPage(() => import("../modules/teacher-portal/pages/PaymentsPage"));
 const TeacherProfilePage = lazyPage(() => import("../modules/teacher-portal/pages/ProfilePage"));
@@ -44,6 +45,7 @@ const SchoolCurriculumPage = lazyPage(() => import("../modules/school-portal/pag
 const SchoolReportsPage = lazyPage(() => import("../modules/school-portal/pages/ReportsPage"));
 const SchoolAttendancePage = lazyPage(() => import("../modules/school-portal/pages/AttendancePage"));
 const SchoolTimetablePage = lazyPage(() => import("../modules/school-portal/pages/TimetablePage"));
+const TimetablePlannerPage = lazyPage(() => import("../modules/timetable/pages/TimetablePlannerPage"));
 const SchoolRoomsPage = lazyPage(() => import("../modules/school-portal/pages/RoomsPage"));
 const SchoolProfilePage = lazyPage(() => import("../modules/school-portal/pages/ProfilePage"));
 const LearnerPortalDashboardPage = lazyPage(() => import("../modules/learner-portal/pages/DashboardPage"));
@@ -378,6 +380,8 @@ export default function AppRoutes() {
           <Route path="new" element={<NewSupervisorPage />} />
           <Route path=":id" element={<SupervisorPage />} />
         </Route>
+        {/* Every hub's timetable in one place (modules/timetable). */}
+        <Route path="timetable" element={<TimetablePlannerPage />} />
         <Route path="classes">
           <Route index element={<ClassesPage />} />
           <Route path="create" element={<CreateClassPage />} />
@@ -404,6 +408,7 @@ export default function AppRoutes() {
           <Route path="reports/:reportId" element={<TeacherReportEditorPage />} />
           <Route path="attendance" element={<TeacherAttendancePage />} />
           <Route path="timetable" element={<TeacherTimetablePage />} />
+          <Route path="availability" element={<TeacherAvailabilityPage />} />
           <Route path="covers" element={<CoversPage />} />
           <Route path="covers/:coverId" element={<CoverSessionPage />} />
           <Route path="claims" element={<TeacherPaymentsPage tab="claims" />} />

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FiX, FiCheck, FiSlash } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { useSessionSummary, useSessionStatusBulk, useCreateSkip, useDeleteSkip, useOccurrenceAction } from "../hooks/useTimetable";
 import { useAuth } from "../../../context/AuthContext";
@@ -129,17 +129,19 @@ function formatTime(hhmm) {
   const hour12 = h % 12 === 0 ? 12 : h % 12;
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
 }
-// This app's timetable only ever schedules Monday-Friday (see DAYS_OF_WEEK in
-// timetable.schema.js) — the calendar deliberately shows 5 weekday columns, not a full 7-day
-// week, since Sat/Sun can never carry an event.
+// Classes can run any day (23 Nov 2026). A week always loads all seven days and shows Saturday and
+// Sunday only when something is on them, so a Monday–Friday timetable keeps its wider columns.
 function startOfWeekMonday(d) {
   const day = d.day();
   return d.subtract(day === 0 ? 6 : day - 1, "day").startOf("day");
 }
 function weekDays(anchor) {
   const start = startOfWeekMonday(anchor);
-  return [0, 1, 2, 3, 4].map((i) => start.add(i, "day"));
+  return [0, 1, 2, 3, 4, 5, 6].map((i) => start.add(i, "day"));
 }
+const isWeekend = (d) => d.day() === 0 || d.day() === 6;
+const AGENDA_DAYS = 14;
+const isPhoneWidth = () => typeof window !== "undefined" && window.innerWidth < 720;
 // Break dates are plain "YYYY-MM-DD" strings, so lexical comparison already matches chronological
 // order — no date parsing needed here.
 function breakOnDate(dateStr, breaks) {
@@ -174,7 +176,7 @@ function monthGrid(anchor) {
   const weeks = [];
   let weekStart = startOfWeekMonday(monthStart);
   while (weekStart.isBefore(lastWeekStart) || weekStart.isSame(lastWeekStart, "day")) {
-    weeks.push([0, 1, 2, 3, 4].map((i) => weekStart.add(i, "day")));
+    weeks.push([0, 1, 2, 3, 4, 5, 6].map((i) => weekStart.add(i, "day")));
     weekStart = weekStart.add(7, "day");
   }
   return weeks;
@@ -204,19 +206,25 @@ const HOUR_PX = 52;
  * active reschedules overlapping the visible range, surfaced as a small marker on their original
  * date (which otherwise has zero events once skipped) so nothing just silently disappears.
  */
-export default function CalendarView({ events, breaks, skippedSessions, isLoading, resolveCourseName, resolveTeacherLabel, resolveClassLabel, onRangeChange, emptyMessage, enableSessionDetail = false, enableReschedule = false }) {
+export default function CalendarView({ events, breaks, skippedSessions, isLoading, resolveCourseName, resolveTeacherLabel, resolveClassLabel, onRangeChange, emptyMessage, enableSessionDetail = false, enableReschedule = false, defaultMode = "week", showHub = false, colorBy = "course", colorFor = null, extras = [] }) {
   const [anchor, setAnchor] = useState(() => dayjs());
-  const [mode, setMode] = useState("week");
+  // A week grid doesn't fit a phone: the list is the phone's first view.
+  const [mode, setMode] = useState(() => (isPhoneWidth() ? "agenda" : defaultMode));
+  // Every event carries its course's name; a page's own lookup is only the fallback.
+  const nameById = useMemo(() => new Map((events || []).filter((e) => e.courseName).map((e) => [e.courseId, e.courseName])), [events]);
+  const courseNameOf = (courseId) => nameById.get(courseId) || resolveCourseName?.(courseId) || "Course";
+  const colorOf = (e) => (colorFor ? colorFor(e) || colorForCourse(e.courseId || e.kind || "x") : colorForCourse((colorBy === "hub" && e.hubId) || e.courseId || e.kind || "x"));
   const [activeEvent, setActiveEvent] = useState(null);
   const [activeSkip, setActiveSkip] = useState(null);
 
   const range = useMemo(() => {
     if (mode === "month") {
       const grid = monthGrid(anchor);
-      return { from: grid[0][0].format("YYYY-MM-DD"), to: grid[grid.length - 1][4].format("YYYY-MM-DD") };
+      return { from: grid[0][0].format("YYYY-MM-DD"), to: grid[grid.length - 1][6].format("YYYY-MM-DD") };
     }
+    if (mode === "agenda") return { from: anchor.format("YYYY-MM-DD"), to: anchor.add(AGENDA_DAYS - 1, "day").format("YYYY-MM-DD") };
     const days = weekDays(anchor);
-    return { from: days[0].format("YYYY-MM-DD"), to: days[4].format("YYYY-MM-DD") };
+    return { from: days[0].format("YYYY-MM-DD"), to: days[6].format("YYYY-MM-DD") };
   }, [anchor, mode]);
 
   useEffect(() => {
@@ -229,9 +237,20 @@ export default function CalendarView({ events, breaks, skippedSessions, isLoadin
     for (const e of events || []) {
       (map[e.date] = map[e.date] || []).push(e);
     }
+    // Mentor sessions and parent check-ins sit beside the classes.
+    for (const x of extras || []) (map[x.date] = map[x.date] || []).push({ ...x, isExtra: true });
     for (const date in map) map[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
     return map;
-  }, [events]);
+  }, [events, extras]);
+  const hasWeekendItems = (dates) => dates.some((d) => isWeekend(d) && ((eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0 || skipsOnDate(d.format("YYYY-MM-DD"), skippedSessions).length > 0));
+  const shownWeek = () => {
+    const days = weekDays(anchor);
+    return hasWeekendItems(days) ? days : days.slice(0, 5);
+  };
+  const shownMonth = () => {
+    const weeks = monthGrid(anchor);
+    return hasWeekendItems(weeks.flat()) ? weeks : weeks.map((w) => w.slice(0, 5));
+  };
 
   // One batched status lookup for every occurrence currently on screen, powering the small
   // health dot on each card — see the enableSessionDetail doc comment for why this (like the
@@ -250,13 +269,16 @@ export default function CalendarView({ events, breaks, skippedSessions, isLoadin
   const { data: statusByKey = {} } = useSessionStatusBulk(occurrences, enableSessionDetail);
 
   const navigate = (dir) => setAnchor((a) => a.add(dir, mode === "month" ? "month" : "week"));
+  const agendaOpensToday = anchor.isSame(dayjs(), "day");
   const goToday = () => setAnchor(dayjs());
 
   const rangeLabel = mode === "month"
     ? anchor.format("MMMM YYYY")
-    : (() => {
-        const days = weekDays(anchor);
-        return `${days[0].format("D MMM")} - ${days[4].format("D MMM YYYY")}`;
+    : mode === "agenda"
+      ? `${anchor.format("D MMM")} - ${anchor.add(AGENDA_DAYS - 1, "day").format("D MMM YYYY")}`
+      : (() => {
+        const days = shownWeek();
+        return `${days[0].format("D MMM")} - ${days[days.length - 1].format("D MMM YYYY")}`;
       })();
 
   return (
@@ -266,31 +288,38 @@ export default function CalendarView({ events, breaks, skippedSessions, isLoadin
         @keyframes cv-modal-in { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
       <div style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <button type="button" onClick={goToday} style={btnStyle(false)}>Today</button>
           <button type="button" onClick={() => navigate(-1)} aria-label="Previous" style={{ ...btnStyle(false), padding: "6px 10px" }}>←</button>
           <button type="button" onClick={() => navigate(1)} aria-label="Next" style={{ ...btnStyle(false), padding: "6px 10px" }}>→</button>
           <span style={{ fontSize: 14, fontWeight: 800, color: T.ink, marginLeft: 4 }}>{rangeLabel}</span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button type="button" onClick={() => setMode("week")} style={btnStyle(mode === "week")}>Week</button>
-          <button type="button" onClick={() => setMode("month")} style={btnStyle(mode === "month")}>Month</button>
+          <button type="button" onClick={() => setMode("agenda")} style={btnStyle(mode === "agenda")} aria-pressed={mode === "agenda"}>List</button>
+          <button type="button" onClick={() => setMode("week")} style={btnStyle(mode === "week")} aria-pressed={mode === "week"}>Week</button>
+          <button type="button" onClick={() => setMode("month")} style={btnStyle(mode === "month")} aria-pressed={mode === "month"}>Month</button>
         </div>
       </div>
 
       {isLoading ? (
         <div style={{ padding: "40px 20px", textAlign: "center", color: T.inkFaint, fontSize: 14 }}>Loading calendar…</div>
+      ) : mode === "agenda" ? (
+        <AgendaList
+          from={anchor} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions} showNext={agendaOpensToday}
+          courseNameOf={courseNameOf} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel} colorOf={colorOf} showHub={showHub}
+          emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent} onOpenSkip={setActiveSkip}
+        />
       ) : mode === "week" ? (
         <WeekGrid
-          days={weekDays(anchor)} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
-          resolveCourseName={resolveCourseName} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel}
+          days={shownWeek()} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
+          resolveCourseName={courseNameOf} resolveTeacherLabel={resolveTeacherLabel} resolveClassLabel={resolveClassLabel} colorOf={colorOf} showHub={showHub}
           emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
           onOpenSkip={setActiveSkip} statusByKey={statusByKey}
         />
       ) : (
         <MonthGrid
-          weeks={monthGrid(anchor)} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
-          resolveCourseName={resolveCourseName} resolveClassLabel={resolveClassLabel}
+          weeks={shownMonth()} anchor={anchor} eventsByDate={eventsByDate} breaks={breaks} skippedSessions={skippedSessions}
+          resolveCourseName={courseNameOf} resolveClassLabel={resolveClassLabel} colorOf={colorOf}
           emptyMessage={emptyMessage} enableSessionDetail={enableSessionDetail} onOpenDetail={setActiveEvent}
           onOpenSkip={setActiveSkip} statusByKey={statusByKey}
         />
@@ -298,13 +327,13 @@ export default function CalendarView({ events, breaks, skippedSessions, isLoadin
 
       {enableSessionDetail && activeEvent && (
         <SessionDetailModal
-          event={activeEvent} resolveCourseName={resolveCourseName} onClose={() => setActiveEvent(null)}
+          event={activeEvent} resolveCourseName={courseNameOf} onClose={() => setActiveEvent(null)}
           enableReschedule={enableReschedule}
         />
       )}
 
       {enableReschedule && activeSkip && (
-        <SkipDetailModal skip={activeSkip} resolveCourseName={resolveCourseName} onClose={() => setActiveSkip(null)} />
+        <SkipDetailModal skip={activeSkip} resolveCourseName={courseNameOf} onClose={() => setActiveSkip(null)} />
       )}
     </div>
   );
@@ -317,9 +346,85 @@ function btnStyle(active) {
   };
 }
 
-function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveTeacherLabel, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
+// The list view: what's next first, then each day that has something on it. Reads well on a phone.
+function AgendaList({ from, eventsByDate, breaks, skippedSessions, showNext, courseNameOf, resolveTeacherLabel, resolveClassLabel, colorOf, showHub, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip }) {
+  const today = dayjs();
+  const dates = Array.from({ length: AGENDA_DAYS }, (_, i) => from.add(i, "day"));
+  const rows = dates.map((d) => {
+    const key = d.format("YYYY-MM-DD");
+    return { d, key, items: eventsByDate[key] || [], brk: breakOnDate(key, breaks), skips: skipsOnDate(key, skippedSessions) };
+  }).filter((r) => r.items.length || r.brk || r.skips.length);
+  if (!rows.length) {
+    return <div style={{ ...cardStyle, textAlign: "center", padding: "50px 24px" }}><p style={{ margin: 0, fontSize: 13, color: T.inkMuted }}>{emptyMessage || "Nothing scheduled in the next two weeks."}</p></div>;
+  }
+  const nowKey = today.format("YYYY-MM-DD");
+  const nowTime = today.format("HH:mm");
+  const next = showNext ? rows.flatMap((r) => r.items).find((e) => e.date > nowKey || (e.date === nowKey && e.endTime > nowTime)) : null;
+  const heading = (d) => (d.isSame(today, "day") ? `Today · ${d.format("ddd D MMM")}` : d.isSame(today.add(1, "day"), "day") ? `Tomorrow · ${d.format("ddd D MMM")}` : d.format("dddd D MMM"));
+  const whereOf = (e) => [showHub ? e.hubName : null, e.room || null, e.online ? "Online" : null].filter(Boolean).join(" · ");
+  const titleOf = (e) => (e.isExtra ? e.title : courseNameOf(e.courseId));
+  const detailOf = (e) => (e.isExtra ? e.subtitle : `Session ${e.sessionNumber ?? e.sessionOrder}${e.sessionTitle ? `: ${e.sessionTitle}` : ""}${e.merged ? " · 2 sessions" : ""}${e.moved ? " · moved" : ""}`);
+
+  const Row = ({ e }) => {
+    const color = e.isExtra ? EXTRA_LOOK[e.kind] || EXTRA_LOOK.mentor : colorOf(e);
+    const who = e.isExtra ? e.where : [coverTag(e) || resolveTeacherLabel?.(e), whereOf(e)].filter(Boolean).join(" · ");
+    const clickable = !e.isExtra && enableSessionDetail;
+    const body = (
+      <>
+        <div style={{ width: 74, flexShrink: 0 }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: T.ink }}>{formatTime(e.startTime)}</p>
+          <p style={{ margin: 0, fontSize: 11, color: T.inkFaint }}>{formatTime(e.endTime)}</p>
+        </div>
+        <span aria-hidden style={{ alignSelf: "stretch", width: 4, borderRadius: 4, backgroundColor: color.text, flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 800, color: T.ink, overflowWrap: "anywhere" }}>{titleOf(e)}{e.needsNewTime ? " · needs a new time" : ""}</p>
+          {detailOf(e) && <p style={{ margin: "1px 0 0", fontSize: 12, color: T.inkMuted, overflowWrap: "anywhere" }}>{detailOf(e)}</p>}
+          {who && <p style={{ margin: "1px 0 0", fontSize: 11.5, color: T.inkFaint, overflowWrap: "anywhere" }}>{who}</p>}
+        </div>
+        {e.meetingLink && <span onClick={(ev) => ev.stopPropagation()} style={{ flexShrink: 0 }}><JoinOnlineButton href={e.meetingLink} live={isLive(e)} size="sm" label="Join" /></span>}
+      </>
+    );
+    const style = { display: "flex", alignItems: "center", gap: 10, width: "100%", boxSizing: "border-box", padding: "10px 14px", textAlign: "left", textDecoration: "none", background: "none", border: "none", borderTop: `1px solid ${T.border}`, fontFamily: "Inter, sans-serif", cursor: clickable || e.route ? "pointer" : "default" };
+    if (e.isExtra && e.route) return <Link to={e.route} style={style}>{body}</Link>;
+    if (clickable) return <div role="button" tabIndex={0} onClick={() => onOpenDetail(e)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onOpenDetail(e); } }} style={style}>{body}</div>;
+    return <div style={style}>{body}</div>;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {next && (
+        <div style={{ ...cardStyle, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderLeft: `4px solid ${T.accent}` }}>
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.accentMid, textTransform: "uppercase", letterSpacing: "0.06em" }}>{next.date === nowKey && next.startTime <= nowTime ? "On now" : "Next up"}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 900, color: T.ink, overflowWrap: "anywhere" }}>{titleOf(next)}</p>
+            <p style={{ margin: "1px 0 0", fontSize: 12.5, color: T.inkMuted }}>{heading(dayjs(next.date))}, {formatTime(next.startTime)}{!next.isExtra && whereOf(next) ? ` · ${whereOf(next)}` : ""}</p>
+          </div>
+          {next.meetingLink && <JoinOnlineButton href={next.meetingLink} live={isLive(next)} label="Join" />}
+        </div>
+      )}
+      {rows.map((r) => (
+        <section key={r.key} style={{ ...cardStyle, overflow: "hidden" }}>
+          <h3 style={{ margin: 0, padding: "9px 14px", fontSize: 12.5, fontWeight: 800, color: r.d.isSame(today, "day") ? T.accent : T.ink, backgroundColor: r.d.isSame(today, "day") ? "#EAF6FD" : "#FAFBFC" }}>{heading(r.d)}</h3>
+          {r.brk && <p style={{ margin: 0, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: T.breakText, backgroundColor: T.breakBg }}>{breakLabel(r.brk, resolveClassLabel)}</p>}
+          {r.skips.map((skip) => (
+            <button key={skip.id} type="button" onClick={() => onOpenSkip(skip)} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", borderTop: `1px solid ${T.border}`, backgroundColor: T.skipBg, color: T.skipText, fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>↷ A session was rescheduled</button>
+          ))}
+          {r.items.map((e) => <Row key={e.isExtra ? `x-${e.kind}-${e.id}` : eventKey(e)} e={e} />)}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+const EXTRA_LOOK = {
+  mentor: { bg: "#FFF5E1", border: "#FDD89A", text: "#7A4F00" },
+  checkin: { bg: "#E6ECF3", border: "#A9BCD2", text: "#25476a" },
+};
+
+function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveTeacherLabel, resolveClassLabel, colorOf, showHub, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
   const today = dayjs();
   const allEvents = days.flatMap((d) => eventsByDate[d.format("YYYY-MM-DD")] || []);
+  const dayColumns = `56px repeat(${days.length}, 1fr)`;
   const anyBreakInView = days.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks));
 
   // One shared hover-preview slot for the whole grid, rather than per-card state — only ever one
@@ -374,8 +479,8 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
     <div style={{ ...cardStyle, overflowX: "auto", overflowY: "hidden" }}>
       {/* Five day columns need room for a session's name and time — on a phone the week scrolls
           sideways rather than squeezing each day to a sliver. */}
-      <div style={{ minWidth: 600 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ minWidth: days.length > 5 ? 820 : 600 }}>
+      <div style={{ display: "grid", gridTemplateColumns: dayColumns, borderBottom: `1px solid ${T.border}` }}>
         <div />
         {days.map((d) => {
           const dateKey = d.format("YYYY-MM-DD");
@@ -398,7 +503,7 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
           );
         })}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "56px repeat(5, 1fr)", position: "relative" }}>
+      <div style={{ display: "grid", gridTemplateColumns: dayColumns, position: "relative" }}>
         <div>
           {hours.map((h) => (
             <div key={h} style={{ height: HOUR_PX, borderTop: `1px solid ${T.border}`, fontSize: 10.5, color: T.inkFaint, padding: "2px 6px", boxSizing: "border-box" }}>
@@ -425,7 +530,20 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                 const timeGroups = {};
                 dayEvents.forEach((e) => { const k = `${e.startTime}-${e.endTime}`; (timeGroups[k] = timeGroups[k] || []).push(e); });
                 return dayEvents.map((e) => {
-                  const color = colorForCourse(e.courseId);
+                  if (e.isExtra) {
+                    const sameTime = timeGroups[`${e.startTime}-${e.endTime}`];
+                    const at = sameTime.indexOf(e);
+                    const look = EXTRA_LOOK[e.kind] || EXTRA_LOOK.mentor;
+                    const place = sameTime.length > 1 ? { left: `calc(${(at / sameTime.length) * 100}% + 3px)`, width: `calc(${100 / sameTime.length}% - 6px)` } : { left: 4, right: 4 };
+                    return (
+                      <Link key={`x-${e.kind}-${e.id}`} to={e.route || "#"} title={[e.title, e.subtitle].filter(Boolean).join(" · ")} style={{ position: "absolute", top: top(e.startTime), height: height(e.startTime, e.endTime), ...place, backgroundColor: look.bg, border: `1px solid ${look.border}`, borderRadius: 8, padding: "4px 6px", overflow: "hidden", boxSizing: "border-box", textDecoration: "none", zIndex: 1 }}>
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: look.text, whiteSpace: "nowrap" }}>{formatTime(e.startTime)} – {formatTime(e.endTime)}</p>
+                        <p style={{ margin: 0, fontSize: 11.5, fontWeight: 800, color: look.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.needsNewTime ? "Needs a new time" : e.title}</p>
+                        {e.subtitle && <p style={{ margin: 0, fontSize: 10, color: look.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.subtitle}</p>}
+                      </Link>
+                    );
+                  }
+                  const color = colorOf(e);
                   const key = eventKey(e);
                   const isHovered = enableSessionDetail && hoverKey === key;
                   const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
@@ -461,9 +579,9 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
                       <p style={{ margin: 0, fontSize: 10, color: color.text, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         Session {e.sessionNumber ?? e.sessionOrder}: {e.sessionTitle}
                       </p>
-                      {resolveTeacherLabel && (
-                        <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.7, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {coverTag(e) || resolveTeacherLabel(e)}{e.room ? ` · ${e.room}` : ""}
+                      {(resolveTeacherLabel || (showHub && e.hubName) || e.room) && (
+                        <p style={{ margin: 0, fontSize: 9.5, color: color.text, opacity: 0.75, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {[coverTag(e) || resolveTeacherLabel?.(e), showHub ? e.hubName : null, e.room || null].filter(Boolean).join(" · ")}
                         </p>
                       )}
                       {enableSessionDetail && hoverReadyKey === key && (
@@ -482,8 +600,9 @@ function WeekGrid({ days, eventsByDate, breaks, skippedSessions, resolveCourseNa
   );
 }
 
-function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveClassLabel, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
+function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resolveCourseName, resolveClassLabel, colorOf, emptyMessage, enableSessionDetail, onOpenDetail, onOpenSkip, statusByKey }) {
   const today = dayjs();
+  const monthColumns = `repeat(${weeks[0].length}, minmax(0, 1fr))`;
   const hasAny = weeks.some((w) => w.some((d) => (eventsByDate[d.format("YYYY-MM-DD")] || []).length > 0));
   const anyBreakInView = weeks.some((w) => w.some((d) => breakOnDate(d.format("YYYY-MM-DD"), breaks)));
   if (!hasAny && !anyBreakInView) {
@@ -494,8 +613,9 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
     );
   }
   return (
-    <div style={{ ...cardStyle, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", borderBottom: `1px solid ${T.border}` }}>
+    <div style={{ ...cardStyle, overflowX: "auto" }}>
+      <div style={{ minWidth: weeks[0].length > 5 ? 700 : 520 }}>
+      <div style={{ display: "grid", gridTemplateColumns: monthColumns, borderBottom: `1px solid ${T.border}` }}>
         {weeks[0].map((d) => (
           <div key={d.format("ddd")} style={{ padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 700, color: T.inkFaint, textTransform: "uppercase" }}>
             {d.format("ddd")}
@@ -503,7 +623,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
         ))}
       </div>
       {weeks.map((week, wi) => (
-        <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", borderBottom: wi < weeks.length - 1 ? `1px solid ${T.border}` : "none" }}>
+        <div key={wi} style={{ display: "grid", gridTemplateColumns: monthColumns, borderBottom: wi < weeks.length - 1 ? `1px solid ${T.border}` : "none" }}>
           {week.map((d) => {
             const dateKey = d.format("YYYY-MM-DD");
             const dayEvents = eventsByDate[dateKey] || [];
@@ -533,7 +653,11 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
                     </button>
                   ))}
                   {visible.map((e) => {
-                    const color = colorForCourse(e.courseId);
+                    if (e.isExtra) {
+                      const look = EXTRA_LOOK[e.kind] || EXTRA_LOOK.mentor;
+                      return <Link key={`x-${e.kind}-${e.id}`} to={e.route || "#"} title={[e.title, e.subtitle].filter(Boolean).join(" · ")} style={{ backgroundColor: look.bg, border: `1px solid ${look.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 9.5, fontWeight: 700, color: look.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: "none" }}>{e.title}</Link>;
+                    }
+                    const color = colorOf(e);
                     const status = enableSessionDetail ? statusByKey[statusKey(e)] : null;
                     const health = status ? sessionHealth({ isFuture: dayjs(e.date).isAfter(today, "day"), ...status }) : null;
                     return (
@@ -560,6 +684,7 @@ function MonthGrid({ weeks, anchor, eventsByDate, breaks, skippedSessions, resol
           })}
         </div>
       ))}
+      </div>
     </div>
   );
 }

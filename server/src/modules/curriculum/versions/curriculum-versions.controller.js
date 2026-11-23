@@ -33,6 +33,8 @@ async function assertCurriculumAccess(req, curriculumId) {
     if (accessible.has(curriculumId)) return;
     const runningHubIds = await CurriculumService.getHubIdsRunningCurriculum(curriculumId);
     if (runningHubIds.includes(req.ownSchool?.id)) return;
+    // A class at this hub runs it, so the hub needs its course list to build that class's timetable.
+    if (req.ownSchool?.id && await require("../../../config/db")("classes").where({ schoolId: req.ownSchool.id, curriculumId }).first("id")) return;
     throw Object.assign(new Error("You do not have permission to access this record"), { statusCode: 403 });
   }
 

@@ -1,24 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
+import { FiChevronRight, FiClock } from "react-icons/fi";
 import { classApi } from "../../classes/services/classApi";
-import { useCoursesForPairs } from "../../curriculum/hooks/useCurriculumVersion";
 import { useMyTeacherCalendar } from "../../timetable/hooks/useTimetable";
 import CalendarView from "../../timetable/components/CalendarView";
-import AvailabilityEditor from "../components/AvailabilityEditor";
 
 const T = {
   accent: "#25476a", accentDeep: "#1a3550", accentMid: "#2e7db5", accentLight: "#38aae1",
   ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB",
 };
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
-const selectStyle = {
-  padding: "8px 32px 8px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 13,
-  fontFamily: "Inter, sans-serif", backgroundColor: "#fff", color: T.ink, outline: "none", cursor: "pointer",
-  appearance: "none", minWidth: 200,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
-};
 
 export default function TimetablePage() {
   const { teacher, teacherLoading, hubs } = useOutletContext();
@@ -37,35 +29,20 @@ export default function TimetablePage() {
   const classNameById = new Map(myClasses.map((c) => [c.id, `${c.gradeName}${c.streamName ? ` — ${c.streamName}` : ""}`]));
   const classIdToHubId = new Map(myClasses.map((c) => [c.id, c.schoolId]));
 
-  // Each hub can run a different curriculum — resolve course names per (curriculumId, gradeId)
-  // pair rather than assuming one shared curriculum across every class.
-  const coursePairs = useMemo(() => {
-    const seen = new Set();
-    const pairs = [];
-    myClasses.forEach((c) => {
-      const key = `${c.curriculumId}:${c.gradeId}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      pairs.push({ curriculumId: c.curriculumId, gradeId: c.gradeId });
-    });
-    return pairs;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myClasses.map((c) => `${c.curriculumId}:${c.gradeId}`).join(",")]);
-  const { data: courseById } = useCoursesForPairs(coursePairs);
-  const resolveCourseName = (courseId) => courseById?.get(courseId)?.name || "Course";
-
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
   const { data: calendarData, isLoading: calendarLoading } = useMyTeacherCalendar(calendarRange?.from, calendarRange?.to);
   const allEvents = calendarData?.data || [];
   const allBreaks = calendarData?.breaks || [];
   const allSkippedSessions = calendarData?.skippedSessions || [];
+  // Their mentor sessions and parent check-ins, on the same calendar. They belong to no hub filter.
+  const extras = calendarData?.extras || [];
 
   // "All Hubs" (default) shows every class across every hub merged into one calendar; picking
   // one hub narrows both events and breaks down to just that hub's classes — same "Viewing"
   // filter pattern already used on the school-portal Timetable page's "All Classes" mode.
   const [filterHubId, setFilterHubId] = useState("all");
-  const events = filterHubId === "all" ? allEvents : allEvents.filter((e) => classIdToHubId.get(e.classId) === filterHubId);
+  const events = filterHubId === "all" ? allEvents : allEvents.filter((e) => (e.hubId || classIdToHubId.get(e.classId)) === filterHubId);
   const breaks = filterHubId === "all"
     ? allBreaks
     : allBreaks
@@ -75,7 +52,6 @@ export default function TimetablePage() {
     ? allSkippedSessions
     : allSkippedSessions.filter((s) => classIdToHubId.get(s.classId) === filterHubId);
 
-  const [activeTab, setActiveTab] = useState("schedule");
   const isLoading = teacherLoading || classesLoading;
 
   if (isLoading) {
@@ -91,53 +67,38 @@ export default function TimetablePage() {
         </p>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        {[["schedule", "My Schedule"], ["availability", "My Availability"]].map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            style={{
-              padding: "8px 18px", borderRadius: 10, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
-              border: `1.5px solid ${activeTab === key ? T.accent : T.border}`,
-              backgroundColor: activeTab === key ? T.accent : "#fff",
-              color: activeTab === key ? "#fff" : T.inkMuted,
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Availability has its own page and menu item (23 Nov 2026) — mentors couldn't find the tab. */}
+      <Link to="/teacher-portal/availability" style={{ ...cardStyle, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: T.accent, fontSize: 13, fontWeight: 700 }}>
+        <FiClock size={16} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>Set the hours families can book you for mentor sessions</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>My Availability <FiChevronRight size={14} /></span>
+      </Link>
 
-      {activeTab === "schedule" ? (
-        <>
-          {hubs?.length > 1 && (
-            <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <label style={{ fontSize: 12.5, fontWeight: 700, color: T.inkMuted }}>Viewing</label>
-              <select value={filterHubId} onChange={(e) => setFilterHubId(e.target.value)} style={selectStyle}>
-                <option value="all">All Hubs</option>
-                {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          <CalendarView
-            events={events}
-            breaks={breaks}
-            skippedSessions={skippedSessions}
-            isLoading={calendarLoading}
-            resolveCourseName={resolveCourseName}
-            resolveTeacherLabel={(event) => classNameById.get(event.classId) || "Class"}
-            resolveClassLabel={(classId) => classNameById.get(classId)}
-            onRangeChange={onRangeChange}
-            emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
-            enableSessionDetail
-            enableReschedule
-          />
-        </>
-      ) : (
-        <AvailabilityEditor teacherId={teacher?.id} />
+      {hubs?.length > 1 && (
+        <div role="group" aria-label="Show sessions at" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[{ id: "all", name: "All hubs" }, ...hubs].map((h) => {
+            const on = filterHubId === h.id;
+            return <button key={h.id} type="button" aria-pressed={on} onClick={() => setFilterHubId(h.id)} style={{ padding: "6px 13px", borderRadius: 999, border: `1.5px solid ${on ? T.accent : T.border}`, backgroundColor: on ? T.accent : "#fff", color: on ? "#fff" : T.inkMuted, fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>{h.name}</button>;
+          })}
+        </div>
       )}
+
+      <CalendarView
+        events={events}
+        breaks={breaks}
+        skippedSessions={skippedSessions}
+        isLoading={calendarLoading}
+        defaultMode="agenda"
+        extras={filterHubId === "all" ? extras : []}
+        showHub={hubs?.length > 1 && filterHubId === "all"}
+        colorBy={hubs?.length > 1 ? "hub" : "course"}
+        resolveTeacherLabel={(event) => event.className || classNameById.get(event.classId) || "Class"}
+        resolveClassLabel={(classId) => classNameById.get(classId)}
+        onRangeChange={onRangeChange}
+        emptyMessage="Nothing scheduled yet — your school hasn't set course start dates for your classes."
+        enableSessionDetail
+        enableReschedule
+      />
     </div>
   );
 }

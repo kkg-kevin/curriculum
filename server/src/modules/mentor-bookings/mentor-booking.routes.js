@@ -32,6 +32,9 @@ router.post("/hubs/:hubId/settle", ctl.settle);
 router.route("/").get(ctl.list).post(ctl.book);
 router.get("/:id", ctl.get);
 router.post("/:id/cancel", ctl.cancel);
+// A class took its time: the mentor's other free times, and moving it to one.
+router.get("/:id/new-times", ctl.newTimes);
+router.post("/:id/reschedule", ctl.reschedule);
 router.post("/:id/mark", ctl.mark);
 router.put("/:id/link", ctl.setLink);
 router.post("/:id/refunded", ctl.markRefunded);

@@ -160,14 +160,11 @@ async function classPeople(ownerAdminId, classId) {
 // When these educators are busy between two dates: their classes on the weekly timetable (and the
 // class's own timetable), their other check-ins still on, and their mentor bookings (11 Nov 2026 —
 // modules/mentor-bookings/; that module passes withBookings: false, as it adds its own).
-async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId = null, withBookings = true } = {}) {
-  const weekly = await db("timetable_slots")
-    .where((w) => {
-      if (teacherIds.length) w.whereIn("teacherId", teacherIds);
-      if (classId) w.orWhere({ classId });
-      if (!teacherIds.length && !classId) w.whereRaw("1 = 0");
-    })
-    .select("dayOfWeek", "startTime", "endTime");
+// The educators' classes come from the calendar itself (mentor-bookings/educator-busy.js), so a slot
+// naming nobody on a course they teach counts and a finished course doesn't; the round's own class
+// keeps its weekly times. `withClasses: false` — the caller has already counted them.
+async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId = null, withBookings = true, withClasses = true } = {}) {
+  const weekly = classId ? await db("timetable_slots").where({ classId }).select("dayOfWeek", "startTime", "endTime") : [];
   const roundIds = await withEducators(db(ROUNDS).where({ status: "published" }).where("windowEnd", ">=", from).where("windowStart", "<=", to), teacherIds).pluck("id");
   let dated = [];
   if (roundIds.length) {
@@ -175,6 +172,7 @@ async function busyFor(teacherIds, from, to, { classId = null, excludeMeetingId 
     if (excludeMeetingId) q = q.whereNot({ id: excludeMeetingId });
     dated = await q.select("date", "startTime", "endTime");
   }
+  if (withClasses && teacherIds.length) dated = dated.concat(await require("../mentor-bookings/educator-busy").classTimesFor(teacherIds, from, to));
   if (withBookings) dated = dated.concat(await require("../mentor-bookings/mentor-booking.service").heldTimes(teacherIds, from, to));
   return { weekly, dated };
 }

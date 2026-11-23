@@ -144,9 +144,11 @@ const spaceCapacity = (space) => Math.max(1, Number(space?.maxCapacity) || 1);
 //   held          waiting for payment      confirmed     paid, still to come
 //   today         paid, today              to_mark       paid, started, not yet marked
 //   completed / no_show / cancelled
+//   needs_new_time  paid, but a class has since taken its time
 function bookingState(b, now = new Date()) {
   if (["completed", "no_show", "cancelled"].includes(b.status)) return b.status;
   if (b.status === "held") return holdsTime(b, now) ? "held" : "cancelled";
+  if (b.clashAt) return "needs_new_time";
   const k = kenyaNow(now);
   const date = String(b.date).slice(0, 10);
   if (date < k.date || (date === k.date && toMinutes(b.startTime) <= k.minutes)) return "to_mark";
@@ -154,18 +156,20 @@ function bookingState(b, now = new Date()) {
 }
 
 // Whether the mentor (or staff) may say how it went: once it has started.
-const canMark = (b, now = new Date()) => b.status === "confirmed" && hoursUntil(b, now) <= 0;
+// Never one a class took over: it didn't happen at that time.
+const canMark = (b, now = new Date()) => b.status === "confirmed" && !b.clashAt && hoursUntil(b, now) <= 0;
 
 // Cancelling. Returns { allowed, reason?, refund, keepHubShare }:
 //   held (not paid)   anyone involved may cancel — the invoice is cancelled, nothing to give back
 //   by the parent     up to `cancelHours` before the start — everything paid comes back; later
 //                     than that it can't be cancelled (it's charged as booked)
 //   by the mentor or staff, any time before it's marked — everything paid comes back
+//   a class took its time (clashAt) — the family may cancel at any time, everything paid comes back
 // A refunded booking owes the partner hub nothing.
 function cancelOutcome(b, { by, paid = 0, cancelHours = 24, now = new Date() }) {
   if (!ACTIVE.includes(b.status)) return { allowed: false, reason: "This booking can't be cancelled now" };
   if (b.status === "held") return { allowed: true, refund: 0, keepHubShare: false };
-  if (by === "parent" && hoursUntil(b, now) < cancelHours) {
+  if (by === "parent" && !b.clashAt && hoursUntil(b, now) < cancelHours) {
     return { allowed: false, reason: `It starts in less than ${cancelHours} hours, so it can't be cancelled now — it's charged as booked. Ask the team if something has come up.` };
   }
   return { allowed: true, refund: money(paid), keepHubShare: false };

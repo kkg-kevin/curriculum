@@ -25,6 +25,8 @@ const MentorCheckinService = require("../modules/mentor-checkins/mentor-checkin.
   console.log("Parent–mentor check-ins:", JSON.stringify({ today: mentorToday }));
   // Mentor bookings: "it's today" to the family and the mentor.
   console.log("Mentor bookings today:", await require("../modules/mentor-bookings/mentor-booking.service").sendTodayNotices());
+  // Mentor bookings a class has since landed on: ask the family for a new time (the class wins).
+  console.log("Mentor bookings against classes:", JSON.stringify(await require("../modules/mentor-bookings/mentor-booking.clashes").sweep()));
   // Session covers: cancel any whose session moved; tell families the day before.
   console.log("Session covers:", JSON.stringify(await require("../modules/session-covers/session-cover.service").keepCurrent({ force: true })));
   // General events: reminders to the people registered, and "say thank you" to the admins after.

@@ -47,6 +47,9 @@ const ClassCourseTeacherLinkModel = {
     await require("../mentor-checkins/mentor-checkin.service").addEducatorToClassRounds(classId, teacherId).catch((err) => {
       console.error("[class-links] could not add the educator to the class's parent check-ins:", err.message);
     });
+    // Their new class may land on mentor sessions they've been booked for, or hours they offer
+    // families. The class wins; this runs in the background and never fails the link.
+    require("../mentor-bookings/mentor-booking.clashes").afterClassChangeLater(classId, { teacherIds: [teacherId] });
     return item;
   },
 

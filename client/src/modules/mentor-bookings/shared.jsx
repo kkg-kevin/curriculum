@@ -21,6 +21,7 @@ export const STATE = {
   confirmed: { label: "Booked", tone: "good" },
   today: { label: "Today", tone: "strong" },
   to_mark: { label: "To mark", tone: "waiting" },
+  needs_new_time: { label: "Needs a new time", tone: "waiting" },
   completed: { label: "Held", tone: "good" },
   no_show: { label: "Didn't join", tone: "neutral" },
   cancelled: { label: "Cancelled", tone: "neutral" },
@@ -65,8 +66,9 @@ export function BookingRow({ booking: b, base, show = "mentor" }) {
 
 // Bookings split into what's coming and what's past.
 export function splitBookings(list = []) {
-  const coming = list.filter((b) => ["held", "confirmed", "today", "to_mark"].includes(b.state)).sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)));
-  const past = list.filter((b) => !["held", "confirmed", "today", "to_mark"].includes(b.state));
+  const live = ["held", "confirmed", "today", "to_mark", "needs_new_time"];
+  const coming = list.filter((b) => live.includes(b.state)).sort((a, b) => (a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)));
+  const past = list.filter((b) => !live.includes(b.state));
   return { coming, past };
 }
 

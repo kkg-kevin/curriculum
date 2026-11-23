@@ -21,6 +21,12 @@ const ReportService = require("../reports/report.service");
 const SessionOccurrenceService = require("./session-occurrence.service");
 const SessionOccurrenceModel = require("./session-occurrence.model");
 const { DAYS_OF_WEEK } = require("./timetable.validation");
+const { insideStatedHours } = require("../mentor-bookings/availability.rules");
+const TimetableVersionModel = require("./timetable-version.model");
+const TimetableNotifications = require("./timetable.notifications");
+const { slotForDate, validOn, addDaysTo } = require("./timetable.rules");
+const { todayInKenya } = require("../checkins/checkin.dates");
+const db = require("../../config/db");
 
 function notFound(message) {
   const err = new Error(message);
@@ -50,55 +56,82 @@ async function resolveEffectiveTeacherIds(classId, courseId, explicitTeacherId) 
   return links.filter((l) => l.courseId === courseId).map((l) => l.teacherId);
 }
 
-// A slot conflicts with another already on the same day if their times overlap AND either the
-// class is shared (same class can't be in two places at once) or the *effective* teacher is
-// shared — resolved via resolveEffectiveTeacherIds above, not just a raw teacherId match, since
-// most slots identify their teacher through the course assignment rather than an explicit
-// per-slot override. Two different classes/teachers can otherwise happily share a time slot.
-// excludeId skips the slot being updated so re-saving one's own unchanged time doesn't collide
-// with itself.
-async function hasConflict({ classId, courseId, teacherId, roomId, dayOfWeek, startTime, endTime, excludeId }) {
-  const all = await TimetableModel.findAll({ dayOfWeek });
-  const overlapping = all.filter((s) => s.id !== excludeId && timesOverlap(startTime, endTime, s.startTime, s.endTime));
-  if (overlapping.some((s) => s.classId === classId)) return true;
-  // A room is one physical resource — any two overlapping slots sharing it conflict regardless
-  // of class/teacher, unlike the teacher check below which only fires when the *same person*
-  // would be double-booked.
-  if (roomId && overlapping.some((s) => s.roomId === roomId)) return true;
-
-  const myTeacherIds = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
-  if (myTeacherIds.length === 0) return false;
-
-  const others = overlapping.filter((s) => s.classId !== classId);
-  for (const s of others) {
-    const otherTeacherIds = await resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId);
-    if (otherTeacherIds.some((id) => myTeacherIds.includes(id))) return true;
+// What a lesson at this day and time would clash with: the same class, the same room, or the same
+// *effective* teacher — resolved via resolveEffectiveTeacherIds above, not just a raw teacherId
+// match, since most slots identify their teacher through the course assignment. Two different
+// classes/teachers can otherwise happily share a time. Old versions of a lesson still in force on
+// or after `validFrom` count too. excludeId skips the lesson being edited (and its own old versions).
+async function findClashes({ classId, courseId, teacherId, roomId, dayOfWeek, startTime, endTime, excludeId, validFrom = null }) {
+  const [current, ending] = await Promise.all([
+    TimetableModel.findAll({ dayOfWeek }),
+    TimetableVersionModel.findEndingOnDay(dayOfWeek, validFrom || todayInKenya()),
+  ]);
+  const rows = [...current.filter((s) => s.id !== excludeId), ...ending.filter((v) => v.slotId !== excludeId)];
+  const overlapping = rows.filter((s) => timesOverlap(startTime, endTime, s.startTime, s.endTime));
+  const classClash = overlapping.find((s) => s.classId === classId) || null;
+  // A room is one physical resource — any two overlapping lessons sharing it clash, whoever teaches.
+  const roomClash = roomId ? overlapping.find((s) => s.roomId === roomId) || null : null;
+  const teacherClashes = [];
+  const mine = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
+  if (mine.length) {
+    for (const s of overlapping.filter((x) => x.classId !== classId)) {
+      const theirs = await resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId);
+      for (const id of theirs) if (mine.includes(id)) teacherClashes.push({ teacherId: id, slot: s });
+    }
   }
-  return false;
+  return { classClash, roomClash, teacherClashes };
 }
 
-// True if this slot would schedule some effective teacher outside their own declared
-// availability (see teacher-availability.model.js). Deliberately opt-in per teacher, same
-// "unconfigured = unrestricted" posture isDateSchedulable already applies to academic-year
-// periods: a teacher who has never declared any availability at all imposes no restriction, so
-// this can never retroactively conflict-block an existing school's timetable the day this
-// feature ships. Once a teacher HAS declared at least one window, though, every day they didn't
-// also declare is treated as "not available" (they were asked to lay out ALL their available
-// time, not just a partial sample) and a slot's time must fall entirely inside one of that
-// teacher's windows for the matching day, not merely overlap it.
-async function violatesTeacherAvailability({ classId, courseId, teacherId, dayOfWeek, startTime, endTime }) {
-  const teacherIds = await resolveEffectiveTeacherIds(classId, courseId, teacherId);
-  if (teacherIds.length === 0) return false;
-  const rows = await TeacherAvailabilityModel.findByTeacherIds(teacherIds);
-  for (const id of teacherIds) {
-    const own = rows.filter((r) => r.teacherId === id);
-    if (own.length === 0) continue;
-    const dayRows = own.filter((r) => r.dayOfWeek === dayOfWeek);
-    const fits = dayRows.some((r) => startTime >= r.startTime && endTime <= r.endTime);
-    if (!fits) return true;
-  }
-  return false;
+async function hasConflict(data) {
+  const { classClash, roomClash, teacherClashes } = await findClashes(data);
+  return !!classClash || !!roomClash || teacherClashes.length > 0;
 }
+
+const assertTimes = ({ startTime, endTime }) => {
+  if (startTime >= endTime) {
+    const err = new Error("End time must be after start time");
+    err.statusCode = 400;
+    throw err;
+  }
+};
+
+// The calendar places one session per course per day, so a second time for the same course on the
+// same day would be saved and then silently ignored. It's refused instead.
+async function assertOneTimePerDay({ classId, courseId, dayOfWeek }, excludeId = null) {
+  const sameDay = await TimetableModel.findAll({ classId, dayOfWeek });
+  if (sameDay.some((s) => s.courseId === courseId && s.id !== excludeId)) {
+    conflictError(`This course already has a time on ${dayOfWeek.charAt(0).toUpperCase()}${dayOfWeek.slice(1)} in this class. Change that one instead.`);
+  }
+}
+
+// The first date a change applies: the date chosen (today or later), else tomorrow, so a session
+// that may already have run today stays as it was.
+function applyDate(applyFrom) {
+  const today = todayInKenya();
+  if (!applyFrom) return addDaysTo(today, 1);
+  if (applyFrom < today) {
+    const err = new Error("A change can't start in the past. To fix a wrong time, choose to correct past sessions too.");
+    err.statusCode = 400;
+    throw err;
+  }
+  return applyFrom;
+}
+
+// Whether this version of a lesson has had dates before `from`: only then is there a past to keep.
+async function ranBefore(slot, from) {
+  const anchor = await CourseScheduleModel.findOne(slot.classId, slot.courseId);
+  if (!anchor?.startDate || String(anchor.startDate).slice(0, 10) >= from) return false;
+  return !slot.validFrom || String(slot.validFrom).slice(0, 10) < from;
+}
+
+const oldVersion = (slot, validTo, changedBy) => ({
+  slotId: slot.id, classId: slot.classId, courseId: slot.courseId, teacherId: slot.teacherId || null, roomId: slot.roomId || null,
+  dayOfWeek: slot.dayOfWeek, startTime: slot.startTime, endTime: slot.endTime,
+  validFrom: slot.validFrom ? String(slot.validFrom).slice(0, 10) : null, validTo, changedBy: changedBy || null,
+});
+
+const tellPeople = (change) => setImmediate(() => TimetableNotifications.lessonChanged(change)
+  .catch((err) => console.error("[timetable] could not tell people about a change:", err.message)));
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAY_BY_INDEX = { 0: "sunday", 1: "monday", 2: "tuesday", 3: "wednesday", 4: "thursday", 5: "friday", 6: "saturday" };
@@ -243,7 +276,8 @@ async function resolveCoursePlacements({ classId, courseId, slotsByDay, startDat
       }
     }
 
-    const slot = slotsByDay[day];
+    // The version of the lesson in force on this date: a change keeps past sessions where they were.
+    const slot = slotForDate(slotsByDay[day], date);
     if (!slot) continue;
     if (!isDateSchedulable(date, periods)) continue;
 
@@ -338,9 +372,7 @@ function skippedSessionsInRange(skipRows, from, to) {
 // built from them — educator, learner, parent, hub — can offer "Join": the class's own link
 // (classes.meetingLink) if it has one, else the hub's (learning_hubs.meetingLink). Only people
 // already scoped to that class's calendar ever receive it; the public site never does.
-async function onlineLinkForClass(classId) {
-  const cls = await ClassModel.findById(classId);
-  const hub = cls && (await LearningHubModel.findById(cls.schoolId));
+function onlineLinkFor(cls, hub) {
   if (!hub || !["virtual", "hybrid"].includes(hub.deliveryMode)) return null;
   return cls.meetingLink || hub.meetingLink || null;
 }
@@ -401,14 +433,13 @@ const TimetableService = {
   // excluded — the UI is responsible for prompting the school to set one. Also returns this
   // class's curriculum break windows overlapping the range, so the UI can explain empty days.
   async resolveCalendar({ classId, from, to }) {
-    const slots = await TimetableModel.findAll({ classId });
+    // Each course's lessons per weekday, as they are now and as they were (timetable-version.model.js).
+    const slots = [...(await TimetableModel.findAll({ classId })), ...(await TimetableVersionModel.findByClassId(classId))];
     const slotsByCourse = {};
     for (const slot of slots) {
       if (!DAYS_OF_WEEK.includes(slot.dayOfWeek)) continue;
       slotsByCourse[slot.courseId] = slotsByCourse[slot.courseId] || {};
-      // If a course somehow has more than one slot on the same weekday, the earliest start time
-      // wins — TimetableModel.findAll already returns slots sorted by startTime.
-      if (!slotsByCourse[slot.courseId][slot.dayOfWeek]) slotsByCourse[slot.courseId][slot.dayOfWeek] = slot;
+      (slotsByCourse[slot.courseId][slot.dayOfWeek] = slotsByCourse[slot.courseId][slot.dayOfWeek] || []).push(slot);
     }
 
     const periods = await getPeriodsForClass(classId);
@@ -428,12 +459,23 @@ const TimetableService = {
         skipsByDate: skipsByCourse[anchor.courseId] || {}, roomNameById,
       });
     }));
-    const meetingLink = await onlineLinkForClass(classId);
+    const cls = await ClassModel.findById(classId);
+    const hub = cls && (await LearningHubModel.findById(cls.schoolId));
+    const meetingLink = cls ? onlineLinkFor(cls, hub) : null;
+    // Every event says what it is and where, so no calendar has to look names up for itself (a
+    // class can run a different curriculum from its hub's).
+    const placed = eventLists.flat();
+    const courseIds = [...new Set(placed.map((e) => e.courseId))];
+    const courseNames = new Map(courseIds.length ? (await db("courses").whereIn("id", courseIds).select("id", "name")).map((c) => [c.id, c.name]) : []);
+    const className = cls ? `${cls.gradeName}${cls.streamName ? ` — ${cls.streamName}` : ""}` : "";
     // Sessions someone else has been asked to cover, or is covering (modules/session-covers/).
     const covers = await require("../session-covers/session-cover.service").labelsForClass(classId, from, to).catch(() => new Map());
-    const events = eventLists.flat().map((e) => {
+    const events = placed.map((e) => {
       const cover = covers.get(`${e.sessionId}|${e.date}`);
-      return { ...e, ...(meetingLink ? { meetingLink } : {}), ...(cover ? { cover } : {}) };
+      return {
+        ...e, courseName: courseNames.get(e.courseId) || null, className, hubId: hub?.id || null, hubName: hub?.name || null,
+        online: hub?.deliveryMode === "virtual", ...(meetingLink ? { meetingLink } : {}), ...(cover ? { cover } : {}),
+      };
     });
     return {
       events: events.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
@@ -501,54 +543,82 @@ const TimetableService = {
     return TimetableModel.findByClassIds(classIds);
   },
 
-  async createSlot(data) {
-    if (await hasConflict(data)) {
+  // A new lesson on a course already running starts from a date (tomorrow unless told otherwise):
+  // without one the calendar would place sessions on its weekday in the past and move all the rest.
+  // An educator's availability never blocks a class: the timetable wins, and
+  // mentor-booking.clashes.js deals with any session it lands on.
+  async createSlot(data, { applyFrom = null } = {}) {
+    assertTimes(data);
+    await assertOneTimePerDay(data);
+    const anchor = await CourseScheduleModel.findOne(data.classId, data.courseId);
+    const started = !!anchor?.startDate && String(anchor.startDate).slice(0, 10) <= todayInKenya();
+    const validFrom = started ? applyDate(applyFrom) : null;
+    if (await hasConflict({ ...data, validFrom })) {
       conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
-    if (await violatesTeacherAvailability(data)) {
-      conflictError("This time falls outside the assigned teacher's declared availability");
-    }
-    return TimetableModel.create(data);
+    const created = await TimetableModel.create({ ...data, ...(validFrom ? { validFrom } : {}) });
+    if (anchor) tellPeople({ before: null, after: created, from: validFrom });
+    return created;
   },
 
-  async updateSlot(id, data) {
+  // Changing a lesson that has already run keeps the old version up to the day before `applyFrom`,
+  // so past sessions stay where they happened. `correctPast` is for a time that was simply wrong.
+  async updateSlot(id, data, { applyFrom = null, correctPast = false, changedBy = null } = {}) {
     const existing = await TimetableModel.findById(id);
     if (!existing) notFound("Timetable slot not found");
     const merged = { ...existing, ...data };
-    if (await hasConflict({ ...merged, excludeId: id })) {
+    assertTimes(merged);
+    if (merged.dayOfWeek !== existing.dayOfWeek || merged.courseId !== existing.courseId) await assertOneTimePerDay(merged, id);
+    const from = correctPast ? null : applyDate(applyFrom);
+    if (await hasConflict({ ...merged, excludeId: id, validFrom: from })) {
       conflictError("This time overlaps with an existing slot for this class, teacher, or room");
     }
-    if (await violatesTeacherAvailability(merged)) {
-      conflictError("This time falls outside the assigned teacher's declared availability");
+    const changed = ["dayOfWeek", "startTime", "endTime", "teacherId", "roomId"].some((k) => (merged[k] || null) !== (existing[k] || null));
+    const moved = ["dayOfWeek", "startTime", "endTime"].some((k) => merged[k] !== existing[k]);
+    const keepPast = !!(changed && from && (await ranBefore(existing, from)));
+    let updated;
+    if (keepPast) {
+      await db.transaction(async (trx) => {
+        await TimetableVersionModel.create(oldVersion(existing, addDaysTo(from, -1), changedBy), trx);
+        await trx("timetable_slots").where({ id }).update({ ...data, validFrom: from, updatedAt: new Date() });
+      });
+      updated = await TimetableModel.findById(id);
+    } else {
+      updated = await TimetableModel.update(id, data);
     }
-    return TimetableModel.update(id, data);
+    if (moved) tellPeople({ before: existing, after: updated, from: keepPast ? from : null });
+    return updated;
   },
 
-  async deleteSlot(id) {
-    const deleted = await TimetableModel.delete(id);
-    if (!deleted) notFound("Timetable slot not found");
+  async deleteSlot(id, { applyFrom = null, correctPast = false, changedBy = null } = {}) {
+    const existing = await TimetableModel.findById(id);
+    if (!existing) notFound("Timetable slot not found");
+    const from = correctPast ? null : applyDate(applyFrom);
+    const keepPast = !!(from && (await ranBefore(existing, from)));
+    if (keepPast) await TimetableVersionModel.create(oldVersion(existing, addDaysTo(from, -1), changedBy));
+    await TimetableModel.delete(id);
+    tellPeople({ before: existing, after: null, from: keepPast ? from : null });
     return { message: "Timetable slot deleted" };
   },
 
   // Which of the given candidate teachers (the same ids already populating the school-portal's
-  // teacher <select>) would conflict if picked for this day/time — either double-booked against
-  // another slot's effective teacher, or scheduled outside their own declared availability (see
-  // violatesTeacherAvailability above). Surfaced ahead of save time so the picker can flag a
-  // conflict before the user tries to save, same role getBusyRoomIds plays for rooms
-  // (room.service.js). excludeSlotId lets editing a slot ignore that slot's own current booking.
-  async getConflictingTeacherIds(teacherIds, { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId }) {
+  // teacher <select>) are already teaching another class at this day/time — the one thing that
+  // stops a slot. Surfaced ahead of save time so the picker can flag it, same role getBusyRoomIds
+  // plays for rooms (room.service.js). excludeSlotId lets editing a slot ignore its own booking.
+  async getConflictingTeacherIds(teacherIds, { classId, dayOfWeek, startTime, endTime, excludeSlotId }) {
     if (!teacherIds?.length || !dayOfWeek || !startTime || !endTime) return [];
     const daySlots = await TimetableModel.findAll({ dayOfWeek });
     const overlapping = daySlots.filter((s) => s.id !== excludeSlotId && s.classId !== classId && timesOverlap(startTime, endTime, s.startTime, s.endTime));
     const overlappingTeacherIdSets = await Promise.all(overlapping.map((s) => resolveEffectiveTeacherIds(s.classId, s.courseId, s.teacherId)));
+    return teacherIds.filter((teacherId) => overlappingTeacherIdSets.some((ids) => ids.includes(teacherId)));
+  },
 
-    const conflicting = [];
-    for (const teacherId of teacherIds) {
-      const doubleBooked = overlappingTeacherIdSets.some((ids) => ids.includes(teacherId));
-      const outsideAvailability = !doubleBooked && await violatesTeacherAvailability({ classId, courseId, teacherId, dayOfWeek, startTime, endTime });
-      if (doubleBooked || outsideAvailability) conflicting.push(teacherId);
-    }
-    return conflicting;
+  // Of these educators, who'd be teaching outside the hours they've said they prefer — a soft
+  // warning for whoever sets the timetable. It never stops the slot being saved.
+  async getOutsideHoursTeacherIds(teacherIds, { dayOfWeek, startTime, endTime }) {
+    if (!teacherIds?.length || !dayOfWeek || !startTime || !endTime) return [];
+    const rows = await TeacherAvailabilityModel.findByTeacherIds(teacherIds);
+    return teacherIds.filter((id) => !insideStatedHours(rows.filter((r) => r.teacherId === id), { dayOfWeek, startTime, endTime }));
   },
 
   // A teacher's "we didn't hold this one" record — see resolveCoursePlacements for how mode
@@ -574,8 +644,9 @@ const TimetableService = {
       const targetTaken = await SessionSkipModel.findByNewDate(classId, courseId, newDate);
       if (targetTaken) conflictError("Another session is already scheduled on that date.");
       const dayOfWeek = weekdayOf(date);
-      const daySlots = await TimetableModel.findAll({ classId, dayOfWeek });
-      const originSlot = daySlots.find((s) => s.courseId === courseId);
+      const versions = await TimetableVersionModel.findByClassId(classId);
+      const daySlots = [...(await TimetableModel.findAll({ classId, dayOfWeek })), ...versions.filter((v) => v.dayOfWeek === dayOfWeek)];
+      const originSlot = slotForDate(daySlots.filter((s) => s.courseId === courseId), date);
       moveSnapshot = {
         newDate,
         startTime: originSlot?.startTime || null,
@@ -618,8 +689,8 @@ const TimetableService = {
     // override on that day's slot wins, otherwise whichever educator is primary for this course
     // in this class.
     const dayOfWeek = weekdayOf(date);
-    const classSlots = await TimetableModel.findAll({ classId });
-    const slot = classSlots.find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek);
+    const classSlots = [...(await TimetableModel.findAll({ classId })), ...(await TimetableVersionModel.findByClassId(classId))];
+    const slot = classSlots.find((s) => s.courseId === session.courseId && s.dayOfWeek === dayOfWeek && validOn(s, date));
     const allCourseLinks = await ClassCourseTeacherLinkModel.findByClassId(classId);
     const courseLinks = allCourseLinks.filter((l) => l.courseId === session.courseId);
     const primaryLink = courseLinks.find((l) => l.isPrimary) || courseLinks[0] || null;
@@ -711,3 +782,7 @@ const TimetableService = {
 module.exports = TimetableService;
 module.exports.timesOverlap = timesOverlap;
 module.exports.hasConflict = hasConflict;
+module.exports.isDateSchedulable = isDateSchedulable;
+module.exports.findClashes = findClashes;
+module.exports.applyDate = applyDate;
+module.exports.ranBefore = ranBefore;

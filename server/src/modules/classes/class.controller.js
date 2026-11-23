@@ -156,6 +156,8 @@ const unassignCourseTeacher = asyncHandler(async (req, res) => {
   if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
   if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, record.schoolId));
   await ClassCourseTeacherLinkModel.unlink(req.params.id, courseId, teacherId);
+  // A mentor session flagged because of this class may stand again.
+  require("../mentor-bookings/mentor-booking.clashes").afterClassChangeLater(req.params.id, { alsoTeacherIds: [teacherId] });
   res.json({ success: true });
 });
 

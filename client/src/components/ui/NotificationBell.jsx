@@ -155,6 +155,8 @@ function resolveNotificationPath(n) {
       return p.route || "/teacher-portal/covers";
     case "cover_family_notice":
       return "/learner-portal/timetable";
+    case "timetable_changed":
+      return p.route || "/learner-portal/timetable";
     case "report_ready":
       // A learner finished a course or module (19 Nov 2026) — the educator's Reports page.
       return p.route || "/teacher-portal/reports";

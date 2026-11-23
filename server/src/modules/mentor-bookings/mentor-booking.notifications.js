@@ -101,6 +101,87 @@ const MentorBookingNotifications = {
     ]);
   },
 
+  // A class took a paid session's time: the family picks a new one or takes a refund; the mentor
+  // and the workspace's admins know it's waiting on them.
+  needsNewTime(b, { parentUserIds, mentorUserId, childName, mentorName }) {
+    const stamp = new Date(b.clashAt).getTime();
+    return Promise.all([
+      sendAll(parentUserIds, {
+        type: "mentor_booking_needs_new_time",
+        title: `Please pick a new time for ${childName || "your child"}'s session`,
+        message: `${mentorName || "The mentor"} now has a class on ${when(b)}. Pick another free time at no extra cost, or cancel for a full refund.`,
+        payload: { route: `${PARENT}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_needs_new_time:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+      send(mentorUserId, {
+        type: "mentor_booking_needs_new_time",
+        title: `Your session on ${when(b)} needs a new time`,
+        message: `A class of yours now falls on ${when(b)}, so ${childName || "the family"}'s family has been asked to pick another time. Your class comes first.`,
+        payload: { route: `${MENTOR}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_needs_new_time:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+      NotificationService._notify(b.ownerAdminId, {
+        type: "mentor_booking_needs_new_time",
+        title: `Mentor session needs a new time: ${when(b)}`,
+        message: `${mentorName || "A mentor"} now has a class at the time of ${childName || "a learner"}'s paid session. The family has been asked to pick another time.`,
+        payload: { route: `${ADMIN}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_needs_new_time:${b.id}:${stamp}:admins`,
+        ownerAdminId: b.ownerAdminId,
+      }).catch((err) => console.error("[mentor-bookings] could not send a notification:", err.message)),
+    ]);
+  },
+
+  // The class moved away again: the session stands at its time.
+  clashCleared(b, { parentUserIds, mentorUserId, childName }) {
+    const stamp = `cleared:${b.date}:${b.startTime}:${new Date(b.clashAt).getTime()}`;
+    const event = (route) => ({
+      type: "mentor_booking_rescheduled",
+      title: `Session on ${when(b)} is back on`,
+      message: `The class that clashed has moved, so ${childName || "the learner"}'s session stays on ${when(b)}. There's nothing you need to do.`,
+      payload: { route, bookingId: b.id },
+      dedupeKey: `mentor_booking_rescheduled:${b.id}:${stamp}`,
+    });
+    return Promise.all([
+      sendAll(parentUserIds, event(`${PARENT}/${b.id}`), b.ownerAdminId),
+      send(mentorUserId, event(`${MENTOR}/${b.id}`), b.ownerAdminId),
+    ]);
+  },
+
+  // Moved to a new time.
+  rescheduled(b, { parentUserIds, mentorUserId, childName, mentorName }, { fromDate, fromTime }) {
+    const stamp = `${fromDate}:${fromTime}:${b.date}:${b.startTime}`;
+    return Promise.all([
+      sendAll(parentUserIds, {
+        type: "mentor_booking_rescheduled",
+        title: `New time: ${when(b)}`,
+        message: `${mentorName || "The mentor"} will now meet ${childName || "your child"} ${where(b)} on ${when(b)} (${b.minutes} min). Nothing more to pay.`,
+        payload: { route: `${PARENT}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_rescheduled:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+      send(mentorUserId, {
+        type: "mentor_booking_rescheduled",
+        title: `Session moved to ${when(b)}`,
+        message: `${childName || "The learner"}'s family picked a new time: ${when(b)}, ${b.minutes} minutes, ${where(b)}.`,
+        payload: { route: `${MENTOR}/${b.id}`, bookingId: b.id },
+        dedupeKey: `mentor_booking_rescheduled:${b.id}:${stamp}`,
+      }, b.ownerAdminId),
+    ]);
+  },
+
+  // A class landed on hours the mentor offers families: once per class, day and time.
+  hoursTaken({ teacherId, userId, classId, className, slot, ownerAdminId }) {
+    const dayName = slot.dayOfWeek.charAt(0).toUpperCase() + slot.dayOfWeek.slice(1);
+    const start = String(slot.startTime).slice(0, 5);
+    const end = String(slot.endTime).slice(0, 5);
+    return send(userId, {
+      type: "mentor_booking_hours_taken",
+      title: `${className} now uses your ${dayName} ${start}–${end}`,
+      message: `Your class comes first, so families can't book you then. Your other hours are unchanged. Add different hours if you'd like to keep the same time open.`,
+      payload: { route: "/teacher-portal/availability" },
+      dedupeKey: `mentor_booking_hours_taken:${teacherId}:${classId}:${slot.dayOfWeek}:${start}:${end}`,
+    }, ownerAdminId);
+  },
+
   // The day of it: the family and the mentor.
   today(b, { parentUserIds, mentorUserId, childName, mentorName }) {
     const stamp = String(b.date).slice(0, 10);

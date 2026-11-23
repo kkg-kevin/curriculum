@@ -175,6 +175,8 @@ const OWNER_ONLY_PREFIXES = ["/api/admin-tools", "/api/access", "/api/sharing", 
 
 // Requests whose meaning isn't what their HTTP method suggests. Checked before the default rules.
 const ACTION_OVERRIDES = [
+  // The Timetable Planner's checks only read: anyone who can view the timetable may run them.
+  { method: "POST", pattern: /^\/api\/timetable\/planner\/(check|copy\/preview)$/, module: "timetable", action: "view" },
   // Raising a Home Learning invoice creates a billing invoice — gated by Billing, not Home Learning.
   { method: "POST", pattern: /^\/api\/home-learning(\/[^/]+)?\/invoices$/, module: "billing", action: "create" },
   // Approving a website sign-up records its payment; declining one removes its accounts.

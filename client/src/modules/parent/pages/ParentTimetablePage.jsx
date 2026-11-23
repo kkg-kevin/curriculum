@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CalendarView from "../../timetable/components/CalendarView";
-import { useCoursesForPairs } from "../../curriculum/hooks/useCurriculumVersion";
 import { T } from "../../learner-portal/components/profile/theme";
 import { useParentTimetable } from "../hooks/useParent";
 import { childColor } from "../components/childColors";
@@ -29,12 +28,14 @@ export default function ParentTimetablePage() {
     }));
     return map;
   }, [children]);
-  const pairs = useMemo(
-    () => children.flatMap((c) => c.hubs.filter((h) => h.curriculumId && h.gradeId).map((h) => ({ curriculumId: h.curriculumId, gradeId: h.gradeId }))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [children.map((c) => c.hubs.map((h) => `${h.curriculumId}:${h.gradeId}`).join(",")).join("|")]
-  );
-  const { data: courseById } = useCoursesForPairs(pairs);
+  // Each child keeps their colour on the calendar too; a class two children share takes the first's.
+  const nameOfChild = useMemo(() => new Map(children.map((c) => [c.id, c.firstName])), [children]);
+  const colorOfEvent = (e) => {
+    const index = children.findIndex((c) => (e.learnerIds || []).includes(c.id));
+    if (index < 0) return null;
+    const color = childColor(index);
+    return { bg: `${color}14`, border: `${color}55`, text: color };
+  };
 
   const events = (data?.data || []).filter((e) => only === "all" || (e.learnerIds || []).includes(only));
   const classIds = new Set(events.map((e) => e.classId));
@@ -65,7 +66,10 @@ export default function ParentTimetablePage() {
         events={events}
         breaks={breaks}
         isLoading={isLoading}
-        resolveCourseName={(courseId) => courseById?.get(courseId)?.name || "Course"}
+        defaultMode="agenda"
+        showHub={new Set(events.map((e) => e.hubId)).size > 1}
+        colorFor={children.length > 1 ? colorOfEvent : null}
+        resolveTeacherLabel={children.length > 1 ? (e) => (e.learnerIds || []).map((id) => nameOfChild.get(id)).filter(Boolean).join(" & ") : undefined}
         resolveClassLabel={(classId) => (namesByClass.get(classId) || []).join(" & ") || undefined}
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — the hub hasn't published a timetable for your children's classes."

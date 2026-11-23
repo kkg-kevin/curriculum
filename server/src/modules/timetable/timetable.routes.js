@@ -11,6 +11,7 @@ const {
   getTeacherAvailabilityConflicts,
   listOccurrences, runOccurrenceAction,
 } = require("./timetable.controller");
+const Planner = require("./timetable-planner.controller");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 
 const router = express.Router();
@@ -18,6 +19,14 @@ const router = express.Router();
 // Every static-path route below MUST be registered before the "/:id" routes further down —
 // Express matches in registration order, so "/:id" would otherwise swallow e.g. PUT
 // "/course-schedule" as if "course-schedule" were an :id (it did, until this ordering fix).
+
+// The Timetable Planner: admins across their hubs, a hub for itself (timetable-planner.service.js).
+router.get("/planner", authorize("admin", "school"), Planner.overview);
+router.get("/planner/calendar", authorize("admin", "school"), Planner.calendar);
+router.post("/planner/check", authorize("admin", "school"), Planner.check);
+router.post("/planner/lessons", authorize("admin", "school"), Planner.saveLessons);
+router.post("/planner/copy/preview", authorize("admin", "school"), Planner.copyPreview);
+router.post("/planner/copy/apply", authorize("admin", "school"), Planner.copyApply);
 
 // Course start-date anchors — same authoring/read posture as slots below.
 router.get("/course-schedule", authorize("admin", "school", "teacher"), listCourseSchedules);

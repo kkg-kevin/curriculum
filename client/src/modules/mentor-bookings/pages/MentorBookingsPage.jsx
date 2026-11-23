@@ -11,7 +11,7 @@ import { BRAND, FONT, HERO_GRADIENT, card, cardHeading } from "../../../theme/br
 // The teacher portal's Mentor sessions (/teacher-portal/bookings): sessions families booked with
 // this mentor — to mark (say how it went), coming up, past — and what they've earned, claimed
 // with an eTIMS invoice like any claim (claims/: type "bookings"). Families can only book inside
-// the availability set on the Timetable page.
+// the hours set on My Availability (/teacher-portal/availability), and never over a class.
 
 const MAX_INVOICE_BYTES = 10 * 1024 * 1024;
 
@@ -74,11 +74,14 @@ export default function MentorBookingsPage() {
   return (
     <div style={{ fontFamily: FONT, display: "flex", flexDirection: "column", gap: 14 }}>
       <RowStyles />
-      <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "24px 28px", color: "#fff" }}>
-        <h1 style={{ margin: 0, fontSize: 23, fontWeight: 900 }}>Mentor sessions</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.82)", maxWidth: 640, lineHeight: 1.6 }}>
-          Families book you to take their child through a session they&apos;re stuck on — always inside your availability. <Link to="/teacher-portal/timetable" style={{ color: "#fff", fontWeight: 700 }}>Set your availability</Link>, weekends included.
-        </p>
+      <div style={{ background: HERO_GRADIENT, borderRadius: 20, padding: "24px 28px", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontSize: 23, fontWeight: 900 }}>Mentor sessions</h1>
+          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.82)", maxWidth: 640, lineHeight: 1.6 }}>
+            Families book you to take their child through a session they&apos;re stuck on, inside the hours you offer and never over a class.
+          </p>
+        </div>
+        <Link to="/teacher-portal/availability" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", borderRadius: 11, background: BRAND.gold, color: BRAND.navy, fontSize: 13.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}><FiCalendar /> My Availability</Link>
       </div>
 
       {groups.length > 0 && (
@@ -104,7 +107,7 @@ export default function MentorBookingsPage() {
       <SectionHead title="Coming up" />
       {isLoading ? <p style={{ margin: 0, color: BRAND.faint, fontSize: 13 }}>Loading…</p>
         : upcoming.length ? <div style={{ display: "grid", gap: 10, gridTemplateColumns: "100%" }}>{upcoming.map((b) => <BookingRow key={b.id} booking={b} base="/teacher-portal/bookings" show="learner" />)}</div>
-          : <EmptyNote title="No sessions booked" line="When a family books you, it shows here and you're told." action={<Link to="/teacher-portal/timetable" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: BRAND.mid }}><FiCalendar /> Your availability</Link>} />}
+          : <EmptyNote title="No sessions booked" line="When a family books you, it shows here and you're told." action={<Link to="/teacher-portal/availability" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: BRAND.mid }}><FiCalendar /> Check your availability</Link>} />}
 
       {past.length > 0 && (
         <>

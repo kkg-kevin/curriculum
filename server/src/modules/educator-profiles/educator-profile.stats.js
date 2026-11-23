@@ -117,7 +117,11 @@ async function computeStats(teacherId) {
   // A course they're the educator of whose timetable slot names nobody counts as theirs too.
   const linkKeys = new Set(links.map((l) => `${l.classId}|${l.courseId}`));
   const openSlots = links.length ? (await db("timetable_slots").whereIn("classId", uniq(links.map((l) => l.classId))).whereNull("teacherId")).filter((s) => linkKeys.has(`${s.classId}|${s.courseId}`)) : [];
-  const slots = [...ownSlots, ...openSlots];
+  // With how their lessons used to be: hours for sessions already held never move when a lesson changes.
+  const linkedClassIds = uniq(links.map((l) => l.classId));
+  const pastVersions = (await db("timetable_slot_versions").where((w) => { w.where({ teacherId }); if (linkedClassIds.length) w.orWhereIn("classId", linkedClassIds); }))
+    .filter((v) => (v.teacherId ? v.teacherId === teacherId : linkKeys.has(`${v.classId}|${v.courseId}`)));
+  const slots = [...ownSlots, ...openSlots, ...pastVersions];
   const classIds = uniq([...links.map((l) => l.classId), ...slots.map((s) => s.classId)]);
   const classes = classIds.length ? await db("classes").whereIn("id", classIds).select("id", "gradeName", "streamName", "schoolId", "curriculumId", "status") : [];
   const classById = new Map(classes.map((c) => [c.id, c]));

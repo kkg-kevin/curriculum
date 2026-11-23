@@ -9,15 +9,18 @@ const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-lin
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const BootcampHubService = require("../bootcamps/bootcamp-hub.service");
 const CompetitionHubService = require("../competitions/competition-hub.service");
-const { createSlotSchema, updateSlotSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
+const { createSlotSchema, updateSlotSchema, slotChangeSchema, setCourseScheduleSchema, calendarRangeSchema, sessionStatusBulkSchema, createSkipSchema, occurrenceActionSchema } = require("./timetable.validation");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 
 // A timetable change can move a covered session off its date — the class's covers are re-checked
 // in the background (modules/session-covers/: a moved session cancels its cover, both told).
-function recheckCovers(classId) {
+// Mentor sessions it lands on are dealt with the same way (the class wins — the family picks a new
+// time); `alsoTeacherIds` are educators the change took off the slot, whose sessions it may free.
+function recheckCovers(classId, { alsoTeacherIds = [] } = {}) {
   if (!classId) return;
   setImmediate(() => require("../session-covers/session-cover.service").keepCurrent({ classId })
-    .catch((err) => console.error("[session-covers] re-check failed:", err.message)));
+    .catch((err) => console.error("[session-covers] re-check failed:", err.message))
+    .finally(() => require("../mentor-bookings/mentor-booking.clashes").afterClassChangeLater(classId, { alsoTeacherIds })));
 }
 
 async function isOwnHubForAdmin(req, hubId) {
@@ -60,6 +63,7 @@ const createSlot = asyncHandler(async (req, res) => {
   const cls = await ClassModel.findById(data.classId);
   await assertClassAccess(req, cls);
   const slot = await TimetableService.createSlot(data);
+  recheckCovers(data.classId);
   res.status(201).json({ success: true, data: slot });
 });
 
@@ -82,24 +86,27 @@ const updateSlot = asyncHandler(async (req, res) => {
   // Same "only keys present in the raw body survive" guard every partial-update endpoint in
   // this codebase needs, added here from the start rather than found later as a live bug.
   const data = Object.fromEntries(Object.entries(parsed).filter(([key]) => key in req.body));
-  const slot = await TimetableService.updateSlot(req.params.id, data);
-  recheckCovers(owned.classId);
+  const change = slotChangeSchema.parse(req.body);
+  const slot = await TimetableService.updateSlot(req.params.id, data, { ...change, changedBy: req.user.id });
+  recheckCovers(owned.classId, { alsoTeacherIds: [owned.teacherId] });
   res.json({ success: true, data: slot });
 });
 
 const deleteSlot = asyncHandler(async (req, res) => {
   const owned = await loadOwnedSlotOrThrow(req);
-  const result = await TimetableService.deleteSlot(req.params.id);
-  recheckCovers(owned.classId);
+  const change = slotChangeSchema.parse(req.query);
+  const result = await TimetableService.deleteSlot(req.params.id, { ...change, changedBy: req.user.id });
+  recheckCovers(owned.classId, { alsoTeacherIds: [owned.teacherId] });
   res.json({ success: true, ...result });
 });
 
-// Which of a course's candidate teachers (the ids already populating the school-portal's
-// teacher <select>) would conflict if picked for this day/time — either double-booked or
-// outside their own declared availability. Same ownership posture as every other class-scoped
-// read here. teacherIds comes from the client (the same class-course-teacher links already
-// populating the picker), not resolved server-side, since "candidate" here means "appears in
-// this picker", not "every teacher in the system".
+// For a course's candidate teachers (the ids already populating the school-portal's teacher
+// <select>) at this day/time: `data` who is already teaching (the only thing that blocks a slot),
+// `outsideHours` who'd be outside their stated hours and `bookingClashes` the paid mentor sessions
+// it would land on (both only warnings). Same ownership posture as every other class-scoped read
+// here. teacherIds comes from the client (the same class-course-teacher links already populating
+// the picker), not resolved server-side, since "candidate" here means "appears in this picker",
+// not "every teacher in the system".
 const getTeacherAvailabilityConflicts = asyncHandler(async (req, res) => {
   const { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId } = req.query;
   if (!classId) {
@@ -109,9 +116,13 @@ const getTeacherAvailabilityConflicts = asyncHandler(async (req, res) => {
   }
   const cls = await ClassModel.findById(classId);
   await assertClassAccess(req, cls);
-  const teacherIds = Array.isArray(req.query.teacherIds) ? req.query.teacherIds : req.query.teacherIds ? [req.query.teacherIds] : [];
-  const conflicting = await TimetableService.getConflictingTeacherIds(teacherIds, { classId, courseId, dayOfWeek, startTime, endTime, excludeSlotId });
-  res.json({ success: true, data: conflicting });
+  // Axios sends an array as teacherIds[]=…, which this app's query parser keeps under that literal key.
+  const rawTeacherIds = req.query.teacherIds ?? req.query["teacherIds[]"];
+  const teacherIds = Array.isArray(rawTeacherIds) ? rawTeacherIds : rawTeacherIds ? [rawTeacherIds] : [];
+  const conflicting = await TimetableService.getConflictingTeacherIds(teacherIds, { classId, dayOfWeek, startTime, endTime, excludeSlotId });
+  const outsideHours = await TimetableService.getOutsideHoursTeacherIds(teacherIds, { dayOfWeek, startTime, endTime });
+  const bookingClashes = await require("../mentor-bookings/mentor-booking.clashes").previewForSlot({ classId, courseId, teacherIds, dayOfWeek, startTime, endTime });
+  res.json({ success: true, data: conflicting, outsideHours, bookingClashes });
 });
 
 const getMyTeacherTimetable = asyncHandler(async (req, res) => {
@@ -193,7 +204,9 @@ const getMyTeacherCalendar = asyncHandler(async (req, res) => {
   if (!req.ownTeacher) return res.json({ success: true, data: [], breaks: [], skippedSessions: [] });
   const { from, to } = calendarRangeSchema.parse(req.query);
   const { events, breaks, skippedSessions } = await TimetableService.resolveTeacherCalendar(req.ownTeacher.id, from, to);
-  res.json({ success: true, data: events, breaks, skippedSessions, count: events.length });
+  // Their mentor sessions and parent check-ins sit on the same calendar.
+  const extras = await require("./timetable-planner.service").teacherExtras(req.ownTeacher.id, from, to);
+  res.json({ success: true, data: events, breaks, skippedSessions, extras, count: events.length });
 });
 
 const getMyLearnerCalendar = asyncHandler(async (req, res) => {

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { useCoursesForPairs } from "../../curriculum/hooks/useCurriculumVersion";
 import { useMyLearnerCalendar } from "../../timetable/hooks/useTimetable";
 import CalendarView from "../../timetable/components/CalendarView";
 
@@ -27,16 +26,6 @@ export default function TimetablePage() {
   // the learner's hubs it actually belongs to, rather than reading as if it applies to all of them.
   const classNameById = new Map(enrolledHubs.map((h) => [h.class.id, `${h.class.gradeName}${h.class.streamName ? ` — ${h.class.streamName}` : ""}`]));
   const classIdToHubId = new Map(enrolledHubs.map((h) => [h.class.id, h.id]));
-
-  // Each hub can run a different curriculum — resolve course names per (curriculumId, gradeId)
-  // pair rather than assuming one shared curriculum across every hub.
-  const coursePairs = useMemo(
-    () => enrolledHubs.map((h) => ({ curriculumId: h.class.curriculumId, gradeId: h.class.gradeId })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [enrolledHubs.map((h) => `${h.class.curriculumId}:${h.class.gradeId}`).join(",")]
-  );
-  const { data: courseById } = useCoursesForPairs(coursePairs);
-  const resolveCourseName = (courseId) => courseById?.get(courseId)?.name || "Course";
 
   const [calendarRange, setCalendarRange] = useState(null);
   const onRangeChange = useCallback((r) => setCalendarRange(r), []);
@@ -88,7 +77,9 @@ export default function TimetablePage() {
         events={events}
         breaks={breaks}
         isLoading={calendarLoading}
-        resolveCourseName={resolveCourseName}
+        defaultMode="agenda"
+        showHub={enrolledHubs.length > 1 && filterHubId === "all"}
+        colorBy={enrolledHubs.length > 1 ? "hub" : "course"}
         resolveClassLabel={(classId) => classNameById.get(classId)}
         onRangeChange={onRangeChange}
         emptyMessage="Nothing scheduled yet — your school hasn't published a timetable for your class."

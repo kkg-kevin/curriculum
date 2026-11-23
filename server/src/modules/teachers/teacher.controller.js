@@ -9,7 +9,8 @@ const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("../classes/class-course-teacher-link.model");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const ClassModel = require("../classes/class.model");
-const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema } = require("./teacher.validation");
+const { createTeacherSchema, updateTeacherSchema, updateTeacherStatusSchema, createAvailabilitySlotSchema, updateAvailabilitySlotSchema, replaceAvailabilitySchema, availabilityWeekSchema } = require("./teacher.validation");
+const TeacherAvailabilityService = require("./teacher-availability.service");
 const { assertOwn, isOwnHub } = require("../../shared/middleware/scope.middleware");
 const UsageService = require("../usage/usage.service");
 const { withoutTotOnly } = require("../tot/tot.people");
@@ -282,6 +283,34 @@ const addTeacherAvailabilitySlot = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: slot });
 });
 
+async function assertAvailabilityAccess(req) {
+  if (req.user.role === "teacher") assertOwn(req.params.id === req.ownTeacher?.id);
+  if (req.user.role === "school") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+  if (req.user.role === "admin") assertOwn(await isLinkedToOwnHub(req, req.params.id));
+}
+
+// My Availability: one week of their hours laid over what's really on. A hub's login sees that the
+// educator is busy, not with what.
+const getTeacherAvailabilityWeek = asyncHandler(async (req, res) => {
+  await assertAvailabilityAccess(req);
+  const { from } = availabilityWeekSchema.parse(req.query);
+  const data = await TeacherAvailabilityService.week(req.params.id, { from, detail: req.user.role !== "school" });
+  res.json({ success: true, data });
+});
+
+// Whether families can book them, and what's missing (the dashboard's prompt).
+const getTeacherAvailabilityStatus = asyncHandler(async (req, res) => {
+  await assertAvailabilityAccess(req);
+  res.json({ success: true, data: await TeacherAvailabilityService.status(req.params.id) });
+});
+
+const replaceTeacherAvailability = asyncHandler(async (req, res) => {
+  await assertAvailabilityAccess(req);
+  const { windows } = replaceAvailabilitySchema.parse(req.body);
+  const data = await TeacherAvailabilityService.replace(req.params.id, windows);
+  res.json({ success: true, data, count: data.length });
+});
+
 async function loadOwnedAvailabilitySlotOrThrow(req) {
   const slot = await TeacherAvailabilityModel.findById(req.params.slotId);
   if (!slot) {
@@ -323,6 +352,9 @@ module.exports = {
   linkTeacherHub,
   unlinkTeacherHub,
   getTeacherAvailability,
+  getTeacherAvailabilityWeek,
+  getTeacherAvailabilityStatus,
+  replaceTeacherAvailability,
   addTeacherAvailabilitySlot,
   updateTeacherAvailabilitySlot,
   deleteTeacherAvailabilitySlot,

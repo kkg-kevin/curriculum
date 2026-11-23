@@ -16,6 +16,9 @@ export const useHelpRequests = ({ enabled = true } = {}) => useQuery({ queryKey:
 export const usePartnerHubs = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "hubs"], queryFn: A.hubs, enabled });
 export const useHubStatement = (hubId) => useQuery({ queryKey: [...KEY, "statement", hubId], queryFn: () => A.statement(hubId), enabled: !!hubId });
 export const useBookingEarnings = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "earnings"], queryFn: A.earnings, enabled });
+// Kept outside KEY: moving the booking refreshes KEY, and asking again for a booking that no longer
+// needs a new time is refused.
+export const useNewTimes = (id, { enabled = true } = {}) => useQuery({ queryKey: ["mentor-booking-new-times", id], gcTime: 0, queryFn: () => A.newTimes(id), enabled: enabled && !!id, staleTime: 0, retry: false });
 
 export function useBookingMutation(mutationFn, success) {
   const qc = useQueryClient();
@@ -35,7 +38,8 @@ export function useBookingMutation(mutationFn, success) {
 export const useSaveBookingSettings = () => useBookingMutation(A.saveSettings, "Mentor booking rules saved");
 export const useBook = () => useBookingMutation(A.book, null);
 export const useCancelBooking = () => useBookingMutation(({ id, ...body }) => A.cancel(id, body), "Booking cancelled");
-export const useMarkBooking = () => useBookingMutation(({ id, ...body }) => A.mark(id, body), (r) => (r.status === "no_show" ? "Marked: didn't join" : "Marked as held — the family can read your note"));
+export const useRescheduleBooking = () => useBookingMutation(({ id, ...body }) => A.reschedule(id, body), "New time booked — nothing more to pay");
+export const useMarkBooking =() => useBookingMutation(({ id, ...body }) => A.mark(id, body), (r) => (r.status === "no_show" ? "Marked: didn't join" : "Marked as held — the family can read your note"));
 export const useSetBookingLink = () => useBookingMutation(({ id, meetingLink }) => A.setLink(id, meetingLink), "Join link saved");
 export const useMarkRefunded = () => useBookingMutation(({ id, ...body }) => A.refunded(id, body), "Marked refunded");
 export const useAskForHelp = () => useBookingMutation(A.askForHelp, null);
