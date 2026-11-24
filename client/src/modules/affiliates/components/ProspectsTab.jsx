@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { FiAlertCircle, FiCheck, FiPlus, FiRepeat, FiX } from "react-icons/fi";
@@ -7,6 +7,8 @@ import { BRAND, FONT, card, pill } from "../../../theme/brand";
 import { askConfirm } from "../../../components/ui/AskDialog";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import { affiliatesApi, errorOf, formatDay, PROGRAMMES } from "../services/affiliatesApi";
+import PopUp from "./PopUp";
+import { followUpTone } from "../pages/ProspectPage";
 
 // Affiliates → Prospects (19 Nov 2026 — server affiliate.prospects.js): every family an affiliate
 // has registered. Staff see who registered whom and the contact details, decide possible matches
@@ -34,8 +36,8 @@ function AddForAffiliate({ affiliates, onDone }) {
     onError: (err) => toast.error(errorOf(err)),
   });
   return (
-    <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ ...card, padding: 16, display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
+    <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
         <label style={label}>For affiliate
           <select style={input} value={form.affiliateId} onChange={set("affiliateId")} required>
             <option value="">Choose…</option>
@@ -52,15 +54,17 @@ function AddForAffiliate({ affiliates, onDone }) {
           </select>
         </label>
         <label style={label}>Child (optional)<input style={input} value={form.childName} onChange={set("childName")} maxLength={150} /></label>
+        <label style={label}>Child's age (optional)<input style={input} type="number" min="2" max="25" value={form.childAge} onChange={set("childAge")} /></label>
       </div>
-      <label style={label}>Notes<input style={input} value={form.notes} onChange={set("notes")} maxLength={1000} /></label>
-      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: BRAND.inkSoft, cursor: "pointer" }}>
-        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3 }} />
+      <label style={label}>Notes for follow-up <span style={{ fontWeight: 500, color: BRAND.muted }}>(what was said, what they want, when to call back)</span><textarea style={{ ...input, resize: "vertical" }} rows={3} value={form.notes} onChange={set("notes")} maxLength={1000} placeholder="e.g. Met at the open day — wants weekend classes for two children; call back after 5 Dec." /></label>
+      <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>A phone number or email is needed — that&rsquo;s how the family is recognised when they sign up.</p>
+      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13.5, color: BRAND.inkSoft, cursor: "pointer", padding: "10px 12px", borderRadius: 10, background: BRAND.skyTint, border: `1px solid ${BRAND.skyBorder}`, lineHeight: 1.5 }}>
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
         <span>The family agreed to share their details with Digifunzi and to be contacted.</span>
       </label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="submit" style={primary} disabled={!consent || save.isPending}>{save.isPending ? "Saving…" : "Register the family"}</button>
-        <button type="button" style={btn} onClick={onDone}>Cancel</button>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        <button type="button" style={{ ...btn, padding: "10px 16px", fontSize: 13.5 }} onClick={onDone}>Cancel</button>
+        <button type="submit" style={{ ...primary, padding: "10px 16px", fontSize: 13.5, opacity: consent ? 1 : 0.6 }} disabled={!consent || save.isPending}>{save.isPending ? "Saving…" : "Register the family"}</button>
       </div>
     </form>
   );
@@ -73,6 +77,8 @@ export default function ProspectsTab({ affiliates = [] }) {
   const setFilter = (f) => setParams((p) => { const n = new URLSearchParams(p); n.set("tab", "prospects"); if (f) n.set("filter", f); else n.set("filter", ""); return n; }, { replace: true });
   const [adding, setAdding] = useState(false);
   const [moving, setMoving] = useState(null); // prospect id
+  const navigate = useNavigate();
+  const openProspect = (p) => navigate(`/affiliates/prospects/${p.id}`);
   const { data, isLoading } = useQuery({ queryKey: ["affiliates", "prospects-admin", filter], queryFn: () => affiliatesApi.prospects(filter ? { filter } : {}) });
   const done = (msg) => () => { qc.invalidateQueries({ queryKey: ["affiliates", "prospects-admin"] }); qc.invalidateQueries({ queryKey: ["affiliates", "referrals"] }); toast.success(msg); };
   const fail = (err) => toast.error(errorOf(err));
@@ -95,27 +101,35 @@ export default function ProspectsTab({ affiliates = [] }) {
             );
           })}
         </div>
-        {!adding && <button type="button" style={primary} onClick={() => setAdding(true)}><FiPlus size={14} /> Register a family for an affiliate</button>}
+        <button type="button" style={primary} onClick={() => setAdding(true)}><FiPlus size={14} /> Register a family for an affiliate</button>
       </div>
-      {adding && <AddForAffiliate affiliates={affiliates} onDone={() => setAdding(false)} />}
+      {adding && (
+        <PopUp title="Register a family for an affiliate" subtitle="The family becomes the affiliate's prospect: if they sign up while the claim is open, the affiliate earns." onClose={() => setAdding(false)}>
+          <AddForAffiliate affiliates={affiliates} onDone={() => setAdding(false)} />
+        </PopUp>
+      )}
       <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>
         A family an affiliate registers is theirs while the claim is open: if they sign up — code or no code — matched by phone or email, the affiliate earns.
         A sign-up with only the same name shows under <strong>Possible matches</strong> for you to decide.
       </p>
 
       <div style={{ ...card, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 860 }}>
-          <thead><tr>{["Family", "Affiliate", "Interested in", "Added", "Status", ""].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
+        <style>{`.pr-row { cursor: pointer; } .pr-row:hover td { background: ${BRAND.canvas}; } .pr-row:focus-visible { outline: 2px solid ${BRAND.sky}; outline-offset: -2px; }`}</style>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
+          <thead><tr>{["Family", "Affiliate", "Interested in", "Follow-up", "Added", "Status", ""].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {(data?.prospects || []).map((p) => {
               const open = p.state.key === "open";
+              const fu = open ? followUpTone(p.followUpOn) : null;
               return (
-                <tr key={p.id}>
+                <tr key={p.id} className="pr-row" tabIndex={0} title="Open this family"
+                  onClick={(e) => { if (!e.target.closest("button, select, a")) openProspect(p); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) openProspect(p); }}>
                   <td style={td}>
-                    <strong style={{ color: BRAND.ink }}>{p.parentName}</strong>
+                    <strong style={{ color: BRAND.navy, textDecoration: "underline", textDecorationColor: BRAND.skyBorder, textUnderlineOffset: 3 }}>{p.parentName}</strong>
                     <div style={{ fontSize: 12, color: BRAND.muted }}>{[p.phone, p.email].filter(Boolean).join(" · ") || "Details removed"}</div>
                     {p.childName && <div style={{ fontSize: 12, color: BRAND.muted }}>Child: {p.childName}{p.childAge ? ` (${p.childAge})` : ""}</div>}
-                    {p.notes && <div style={{ fontSize: 12, color: BRAND.inkSoft }}>{p.notes}</div>}
+
                     {p.possibleMatch && open && (
                       <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 10, background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, display: "grid", gap: 6 }}>
                         <span style={{ fontSize: 12.5, color: BRAND.goldText, fontWeight: 700 }}>
@@ -131,6 +145,17 @@ export default function ProspectsTab({ affiliates = [] }) {
                   </td>
                   <td style={td}>{p.affiliate ? <>{p.affiliate.name}<div style={{ fontSize: 12, color: BRAND.muted }}>{p.affiliate.code}</div></> : "—"}</td>
                   <td style={td}>{p.programmeLabel || "—"}</td>
+                  <td style={{ ...td, maxWidth: 280 }}>
+                    {fu && <span style={{ ...pill(fu.tone), marginBottom: 4 }}>{fu.label}</span>}
+                    {p.latestNote ? (
+                      <div style={{ fontSize: 12.5, color: BRAND.inkSoft, lineHeight: 1.45 }}>
+                        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.latestNote.body}</span>
+                        <span style={{ fontSize: 11.5, color: BRAND.faint }}>{p.latestNote.authorName || "Our team"} · {formatDay(p.latestNote.at)}{p.noteCount > 1 ? ` · ${p.noteCount} notes` : ""}</span>
+                      </div>
+                    ) : p.notes ? (
+                      <div style={{ fontSize: 12.5, color: BRAND.inkSoft, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.notes}</div>
+                    ) : <span style={{ fontSize: 12.5, color: BRAND.faint }}>{open ? "No notes yet" : "—"}</span>}
+                  </td>
                   <td style={td}>{formatDay(p.createdAt)}<div style={{ fontSize: 12, color: BRAND.muted }}>{p.source === "bulk" ? "From a list" : p.source === "admin" ? "By our team" : "By the affiliate"}{p.invitedAt ? ` · invited ${formatDay(p.invitedAt)}` : ""}</div></td>
                   <td style={td}>
                     <span style={pill(TONE[p.state.key] || "neutral")}>{p.state.label}</span>

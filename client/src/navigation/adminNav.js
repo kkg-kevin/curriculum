@@ -133,7 +133,7 @@ export const ADMIN_SECTIONS = [
         name: "Affiliates", path: "/affiliates", icon: FiGift, module: "affiliates",
         children: [
           { name: "Affiliates", path: "/affiliates?tab=affiliates", isDefault: true, match: (l) => l.pathname === "/affiliates" && (!tabOf(l) || tabOf(l) === "affiliates") },
-          { name: "Prospects", path: "/affiliates?tab=prospects" },
+          { name: "Prospects", path: "/affiliates?tab=prospects", match: (l) => (l.pathname === "/affiliates" && tabOf(l) === "prospects") || l.pathname.startsWith("/affiliates/prospects/") },
           { name: "Referrals", path: "/affiliates?tab=referrals" },
           { name: "Commissions", path: "/affiliates?tab=commissions" },
           { name: "Payouts", path: "/affiliates?tab=payouts" },

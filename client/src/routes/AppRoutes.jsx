@@ -191,6 +191,8 @@ const NewHouseholdPage = lazyPage(() => import("../modules/home-learning/pages/N
 const TechClubsPage = lazyPage(() => import("../modules/tech-clubs/pages/TechClubsPage"));
 const PathwaySubscriptionsPage = lazyPage(() => import("../modules/pathway-subscriptions/pages/PathwaySubscriptionsPage"));
 const AffiliatesPage = lazyPage(() => import("../modules/affiliates/pages/AffiliatesPage"));
+// One prospect's page — details and the team's follow-up (modules/affiliates).
+const ProspectPage = lazyPage(() => import("../modules/affiliates/pages/ProspectPage"));
 const ExpensesPage = lazyPage(() => import("../modules/expenses/pages/ExpensesPage"));
 const MyExpensesPage = lazyPage(() => import("../modules/expenses/pages/MyExpensesPage"));
 const ReferEarnPage = lazyPage(() => import("../modules/affiliates/pages/ReferEarnPage"));
@@ -382,6 +384,7 @@ export default function AppRoutes() {
         <Route path="pathway-subscriptions" element={<PathwaySubscriptionsPage />} />
         {/* Affiliate marketing — affiliates, referrals, commissions, payouts (modules/affiliates). */}
         <Route path="affiliates" element={<AffiliatesPage />} />
+        <Route path="affiliates/prospects/:id" element={<ProspectPage />} />
         {/* Expenses (modules/expenses): reviewing and paying them (Finance), and everyone's own claims. */}
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="my-expenses" element={<MyExpensesPage />} />
