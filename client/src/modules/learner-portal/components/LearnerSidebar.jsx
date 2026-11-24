@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar, FiAward, FiPieChart } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar, FiAward, FiPieChart, FiShare2 } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -18,6 +18,8 @@ const menuItems = [
   { name: "Class position", path: "/learner-portal/position", icon: FiAward },
   // Everything they do, this term or this year (modules/rankings).
   { name: "How I'm doing", path: "/learner-portal/analytics", icon: FiPieChart },
+  // Digifunzi Connect — the learners' community, whatever classes they're in (modules/connect).
+  { name: "Connect",      path: "/learner-portal/connect", icon: FiShare2 },
   { name: "Timetable",    path: "/learner-portal/timetable", icon: FiCalendar },
   { name: "Invoices",     path: "/learner-portal/invoices", icon: FiFileText },
   { name: "My Family",    path: "/learner-portal/family", icon: FiUsers },
@@ -49,6 +51,8 @@ function LearnerSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
     // A TOT learner (an educator in training) pays for their own training: their invoices.
     if (user?.totLearner && item.name === "Invoices") return true;
     if (item.name === "Rate trainers") return !!user?.totLearner;
+    // Connect is the children's: an educator in training moderates it from the teacher portal instead.
+    if (item.name === "Connect") return !user?.totLearner && !isParentLogin;
     if (!isParentLogin && PARENT_ONLY.includes(item.name)) return false;
     if (item.name === "My Family" && family.length === 0 && clubFamily.length === 0) return false;
     return true;

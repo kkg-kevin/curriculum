@@ -51,6 +51,8 @@ const ICONS = {
 // reads/writes, not a new mechanism.
 function resolveNotificationPath(n) {
   const p = n.payload || {};
+  // Digifunzi Connect (modules/connect): every notice carries where it opens.
+  if (String(n.type).startsWith("connect_")) return p.route || null;
   switch (n.type) {
     case "assessment_graded":
     case "assessment_reissued":

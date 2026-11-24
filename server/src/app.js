@@ -62,6 +62,8 @@ const claimRoutes = require("./modules/claims/claim.routes");
 const expenseRoutes = require("./modules/expenses/expense.routes");
 const rankingRoutes = require("./modules/rankings/ranking.routes");
 const { expenseContext } = require("./modules/expenses/expense.context");
+const { router: connectRoutes, mediaRouter: connectMediaRoutes } = require("./modules/connect/connect.routes");
+const { connectContext } = require("./modules/connect/connect.context");
 const checkinRoutes = require("./modules/checkins/checkin.routes");
 const totRoutes = require("./modules/tot/tot.routes");
 const qaRoutes = require("./modules/qa/qa.routes");
@@ -144,6 +146,9 @@ app.use(requestLog());
 // Expense proof (receipts) is kept in uploads/.expenses/ and is never served from here — only
 // through GET /api/expenses/files/:id to the people allowed to see the claim (expense.files.js).
 app.use("/uploads/.expenses", (req, res) => res.status(404).end());
+// Digifunzi Connect's pictures and files (children's photos) are kept in uploads/.connect/ and are
+// only ever sent through a signed, expiring link (/api/connect-media — modules/connect/connect.files.js).
+app.use("/uploads/.connect", (req, res) => res.status(404).end());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), { setHeaders: setUploadHeaders }));
 // The brand logo in every email's header — mail apps fetch it from here (see mail.layout.js).
 app.use("/email-assets", express.static(path.join(__dirname, "shared/mail/assets"), { maxAge: "30d" }));
@@ -447,6 +452,11 @@ app.use("/api/learner-moves", protect, attachOwnRecords, require("./modules/lear
 // The supervisor portal's own reads and messages (17 Nov 2026). See modules/supervisor-portal/.
 app.use("/api/supervisor-portal", protect, attachOwnRecords, require("./modules/supervisor-portal/supervisor-portal.routes"));
 app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
+// Digifunzi Connect (24 Nov 2026): the learners' own community — feed, interest communities, messages,
+// project teams, challenges — with parents' consent and moderation. See modules/connect/
+// (connect.context.js for who is asking). Files are sent by signed link: the signature is the access.
+app.use("/api/connect-media", connectMediaRoutes);
+app.use("/api/connect", protect, attachOwnRecords, connectContext, connectRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

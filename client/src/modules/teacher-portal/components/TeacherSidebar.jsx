@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiClock, FiRepeat, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy } from "react-icons/fi";
+import { useQuery } from "@tanstack/react-query";
+import { connectApi } from "../../connect/services/connectApi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiClock, FiRepeat, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy, FiShare2 } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
@@ -26,6 +28,8 @@ const menuItems = [
   // What families say — anonymous, from 3 reviews (modules/mentor-reviews).
   { name: "Parent feedback", path: "/teacher-portal/feedback", icon: FiHeart },
   // Their referral link and commissions (modules/affiliates).
+  // Digifunzi Connect — only for educators named as moderators (modules/connect).
+  { name: "Connect moderation", path: "/teacher-portal/connect", icon: FiShare2, moderatorsOnly: true },
   { name: "Refer & earn",    path: "/teacher-portal/refer", icon: FiGift },
   // One page: their performance, their public profile, teaching and account (tabs).
   { name: "My Profile",      path: "/teacher-portal/profile", icon: FiUser },
@@ -38,6 +42,8 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
   const { expanded, handlers } = useSidebarHover(!isMobile);
   const isCollapsed = !isMobile && !expanded;
   const { pathname } = useLocation();
+  const connect = useQuery({ queryKey: ["connect", "me"], queryFn: connectApi.me, retry: false, staleTime: 5 * 60 * 1000 });
+  const items = menuItems.filter((item) => !item.moderatorsOnly || connect.data?.isModerator);
 
   const heading = (text) => (isCollapsed
     ? <div style={{ height: 1, margin: "8px 10px 14px", background: "rgba(255,255,255,0.15)" }} />
@@ -91,7 +97,7 @@ function TeacherSidebar({ isMobile = false, isMobileOpen = false, onClose = () =
         </div>
 
         <nav style={{ flex: 1, padding: isCollapsed ? "20px 8px" : "20px 12px" }}>
-          {menuItems.map((item) => {
+          {items.map((item) => {
             if (item.heading) return <div key={item.heading} style={{ marginTop: 14 }}>{heading(item.heading)}</div>;
             const Icon = item.icon;
             const alsoActive = (item.also || []).some((p) => pathname === p || pathname.startsWith(`${p}/`));

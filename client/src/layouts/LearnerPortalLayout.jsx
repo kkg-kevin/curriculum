@@ -16,6 +16,7 @@ import GeneralEventPopup from "../modules/general-events/components/GeneralEvent
 const MOBILE_BREAKPOINT = 900;
 
 function LearnerPortal() {
+  const location = useLocation();
   const scope = useLearnerPortalScope();
   const { user, hubs, selectedHubId, setSelectedHubId, learners, selectedLearnerId, setSelectedLearnerId, learner, selectedHub, cls, isLoading } = scope;
   const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false));
@@ -57,7 +58,10 @@ function LearnerPortal() {
   // being trapped on the gate of a hub they haven't started, with only "do the diagnostic" or
   // "log out" as options. Header stays too, so they can still sign out.
   // Not for a TOT learner (an adult educator in training): their diagnostic waits in Assessments.
-  const gateActive = !user?.totLearner && !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
+  // Digifunzi Connect (modules/connect) is the learner's whatever their classes: no hub switcher
+  // there, and a hub's first-login diagnostic never stands in front of it.
+  const inConnect = location.pathname.startsWith("/learner-portal/connect");
+  const gateActive = !inConnect && !user?.totLearner && !isLoading && !!learner && !!selectedHub && !selectedHub.onboardingCompletedAt;
 
   const sidebarReserved = !gateActive && !isMobile;
   // Only the sidebar's icon rail is reserved — when hovered it opens over the page (useSidebarHover).
@@ -87,7 +91,7 @@ function LearnerPortal() {
               (or to another child), instead of being stuck with only "take the diagnostic" or
               "log out". Each renders nothing when there's only one option (see HubSwitcher). */}
           <HubSwitcher hubs={childOptions} selectedHubId={selectedLearnerId} onChange={setPendingChildId} />
-          <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />
+          {!inConnect && <HubSwitcher hubs={hubs} selectedHubId={selectedHubId} onChange={setSelectedHubId} />}
           {gateActive ? (
             <FirstLoginDiagnosticGate learner={learner} hub={selectedHub} cls={cls} />
           ) : (
