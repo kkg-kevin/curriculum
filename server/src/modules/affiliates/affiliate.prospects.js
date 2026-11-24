@@ -23,6 +23,7 @@ const { normaliseSettings, phoneKey, emailKey, nameKey, prospectState, PROGRAMME
 // invite carries an opt-out link; an expired, released or opted-out claim keeps the first name only.
 
 const T = "affiliate_prospects";
+const N = "affiliate_prospect_notes";
 const A = "affiliates";
 const R = "affiliate_referrals";
 const now = () => new Date();
@@ -46,8 +47,10 @@ const optOutUrl = (token) => appUrl(`/no-thanks/${token}`);
 // What is wiped when a claim closes without a sign-up: everything but the first name.
 const wiped = (p, status, reason) => ({
   status, closedReason: reason || null, updatedAt: now(),
-  parentName: firstName(p.parentName) || "Family", phone: null, phoneKey: null, email: null, emailKey: null, childName: null, notes: null,
+  parentName: firstName(p.parentName) || "Family", phone: null, phoneKey: null, email: null, emailKey: null, childName: null, notes: null, followUpOn: null,
 });
+// The team's follow-up notes can hold personal details too: they go when the details go.
+const dropNotes = (ids) => db(N).whereIn("prospectId", [].concat(ids).filter(Boolean)).del();
 
 // ---- Housekeeping -----------------------------------------------------------------------------------
 // Open claims past their end date become expired (and lose their details). Cheap; run before any
@@ -57,6 +60,7 @@ async function expireDue(ownerAdminId = null) {
   if (ownerAdminId) q.where({ ownerAdminId });
   const due = await q.select("id", "parentName");
   for (const p of due) await db(T).where({ id: p.id, status: "open" }).update(wiped(p, "expired", "The claim period ended"));
+  if (due.length) await dropNotes(due.map((p) => p.id));
   return due.length;
 }
 
@@ -185,6 +189,7 @@ async function settle(prospect, referral, winnerAffiliateId) {
     await db(T).where({ id: prospect.id }).update({ status: "signed_up", referralId: referral.id, convertedAt: now(), updatedAt: now() });
   } else {
     await db(T).where({ id: prospect.id, status: "open" }).update(wiped(prospect, "lost", "The family signed up with another affiliate's code"));
+    await dropNotes(prospect.id);
   }
 }
 
@@ -256,6 +261,13 @@ async function listAll(ownerAdminId, { filter = null, affiliateId = null } = {})
   const affById = new Map(affs.map((a) => [a.id, a]));
   const refs = await referralsById(rows);
   const all = await db(T).where({ ownerAdminId }).select("status", "possibleMatch");
+  const notes = rows.length ? await db(N).whereIn("prospectId", rows.map((p) => p.id)).orderBy("createdAt", "desc").select("prospectId", "body", "authorName", "createdAt") : [];
+  const latestNote = new Map();
+  const noteCount = new Map();
+  for (const n of notes) {
+    if (!latestNote.has(n.prospectId)) latestNote.set(n.prospectId, n);
+    noteCount.set(n.prospectId, (noteCount.get(n.prospectId) || 0) + 1);
+  }
   return {
     counts: {
       open: all.filter((p) => p.status === "open").length,
@@ -271,10 +283,72 @@ async function listAll(ownerAdminId, { filter = null, affiliateId = null } = {})
         affiliate: affById.get(p.affiliateId) || null,
         state: prospectState(p, refs.get(p.referralId)),
         programmeLabel: PROGRAMME_LABEL[p.programme] || null,
+        latestNote: latestNote.get(p.id) ? { body: latestNote.get(p.id).body, authorName: latestNote.get(p.id).authorName, at: latestNote.get(p.id).createdAt } : null,
+        noteCount: noteCount.get(p.id) || 0,
+        followUpOn: dateOnly(p.followUpOn),
         inviteToken: undefined,
       };
     }),
   };
+}
+
+const dateOnly = (d) => (d ? (d instanceof Date ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : String(d).slice(0, 10)) : null);
+
+// One prospect, everything about it, for its own page on the Affiliates screen.
+async function detail(ownerAdminId, id) {
+  await expireDue(ownerAdminId);
+  const p = await owned(id, { ownerAdminId });
+  const [affiliate, notes, createdBy, refs, settings] = await Promise.all([
+    db(A).where({ id: p.affiliateId }).first("id", "name", "code", "email", "phone", "status", "kind"),
+    db(N).where({ prospectId: p.id }).orderBy("createdAt", "asc"),
+    p.createdBy ? db("users").where({ id: p.createdBy }).first("name") : null,
+    referralsById([p]),
+    settingsFor(ownerAdminId),
+  ]);
+  const ref = refs.get(p.referralId) || null;
+  const match = typeof p.possibleMatch === "string" ? JSON.parse(p.possibleMatch) : p.possibleMatch;
+  return {
+    ...p,
+    inviteToken: undefined, phoneKey: undefined, emailKey: undefined,
+    possibleMatch: match ? { ...match, programmeLabel: PROGRAMME_LABEL[match.programme] || match.programme } : null,
+    affiliate: affiliate || null,
+    state: prospectState(p, ref),
+    programmeLabel: PROGRAMME_LABEL[p.programme] || null,
+    referral: ref ? { id: ref.id, status: ref.status, programme: ref.programme, programmeLabel: PROGRAMME_LABEL[ref.programme] || ref.programme, createdAt: ref.createdAt } : null,
+    followUpOn: dateOnly(p.followUpOn),
+    createdByName: createdBy?.name || null,
+    claimDays: settings.claimDays,
+    affiliateNote: p.notes || null,
+    notes: undefined,
+    followUps: notes.map((n) => ({ id: n.id, body: n.body, authorName: n.authorName, authorUserId: n.authorUserId, createdAt: n.createdAt })),
+  };
+}
+
+// A follow-up note from the team. Only while the family's details are kept (an open claim, or one
+// that signed up).
+async function addNote(ownerAdminId, id, author, body) {
+  const p = await owned(id, { ownerAdminId });
+  if (!["open", "signed_up"].includes(p.status)) fail("This claim has closed — its details and notes were removed.", 409);
+  const text = String(body || "").trim().slice(0, 2000);
+  if (!text) fail("Write the note first");
+  await db(N).insert({ id: generateId(), prospectId: p.id, ownerAdminId, authorUserId: author.id || null, authorName: author.name || null, body: text, createdAt: now() });
+  await db(T).where({ id: p.id }).update({ updatedAt: now() });
+  return detail(ownerAdminId, id);
+}
+
+async function deleteNote(ownerAdminId, id, noteId) {
+  await owned(id, { ownerAdminId });
+  const removed = await db(N).where({ id: noteId, prospectId: id }).del();
+  if (!removed) fail("Note not found", 404);
+  return detail(ownerAdminId, id);
+}
+
+// When to get back to the family ("YYYY-MM-DD"), or null to clear it.
+async function setFollowUp(ownerAdminId, id, date) {
+  const p = await owned(id, { ownerAdminId });
+  if (p.status !== "open" && date) fail("Only an open claim can have a follow-up date", 409);
+  await db(T).where({ id: p.id }).update({ followUpOn: date || null, updatedAt: now() });
+  return detail(ownerAdminId, id);
 }
 
 // ---- Changes ------------------------------------------------------------------------------------------
@@ -301,6 +375,7 @@ async function release(id, scope, reason) {
   const p = await owned(id, scope);
   if (p.status !== "open") fail("Only an open claim can be released", 409);
   await db(T).where({ id, status: "open" }).update(wiped(p, "released", reason));
+  await dropNotes(id);
   return { ok: true };
 }
 
@@ -384,10 +459,14 @@ async function optOut(token) {
   if (clean.length < 32) fail("This link isn't valid", 404);
   const p = await db(T).where({ inviteToken: clean }).first();
   if (!p) fail("This link isn't valid", 404);
-  if (p.status === "open") await db(T).where({ id: p.id }).update({ ...wiped(p, "opted_out", "The family asked not to be contacted"), optedOutAt: now() });
+  if (p.status === "open") {
+    await db(T).where({ id: p.id }).update({ ...wiped(p, "opted_out", "The family asked not to be contacted"), optedOutAt: now() });
+    await dropNotes(p.id);
+  }
   return { ok: true, firstName: firstName(p.parentName) };
 }
 
 module.exports = {
   CANT_ADD, settingsFor, expireDue, add, addMany, matchFor, settle, notePossibleMatch, listMine, listAll, updateMine, release, reassign, decideMatch, invite, optOut, inviteText,
+  detail, addNote, deleteNote, setFollowUp,
 };

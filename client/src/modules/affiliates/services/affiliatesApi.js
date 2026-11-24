@@ -49,6 +49,11 @@ export const affiliatesApi = {
   adminReleaseProspect: (id) => api.post(`${BASE}/prospects/${id}/release`).then(data),
   reassignProspect: (id, affiliateId) => api.post(`${BASE}/prospects/${id}/reassign`, { affiliateId }).then(data),
   decideMatch: (id, approve) => api.post(`${BASE}/prospects/${id}/match`, { approve }).then(data),
+  // One prospect's page (24 Nov 2026): details, the team's follow-up notes, a follow-up date.
+  prospect: (id) => api.get(`${BASE}/prospects/${id}`).then(data),
+  addProspectNote: (id, body) => api.post(`${BASE}/prospects/${id}/notes`, { body }).then(data),
+  deleteProspectNote: (id, noteId) => api.delete(`${BASE}/prospects/${id}/notes/${noteId}`).then(data),
+  setProspectFollowUp: (id, date) => api.put(`${BASE}/prospects/${id}/follow-up`, { date }).then(data),
   // The family's "no thanks" link (no sign-in).
   optOut: (token) => api.post(`/api/public/affiliate-prospects/opt-out/${token}`).then(data),
 };

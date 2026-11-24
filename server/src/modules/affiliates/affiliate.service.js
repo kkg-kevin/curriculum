@@ -1153,6 +1153,20 @@ const AffiliateService = {
   releaseProspect(req, id) {
     return Prospects.release(id, { ownerAdminId: req.ownerAdminId }, "Released by our team");
   },
+  // One prospect's page: details, the team's follow-up notes, the follow-up date.
+  prospect(req, id) {
+    return Prospects.detail(req.ownerAdminId, id);
+  },
+  async addProspectNote(req, id, body) {
+    const user = await db("users").where({ id: req.user.id }).first("name");
+    return Prospects.addNote(req.ownerAdminId, id, { id: req.user.id, name: user?.name || null }, body);
+  },
+  deleteProspectNote(req, id, noteId) {
+    return Prospects.deleteNote(req.ownerAdminId, id, noteId);
+  },
+  setProspectFollowUp(req, id, date) {
+    return Prospects.setFollowUp(req.ownerAdminId, id, date);
+  },
   reassignProspect(req, id, affiliateId) {
     return Prospects.reassign(req.ownerAdminId, id, affiliateId);
   },

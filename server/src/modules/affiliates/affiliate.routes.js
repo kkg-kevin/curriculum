@@ -89,6 +89,16 @@ router.post("/prospects", admin, asyncHandler(async (req, res) => {
   const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1, "Choose the affiliate").max(36) }).parse(req.body || {});
   ok(res, await AffiliateService.addProspectFor(req, affiliateId, prospectSchema.parse(req.body || {})));
 }));
+router.get("/prospects/:id", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.prospect(req, req.params.id))));
+router.post("/prospects/:id/notes", admin, asyncHandler(async (req, res) => {
+  const { body } = z.object({ body: z.string().trim().min(1, "Write the note first").max(2000) }).parse(req.body || {});
+  ok(res, await AffiliateService.addProspectNote(req, req.params.id, body));
+}));
+router.delete("/prospects/:id/notes/:noteId", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.deleteProspectNote(req, req.params.id, req.params.noteId))));
+router.put("/prospects/:id/follow-up", admin, asyncHandler(async (req, res) => {
+  const { date } = z.object({ date: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date"), z.null()]) }).parse(req.body || {});
+  ok(res, await AffiliateService.setProspectFollowUp(req, req.params.id, date));
+}));
 router.post("/prospects/:id/release", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.releaseProspect(req, req.params.id))));
 router.post("/prospects/:id/reassign", admin, asyncHandler(async (req, res) => {
   const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1).max(36) }).parse(req.body || {});
