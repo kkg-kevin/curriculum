@@ -52,6 +52,9 @@ const MODULES = [
   // claim of the workspace; Edit = approve, send back, decline and pay them (never their own), and
   // the settings. /api/expenses checks this itself (expense.context.js), not through attachOwnRecords.
   { key: "expenses", label: "Expenses (approve & pay)", group: "Finance" },
+  // Digifunzi Connect (modules/connect/): View = the moderation pages and figures; Create / Edit =
+  // moderate (reports, waiting posts, suspensions), communities, challenges and Settings.
+  { key: "connect", label: "Digifunzi Connect (moderation)", group: "People" },
   // Hub check-ins: setting up schedules and seeing every hub's check-ins. A hub's Account Manager
   // and Training Lead aren't staff — they're named on the hub and work in the hub portal
   // (modules/checkins/checkin.access.js).
@@ -107,6 +110,7 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/audit": "activity",
   "/api/claims": "claims",
   "/api/expenses": "expenses",
+  "/api/connect": "connect",
   // Class rankings: Settings → Rankings is Settings; a learner's analytics is part of seeing the
   // learner; a class's ranking is part of seeing the class. (Most specific first — the first
   // matching prefix wins.)

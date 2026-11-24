@@ -68,6 +68,25 @@ const LearnerFamilyPage = lazyPage(() => import("../modules/learner-portal/pages
 const PositionPage = lazyPage(() => import("../modules/rankings/pages/PositionPage"));
 // Learner analytics — everything a learner does, this term or this year (modules/rankings).
 const LearnerAnalyticsPage = lazyPage(() => import("../modules/rankings/pages/AnalyticsPage"));
+// Digifunzi Connect — the learners' community (modules/connect): the learner's pages, the moderators'
+// page, and a parent's page for each child.
+const ConnectLayout = lazyPage(() => import("../modules/connect/pages/ConnectLayout"));
+const ConnectDiscoverPage = lazyPage(() => import("../modules/connect/pages/FeedPages"), "DiscoverPage");
+const ConnectFeedPage = lazyPage(() => import("../modules/connect/pages/FeedPages"), "FeedPage");
+const ConnectPostPage = lazyPage(() => import("../modules/connect/pages/FeedPages"), "PostPage");
+const ConnectCommunitiesPage = lazyPage(() => import("../modules/connect/pages/CommunityPages"), "CommunitiesPage");
+const ConnectCommunityPage = lazyPage(() => import("../modules/connect/pages/CommunityPages"), "CommunityPage");
+const ConnectMessagesPage = lazyPage(() => import("../modules/connect/pages/MessagesPage"));
+const ConnectProjectsPage = lazyPage(() => import("../modules/connect/pages/ProjectPages"), "ProjectsPage");
+const ConnectProjectPage = lazyPage(() => import("../modules/connect/pages/ProjectPages"), "ProjectPage");
+const ConnectChallengesPage = lazyPage(() => import("../modules/connect/pages/ChallengePages"), "ChallengesPage");
+const ConnectChallengePage = lazyPage(() => import("../modules/connect/pages/ChallengePages"), "ChallengePage");
+const ConnectPeoplePage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "PeoplePage");
+const ConnectPersonPage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "PersonPage");
+const ConnectMyProfilePage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "MyProfilePage");
+const ConnectRulesPage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "RulesPage");
+const ConnectAdminPage = lazyPage(() => import("../modules/connect/pages/ConnectAdminPage"));
+const ParentConnectPage = lazyPage(() => import("../modules/connect/pages/ParentConnectPage"));
 const AdminReportsPage = lazyPage(() => import("../modules/reports/pages/AdminReportsPage"));
 const CourseContentLandingPage = lazyPage(() => import("../modules/courses/pages/CourseContentLandingPage"));
 const CurriculumPage = lazyPage(() => import("../modules/curriculum/pages/CurriculumPage"));
@@ -366,6 +385,8 @@ export default function AppRoutes() {
         {/* Expenses (modules/expenses): reviewing and paying them (Finance), and everyone's own claims. */}
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="my-expenses" element={<MyExpensesPage />} />
+        {/* Digifunzi Connect: moderation, communities, challenges, figures (modules/connect). */}
+        <Route path="connect" element={<ConnectAdminPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -436,6 +457,8 @@ export default function AppRoutes() {
           <Route path="feedback" element={<MyFeedbackPage />} />
           {/* Refer & earn — their referral link and commissions (modules/affiliates). */}
           <Route path="refer" element={<ReferEarnPage />} />
+          {/* Moderating Digifunzi Connect, when named a moderator (modules/connect). */}
+          <Route path="connect" element={<ConnectAdminPage />} />
           {/* Their performance profile, and their public one (modules/educator-profiles). */}
           <Route path="my-profile" element={<Navigate to="/teacher-portal/profile?tab=public" replace />} />
           <Route path="qa/:id" element={<QaVisitPage />} />
@@ -550,6 +573,24 @@ export default function AppRoutes() {
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="position" element={<PositionPage />} />
           <Route path="analytics" element={<LearnerAnalyticsPage />} />
+          {/* Digifunzi Connect (modules/connect) — the learner's, whatever classes they're in. */}
+          <Route path="connect" element={<ConnectLayout />}>
+            <Route index element={<ConnectDiscoverPage />} />
+            <Route path="feed" element={<ConnectFeedPage />} />
+            <Route path="posts/:postId" element={<ConnectPostPage />} />
+            <Route path="communities" element={<ConnectCommunitiesPage />} />
+            <Route path="communities/:slug" element={<ConnectCommunityPage />} />
+            <Route path="messages" element={<ConnectMessagesPage />} />
+            <Route path="messages/:conversationId" element={<ConnectMessagesPage />} />
+            <Route path="projects" element={<ConnectProjectsPage />} />
+            <Route path="projects/:projectId" element={<ConnectProjectPage />} />
+            <Route path="challenges" element={<ConnectChallengesPage />} />
+            <Route path="challenges/:challengeId" element={<ConnectChallengePage />} />
+            <Route path="people" element={<ConnectPeoplePage />} />
+            <Route path="people/:memberId" element={<ConnectPersonPage />} />
+            <Route path="profile" element={<ConnectMyProfilePage />} />
+            <Route path="rules" element={<ConnectRulesPage />} />
+          </Route>
           {/* A TOT learner rates their trainers (modules/mentor-reviews). */}
           <Route path="feedback" element={<MentorFeedbackPage />} />
           <Route path="timetable" element={<LearnerTimetablePage />} />
@@ -578,6 +619,8 @@ export default function AppRoutes() {
             {/* Their place and Learning Score in their class (modules/rankings). */}
             <Route path="position" element={<PositionPage />} />
             <Route path="analytics" element={<LearnerAnalyticsPage />} />
+            {/* Digifunzi Connect: switching it on, and who the child talks to (modules/connect). */}
+            <Route path="connect" element={<ParentConnectPage />} />
             <Route path="login" element={<ChildLoginPage />} />
           </Route>
           <Route path="timetable" element={<ParentTimetablePage />} />

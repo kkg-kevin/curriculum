@@ -38,6 +38,7 @@ const PATH_MODULES = [
   ["/affiliates", "affiliates"],
   // Reviewing expenses needs the module; /my-expenses (everyone's own claims) is open to all staff.
   ["/expenses", "expenses"],
+  ["/connect", "connect"],
   ["/qa", "qa"],
   ["/mentor-checkins", "mentor-checkins"],
   // Session covers ride on Timetable access (the API is /api/covers → timetable).

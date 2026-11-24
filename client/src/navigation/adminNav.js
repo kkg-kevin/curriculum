@@ -1,6 +1,6 @@
 import {
   FiGrid, FiHome, FiBookOpen, FiUsers, FiUserCheck, FiLayers, FiAward, FiBook, FiClipboard, FiBarChart2,
-  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar, FiShield, FiCreditCard, FiShoppingBag,
+  FiDollarSign, FiSettings, FiMail, FiHeart, FiActivity, FiCpu, FiCheckSquare, FiStar, FiRepeat, FiFileText, FiGift, FiMessageCircle, FiCalendar, FiShield, FiCreditCard, FiShoppingBag, FiShare2,
 } from "react-icons/fi";
 import { canViewAny } from "../hooks/usePermissions";
 
@@ -165,6 +165,20 @@ export const ADMIN_SECTIONS = [
       // A class's educators meeting each family about their child (modules/mentor-checkins).
       { name: "Parent–Mentor Check-ins", path: "/mentor-checkins", icon: FiMessageCircle, module: "mentor-checkins" },
       { name: "Hub Check-ins", path: "/checkins", icon: FiCheckSquare, module: "checkins-manage" },
+      // Digifunzi Connect, the learners' community: keeping it safe and lively (modules/connect).
+      {
+        name: "Digifunzi Connect", path: "/connect", icon: FiShare2, module: "connect",
+        children: [
+          { name: "Overview", path: "/connect", isDefault: true, match: (l) => l.pathname === "/connect" && (!tabOf(l) || tabOf(l) === "overview") },
+          { name: "Posts", path: "/connect?tab=posts" },
+          { name: "Review", path: "/connect?tab=review" },
+          { name: "Members", path: "/connect?tab=members" },
+          { name: "Communities", path: "/connect?tab=communities" },
+          { name: "Challenges", path: "/connect?tab=challenges" },
+          { name: "History", path: "/connect?tab=history" },
+          { name: "Settings", path: "/connect?tab=settings" },
+        ],
+      },
       { name: "Activity", path: "/activity", icon: FiActivity, module: "activity" },
     ],
   },

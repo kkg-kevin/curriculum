@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import { Link, NavLink, Outlet, useOutletContext, useParams } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import HubSwitcher from "../../../components/ui/HubSwitcher";
 import { T } from "../../learner-portal/components/profile/theme";
@@ -14,6 +14,8 @@ import { childPath } from "../parentPaths";
 // `portalBase` so they link within the parent portal and never offer to do the child's work.
 export default function ParentChildLayout() {
   const { childId } = useParams();
+  // Connect isn't per hub, so its tab has no hub switcher.
+  const inConnect = useLocation().pathname.endsWith("/connect");
   const parent = useOutletContext();
   const queryClient = useQueryClient();
   const [readyFor, setReadyFor] = useState(null);
@@ -42,13 +44,15 @@ export default function ParentChildLayout() {
     <>
       {/* The parent moves between children from the sidebar; a child at several hubs keeps the
           learner portal's hub switcher (it renders nothing for one hub). */}
-      <HubSwitcher hubs={scope.hubs} selectedHubId={scope.selectedHubId} onChange={scope.setSelectedHubId} />
+      {!inConnect && <HubSwitcher hubs={scope.hubs} selectedHubId={scope.selectedHubId} onChange={scope.setSelectedHubId} />}
       {/* The child's profile (unchanged) and their place in class (modules/rankings). */}
       <nav aria-label={`${child.firstName || "Child"}'s pages`} style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
         {[
           { to: childPath(childId), label: "Profile", end: true },
           { to: childPath(childId, "/position"), label: "Class position" },
           { to: childPath(childId, "/analytics"), label: `How ${child.firstName || "they"}'s doing` },
+          // Digifunzi Connect: the parent switches it on and sees who their child talks to (modules/connect).
+          { to: childPath(childId, "/connect"), label: "Connect" },
         ].map((t) => (
           <NavLink key={t.label} to={t.to} end={t.end}
             style={({ isActive }) => ({ padding: "8px 16px", borderRadius: 999, fontSize: 13.5, fontWeight: 800, textDecoration: "none", fontFamily: "Inter, sans-serif", border: `1.5px solid ${isActive ? T.accent : T.border}`, background: isActive ? T.accent : "#fff", color: isActive ? "#fff" : T.accentDeep })}>

@@ -164,6 +164,10 @@ const SKIP = [
   /^\/api\/public\/email-preferences\//, // your own email choices, from an email's footer link — the address carries that person's token
   /^\/api\/uploads(\/|$)/, // the upload itself; the save that uses the file is what's logged
   /^\/api\/expenses\/files(\/|$)/, // an expense receipt being uploaded; the claim's save is logged
+  // Digifunzi Connect: what learners write, send and react to stays out of the staff activity log
+  // (messages are read by moderators only through a report). Moderation, communities, challenges,
+  // Settings and parents' consent are still logged — and in Connect's own moderation history.
+  /^\/api\/connect\/(me|files|people|connections|conversations|messages|posts|comments|projects|reports)(\/|$)/,
   /^\/api\/audit(\/|$)/,
   /\/(preview|search|validate|check|export)$/, // work things out, save nothing
   /^\/api\/assessment-submissions\/submissions$/, // a learner opening an assessment
