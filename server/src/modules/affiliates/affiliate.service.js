@@ -14,9 +14,10 @@ const { adminIdsOf } = require("../../shared/utils/organisation");
 const {
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, normaliseSettings, normaliseCode, suggestCode,
   emailKey, pickAttribution, isSelfReferral, commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
-  normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, chooseClaim,
+  normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, chooseClaim, portalRouteOf, normaliseTargets,
 } = require("./affiliate.rules");
 const Prospects = require("./affiliate.prospects");
+const Targets = require("./affiliate.targets");
 
 // Affiliate marketing (6 Nov 2026) — see CLAUDE.md "Affiliates". How it fits together:
 //   1. Attribution: a website link carries ?ref=CODE (kept with the visit — the website's
@@ -65,7 +66,7 @@ const linkFor = (code) => (websiteUrl() ? `${websiteUrl()}/?ref=${encodeURICompo
 // when their email already has a login (a hub's, a staff member's…), the Affiliate role added to it.
 // `kind` follows the login (kindOfLogin), never typed by staff. There's no other way in: the
 // private dashboard links of 6 Nov 2026 are gone.
-const portalRoute = (affiliate) => (affiliate.kind === "educator" ? "/teacher-portal/refer" : affiliate.kind === "parent" ? "/parent/refer" : "/affiliate-portal");
+const portalRoute = portalRouteOf;
 const signsInAsAffiliate = (affiliate) => affiliate.kind === "other";
 const signInUrl = () => appUrl("/login");
 const accountUrl = () => appUrl("/affiliate-portal");
@@ -209,6 +210,7 @@ const shapeAffiliate = (a, login = null) => ({
   ...a,
   isManager: Boolean(a.isManager),
   customRates: normaliseCustomRates(a.customRates),
+  targets: normaliseTargets(a.targets),
   link: linkFor(a.code),
   account: a.userId
     ? { email: login?.email || a.email, asAffiliate: signsInAsAffiliate(a), lastSignInAt: login?.lastSignInAt || null }
@@ -287,6 +289,12 @@ async function teamAndRateFields(req, affiliate, input) {
     out.managerId = managerId;
   }
   if (input.customRates !== undefined) out.customRates = toJson(normaliseCustomRates(input.customRates));
+  // Targets of their own (25 Nov 2026): an empty box follows Settings; a team target only for a manager.
+  if (input.targets !== undefined) {
+    const t = normaliseTargets(input.targets);
+    if (t && !isManager) { delete t.teamMoney; delete t.teamFamilies; }
+    out.targets = toJson(t && Object.keys(t).length ? t : null);
+  }
   return out;
 }
 
@@ -511,11 +519,20 @@ const AffiliateService = {
     // Counted per family (referral), whoever earned them — a referral handed to another affiliate
     // (modules/removals/) carries on from the periods already paid, never starts again.
     const earnedSoFar = Number((await db(C).where({ referralId: referral.id, kind: "own" }).whereNot({ status: "cancelled" }).count("* as n"))[0].n) || 0;
-    const commission = commissionFor({ settings, programme: referral.programme, paidAmount, earnedSoFar });
-    if (!commission) return null;
-
     // Never later than now (MySQL rounds a stored time to the nearest second, sometimes up).
     const paidAt = invoice.paidAt ? new Date(Math.min(new Date(invoice.paidAt).getTime(), Date.now())) : now();
+    // The family is paying from their first invoice paid in money — whether or not it earns (a
+    // programme at 0%, periods used up). Their first paid day counts for the families target.
+    if (referral.status !== "paid" && paidAmount > 0) {
+      await db(R).where({ id: referral.id }).update({ status: "paid", firstPaidAt: referral.firstPaidAt || paidAt, updatedAt: now() });
+      referral.status = "paid";
+    }
+    const commission = commissionFor({ settings, programme: referral.programme, paidAmount, earnedSoFar });
+    if (!commission) {
+      await Targets.afterPayment(affiliate);
+      return null;
+    }
+
     const row = {
       id: generateId(), ownerAdminId: referral.ownerAdminId, affiliateId: affiliate.id, referralId: referral.id, kind: "own",
       invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber || null, ...commission,
@@ -540,6 +557,7 @@ const AffiliateService = {
     }
     await emailAffiliate(affiliate, "commission", { commission: row, referral, programme: PROGRAMME_LABEL[referral.programme] });
     await AffiliateService._teamShare({ affiliate, referral, own: row, settings: workspaceSettings, invoice });
+    await Targets.afterPayment(affiliate);
     return row;
   },
 
@@ -582,6 +600,8 @@ const AffiliateService = {
     const referrals = await db(R).where({ ownerAdminId: req.ownerAdminId }).select("affiliateId", "status");
     const logins = await loginsById(affiliates.map((a) => a.userId));
     const byId = new Map(affiliates.map((a) => [a.id, a]));
+    // This month's standing against their targets (affiliate.targets.js).
+    const target = await Targets.currentFor(req.ownerAdminId, affiliates);
     return affiliates.map((a) => {
       const own = referrals.filter((r) => r.affiliateId === a.id);
       const theirs = commissions.filter((c) => c.affiliateId === a.id);
@@ -593,8 +613,14 @@ const AffiliateService = {
         teamEarned: money(theirs.filter((c) => c.kind === "team" && c.state !== "cancelled").reduce((sum, c) => sum + c.amount, 0)),
         manager: a.managerId && byId.get(a.managerId) ? { id: a.managerId, name: byId.get(a.managerId).name } : null,
         teamSize: affiliates.filter((x) => x.managerId === a.id).length,
+        target: target.get(a.id) || null,
       };
     });
+  },
+
+  // Affiliates → Targets: every affiliate's standing in a month.
+  targetsBoard(req, month = null) {
+    return Targets.board(req.ownerAdminId, month);
   },
 
   // Added by staff. Their email is required — it's their sign-in. Active (the default): their login
@@ -961,6 +987,8 @@ const AffiliateService = {
         termsAcceptedAt: affiliate.termsAcceptedAt || null, createdAt: affiliate.createdAt,
       },
       totals: totals(commissions),
+      // This month's targets (theirs, a manager's team's) and the months before.
+      targets: await Targets.forAffiliate(affiliate),
       referrals: referrals.map((r) => ({
         id: r.id, firstName: firstNameOf(r.customerName), programme: PROGRAMME_LABEL[r.programme], via: r.via, status: r.status, createdAt: r.createdAt,
         earned: money(commissions.filter((c) => c.referralId === r.id && c.kind !== "team" && c.state !== "cancelled").reduce((sum, c) => sum + c.amount, 0)),

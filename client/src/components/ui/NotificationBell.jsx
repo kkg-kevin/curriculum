@@ -181,6 +181,9 @@ function resolveNotificationPath(n) {
     case "affiliate_approved":
     case "affiliate_payout_paid":
     case "affiliate_payout_rejected":
+    case "affiliate_target_half":
+    case "affiliate_target_met":
+    case "affiliate_team_target_met":
       // The affiliate's own Refer & earn page (set by the server for their portal).
       return p.route || "/parent/refer";
     case "ranking_badge":

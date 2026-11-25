@@ -3,13 +3,15 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiUserPlus, FiUsers, FiX } from "react-icons/fi";
+import { FiCopy, FiDollarSign, FiGift, FiLink, FiMail, FiPlus, FiSettings, FiTarget, FiUserPlus, FiUsers, FiX } from "react-icons/fi";
 import { Segmented, Tabs } from "../../../components/ui/TabBar";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL, PROGRAMMES, RECURRING } from "../services/affiliatesApi";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 import ProspectsTab from "../components/ProspectsTab";
+import TargetsTab from "../components/TargetsTab";
+import { TargetBar, TargetPill } from "../components/TargetProgress";
 
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 // Affiliates (Finance, modules/affiliates/): people who send families to the website earn a share
@@ -23,6 +25,7 @@ import { askConfirm, askText } from "../../../components/ui/AskDialog";
 
 const TABS = [
   { key: "affiliates", label: "Affiliates", icon: FiUsers },
+  { key: "targets", label: "Targets", icon: FiTarget },
   { key: "prospects", label: "Prospects", icon: FiUserPlus },
   { key: "referrals", label: "Referrals", icon: FiLink },
   { key: "commissions", label: "Commissions", icon: FiGift },
@@ -218,13 +221,40 @@ function LevelAndRates({ affiliate, value, onChange }) {
   );
 }
 
+// Monthly targets of their own (25 Nov 2026): money and families, each box empty = Settings'
+// target, 0 = no target for them. A manager also gets a team target (empty = everyone's added up).
+function OwnTargets({ value, onChange, isManager }) {
+  const { data: settings } = useQuery({ queryKey: ["affiliates", "settings"], queryFn: affiliatesApi.settings });
+  const box = (key, text, placeholder, isMoney) => (
+    <label style={label}>{text}
+      <input type="number" min={0} step={isMoney ? 500 : 1} style={input} value={value[key] ?? ""} placeholder={placeholder}
+        onChange={(e) => onChange({ ...value, [key]: e.target.value === "" ? null : e.target.value })} />
+    </label>
+  );
+  const fromSettings = (v, isMoney) => (v ? `${isMoney ? formatKsh(v) : v} (Settings)` : "None (Settings)");
+  return (
+    <section style={{ display: "grid", gap: 10, padding: 14, borderRadius: 12, border: `1px solid ${BRAND.line}`, background: "#FBFCFE" }}>
+      <h3 style={cardHeading}><FiTarget size={13} /> Monthly targets</h3>
+      <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))" }}>
+        {box("money", "Money brought in (KSh)", fromSettings(settings?.targetMoney, true), true)}
+        {box("families", "Families paying", fromSettings(settings?.targetFamilies, false), false)}
+        {isManager && box("teamMoney", "Their team: money (KSh)", "Everyone's added up", true)}
+        {isManager && box("teamFamilies", "Their team: families", "Everyone's added up", false)}
+      </div>
+      <p style={{ margin: 0, fontSize: 12, color: BRAND.muted, lineHeight: 1.5 }}>An empty box follows Settings; 0 means no target for them. Each month starts afresh on the 1st. Tracking only — reaching a target earns nothing extra.</p>
+    </section>
+  );
+}
+
 function AffiliateDialog({ affiliate, onClose }) {
   const qc = useQueryClient();
   const [team, setTeam] = useState(() => ({
     isManager: Boolean(affiliate?.isManager), managerId: affiliate?.managerId || null,
     custom: Boolean(affiliate?.customRates), customRates: affiliate?.customRates || {},
   }));
-  const teamBody = { isManager: team.isManager, managerId: team.managerId || null, customRates: team.custom ? team.customRates : null };
+  // Targets of their own (25 Nov 2026): an empty box follows Settings.
+  const [targets, setTargets] = useState(() => ({ ...(affiliate?.targets || {}) }));
+  const teamBody = { isManager: team.isManager, managerId: team.managerId || null, customRates: team.custom ? team.customRates : null, targets };
   const [form, setForm] = useState(() => ({
     name: affiliate?.name || "", email: affiliate?.email || "", phone: affiliate?.phone || "",
     code: affiliate?.code || "", status: affiliate?.status || "active", payoutMethod: affiliate?.payoutMethod || "credit",
@@ -302,6 +332,7 @@ function AffiliateDialog({ affiliate, onClose }) {
           {form.payoutMethod === "bank" && <label style={label}>Bank details<input style={input} value={form.payoutDetails} onChange={set("payoutDetails")} placeholder="Bank, account name and number" /></label>}
         </div>
         <LevelAndRates affiliate={affiliate} value={team} onChange={setTeam} />
+        <OwnTargets value={targets} onChange={setTargets} isManager={team.isManager} />
         {affiliate?.promotion && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>How they said they&rsquo;d share us: &ldquo;{affiliate.promotion}&rdquo;</p>}
         <label style={label}>Notes (only staff see these)<textarea style={{ ...input, minHeight: 64, resize: "vertical" }} value={form.notes} onChange={set("notes")} /></label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -350,7 +381,7 @@ function AffiliatesTab({ onEdit }) {
         <input type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} /> Show removed ({removedCount})
       </label>
     )}
-    <Table head={["Affiliate", "Code & link", "Status", "Referrals", "Earned", "Available", ""]} empty={affiliates.length ? null : "No affiliates yet — add one, or let parents and educators join from their portal (Settings)."}>
+    <Table head={["Affiliate", "Code & link", "Status", "Referrals", "This month", "Earned", "Available", ""]} empty={affiliates.length ? null : "No affiliates yet — add one, or let parents and educators join from their portal (Settings)."}>
       {affiliates.map((a) => (
         <tr key={a.id}>
           <td style={td}>
@@ -376,6 +407,15 @@ function AffiliatesTab({ onEdit }) {
           </td>
           <td style={td}><span style={pill(STATUS_TONE[a.status])}>{STATUS_WORD[a.status] || a.status}</span></td>
           <td style={td}>{a.paidReferrals} paid / {a.referrals}</td>
+          <td style={{ ...td, minWidth: 170 }}>
+            {a.target ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                <TargetBar kind="money" progress={a.target.money} compact />
+                <TargetBar kind="families" progress={a.target.families} compact />
+                {a.target.state !== "none" && <div><TargetPill state={a.target.state} /></div>}
+              </div>
+            ) : <span style={{ color: BRAND.faint }}>—</span>}
+          </td>
           <td style={td}>{formatKsh(a.totals.earned)}<div style={{ fontSize: 12, color: BRAND.muted }}>{formatKsh(a.totals.paid)} paid out</div></td>
           <td style={td}>{formatKsh(a.totals.available)}{a.totals.waiting > 0 && <div style={{ fontSize: 12, color: BRAND.muted }}>+ {formatKsh(a.totals.waiting)} waiting</div>}</td>
           <td style={{ ...td, textAlign: "right" }}>
@@ -617,6 +657,15 @@ function SettingsTab() {
           E.g. a family pays KSh 10,000 and the affiliate earns {form.rates.bootcamp || 10}% (KSh {((10000 * (Number(form.rates.bootcamp) || 10)) / 100).toLocaleString()}): the manager gets {form.teamRate || 0}% of {form.teamBasis === "commission" ? `that commission — KSh ${Math.round((10000 * (Number(form.rates.bootcamp) || 10) / 100) * (Number(form.teamRate) || 0) / 100).toLocaleString()}` : `KSh 10,000 — KSh ${Math.round(10000 * (Number(form.teamRate) || 0) / 100).toLocaleString()}`}.
         </p>
       </section>
+      <section style={{ ...card, padding: 18, display: "grid", gap: 10 }}>
+        <h3 style={cardHeading}><FiTarget size={13} /> Monthly targets</h3>
+        <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted, lineHeight: 1.5 }}>For every affiliate, each calendar month — anyone can have their own (Edit → Monthly targets). 0 = no target. A manager&rsquo;s team target is everyone&rsquo;s added up unless you set one. Tracking only: progress on Refer &amp; earn and in the Targets tab, nothing extra is paid.</p>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
+          <label style={label}>Money brought in (KSh) — what their families pay in the month<input min={0} step={500} {...num("targetMoney")} /></label>
+          <label style={label}>Families paying — first invoice paid in the month<input min={0} {...num("targetFamilies")} /></label>
+        </div>
+        {check("targetNotices", "Tell affiliates (the bell) when they're halfway and when they reach a target; tell a manager when their team reaches its target")}
+      </section>
       <section style={{ ...card, padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         <label style={label}>Paid periods that earn (subscriptions)<input min={1} max={60} {...num("periods")} /></label>
         <label style={label}>Days a commission waits before payout<input min={0} max={180} {...num("holdDays")} /></label>
@@ -683,6 +732,7 @@ export default function AffiliatesPage() {
         tabs={TABS.map((t) => ({ ...t, count: t.key === "affiliates" && toApprove ? toApprove : t.key === "payouts" && toPay ? toPay : null, alert: (t.key === "affiliates" && toApprove > 0) || (t.key === "payouts" && toPay > 0) }))} />
 
       {tab === "affiliates" && <AffiliatesTab onEdit={setEditing} />}
+      {tab === "targets" && <TargetsTab onOpenSettings={() => setParams({ tab: "settings" }, { replace: true })} />}
       {tab === "prospects" && <ProspectsTab affiliates={affiliates} />}
       {tab === "referrals" && <ReferralsTab />}
       {tab === "commissions" && <CommissionsTab />}

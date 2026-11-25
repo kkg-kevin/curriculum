@@ -49,6 +49,13 @@ const DEFAULT_SETTINGS = {
   claimDays: 60,
   claimOrder: "code_first",
   prospectDailyLimit: 30,
+  // Monthly targets (25 Nov 2026 — affiliate.targets.js), for every affiliate unless they have
+  // their own: money = what the families they brought in paid in the month (KSh); families =
+  // families whose first invoice was paid in full in the month. 0 = no target. Tracking only.
+  // `targetNotices`: the bell at halfway and on reaching each target.
+  targetMoney: 0,
+  targetFamilies: 0,
+  targetNotices: true,
 };
 const CLAIM_ORDERS = ["code_first", "prospect_first"];
 const TEAM_BASES = ["payment", "commission"];
@@ -85,6 +92,9 @@ function normaliseSettings(raw) {
     claimDays: Math.round(clamp(s.claimDays, 1, 365, DEFAULT_SETTINGS.claimDays)),
     claimOrder: CLAIM_ORDERS.includes(s.claimOrder) ? s.claimOrder : DEFAULT_SETTINGS.claimOrder,
     prospectDailyLimit: Math.round(clamp(s.prospectDailyLimit, 1, 1000, DEFAULT_SETTINGS.prospectDailyLimit)),
+    targetMoney: money(clamp(s.targetMoney, 0, 1e9, DEFAULT_SETTINGS.targetMoney)),
+    targetFamilies: Math.round(clamp(s.targetFamilies, 0, 100000, DEFAULT_SETTINGS.targetFamilies)),
+    targetNotices: s.targetNotices === undefined ? DEFAULT_SETTINGS.targetNotices : Boolean(s.targetNotices),
   };
 }
 
@@ -261,7 +271,115 @@ function totals(commissions) {
 // What the affiliate may see of a family: the first name only.
 const firstNameOf = (name) => String(name || "").trim().split(/\s+/)[0] || "A family";
 
+// Where an affiliate's own Refer & earn is: their educator or parent portal, else the affiliate portal.
+const portalRouteOf = (affiliate) => (affiliate?.kind === "educator" ? "/teacher-portal/refer" : affiliate?.kind === "parent" ? "/parent/refer" : "/affiliate-portal");
+
+// ---- Targets (25 Nov 2026) ------------------------------------------------------------------------
+// Monthly, on the Kenyan calendar (EAT, UTC+3). A month is "YYYY-MM".
+const KENYA_MS = 3 * 60 * 60 * 1000;
+const pad2 = (n) => String(n).padStart(2, "0");
+const isMonth = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(m || ""));
+function monthOf(date = new Date()) {
+  const d = new Date(new Date(date).getTime() + KENYA_MS);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`;
+}
+function addMonths(month, n) {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}`;
+}
+// The month as instants: from Kenyan midnight on the 1st up to (not including) the next month's.
+function monthBounds(month) {
+  const [y, m] = month.split("-").map(Number);
+  return { from: new Date(Date.UTC(y, m - 1, 1) - KENYA_MS), to: new Date(Date.UTC(y, m, 1) - KENYA_MS) };
+}
+const daysInMonth = (month) => { const [y, m] = month.split("-").map(Number); return new Date(Date.UTC(y, m, 0)).getUTCDate(); };
+const monthLabel = (month) => { const [y, m] = month.split("-").map(Number); return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }); };
+// Days left in the month, today included (0 once it's over).
+function daysLeftIn(month, today = new Date()) {
+  const current = monthOf(today);
+  if (month < current) return 0;
+  if (month > current) return daysInMonth(month);
+  return daysInMonth(month) - new Date(today.getTime() + KENYA_MS).getUTCDate() + 1;
+}
+
+// An affiliate's own targets (affiliates.targets), cleaned: only what's set is kept — money,
+// families, and (a manager's) teamMoney / teamFamilies. 0 is kept (= no target for them); an empty
+// box follows Settings. null = Settings for all.
+function normaliseTargets(raw) {
+  const r = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+  if (!r || typeof r !== "object") return null;
+  const out = {};
+  const set = (v) => v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v));
+  if (set(r.money)) out.money = money(clamp(r.money, 0, 1e9, 0));
+  if (set(r.families)) out.families = Math.round(clamp(r.families, 0, 100000, 0));
+  if (set(r.teamMoney)) out.teamMoney = money(clamp(r.teamMoney, 0, 1e9, 0));
+  if (set(r.teamFamilies)) out.teamFamilies = Math.round(clamp(r.teamFamilies, 0, 100000, 0));
+  return Object.keys(out).length ? out : null;
+}
+
+const positive = (v) => (Number(v) > 0 ? Number(v) : null);
+
+// The targets as they apply to one affiliate this month: { money, families } (null = no target),
+// their own if set, else Settings'. `own` tells where each came from.
+function effectiveTargets(settings, affiliate = null) {
+  const s = normaliseSettings(settings);
+  const own = normaliseTargets(affiliate?.targets) || {};
+  return {
+    money: positive(own.money ?? s.targetMoney),
+    families: positive(own.families ?? s.targetFamilies),
+    own: own.money !== undefined || own.families !== undefined,
+  };
+}
+
+// A manager's team targets (the manager and everyone under them together): their own team targets
+// if set, else the sum of everyone's targets (null when no one has one).
+function teamTargets(manager, memberTargets) {
+  const own = normaliseTargets(manager?.targets) || {};
+  const sum = (key) => {
+    const set = memberTargets.map((t) => t[key]).filter((v) => v > 0);
+    return set.length ? (key === "money" ? money(set.reduce((a, b) => a + b, 0)) : set.reduce((a, b) => a + b, 0)) : null;
+  };
+  return {
+    money: own.teamMoney !== undefined ? positive(own.teamMoney) : sum("money"),
+    families: own.teamFamilies !== undefined ? positive(own.teamFamilies) : sum("families"),
+    own: own.teamMoney !== undefined || own.teamFamilies !== undefined,
+  };
+}
+
+// How one measure stands: met, on track (at or ahead of an even pace through the month), behind,
+// missed (a month that's over), or none (no target). The pace counts the days already gone, so the
+// 1st of the month is never "behind".
+function measureProgress(target, value, month, today = new Date()) {
+  const v = Number(value) || 0;
+  if (!(target > 0)) return { target: null, value: v, percent: null, expected: null, remaining: null, state: "none" };
+  const percent = Math.floor((v / target) * 100);
+  const remaining = Math.max(0, target - v);
+  const current = monthOf(today);
+  const base = { target, value: v, percent, remaining };
+  if (v >= target) return { ...base, expected: target, state: "met" };
+  if (month < current) return { ...base, expected: target, state: "missed" };
+  const gone = month > current ? 0 : new Date(today.getTime() + KENYA_MS).getUTCDate() - 1;
+  const expected = (target * gone) / daysInMonth(month);
+  return { ...base, expected: Math.round(expected * 100) / 100, state: v >= expected ? "on_track" : "behind" };
+}
+
+// Both measures together: none (no target), met (every target met), missed, behind, on track.
+function overallState(parts) {
+  const states = parts.map((p) => p.state).filter((s) => s !== "none");
+  if (!states.length) return "none";
+  if (states.every((s) => s === "met")) return "met";
+  if (states.includes("missed")) return "missed";
+  if (states.includes("behind")) return "behind";
+  return "on_track";
+}
+
+// The milestone a percent has reached, for the bell: 100, 50, or null.
+const milestoneReached = (percent) => (percent >= 100 ? 100 : percent >= 50 ? 50 : null);
+
 module.exports = {
+  portalRouteOf, isMonth, monthOf, addMonths, monthBounds, daysInMonth, monthLabel, daysLeftIn,
+  normaliseTargets, effectiveTargets, teamTargets, measureProgress, overallState, milestoneReached,
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, DEFAULT_SETTINGS, TEAM_BASES,
   normaliseSettings, normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, normaliseCode, suggestCode, phoneKey, emailKey, pickAttribution, isSelfReferral,
   CLAIM_ORDERS, nameKey, chooseClaim, prospectState,

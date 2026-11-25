@@ -109,6 +109,9 @@ router.post("/prospects/:id/match", admin, asyncHandler(async (req, res) => {
   ok(res, await AffiliateService.decideProspectMatch(req, req.params.id, approve));
 }));
 
+// Monthly targets (25 Nov 2026): every affiliate's standing in a month (?month=YYYY-MM, default now).
+router.get("/targets", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.targetsBoard(req, req.query.month ? String(req.query.month) : null))));
+
 router.get("/referrals", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listReferrals(req, { affiliateId: req.query.affiliateId || null }))));
 router.post("/referrals/:id/cancel", admin, asyncHandler(async (req, res) => {
   await AffiliateService.cancelReferral(req, req.params.id, z.object({ note: z.string().max(500).optional() }).parse(req.body || {}).note);
@@ -154,6 +157,13 @@ const affiliateSchema = z.object({
     rates: z.record(z.string(), z.union([z.number(), z.string(), z.null()])).optional(),
     periods: z.union([z.number(), z.string(), z.null()]).optional(),
     teamRate: z.union([z.number(), z.string(), z.null()]).optional(),
+  }).optional().nullable(),
+  // Monthly targets of their own (25 Nov 2026) — an empty box follows Settings; team ones for managers.
+  targets: z.object({
+    money: z.union([z.number(), z.string(), z.null()]).optional(),
+    families: z.union([z.number(), z.string(), z.null()]).optional(),
+    teamMoney: z.union([z.number(), z.string(), z.null()]).optional(),
+    teamFamilies: z.union([z.number(), z.string(), z.null()]).optional(),
   }).optional().nullable(),
 });
 router.get("/", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listAffiliates(req))));
