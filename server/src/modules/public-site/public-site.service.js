@@ -302,7 +302,9 @@ const PublicSiteService = {
           const hubs = await publicHubs(await effectiveHubIds(own, c));
           if (!hubs.length) return null; // nowhere to sign up
           // `plans` too: the card's "See plans" shows them without opening the pathway.
-          return { ...item, subscription: planSummary(own.plans), plans: own.plans, image: pathwayImage(own, c), places: placesOf(hubs), hubCount: hubs.length };
+          // `hubIds`: where it runs — the Locations pages (public-location.service.js) list a town's
+          // pathways from these; the hubs themselves are public already (GET /hubs/:id).
+          return { ...item, subscription: planSummary(own.plans), plans: own.plans, image: pathwayImage(own, c), places: placesOf(hubs), hubCount: hubs.length, hubIds: hubs.map((h) => h.id) };
         }),
     );
     return items.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
