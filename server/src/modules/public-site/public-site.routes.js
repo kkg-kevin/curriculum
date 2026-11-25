@@ -44,6 +44,17 @@ router.get("/store/:idOrSlug", getPublicStoreItem);
 router.get("/hubs/types", getPublicHubTypes);
 router.get("/hubs", getPublicHubs);
 
+// Locations (25 Nov 2026): the website's town pages — its hubs grouped by town, with the bootcamps
+// and pathways running there (public-location.service.js). Bare array / object like the rest.
+router.get("/locations", asyncHandler(async (req, res) => {
+  res.json(await require("./public-location.service").list());
+}));
+router.get("/locations/:slug", asyncHandler(async (req, res) => {
+  const town = await require("./public-location.service").get(req.params.slug);
+  if (!town) return res.status(404).json({ message: "Location not found" });
+  res.json(town);
+}));
+
 // A single hub's full profile — reachable only from a bootcamp's "Running at" list (see
 // public-bootcamp.service.js's getHub()), not part of the enrolment-picker hub set above.
 router.get("/hubs/:id", getPublicRunHub);
