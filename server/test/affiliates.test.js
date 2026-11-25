@@ -166,3 +166,66 @@ test("prospects: what the affiliate sees of a claim", () => {
   assert.equal(R.prospectState({ status: "lost" }, null, today).label, "Signed up with another code");
   assert.equal(R.prospectState({ status: "opted_out" }, null, today).key, "opted_out");
 });
+
+// ---- Targets (25 Nov 2026) ------------------------------------------------------------------------
+const T = require("../src/modules/affiliates/affiliate.rules");
+
+test("target months are Kenyan calendar months", () => {
+  // 30 Nov 21:30 UTC is already 1 Dec in Nairobi.
+  assert.equal(T.monthOf(new Date("2026-11-30T21:30:00Z")), "2026-12");
+  assert.equal(T.monthOf(new Date("2026-11-30T20:59:00Z")), "2026-11");
+  const { from, to } = T.monthBounds("2026-11");
+  assert.equal(from.toISOString(), "2026-10-31T21:00:00.000Z");
+  assert.equal(to.toISOString(), "2026-11-30T21:00:00.000Z");
+  assert.equal(T.addMonths("2026-01", -1), "2025-12");
+  assert.equal(T.daysInMonth("2028-02"), 29);
+  assert.equal(T.monthLabel("2026-11"), "November 2026");
+  assert.equal(T.daysLeftIn("2026-11", new Date("2026-11-25T09:00:00Z")), 6);
+  assert.equal(T.daysLeftIn("2026-10", new Date("2026-11-25T09:00:00Z")), 0);
+  assert.equal(T.isMonth("2026-13"), false);
+});
+
+test("an affiliate's own targets beat Settings; 0 means none; empty follows Settings", () => {
+  const settings = { targetMoney: 30000, targetFamilies: 6 };
+  assert.deepEqual(T.effectiveTargets(settings, null), { money: 30000, families: 6, own: false });
+  assert.deepEqual(T.effectiveTargets(settings, { targets: { money: 50000 } }), { money: 50000, families: 6, own: true });
+  assert.deepEqual(T.effectiveTargets(settings, { targets: JSON.stringify({ families: 0, money: "" }) }), { money: 30000, families: null, own: true });
+  assert.equal(T.normaliseTargets({ money: "", families: null }), null);
+  assert.deepEqual(T.normaliseTargets({ money: "-5", teamFamilies: "4.6" }), { money: 0, teamFamilies: 5 });
+  assert.deepEqual(T.effectiveTargets({}, null), { money: null, families: null, own: false });
+});
+
+test("a manager's team target is the team's sum unless set", () => {
+  const members = [{ money: 30000, families: 6 }, { money: 20000, families: null }, { money: null, families: 2 }];
+  assert.deepEqual(T.teamTargets({ targets: null }, members), { money: 50000, families: 8, own: false });
+  assert.deepEqual(T.teamTargets({ targets: { teamMoney: 100000 } }, members), { money: 100000, families: 8, own: true });
+  assert.deepEqual(T.teamTargets({ targets: null }, [{ money: null, families: null }]), { money: null, families: null, own: false });
+});
+
+test("progress is met, on track or behind an even pace, missed once the month is over", () => {
+  const mid = new Date("2026-11-16T09:00:00Z"); // 16 Nov: 15 of 30 days gone
+  assert.equal(T.measureProgress(null, 500, "2026-11", mid).state, "none");
+  const behind = T.measureProgress(30000, 10000, "2026-11", mid);
+  assert.equal(behind.state, "behind");
+  assert.equal(behind.expected, 15000);
+  assert.equal(behind.percent, 33);
+  assert.equal(behind.remaining, 20000);
+  assert.equal(T.measureProgress(30000, 15000, "2026-11", mid).state, "on_track");
+  assert.equal(T.measureProgress(6, 6, "2026-11", mid).state, "met");
+  assert.equal(T.measureProgress(6, 0, "2026-11", new Date("2026-11-01T06:00:00Z")).state, "on_track");
+  assert.equal(T.measureProgress(6, 5, "2026-10", mid).state, "missed");
+  assert.equal(T.overallState([{ state: "met" }, { state: "none" }]), "met");
+  assert.equal(T.overallState([{ state: "met" }, { state: "behind" }]), "behind");
+  assert.equal(T.overallState([{ state: "on_track" }, { state: "missed" }]), "missed");
+  assert.equal(T.overallState([{ state: "none" }]), "none");
+  assert.equal(T.milestoneReached(49), null);
+  assert.equal(T.milestoneReached(50), 50);
+  assert.equal(T.milestoneReached(130), 100);
+});
+
+test("Settings keep target defaults within bounds", () => {
+  const s = T.normaliseSettings({ targetMoney: -1, targetFamilies: "7.4" });
+  assert.equal(s.targetMoney, 0);
+  assert.equal(s.targetFamilies, 7);
+  assert.equal(s.targetNotices, true);
+});

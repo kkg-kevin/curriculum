@@ -28,6 +28,8 @@ const { releaseUnpaidTotSignups } = require("../modules/bootcamp-enrollment/educ
   console.log("Pathway subscriptions:", JSON.stringify(await require("../modules/pathway-subscriptions/pathway-subscription.service").processLapses()));
   // Mentor bookings whose time was held but not paid in time: released, invoice cancelled.
   console.log("Mentor bookings released:", await require("../modules/mentor-bookings/mentor-booking.service").releaseExpiredHolds());
+  // Affiliate targets: last month's standing saved once it's over (affiliate.targets.js).
+  console.log("Affiliate target months:", JSON.stringify(await require("../modules/affiliates/affiliate.targets").closeDueMonths()));
 })()
   .catch((err) => {
     console.error("Part payments processing failed:", err);

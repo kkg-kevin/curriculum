@@ -27,6 +27,8 @@ export const affiliatesApi = {
   payouts: (params = {}) => api.get(`${BASE}/payouts`, { params }).then(data),
   markPaid: (id, body) => api.post(`${BASE}/payouts/${id}/paid`, body).then(data),
   reject: (id, note) => api.post(`${BASE}/payouts/${id}/reject`, { note }).then(data),
+  // Monthly targets (25 Nov 2026): every affiliate's standing in a month (YYYY-MM, default this one).
+  targets: (month) => api.get(`${BASE}/targets`, { params: month ? { month } : {} }).then(data),
   settings: () => api.get(`${BASE}/settings`).then(data),
   saveSettings: (body) => api.put(`${BASE}/settings`, body).then(data),
 

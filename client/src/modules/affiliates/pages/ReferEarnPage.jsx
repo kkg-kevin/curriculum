@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeCanvas } from "qrcode.react";
 import toast from "react-hot-toast";
-import { FiCheckCircle, FiCopy, FiDownload, FiGift, FiLink, FiShare2, FiUsers } from "react-icons/fi";
+import { FiCheckCircle, FiCopy, FiDownload, FiGift, FiLink, FiShare2, FiTarget, FiUsers } from "react-icons/fi";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { affiliatesApi, errorOf, formatDay, formatKsh, METHOD_LABEL } from "../services/affiliatesApi";
 import MyProspects from "../components/MyProspects";
+import { TargetBar, TargetPill, toGo } from "../components/TargetProgress";
 
 // "Refer & earn" (/parent/refer, /teacher-portal/refer, and /affiliate-portal for someone signed in
 // as Affiliate): an affiliate's own place in the referral programme (server: modules/affiliates/,
@@ -211,6 +212,70 @@ function TeamCard({ team, programme }) {
   );
 }
 
+// This month's targets (25 Nov 2026 — server: affiliate.targets.js): money their families paid and
+// families paying for the first time, against an even pace through the month; a manager's team
+// below; the months before (as they stood when each ended). Shown once there's a target.
+const hasTarget = (s) => Boolean(s && (s.money?.target != null || s.families?.target != null));
+const PACE_LINE = {
+  met: "You've reached your target this month — well done.",
+  on_track: "You're on track.",
+  behind: "You're a little behind an even pace — a few more shares this week will help.",
+};
+
+function TargetCard({ targets }) {
+  const { own, team, history } = targets;
+  const past = history.filter((h) => h.own && (h.own.moneyTarget != null || h.own.familiesTarget != null));
+  if (!hasTarget(own) && !hasTarget(team) && past.length === 0) return null;
+  return (
+    <section style={{ ...card, padding: 18, display: "grid", gap: 14 }}>
+      <div className="re-row">
+        <h2 style={cardHeading}><FiTarget size={13} /> Your target for {targets.label}</h2>
+        <span style={{ fontSize: 12.5, color: BRAND.muted }}>{targets.daysLeft} {targets.daysLeft === 1 ? "day" : "days"} left</span>
+      </div>
+      {hasTarget(own) ? (
+        <>
+          <div style={{ display: "grid", gap: "14px 32px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
+            {own.money.target != null && <TargetBar kind="money" progress={own.money} label="Money your families paid" />}
+            {own.families.target != null && <TargetBar kind="families" progress={own.families} label="Families paying for the first time" />}
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 13.5, color: BRAND.inkSoft }}>
+            <TargetPill state={own.state} />
+            <span>{PACE_LINE[own.state] || ""}{own.state !== "met" && toGo(own) ? ` ${toGo(own)}.` : ""}</span>
+          </div>
+          {own.onTheWay > 0 && <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>{own.onTheWay} {own.onTheWay === 1 ? "family has" : "families have"} signed up this month but not paid yet — they count once they pay.</p>}
+        </>
+      ) : <p style={{ margin: 0, fontSize: 13.5, color: BRAND.muted }}>No target of your own this month.</p>}
+      {hasTarget(team) && (
+        <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 12, border: `1px solid ${BRAND.line}`, background: "#FBFCFE" }}>
+          <div className="re-row">
+            <strong style={{ fontSize: 13.5, color: BRAND.ink }}><FiUsers size={13} style={{ verticalAlign: "-2px" }} /> Your team (you + {team.size})</strong>
+            <TargetPill state={team.state} />
+          </div>
+          <div style={{ display: "grid", gap: "14px 32px", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
+            {team.money.target != null && <TargetBar kind="money" progress={team.money} label="Money" compact />}
+            {team.families.target != null && <TargetBar kind="families" progress={team.families} label="Families" compact />}
+          </div>
+        </div>
+      )}
+      {past.length > 0 && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Months before</span>
+          {past.map((h) => (
+            <div key={h.month} className="re-row" style={{ fontSize: 13, color: BRAND.inkSoft, borderTop: `1px solid ${BRAND.line}`, paddingTop: 6 }}>
+              <span>{h.label}</span>
+              <span className="re-row__end">
+                <span>{formatKsh(h.own.money)}{h.own.moneyTarget != null ? ` of ${formatKsh(h.own.moneyTarget).replace("KSh ", "")}` : ""} · {h.own.families}{h.own.familiesTarget != null ? ` of ${h.own.familiesTarget}` : ""} {(h.own.familiesTarget ?? h.own.families) === 1 ? "family" : "families"}</span>
+                <TargetPill state={h.own.met ? "met" : "missed"} />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p style={{ margin: 0, fontSize: 12, color: BRAND.muted, lineHeight: 1.5 }}>Money counts every payment the families you referred make in the month; a family counts the month their first invoice is paid in full. The tick on each bar is where an even pace would be today. Targets track progress — your earnings are as before.</p>
+    </section>
+  );
+}
+
 function PayoutCard({ data }) {
   const qc = useQueryClient();
   const { affiliate, totals, programme, kind } = data;
@@ -329,6 +394,7 @@ export default function ReferEarnPage() {
             <Stat label="Paid to you" value={formatKsh(data.totals.paid)} />
             <Stat label="Families referred" value={data.referrals.length} />
           </div>
+          {data.targets && <TargetCard targets={data.targets} />}
           {/* Families they've talked to — theirs while the claim is open (19 Nov 2026). */}
           {affiliate.status === "active" && <MyProspects />}
           {affiliate.status === "active" && <PayoutCard data={data} />}
