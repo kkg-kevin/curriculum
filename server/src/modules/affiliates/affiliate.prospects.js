@@ -5,7 +5,7 @@ const { generateId, toJson } = require("../../shared/utils/model.utils");
 const NotificationService = require("../notifications/notification.service");
 const { queueMail } = require("../../shared/mail/mail.service");
 const { renderEmail, appUrl } = require("../../shared/mail/mail.layout");
-const { normaliseSettings, phoneKey, emailKey, nameKey, prospectState, PROGRAMMES, PROGRAMME_LABEL } = require("./affiliate.rules");
+const { normaliseSettings, phoneKey, emailKey, nameKey, prospectState, stageOf, stageProblem, PROSPECT_STAGES, PROGRAMMES, PROGRAMME_LABEL } = require("./affiliate.rules");
 
 // Prospects (19 Nov 2026) — families an affiliate has talked to and pre-registers. While the claim
 // is open (Settings' claimDays, 60 by default), a sign-up whose parent phone or email matches is that
@@ -21,6 +21,12 @@ const { normaliseSettings, phoneKey, emailKey, nameKey, prospectState, PROGRAMME
 //   - a sign-up with only the same parent name is a *possible match* for an admin to decide.
 // Privacy (Data Protection Act): the affiliate confirms the family agreed to be contacted; an
 // invite carries an opt-out link; an expired, released or opted-out claim keeps the first name only.
+//
+// 26 Nov 2026: a family our TEAM registers (Affiliates -> Prospects -> Register a family) is the
+// team's own (affiliateId empty): no affiliate earns from it, it has no claim clock, and while it's
+// open no affiliate can add them. Every prospect has a stage (new, contacted, interested... see
+// affiliate.rules.js's PROSPECT_STAGES), set by its affiliate or our team; the affiliate and our
+// team can both correct its details. Move and Release are gone.
 
 const T = "affiliate_prospects";
 const N = "affiliate_prospect_notes";
@@ -51,12 +57,15 @@ const wiped = (p, status, reason) => ({
 });
 // The team's follow-up notes can hold personal details too: they go when the details go.
 const dropNotes = (ids) => db(N).whereIn("prospectId", [].concat(ids).filter(Boolean)).del();
+// Still holding the family: the team's own (no clock), or an affiliate's before its end date.
+const live = (q) => q.where((w) => w.whereNull("affiliateId").orWhere("expiresAt", ">", now()));
+const isTeam = (p) => !p.affiliateId;
 
 // ---- Housekeeping -----------------------------------------------------------------------------------
 // Open claims past their end date become expired (and lose their details). Cheap; run before any
 // read or match.
 async function expireDue(ownerAdminId = null) {
-  const q = db(T).where({ status: "open" }).where("expiresAt", "<", now());
+  const q = db(T).where({ status: "open" }).whereNotNull("affiliateId").where("expiresAt", "<", now());
   if (ownerAdminId) q.where({ ownerAdminId });
   const due = await q.select("id", "parentName");
   for (const p of due) await db(T).where({ id: p.id, status: "open" }).update(wiped(p, "expired", "The claim period ended"));
@@ -87,7 +96,7 @@ async function alreadyWithUs({ pKey, eKey }) {
 
 async function openClaimOn(ownerAdminId, { pKey, eKey }) {
   if (!pKey && !eKey) return null;
-  return db(T).where({ ownerAdminId, status: "open" }).where("expiresAt", ">", now())
+  return live(db(T).where({ ownerAdminId, status: "open" }))
     .where((q) => {
       if (pKey) q.orWhere({ phoneKey: pKey });
       if (eKey) q.orWhere({ emailKey: eKey });
@@ -99,27 +108,31 @@ const isSelf = (affiliate, { pKey, eKey }) => Boolean(
 );
 
 // One prospect, checked and saved. `data` is validated by the routes. → the saved row.
-async function add(affiliate, data, { source = "portal", createdBy = null, skipDailyLimit = false } = {}) {
-  if (!affiliate || affiliate.status !== "active") fail("Only an active affiliate can add families", 403);
-  const settings = await settingsFor(affiliate.ownerAdminId);
-  if (!settings.enabled || !settings.prospectsEnabled) fail("Adding families isn't open at the moment", 403);
-  await expireDue(affiliate.ownerAdminId);
+// `affiliate` null + `teamOf` (an ownerAdminId): our team's own family.
+async function add(affiliate, data, { source = "portal", createdBy = null, skipDailyLimit = false, teamOf = null } = {}) {
+  const team = !affiliate && teamOf;
+  if (!team && (!affiliate || affiliate.status !== "active")) fail("Only an active affiliate can add families", 403);
+  const ownerAdminId = team ? teamOf : affiliate.ownerAdminId;
+  const settings = await settingsFor(ownerAdminId);
+  if (!team && (!settings.enabled || !settings.prospectsEnabled)) fail("Adding families isn't open at the moment", 403);
+  await expireDue(ownerAdminId);
   const pKey = phoneKey(data.phone);
   const eKey = emailKey(data.email);
   if (!pKey && !eKey) fail("Give the parent's phone number or email — that's how we recognise them when they sign up");
-  if (isSelf(affiliate, { pKey, eKey })) fail("You can't add yourself");
-  if (!skipDailyLimit) {
+  if (!team && isSelf(affiliate, { pKey, eKey })) fail("You can't add yourself");
+  if (!team && !skipDailyLimit) {
     const since = new Date(Date.now() - 24 * 3600e3);
     const today = Number((await db(T).where({ affiliateId: affiliate.id }).where("createdAt", ">", since).count({ n: "*" }).first()).n) || 0;
     if (today >= settings.prospectDailyLimit) fail(`You can add up to ${settings.prospectDailyLimit} families a day — try again tomorrow`, 429);
   }
-  const held = await openClaimOn(affiliate.ownerAdminId, { pKey, eKey });
-  if (held && held.affiliateId === affiliate.id) fail("This family is already on your list", 409);
-  if (held || await alreadyWithUs({ pKey, eKey })) fail(CANT_ADD, 409);
+  const held = await openClaimOn(ownerAdminId, { pKey, eKey });
+  if (held && (team ? isTeam(held) : held.affiliateId === affiliate.id)) fail(team ? "This family is already on our list" : "This family is already on your list", 409);
+  if (held && team) fail(`${await affiliateName(held.affiliateId)} already has this family on their list (until ${new Date(held.expiresAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}).`, 409);
+  if (held || await alreadyWithUs({ pKey, eKey })) fail(team ? "This family is already with us (a parent, a learner's guardian or an earlier sign-up)." : CANT_ADD, 409);
   const row = {
     id: generateId(),
-    ownerAdminId: affiliate.ownerAdminId,
-    affiliateId: affiliate.id,
+    ownerAdminId,
+    affiliateId: team ? null : affiliate.id,
     parentName: String(data.parentName).trim().slice(0, 150),
     phone: data.phone ? String(data.phone).trim().slice(0, 40) : null,
     phoneKey: pKey,
@@ -133,7 +146,8 @@ async function add(affiliate, data, { source = "portal", createdBy = null, skipD
     createdBy,
     consentAt: now(),
     status: "open",
-    expiresAt: new Date(Date.now() + settings.claimDays * 864e5),
+    stage: "new",
+    expiresAt: new Date(Date.now() + settings.claimDays * 864e5), // not used for the team's own
     inviteToken: crypto.randomBytes(24).toString("hex"),
     createdAt: now(),
     updatedAt: now(),
@@ -141,6 +155,8 @@ async function add(affiliate, data, { source = "portal", createdBy = null, skipD
   await db(T).insert(row);
   return row;
 }
+
+const affiliateName = async (id) => (id ? (await db(A).where({ id }).first("name"))?.name : null) || "An affiliate";
 
 // Several at once (a spreadsheet): each row added or refused on its own. → [{ row, ok, id?, error? }]
 async function addMany(affiliate, rows, opts = {}) {
@@ -169,12 +185,13 @@ async function matchFor(ownerAdminId, parent = {}) {
   const pKey = phoneKey(parent.phone);
   const eKey = emailKey(parent.email);
   if (!pKey && !eKey) return null;
-  const rows = await db(T).where({ ownerAdminId, status: "open" }).where("expiresAt", ">", now())
+  const rows = await live(db(T).where({ ownerAdminId, status: "open" }))
     .where((q) => {
       if (pKey) q.orWhere({ phoneKey: pKey });
       if (eKey) q.orWhere({ emailKey: eKey });
     }).orderBy("createdAt");
   for (const p of rows) {
+    if (isTeam(p)) return { prospect: p, affiliate: null, team: true }; // our own family: nobody earns
     const affiliate = await db(A).where({ id: p.affiliateId }).first();
     if (affiliate && affiliate.status === "active") return { prospect: p, affiliate };
   }
@@ -185,12 +202,26 @@ async function matchFor(ownerAdminId, parent = {}) {
 // typed code won (lost).
 async function settle(prospect, referral, winnerAffiliateId) {
   if (!prospect) return;
-  if (prospect.affiliateId === winnerAffiliateId) {
-    await db(T).where({ id: prospect.id }).update({ status: "signed_up", referralId: referral.id, convertedAt: now(), updatedAt: now() });
+  // Our team's own family is ours whoever (if anyone) the sign-up was credited to.
+  if (isTeam(prospect) || prospect.affiliateId === winnerAffiliateId) {
+    await db(T).where({ id: prospect.id }).update({ status: "signed_up", stage: "signed_up", referralId: referral?.id || null, convertedAt: now(), updatedAt: now() });
   } else {
     await db(T).where({ id: prospect.id, status: "open" }).update(wiped(prospect, "lost", "The family signed up with another affiliate's code"));
     await dropNotes(prospect.id);
   }
+}
+
+// A sign-up the affiliate rules never looked at (the programme switched off, prospects off, a
+// referral already recorded): our team's own families matching it are still marked signed up.
+async function settleTeamFor(ownerAdminId, parent = {}) {
+  const pKey = phoneKey(parent.phone);
+  const eKey = emailKey(parent.email);
+  if (!ownerAdminId || (!pKey && !eKey)) return 0;
+  return db(T).where({ ownerAdminId, status: "open" }).whereNull("affiliateId")
+    .where((q) => {
+      if (pKey) q.orWhere({ phoneKey: pKey });
+      if (eKey) q.orWhere({ emailKey: eKey });
+    }).update({ status: "signed_up", stage: "signed_up", convertedAt: now(), updatedAt: now() });
 }
 
 // A sign-up nobody is credited for, whose parent has the same name as an open claim: kept on the
@@ -198,7 +229,7 @@ async function settle(prospect, referral, winnerAffiliateId) {
 async function notePossibleMatch(ownerAdminId, parent = {}, ctx = {}) {
   const key = nameKey(parent.name);
   if (!key || !key.includes(" ")) return null; // a first name alone is too common to suggest
-  const candidates = await db(T).where({ ownerAdminId, status: "open" }).where("expiresAt", ">", now()).whereNull("possibleMatch").select("id", "parentName", "affiliateId");
+  const candidates = await live(db(T).where({ ownerAdminId, status: "open" })).whereNull("possibleMatch").select("id", "parentName", "affiliateId");
   const hit = candidates.find((p) => nameKey(p.parentName) === key);
   if (!hit) return null;
   const match = { programme: ctx.programme, recordId: ctx.recordId, invoiceId: ctx.invoiceId || null, parent: { name: parent.name || null, email: parent.email || null, phone: parent.phone || null, userId: parent.userId || null }, detail: ctx.detail || null, at: now().toISOString() };
@@ -206,7 +237,7 @@ async function notePossibleMatch(ownerAdminId, parent = {}, ctx = {}) {
   await NotificationService._notify(ownerAdminId, {
     type: "affiliate_possible_match",
     title: "A sign-up may be an affiliate's family",
-    message: `${parent.name} signed up for ${PROGRAMME_LABEL[ctx.programme] || "a programme"} with the same name as a family an affiliate registered. Check and decide.`,
+    message: `${parent.name} signed up for ${PROGRAMME_LABEL[ctx.programme] || "a programme"} with the same name as a family ${hit.affiliateId ? "an affiliate" : "our team"} registered. Check and decide.`,
     ownerAdminId,
     payload: { route: "/affiliates?tab=prospects&filter=matches" },
     dedupeKey: `affiliate_possible_match:${hit.id}:${ctx.recordId}`,
@@ -230,6 +261,7 @@ async function listMine(affiliate) {
   const refs = await referralsById(rows);
   return {
     settings: { enabled: settings.enabled && settings.prospectsEnabled, claimDays: settings.claimDays, dailyLimit: settings.prospectDailyLimit, claimOrder: settings.claimOrder },
+    stages: PROSPECT_STAGES,
     canInvite: Boolean(websiteUrl()),
     link: linkFor(affiliate.code),
     prospects: rows.map((p) => {
@@ -239,7 +271,8 @@ async function listMine(affiliate) {
       return {
         id: p.id, parentName: open ? p.parentName : firstName(p.parentName), phone: open ? p.phone : null, email: open ? p.email : null,
         childName: open ? p.childName : null, childAge: open ? p.childAge : null, programme: p.programme, programmeLabel: PROGRAMME_LABEL[p.programme] || null,
-        notes: open ? p.notes : null, state, expiresAt: p.expiresAt, createdAt: p.createdAt, invitedAt: p.invitedAt, inviteCount: p.inviteCount,
+        notes: open ? p.notes : null, state, stage: stageOf(p).key, stageLabel: stageOf(p).label, stageAt: p.stageAt,
+        expiresAt: p.expiresAt, createdAt: p.createdAt, invitedAt: p.invitedAt, inviteCount: p.inviteCount,
         signedUpFor: ref ? PROGRAMME_LABEL[ref.programme] : null, convertedAt: p.convertedAt,
       };
     }),
@@ -247,20 +280,23 @@ async function listMine(affiliate) {
 }
 
 // Every claim in the workspace, for the Affiliates page. `filter`: open | signed_up | closed | matches.
-async function listAll(ownerAdminId, { filter = null, affiliateId = null } = {}) {
+async function listAll(ownerAdminId, { filter = null, affiliateId = null, stage = null } = {}) {
   await expireDue(ownerAdminId);
   let q = db(T).where({ ownerAdminId });
-  if (affiliateId) q = q.where({ affiliateId });
+  if (affiliateId === "team") q = q.whereNull("affiliateId");
+  else if (affiliateId) q = q.where({ affiliateId });
+  if (stage === "signed_up") q = q.where({ status: "signed_up" });
+  else if (stage) q = q.where({ stage }).where({ status: "open" });
   if (filter === "open") q = q.where({ status: "open" });
   if (filter === "signed_up") q = q.where({ status: "signed_up" });
   if (filter === "closed") q = q.whereIn("status", ["lost", "expired", "released", "opted_out"]);
   if (filter === "matches") q = q.whereNotNull("possibleMatch").where({ status: "open" });
   const rows = await q.orderBy("createdAt", "desc").limit(1000);
-  const affIds = [...new Set(rows.map((p) => p.affiliateId))];
+  const affIds = [...new Set(rows.map((p) => p.affiliateId).filter(Boolean))];
   const affs = affIds.length ? await db(A).whereIn("id", affIds).select("id", "name", "code", "status") : [];
   const affById = new Map(affs.map((a) => [a.id, a]));
   const refs = await referralsById(rows);
-  const all = await db(T).where({ ownerAdminId }).select("status", "possibleMatch");
+  const all = await db(T).where({ ownerAdminId }).select("status", "possibleMatch", "stage", "affiliateId");
   const notes = rows.length ? await db(N).whereIn("prospectId", rows.map((p) => p.id)).orderBy("createdAt", "desc").select("prospectId", "body", "authorName", "createdAt") : [];
   const latestNote = new Map();
   const noteCount = new Map();
@@ -274,14 +310,20 @@ async function listAll(ownerAdminId, { filter = null, affiliateId = null } = {})
       signed_up: all.filter((p) => p.status === "signed_up").length,
       closed: all.filter((p) => ["lost", "expired", "released", "opted_out"].includes(p.status)).length,
       matches: all.filter((p) => p.status === "open" && p.possibleMatch).length,
+      stages: Object.fromEntries(PROSPECT_STAGES.map((st) => [st.key, all.filter((p) => (p.status === "open" || p.status === "signed_up") && stageOf(p).key === st.key).length])),
     },
+    stages: PROSPECT_STAGES,
     prospects: rows.map((p) => {
       const match = typeof p.possibleMatch === "string" ? JSON.parse(p.possibleMatch) : p.possibleMatch;
       return {
         ...p,
         possibleMatch: match ? { ...match, programmeLabel: PROGRAMME_LABEL[match.programme] || match.programme } : null,
         affiliate: affById.get(p.affiliateId) || null,
+        team: isTeam(p),
         state: prospectState(p, refs.get(p.referralId)),
+        stage: stageOf(p).key,
+        stageLabel: stageOf(p).label,
+        stageHistory: undefined,
         programmeLabel: PROGRAMME_LABEL[p.programme] || null,
         latestNote: latestNote.get(p.id) ? { body: latestNote.get(p.id).body, authorName: latestNote.get(p.id).authorName, at: latestNote.get(p.id).createdAt } : null,
         noteCount: noteCount.get(p.id) || 0,
@@ -299,7 +341,7 @@ async function detail(ownerAdminId, id) {
   await expireDue(ownerAdminId);
   const p = await owned(id, { ownerAdminId });
   const [affiliate, notes, createdBy, refs, settings] = await Promise.all([
-    db(A).where({ id: p.affiliateId }).first("id", "name", "code", "email", "phone", "status", "kind"),
+    p.affiliateId ? db(A).where({ id: p.affiliateId }).first("id", "name", "code", "email", "phone", "status", "kind") : null,
     db(N).where({ prospectId: p.id }).orderBy("createdAt", "asc"),
     p.createdBy ? db("users").where({ id: p.createdBy }).first("name") : null,
     referralsById([p]),
@@ -312,7 +354,12 @@ async function detail(ownerAdminId, id) {
     inviteToken: undefined, phoneKey: undefined, emailKey: undefined,
     possibleMatch: match ? { ...match, programmeLabel: PROGRAMME_LABEL[match.programme] || match.programme } : null,
     affiliate: affiliate || null,
+    team: isTeam(p),
     state: prospectState(p, ref),
+    stage: stageOf(p).key,
+    stageLabel: stageOf(p).label,
+    stages: PROSPECT_STAGES,
+    stageHistory: (typeof p.stageHistory === "string" ? JSON.parse(p.stageHistory || "[]") : p.stageHistory || []).map((h) => ({ ...h, label: PROSPECT_STAGES.find((st) => st.key === h.stage)?.label || h.stage })),
     programmeLabel: PROGRAMME_LABEL[p.programme] || null,
     referral: ref ? { id: ref.id, status: ref.status, programme: ref.programme, programmeLabel: PROGRAMME_LABEL[ref.programme] || ref.programme, createdAt: ref.createdAt } : null,
     followUpOn: dateOnly(p.followUpOn),
@@ -358,10 +405,33 @@ async function owned(id, { affiliateId = null, ownerAdminId = null }) {
   return p;
 }
 
-async function updateMine(affiliate, id, data) {
-  const p = await owned(id, { affiliateId: affiliate.id });
-  if (p.status !== "open") fail("This claim has closed", 409);
+// The family's details, corrected by its affiliate (`scope.affiliateId`) or our team
+// (`scope.ownerAdminId`) while the prospect is open. A new phone or email is checked as when adding:
+// one of them stays, and it can't be a family already with us or on someone else's list.
+async function updateDetails(id, scope, data) {
+  const p = await owned(id, scope);
+  if (p.status !== "open") fail(p.status === "signed_up" ? "They've signed up, so their details are on their account now" : "This claim has closed", 409);
+  const pKey = phoneKey(data.phone);
+  const eKey = emailKey(data.email);
+  if (!pKey && !eKey) fail("Give the parent's phone number or email — that's how we recognise them when they sign up");
+  if (p.affiliateId) {
+    const affiliate = await db(A).where({ id: p.affiliateId }).first();
+    if (affiliate && isSelf(affiliate, { pKey, eKey })) fail("That's the affiliate's own phone or email");
+  }
+  const newP = pKey && pKey !== p.phoneKey ? pKey : null;
+  const newE = eKey && eKey !== p.emailKey ? eKey : null;
+  if (newP || newE) {
+    const held = await openClaimOn(p.ownerAdminId, { pKey: newP, eKey: newE });
+    if ((held && held.id !== p.id) || await alreadyWithUs({ pKey: newP, eKey: newE })) {
+      fail("That phone or email belongs to a family who is already with us or on another list.", 409);
+    }
+  }
   await db(T).where({ id }).update({
+    parentName: String(data.parentName).trim().slice(0, 150),
+    phone: data.phone ? String(data.phone).trim().slice(0, 40) : null,
+    phoneKey: pKey,
+    email: data.email ? String(data.email).trim().slice(0, 255) : null,
+    emailKey: eKey,
     childName: data.childName ? String(data.childName).trim().slice(0, 150) : null,
     childAge: data.childAge ? Number(data.childAge) : null,
     programme: PROGRAMMES.includes(data.programme) ? data.programme : null,
@@ -371,21 +441,15 @@ async function updateMine(affiliate, id, data) {
   return { ok: true };
 }
 
-async function release(id, scope, reason) {
+// Where the conversation stands (`stage`), by its affiliate or our team; every change is kept.
+async function setStage(id, scope, stage, byName) {
   const p = await owned(id, scope);
-  if (p.status !== "open") fail("Only an open claim can be released", 409);
-  await db(T).where({ id, status: "open" }).update(wiped(p, "released", reason));
-  await dropNotes(id);
-  return { ok: true };
-}
-
-// An admin gives the claim to another affiliate (same workspace, active). The clock carries on.
-async function reassign(ownerAdminId, id, affiliateId) {
-  const p = await owned(id, { ownerAdminId });
-  if (p.status !== "open") fail("Only an open claim can be moved", 409);
-  const to = await db(A).where({ id: affiliateId, ownerAdminId }).first();
-  if (!to || to.status !== "active") fail("Choose an active affiliate");
-  await db(T).where({ id }).update({ affiliateId: to.id, updatedAt: now() });
+  const problem = stageProblem(p, stage);
+  if (problem) fail(problem, 409);
+  if ((p.stage || "new") === stage) return { ok: true };
+  const history = typeof p.stageHistory === "string" ? JSON.parse(p.stageHistory || "[]") : p.stageHistory || [];
+  history.push({ stage, from: p.stage || "new", at: now().toISOString(), by: byName || null });
+  await db(T).where({ id }).update({ stage, stageAt: now(), stageBy: byName ? String(byName).slice(0, 150) : null, stageHistory: toJson(history.slice(-100)), updatedAt: now() });
   return { ok: true };
 }
 
@@ -400,6 +464,11 @@ async function decideMatch(ownerAdminId, id, approve, recordReferralFn) {
     return { ok: true, approved: false };
   }
   if (p.status !== "open") fail("This claim has closed", 409);
+  if (isTeam(p)) {
+    // Our own family: nobody earns; it's simply marked signed up.
+    await db(T).where({ id }).update({ status: "signed_up", stage: "signed_up", convertedAt: now(), possibleMatch: null, updatedAt: now() });
+    return { ok: true, approved: true, team: true };
+  }
   if (await db(R).where({ programme: match.programme, recordId: match.recordId }).first("id")) fail("That sign-up is already credited to an affiliate — change it on the Referrals tab", 409);
   const referral = await recordReferralFn({ ownerAdminId, programme: match.programme, recordId: match.recordId, invoiceId: match.invoiceId, parent: match.parent, detail: match.detail, forceProspectId: p.id });
   if (!referral) fail("The referral couldn't be recorded — is the programme switched on and the affiliate active?", 409);
@@ -467,6 +536,6 @@ async function optOut(token) {
 }
 
 module.exports = {
-  CANT_ADD, settingsFor, expireDue, add, addMany, matchFor, settle, notePossibleMatch, listMine, listAll, updateMine, release, reassign, decideMatch, invite, optOut, inviteText,
+  CANT_ADD, settingsFor, expireDue, add, addMany, matchFor, settle, notePossibleMatch, listMine, listAll, updateDetails, setStage, settleTeamFor, decideMatch, invite, optOut, inviteText,
   detail, addNote, deleteNote, setFollowUp,
 };

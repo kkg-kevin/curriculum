@@ -5,6 +5,7 @@ import Header from "../components/ui/Header";
 import Footer from "../components/ui/Footer";
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
+import AnnouncementPopup from "../modules/announcements/components/AnnouncementPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -54,6 +55,7 @@ export default function AffiliatePortalLayout() {
       </div>
       {/* General events: the sign-in pop-up. */}
       <GeneralEventPopup />
+      <AnnouncementPopup />
 
       <style>{`
         .affiliate-shell {

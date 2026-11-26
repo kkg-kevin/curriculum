@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiArrowRight, FiUsers, FiFlag, FiStar, FiUserPlus } from "react-icons/fi";
+import { FiArrowRight, FiUsers, FiFlag, FiStar, FiUserPlus, FiVolume2 } from "react-icons/fi";
+import { announcementsApi } from "../../announcements/services/announcementsApi";
 import { connectApi, mediaUrl } from "../services/connectApi";
 import { C, FONT, card, btn, pill, Chips, Empty, ErrorBox, Loading, MemberAvatar, SectionTitle, IconFor, errorOf, useNarrow } from "../components/kit";
 import { Composer, PostCard, Comments } from "../components/posts";
@@ -150,6 +151,28 @@ export function PostList({ query, me, communities, emptyText }) {
   );
 }
 
+// Announcements from the Digifunzi team that reached this learner (26 Nov 2026), on top of the feed:
+// the live ones, newest first — each opens on their Announcements page.
+function AnnouncementStrip() {
+  const { data } = useQuery({ queryKey: ["announcements", "mine"], queryFn: announcementsApi.mine });
+  const live = (data?.announcements || []).filter((a) => a.state === "live").slice(0, 3);
+  if (!live.length) return null;
+  return (
+    <section style={{ ...card, padding: 14, display: "grid", gap: 8, borderColor: C.navyBorder, background: C.navyTint }}>
+      <SectionTitle right={<Link to="/learner-portal/announcements" style={btn("link")}>All</Link>}><FiVolume2 /> From the Digifunzi team</SectionTitle>
+      {live.map((a) => (
+        <Link key={a.id} to={`/learner-portal/announcements/${a.id}`} style={{ display: "grid", gap: 3, padding: "9px 11px", borderRadius: 12, background: "#fff", border: `1px solid ${C.line}`, textDecoration: "none", color: C.ink }}>
+          <span style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            {!a.seen && <span style={pill("waiting")}>New</span>}
+            <strong>{a.title}</strong>
+          </span>
+          {a.summary && <span style={{ fontSize: 13, color: C.inkSoft }}>{a.summary}</span>}
+        </Link>
+      ))}
+    </section>
+  );
+}
+
 export function FeedPage() {
   const { me } = useOutletContext();
   const wide = !useNarrow(1100);
@@ -163,6 +186,7 @@ export function FeedPage() {
     // On a laptop the feed takes most of the screen with a side column beside it; narrower, one column.
     <div style={{ display: "grid", gridTemplateColumns: wide ? "minmax(0, 1fr) 340px" : "100%", gap: 16, alignItems: "start" }}>
     <div style={{ display: "grid", gap: 14 }}>
+      <AnnouncementStrip />
       {writing && <Composer me={me} communities={mine.data || []} />}
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 0 }}><Chips options={(me.catalogue?.categories || [])} value={category} onChange={setCategory} /></div>

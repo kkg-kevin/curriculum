@@ -1,7 +1,7 @@
 const db = require("../../config/db");
 const { kenyaToday } = require("../../shared/utils/age");
 
-// "Moved on" learners of a bootcamp run's class (27 Nov 2026). A hub holds one place per learner,
+// "Moved on" learners of a bootcamp run's class (26 Nov 2026). A hub holds one place per learner,
 // so a learner brought back for the NEXT run of the same bootcamp (same curriculum, same hub)
 // leaves this class for that run's class (learner-moves/ moveIntoClass, written to
 // learner_transfers). They stay on this class as a FORMER member: shown under "Moved on" and kept
@@ -98,4 +98,44 @@ async function withRunInfo(classes) {
   });
 }
 
-module.exports = { formerMembersOf, formerMembers, finishingLearnerIds, runsOfClasses, withRunInfo, runState };
+
+const fmtDay = (d) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "");
+
+// A class of a bootcamp run only takes dates inside that run. When someone dates an OLD run's class
+// for the next run (26 Nov 2026 — both runs' classes sit side by side at the hub), this says which
+// run the class belongs to and names the same cohort's class in the newest run of the same bootcamp
+// at that hub that hasn't ended. null for a class that isn't a run's.
+async function laterRunClassOf(classId) {
+  const [info] = await withRunInfo([{ id: classId }]);
+  const run = info?.bootcampRun;
+  if (!run) return null;
+  const cls = await db("classes").where({ id: classId }).first("schoolId", "gradeId", "gradeName");
+  const today = kenyaToday();
+  const later = (await db("bootcamps").where((q) => q.where({ seriesId: run.seriesId }).orWhere({ id: run.seriesId })).whereNot({ id: run.id })
+    .select("id", "name", "startDate", "endDate"))
+    .filter((b) => runState(b, today) !== "ended" && (dayOf(b.startDate) || "") > (run.startDate || ""))
+    .sort((a, b) => (dayOf(a.startDate) || "").localeCompare(dayOf(b.startDate) || ""));
+  let next = null;
+  for (const b of later) {
+    // eslint-disable-next-line no-await-in-loop
+    const offering = await db("bootcamp_hubs").where({ bootcampId: b.id, hubId: cls?.schoolId }).first("classIds");
+    const ids = list(offering?.classIds);
+    // eslint-disable-next-line no-await-in-loop
+    const match = ids.length ? await db("classes").whereIn("id", ids).where({ gradeId: cls.gradeId }).whereNot({ status: "inactive" }).first("id", "gradeName", "streamName") : null;
+    if (match) { next = { id: match.id, label: [match.gradeName, match.streamName].filter(Boolean).join(" · "), runId: b.id, startDate: dayOf(b.startDate), endDate: dayOf(b.endDate) }; break; }
+  }
+  return { run, next, laterRunWithoutClass: !next && later.length ? { id: later[0].id, startDate: dayOf(later[0].startDate) } : null };
+}
+
+// The sentence for a date refused on a run's class: whose run it is, and where to go instead.
+async function outsideRunHint(classId) {
+  const found = await laterRunClassOf(classId).catch(() => null);
+  if (!found) return "";
+  const { run, next, laterRunWithoutClass } = found;
+  const span = `${fmtDay(run.startDate)} to ${fmtDay(run.endDate)}`;
+  if (next) return ` This class belongs to the run of ${span}. For the run starting ${fmtDay(next.startDate)}, use its own class: ${next.label}.`;
+  if (laterRunWithoutClass) return ` This class belongs to the run of ${span}. The run starting ${fmtDay(laterRunWithoutClass.startDate)} has no class for this cohort at this hub yet: open that run's page and add the hub (or "Add missing classes" on it).`;
+  return ` This class belongs to the run of ${span}. To run the bootcamp again, use "Schedule another run" on the bootcamp's page: the new run gets its own classes with its own dates.`;
+}
+
+module.exports = { formerMembersOf, formerMembers, finishingLearnerIds, runsOfClasses, withRunInfo, runState, laterRunClassOf, outsideRunHint };

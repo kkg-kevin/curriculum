@@ -993,7 +993,7 @@ const AssessmentSubmissionService = {
     // links for this class instead (see learner-hub-link.model.js).
     const links = await LearnerHubLinkModel.findByClassId(issue.classId);
     // Learners who moved on to the next run of the same bootcamp stay on the roster to be marked
-    // here (27 Nov 2026, classes/class-former-members.js), tagged movedOn.
+    // here (26 Nov 2026, classes/class-former-members.js), tagged movedOn.
     const former = await formerMembers(issue.classId);
     const movedOnById = new Map(former.map((f) => [f.learnerId, { at: f.movedAt, to: f.toLabel }]));
     // Issued to chosen learners only: they alone are on its roster.

@@ -283,16 +283,15 @@ function checkText(text, { blockedWords = [], linkDomains = [] } = {}) {
 }
 
 // ── Messages: who may talk to whom ───────────────────────────────────────────────────────────────
-// One-to-one: both old enough, both allowed by their parent, connected, nobody blocked. Ages
-// unknown count as too young — the safe side.
+// One-to-one: messages switched on (Settings and the parent's switch), connected, nobody blocked.
+// No age limit (the user removed it, 26 Nov 2026): parents can read every message instead.
 function directMessageBlocker({ settings, myAge, otherAge, me, other, connected, blocked }) {
   const s = mergeSettings(settings);
   const name = other?.displayName || "They";
   if (!s.directMessages) return "One-to-one messages are switched off on Connect.";
-  if (myAge == null || myAge < s.dmMinAge) return `One-to-one messages open when you're ${s.dmMinAge}. You can chat with your project teams.`;
   if (!me?.directMessages) return "Your parent has switched one-to-one messages off for you.";
   if (blocked) return `You can't message ${name}.`;
-  if (otherAge == null || otherAge < s.dmMinAge || !other?.directMessages) return `${name} can't have one-to-one messages. You can work together in a project team.`;
+  if (!other?.directMessages) return `${name} can't have one-to-one messages. You can work together in a project team.`;
   if (!connected) return `Connect with ${name} first — once they say yes you can message each other.`;
   return null;
 }
@@ -301,7 +300,6 @@ function directMessageBlocker({ settings, myAge, otherAge, me, other, connected,
 function groupChatBlocker({ settings, myAge, me, others }) {
   const s = mergeSettings(settings);
   if (!s.groupChats || !s.directMessages) return "Group chats are switched off on Connect. You can chat with your project teams.";
-  if (myAge == null || myAge < s.dmMinAge) return `Group chats open when you're ${s.dmMinAge}. You can chat with your project teams.`;
   if (!me?.directMessages) return "Your parent has switched messages with other learners off for you.";
   for (const o of others) {
     const reason = directMessageBlocker({ settings: s, myAge, otherAge: o.age, me, other: o.member, connected: o.connected, blocked: o.blocked });

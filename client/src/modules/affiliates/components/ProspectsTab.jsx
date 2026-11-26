@@ -2,18 +2,20 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiAlertCircle, FiCheck, FiPlus, FiRepeat, FiX } from "react-icons/fi";
+import { FiAlertCircle, FiCheck, FiPlus } from "react-icons/fi";
 import { BRAND, FONT, card, pill } from "../../../theme/brand";
 import { askConfirm } from "../../../components/ui/AskDialog";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import { affiliatesApi, errorOf, formatDay, PROGRAMMES } from "../services/affiliatesApi";
 import PopUp from "./PopUp";
+import { StageSelect, StagePill } from "./ProspectBits";
 import { followUpTone } from "../pages/ProspectPage";
 
 // Affiliates → Prospects (19 Nov 2026 — server affiliate.prospects.js): every family an affiliate
-// has registered. Staff see who registered whom and the contact details, decide possible matches
-// (a sign-up with the same parent name but a different phone / email), move a claim to another
-// affiliate, let one go, or register a family for an affiliate.
+// has registered, and our team's own. Staff see who registered whom and the contact details, set
+// each family's status, and decide possible matches (a sign-up with the same parent name but a
+// different phone / email). 26 Nov 2026: a family registered here is OUR TEAM's (no affiliate
+// earns from it); Move and Release are gone; every family has a status.
 
 const btn = { display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, border: `1px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" };
 const primary = { ...btn, background: BRAND.navy, borderColor: BRAND.navy, color: "#fff" };
@@ -23,27 +25,22 @@ const th = { textAlign: "left", padding: "10px 12px", fontSize: 11, fontWeight: 
 const td = { padding: "11px 12px", fontSize: 13, color: BRAND.inkSoft, borderBottom: `1px solid ${BRAND.line}`, verticalAlign: "top" };
 const TONE = { open: "waiting", signed_up: "good", paying: "strong", lost: "neutral", expired: "neutral", released: "neutral", opted_out: "neutral", cancelled: "neutral" };
 const FILTERS = [["open", "Open"], ["matches", "Possible matches"], ["signed_up", "Signed up"], ["closed", "Closed"], ["", "All"]];
-const blank = { affiliateId: "", parentName: "", phone: "", email: "", childName: "", childAge: "", programme: "", notes: "" };
+const blank = { parentName: "", phone: "", email: "", childName: "", childAge: "", programme: "", notes: "" };
 
-function AddForAffiliate({ affiliates, onDone }) {
+function AddForTeam({ onDone }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [form, setForm] = useState(blank);
   const [consent, setConsent] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const save = useMutation({
-    mutationFn: () => affiliatesApi.addProspectFor({ ...form, consent }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates", "prospects-admin"] }); toast.success("Family registered"); onDone(); },
+    mutationFn: () => affiliatesApi.addTeamProspect({ ...form, consent }),
+    onSuccess: (d) => { qc.invalidateQueries({ queryKey: ["affiliates", "prospects-admin"] }); toast.success("Family registered for our team"); onDone(); if (d?.id) navigate(`/affiliates/prospects/${d.id}`); },
     onError: (err) => toast.error(errorOf(err)),
   });
   return (
     <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))" }}>
-        <label style={label}>For affiliate
-          <select style={input} value={form.affiliateId} onChange={set("affiliateId")} required>
-            <option value="">Choose…</option>
-            {affiliates.filter((a) => a.status === "active").map((a) => <option key={a.id} value={a.id}>{a.name} · {a.code}</option>)}
-          </select>
-        </label>
         <label style={label}>Parent's name<input style={input} value={form.parentName} onChange={set("parentName")} required maxLength={150} /></label>
         <label style={label}>Phone<input style={input} value={form.phone} onChange={set("phone")} maxLength={40} /></label>
         <label style={label}>Email<input style={input} type="email" value={form.email} onChange={set("email")} maxLength={255} /></label>
@@ -70,22 +67,25 @@ function AddForAffiliate({ affiliates, onDone }) {
   );
 }
 
-export default function ProspectsTab({ affiliates = [] }) {
+export default function ProspectsTab() {
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const filter = params.get("filter") ?? "open";
-  const setFilter = (f) => setParams((p) => { const n = new URLSearchParams(p); n.set("tab", "prospects"); if (f) n.set("filter", f); else n.set("filter", ""); return n; }, { replace: true });
+  const stage = params.get("stage") || "";
+  const who = params.get("who") || "";
+  const setParam = (key, value) => setParams((p) => { const n = new URLSearchParams(p); n.set("tab", "prospects"); if (value || key === "filter") n.set(key, value); else n.delete(key); return n; }, { replace: true });
+  const setFilter = (f) => setParam("filter", f);
   const [adding, setAdding] = useState(false);
-  const [moving, setMoving] = useState(null); // prospect id
   const navigate = useNavigate();
   const openProspect = (p) => navigate(`/affiliates/prospects/${p.id}`);
-  const { data, isLoading } = useQuery({ queryKey: ["affiliates", "prospects-admin", filter], queryFn: () => affiliatesApi.prospects(filter ? { filter } : {}) });
+  const query = { ...(filter ? { filter } : {}), ...(stage ? { stage } : {}), ...(who ? { affiliateId: who } : {}) };
+  const { data, isLoading } = useQuery({ queryKey: ["affiliates", "prospects-admin", query], queryFn: () => affiliatesApi.prospects(query) });
   const done = (msg) => () => { qc.invalidateQueries({ queryKey: ["affiliates", "prospects-admin"] }); qc.invalidateQueries({ queryKey: ["affiliates", "referrals"] }); toast.success(msg); };
   const fail = (err) => toast.error(errorOf(err));
   const decide = useMutation({ mutationFn: ({ id, approve }) => affiliatesApi.decideMatch(id, approve), onSuccess: (d) => done(d.approved ? "Credited to the affiliate" : "Dismissed")(), onError: fail });
-  const release = useMutation({ mutationFn: (id) => affiliatesApi.adminReleaseProspect(id), onSuccess: done("Released"), onError: fail });
-  const move = useMutation({ mutationFn: ({ id, affiliateId }) => affiliatesApi.reassignProspect(id, affiliateId), onSuccess: () => { setMoving(null); done("Moved")(); }, onError: fail });
+  const setStage = useMutation({ mutationFn: ({ id, stage: next }) => affiliatesApi.setTeamProspectStage(id, next), onSuccess: (d) => done(`Status: ${d.stageLabel}`)(), onError: fail });
   const counts = data?.counts || {};
+  const stages = data?.stages || [];
 
   return (
     <div style={{ display: "grid", gap: 14, fontFamily: FONT }}>
@@ -101,22 +101,36 @@ export default function ProspectsTab({ affiliates = [] }) {
             );
           })}
         </div>
-        <button type="button" style={primary} onClick={() => setAdding(true)}><FiPlus size={14} /> Register a family for an affiliate</button>
+        <button type="button" style={primary} onClick={() => setAdding(true)}><FiPlus size={14} /> Register a family</button>
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 700, color: BRAND.muted }}>Status
+          <select aria-label="Status" value={stage} onChange={(e) => setParam("stage", e.target.value)} style={{ ...input, width: "auto", padding: "6px 9px" }}>
+            <option value="">Any status</option>
+            {stages.map((st) => <option key={st.key} value={st.key}>{st.label}{counts.stages?.[st.key] ? ` · ${counts.stages[st.key]}` : ""}</option>)}
+          </select>
+        </label>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 700, color: BRAND.muted }}>Belongs to
+          <select aria-label="Belongs to" value={who} onChange={(e) => setParam("who", e.target.value)} style={{ ...input, width: "auto", padding: "6px 9px" }}>
+            <option value="">Everyone</option>
+            <option value="team">Our team</option>
+          </select>
+        </label>
       </div>
       {adding && (
-        <PopUp title="Register a family for an affiliate" subtitle="The family becomes the affiliate's prospect: if they sign up while the claim is open, the affiliate earns." onClose={() => setAdding(false)}>
-          <AddForAffiliate affiliates={affiliates} onDone={() => setAdding(false)} />
+        <PopUp title="Register a family" subtitle="The family is our team's own: no affiliate earns if they sign up, and no affiliate can add them while they're on our list." onClose={() => setAdding(false)}>
+          <AddForTeam onDone={() => setAdding(false)} />
         </PopUp>
       )}
       <p style={{ margin: 0, fontSize: 12.5, color: BRAND.muted }}>
-        A family an affiliate registers is theirs while the claim is open: if they sign up — code or no code — matched by phone or email, the affiliate earns.
-        A sign-up with only the same name shows under <strong>Possible matches</strong> for you to decide.
+        A family an affiliate registers is theirs while the claim is open: if they sign up (code or no code), matched by phone or email, the affiliate earns.
+        A family our team registers stays ours until they sign up. A sign-up with only the same name shows under <strong>Possible matches</strong> for you to decide.
       </p>
 
       <div style={{ ...card, overflowX: "auto" }}>
         <style>{`.pr-row { cursor: pointer; } .pr-row:hover td { background: ${BRAND.canvas}; } .pr-row:focus-visible { outline: 2px solid ${BRAND.sky}; outline-offset: -2px; }`}</style>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
-          <thead><tr>{["Family", "Affiliate", "Interested in", "Follow-up", "Added", "Status", ""].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1120 }}>
+          <thead><tr>{["Family", "Belongs to", "Status", "Interested in", "Follow-up", "Added", "Claim", ""].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {(data?.prospects || []).map((p) => {
               const open = p.state.key === "open";
@@ -137,13 +151,18 @@ export default function ProspectsTab({ affiliates = [] }) {
                           {[p.possibleMatch.parent?.phone, p.possibleMatch.parent?.email].filter(Boolean).length ? ` (${[p.possibleMatch.parent?.phone, p.possibleMatch.parent?.email].filter(Boolean).join(" · ")})` : ""}
                         </span>
                         <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          <button type="button" style={primary} disabled={decide.isPending} onClick={async () => { if (await askConfirm({ title: "Credit this sign-up?", message: `${p.possibleMatch.parent?.name}'s sign-up becomes ${p.affiliate?.name}'s referral, and they earn when the family pays.`, confirmLabel: "Credit it" })) decide.mutate({ id: p.id, approve: true }); }}><FiCheck size={13} /> Same family — credit it</button>
+                          <button type="button" style={primary} disabled={decide.isPending} onClick={async () => { if (await askConfirm(p.team ? { title: "Same family?", message: `${p.parentName} is marked signed up. Nobody earns: they're our team's own family.`, confirmLabel: "Mark signed up" } : { title: "Credit this sign-up?", message: `${p.possibleMatch.parent?.name}'s sign-up becomes ${p.affiliate?.name}'s referral, and they earn when the family pays.`, confirmLabel: "Credit it" })) decide.mutate({ id: p.id, approve: true }); }}><FiCheck size={13} /> {p.team ? "Same family: mark signed up" : "Same family: credit it"}</button>
                           <button type="button" style={btn} disabled={decide.isPending} onClick={() => decide.mutate({ id: p.id, approve: false })}>Not the same</button>
                         </span>
                       </div>
                     )}
                   </td>
-                  <td style={td}>{p.affiliate ? <>{p.affiliate.name}<div style={{ fontSize: 12, color: BRAND.muted }}>{p.affiliate.code}</div></> : "—"}</td>
+                  <td style={td}>{p.team ? <span style={pill("strong")}>Our team</span> : p.affiliate ? <>{p.affiliate.name}<div style={{ fontSize: 12, color: BRAND.muted }}>{p.affiliate.code}</div></> : "—"}</td>
+                  <td style={td}>
+                    {open
+                      ? <StageSelect stages={stages} value={p.stage} disabled={setStage.isPending} onChange={(next) => setStage.mutate({ id: p.id, stage: next })} ariaLabel={`Status of ${p.parentName}`} />
+                      : <StagePill stage={p.stage} label={p.stageLabel} />}
+                  </td>
                   <td style={td}>{p.programmeLabel || "—"}</td>
                   <td style={{ ...td, maxWidth: 280 }}>
                     {fu && <span style={{ ...pill(fu.tone), marginBottom: 4 }}>{fu.label}</span>}
@@ -159,23 +178,9 @@ export default function ProspectsTab({ affiliates = [] }) {
                   <td style={td}>{formatDay(p.createdAt)}<div style={{ fontSize: 12, color: BRAND.muted }}>{p.source === "bulk" ? "From a list" : p.source === "admin" ? "By our team" : "By the affiliate"}{p.invitedAt ? ` · invited ${formatDay(p.invitedAt)}` : ""}</div></td>
                   <td style={td}>
                     <span style={pill(TONE[p.state.key] || "neutral")}>{p.state.label}</span>
-                    <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 4 }}>{open ? `Ends ${formatDay(p.expiresAt)} · ${p.state.daysLeft} days` : p.closedReason || (p.convertedAt ? `Signed up ${formatDay(p.convertedAt)}` : "")}</div>
+                    <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 4 }}>{open ? (p.team ? "No end date" : `Ends ${formatDay(p.expiresAt)} · ${p.state.daysLeft} days`) : p.closedReason || (p.convertedAt ? `Signed up ${formatDay(p.convertedAt)}` : "")}</div>
                   </td>
                   <td style={{ ...td, whiteSpace: "nowrap" }}>
-                    {open && (moving === p.id ? (
-                      <span style={{ display: "inline-flex", gap: 6 }}>
-                        <select style={{ ...input, width: 180, padding: "6px 8px" }} defaultValue="" onChange={(e) => e.target.value && move.mutate({ id: p.id, affiliateId: e.target.value })}>
-                          <option value="">Move to…</option>
-                          {affiliates.filter((a) => a.status === "active" && a.id !== p.affiliateId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
-                        <button type="button" style={btn} onClick={() => setMoving(null)} aria-label="Cancel"><FiX size={13} /></button>
-                      </span>
-                    ) : (
-                      <span style={{ display: "inline-flex", gap: 6 }}>
-                        <button type="button" style={btn} onClick={() => setMoving(p.id)}><FiRepeat size={13} /> Move</button>
-                        <button type="button" style={btn} onClick={async () => { if (await askConfirm({ title: `Release ${p.parentName}?`, message: "The claim ends and the family's details are removed. A later sign-up won't be credited to this affiliate.", confirmLabel: "Release", tone: "danger" })) release.mutate(p.id); }}>Release</button>
-                      </span>
-                    ))}
                     <HistoryButton type="affiliate_prospects" id={p.id} label={p.parentName} iconOnly />
                   </td>
                 </tr>

@@ -158,18 +158,17 @@ router.post("/admin/posts/:id/reject", h((c, req) => Moderation.reject(c, req.pa
 router.get("/admin/members", h((c, req) => Moderation.members(c, { q: String(req.query.q || ""), status: String(req.query.status || "") })));
 router.post("/admin/members/:id/suspend", h((c, req) => Moderation.suspend(c, req.params.id, V.suspendSchema.parse(req.body))));
 router.post("/admin/members/:id/restore", h((c, req) => Moderation.restore(c, req.params.id)));
-router.get("/admin/consent-candidates", h((c, req) => Moderation.consentCandidates(c, String(req.query.q || ""))));
-router.post("/admin/consent", h((c, req) => Members.recordConsent(c, V.recordConsentSchema.parse(req.body)).then(() => ({ recorded: true }))));
 router.get("/admin/history", h((c, req) => Moderation.history(c, { page: num(req.query.page), memberId: req.query.memberId || undefined })));
+// Announcements from the team to groups of people in the system (26 Nov 2026 — connect.announcements.js).
+router.use("/admin/announcements", require("./connect.announcement.routes").adminRouter);
 router.get("/admin/settings", h((c) => Moderation.getSettings(c)));
 router.put("/admin/settings", h((c, req) => Moderation.saveSettings(c, V.settingsSchema.parse(req.body))));
 
 // ── Parents ──────────────────────────────────────────────────────────────────────────────────────
 router.get("/parent/children", h((c) => Members.parentChildren(c)));
-router.post("/parent/children/:learnerId/consent", h((c, req) => Members.parentConsent(c, req.params.learnerId, V.consentSchema.parse(req.body))));
 router.put("/parent/children/:learnerId/switches", h((c, req) => Members.parentSwitches(c, req.params.learnerId, V.switchesSchema.parse(req.body))));
-router.post("/parent/children/:learnerId/withdraw", h((c, req) => Members.parentWithdraw(c, req.params.learnerId, V.withdrawSchema.parse(req.body || {}))));
 router.get("/parent/children/:learnerId/activity", h((c, req) => Members.parentActivity(c, req.params.learnerId)));
+router.get("/parent/children/:learnerId/conversations/:conversationId", h((c, req) => Members.parentConversation(c, req.params.learnerId, req.params.conversationId)));
 router.post("/parent/children/:learnerId/blocks", h((c, req) => Members.parentBlock(c, req.params.learnerId, V.parentBlockSchema.parse(req.body).memberId, true)));
 router.delete("/parent/children/:learnerId/blocks/:memberId", h((c, req) => Members.parentBlock(c, req.params.learnerId, req.params.memberId, false)));
 

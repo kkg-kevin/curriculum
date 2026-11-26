@@ -86,6 +86,8 @@ const ConnectPersonPage = lazyPage(() => import("../modules/connect/pages/People
 const ConnectMyProfilePage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "MyProfilePage");
 const ConnectRulesPage = lazyPage(() => import("../modules/connect/pages/PeoplePages"), "RulesPage");
 const ConnectAdminPage = lazyPage(() => import("../modules/connect/pages/ConnectAdminPage"));
+// Announcements from the team, in every portal (26 Nov 2026 — modules/announcements).
+const AnnouncementsPage = lazyPage(() => import("../modules/announcements/pages/AnnouncementsPage"));
 const ParentConnectPage = lazyPage(() => import("../modules/connect/pages/ParentConnectPage"));
 const AdminReportsPage = lazyPage(() => import("../modules/reports/pages/AdminReportsPage"));
 const CourseContentLandingPage = lazyPage(() => import("../modules/courses/pages/CourseContentLandingPage"));
@@ -390,6 +392,8 @@ export default function AppRoutes() {
         <Route path="my-expenses" element={<MyExpensesPage />} />
         {/* Digifunzi Connect: moderation, communities, challenges, figures (modules/connect). */}
         <Route path="connect" element={<ConnectAdminPage />} />
+        <Route path="announcements" element={<AnnouncementsPage />} />
+        <Route path="announcements/:id" element={<AnnouncementsPage />} />
         <Route path="teachers">
           <Route index element={<TeachersPage />} />
           <Route path="create" element={<CreateTeacherPage />} />
@@ -420,6 +424,8 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["teacher"]} />}>
         <Route path="/teacher-portal" element={<TeacherPortalLayout />}>
           <Route index element={<TeacherPortalDashboardPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
           <Route path="classes/:classId" element={<MyClassPage />} />
           <Route path="course-content" element={<TeacherCourseContentPage />} />
           <Route path="home-learning" element={<EducatorHomeLearningPage />} />
@@ -474,6 +480,8 @@ export default function AppRoutes() {
         <Route path="/affiliate-portal" element={<AffiliatePortalLayout />}>
           <Route index element={<ReferEarnPage />} />
           <Route path="account" element={<AffiliateAccountPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
         </Route>
       </Route>
 
@@ -482,6 +490,8 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["supervisor"]} />}>
         <Route path="/supervisor-portal" element={<SupervisorPortalLayout />}>
           <Route index element={<SupervisorDashboardPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
           <Route path="claims" element={<SupervisorClaimsPage />} />
           <Route path="claims/:claimId" element={<SupervisorClaimPage />} />
           <Route path="educators" element={<SupervisorEducatorsPage />} />
@@ -513,6 +523,8 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["school"]} />}>
         <Route path="/school-portal" element={<SchoolPortalLayout />}>
           <Route index element={<SchoolPortalDashboardPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
           <Route path="curriculum" element={<SchoolCurriculumPage />} />
           <Route path="curriculum/:courseId" element={<CourseContentLandingPage />} />
           <Route path="curriculum/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
@@ -564,6 +576,8 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["learner"]} />}>
         <Route path="/learner-portal" element={<LearnerPortalLayout />}>
           <Route index element={<LearnerPortalDashboardPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
           <Route path="courses" element={<LearnerMyCoursesPage />} />
           <Route path="courses/:courseId" element={<CourseContentLandingPage />} />
           <Route path="courses/:courseId/sessions/:sessionId/sections/:sectionKey" element={<SectionViewPage />} />
@@ -627,6 +641,8 @@ export default function AppRoutes() {
             <Route path="login" element={<ChildLoginPage />} />
           </Route>
           <Route path="timetable" element={<ParentTimetablePage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="announcements/:id" element={<AnnouncementsPage />} />
           {/* Parents review the mentors teaching their children (modules/mentor-reviews). */}
           <Route path="feedback" element={<MentorFeedbackPage />} />
           {/* Find a mentor — published educator profiles, and asking for one (modules/educator-profiles). */}

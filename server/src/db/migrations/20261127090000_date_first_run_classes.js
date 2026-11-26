@@ -1,4 +1,4 @@
-// Bootcamp runs already scheduled (27 Nov 2026): a run's cohort classes are named "<cohort> ·
+// Bootcamp runs already scheduled (26 Nov 2026): a run's cohort classes are named "<cohort> ·
 // <bootcamp name>" when it's the only run, and "<cohort> · <bootcamp name> · 7 Dec 2026" for a run
 // made with "Schedule another run". So the FIRST run's classes read like the bare bootcamp name and
 // can't be told apart from the next run's at a glance. Every class of a bootcamp that is part of a

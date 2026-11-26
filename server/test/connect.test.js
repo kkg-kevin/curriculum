@@ -50,14 +50,13 @@ test("links: https on an allowed site only", () => {
   assert.equal(R.allowedLink("https://github.com.evil.io/x"), null);
 });
 
-test("one-to-one messages: age, parent's switch, connection, blocks", () => {
+test("one-to-one messages: parent's switch, connection, blocks (no age limit)", () => {
   const me = { directMessages: true };
   const other = { directMessages: true, displayName: "Ken" };
   const base = { settings: {}, myAge: 14, otherAge: 15, me, other, connected: true, blocked: false };
   assert.equal(R.directMessageBlocker(base), null);
-  assert.match(R.directMessageBlocker({ ...base, myAge: 12 }), /when you're 13/);
-  assert.match(R.directMessageBlocker({ ...base, myAge: null }), /when you're 13/); // age unknown = too young
-  assert.match(R.directMessageBlocker({ ...base, otherAge: 11 }), /can't have one-to-one/);
+  // No age limit since 26 Nov 2026 (the user's choice): any age, age unknown too.
+  assert.equal(R.directMessageBlocker({ ...base, myAge: 8, otherAge: null }), null);
   assert.match(R.directMessageBlocker({ ...base, me: { directMessages: false } }), /parent/);
   assert.match(R.directMessageBlocker({ ...base, other: { ...other, directMessages: false } }), /can't have one-to-one/);
   assert.match(R.directMessageBlocker({ ...base, connected: false }), /Connect with Ken first/);
@@ -70,7 +69,8 @@ test("group chats follow the same rule for everyone added", () => {
   const me = { directMessages: true };
   const ok = { member: { directMessages: true, displayName: "A" }, age: 14, connected: true, blocked: false };
   assert.equal(R.groupChatBlocker({ settings: {}, myAge: 13, me, others: [ok, ok] }), null);
-  assert.match(R.groupChatBlocker({ settings: {}, myAge: 13, me, others: [ok, { ...ok, age: 9 }] }), /can't have one-to-one/);
+  assert.equal(R.groupChatBlocker({ settings: {}, myAge: 9, me, others: [ok, { ...ok, age: 9 }] }), null, "any age");
+  assert.match(R.groupChatBlocker({ settings: {}, myAge: 13, me, others: [ok, { ...ok, connected: false }] }), /Connect with A first/);
   assert.match(R.groupChatBlocker({ settings: { groupChats: false }, myAge: 15, me, others: [ok] }), /switched off/);
 });
 

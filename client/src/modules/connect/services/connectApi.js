@@ -116,8 +116,6 @@ export const connectApi = {
     members: (params) => api.get(`${BASE}/admin/members${qs(params)}`).then(data),
     suspend: (id, body) => api.post(`${BASE}/admin/members/${id}/suspend`, body).then(data),
     restore: (id) => api.post(`${BASE}/admin/members/${id}/restore`).then(data),
-    consentCandidates: (q) => api.get(`${BASE}/admin/consent-candidates${qs({ q })}`).then(data),
-    recordConsent: (body) => api.post(`${BASE}/admin/consent`, body).then(data),
     history: (page) => api.get(`${BASE}/admin/history${qs({ page })}`).then(data),
     settings: () => api.get(`${BASE}/admin/settings`).then(data),
     saveSettings: (body) => api.put(`${BASE}/admin/settings`, body).then(data),
@@ -125,10 +123,9 @@ export const connectApi = {
 
   parent: {
     children: () => api.get(`${BASE}/parent/children`).then(data),
-    consent: (learnerId, body) => api.post(`${BASE}/parent/children/${learnerId}/consent`, body).then(data),
     switches: (learnerId, body) => api.put(`${BASE}/parent/children/${learnerId}/switches`, body).then(data),
-    withdraw: (learnerId, deleteData) => api.post(`${BASE}/parent/children/${learnerId}/withdraw`, { deleteData }).then(data),
     activity: (learnerId) => api.get(`${BASE}/parent/children/${learnerId}/activity`).then(data),
+    conversation: (learnerId, conversationId) => api.get(`${BASE}/parent/children/${learnerId}/conversations/${conversationId}`).then(data),
     block: (learnerId, memberId) => api.post(`${BASE}/parent/children/${learnerId}/blocks`, { memberId }).then(data),
     unblock: (learnerId, memberId) => api.delete(`${BASE}/parent/children/${learnerId}/blocks/${memberId}`).then(data),
   },

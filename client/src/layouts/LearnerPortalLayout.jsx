@@ -12,6 +12,7 @@ import { useLearnerPortalScope } from "../modules/learner-portal/hooks/useLearne
 import { authApi } from "../modules/auth/services/authApi";
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
+import AnnouncementPopup from "../modules/announcements/components/AnnouncementPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -103,6 +104,7 @@ function LearnerPortal() {
       </div>
       {/* General events: the sign-in pop-up. */}
       <GeneralEventPopup />
+      <AnnouncementPopup />
 
       <ConfirmPasswordModal
         isOpen={!!pendingChildId}

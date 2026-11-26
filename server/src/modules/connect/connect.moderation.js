@@ -276,26 +276,6 @@ async function restore(ctx, memberId) {
   return { restored: true };
 }
 
-// Learners of the workspace who could be switched on with consent recorded by an admin: they have
-// their own login and aren't on Connect yet.
-async function consentCandidates(ctx, q = "") {
-  requireManager(ctx);
-  const needle = String(q || "").trim().toLowerCase();
-  if (needle.length < 2) return [];
-  const rows = await db("learners").whereNotNull("username").whereNull("teacherId")
-    .andWhere((w) => w.whereRaw("LOWER(firstName) LIKE ?", [`%${needle}%`]).orWhereRaw("LOWER(lastName) LIKE ?", [`%${needle}%`]).orWhereRaw("LOWER(CONCAT(firstName, ' ', lastName)) LIKE ?", [`%${needle}%`]).orWhereRaw("LOWER(username) LIKE ?", [`%${needle}%`]))
-    .limit(40);
-  const members = await whereInChunks(db, "connect_members", "learnerId", rows.map((r) => r.id));
-  const on = new Map(members.map((m) => [m.learnerId, m.status]));
-  const out = [];
-  for (const l of rows) {
-    if ((await workspaceOfLearner(l)) !== ctx.ownerAdminId) continue;
-    out.push({ learnerId: l.id, name: [l.firstName, l.lastName].filter(Boolean).join(" "), age: learnerAge(l), status: on.get(l.id) || "not_member" });
-  }
-  return out.slice(0, 20);
-}
-
-// ── History ──────────────────────────────────────────────────────────────────────────────────────
 async function history(ctx, { page = 1, memberId } = {}) {
   requireStaffOrModerator(ctx);
   let q = db("connect_moderation_log").where({ ownerAdminId: ctx.ownerAdminId });
@@ -375,4 +355,4 @@ async function saveSettings(ctx, input) {
   return settings;
 }
 
-module.exports = { report, reports, reportContext, decide, waiting, approve, reject, members, suspend, restore, consentCandidates, history, overview, getSettings, saveSettings };
+module.exports = { report, reports, reportContext, decide, waiting, approve, reject, members, suspend, restore, history, overview, getSettings, saveSettings };

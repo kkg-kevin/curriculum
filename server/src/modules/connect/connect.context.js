@@ -39,6 +39,8 @@ const connectContext = asyncHandler(async (req, res, next) => {
     ctx.learner = learner;
     ctx.member = await S.memberByLearner(learner.id);
     ctx.ownerAdminId = ctx.member?.ownerAdminId || (await workspaceOfLearner(learner));
+    // Every learner is on Connect, no parent's switch or age limit (26 Nov 2026).
+    if (ctx.ownerAdminId && (!ctx.member || ctx.member.status === "off")) ctx.member = await S.ensureMember(learner, ctx.ownerAdminId);
     ctx.name = ctx.member?.displayName || learner.firstName;
     ctx.roleLabel = "Learner";
   } else if (role === "learner" && req.user.totLearner) {
@@ -102,7 +104,7 @@ function canModerate(ctx, communityId = null) {
 function requireMember(ctx, { write = false } = {}) {
   if (ctx.kind !== "learner") throw S.refuse(403, "Only learners take part in Connect this way.");
   const m = ctx.member;
-  if (!m || m.status === "off") throw S.refuse(403, "Connect isn't switched on for you yet. Ask your parent to switch it on from their Digifunzi account.", { code: "CONNECT_NOT_ON" });
+  if (!m || m.status === "off") throw S.refuse(403, "Connect isn't ready for you yet: you need to be at a Digifunzi hub first. Ask your teacher.", { code: "CONNECT_NOT_ON" });
   if (write && isSuspended(m)) {
     throw S.refuse(403, `You can read Connect but can't post or message until ${new Date(m.suspendedUntil).toLocaleDateString("en-GB")}.`, { code: "CONNECT_SUSPENDED" });
   }

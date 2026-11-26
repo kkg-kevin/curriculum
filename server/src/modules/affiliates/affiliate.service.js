@@ -426,9 +426,11 @@ const AffiliateService = {
   async recordReferral({ ownerAdminId, programme, recordId, invoiceId = null, parent = {}, code = null, visitSource = null, detail = null, forceProspectId = null }) {
     try {
       if (!ownerAdminId || !recordId || !PROGRAMMES.includes(programme)) return null;
+      // Our team's own prospects are marked signed up even when no affiliate rule applies.
+      const teamOnly = async () => { await Prospects.settleTeamFor(ownerAdminId, parent).catch(() => {}); return null; };
       const settings = await getSettings(ownerAdminId);
-      if (!settings.enabled || !settings.programmes[programme]) return null;
-      if (await db(R).where({ programme, recordId }).first()) return null;
+      if (!settings.enabled || !settings.programmes[programme]) return teamOnly();
+      if (await db(R).where({ programme, recordId }).first()) return teamOnly();
       const usable = async (c) => {
         const clean = normaliseCode(c);
         if (!clean) return null;
@@ -446,13 +448,20 @@ const AffiliateService = {
         if (!claim) return null;
       } else if (settings.prospectsEnabled) {
         claim = await Prospects.matchFor(ownerAdminId, parent);
-        if (claim && isSelfReferral(claim.affiliate, parent)) claim = null;
+        if (claim && !claim.team && isSelfReferral(claim.affiliate, parent)) claim = null;
+      } else {
+        await Prospects.settleTeamFor(ownerAdminId, parent).catch(() => {});
       }
       const choice = forceProspectId
         ? { via: "prospect", value: claim }
         : chooseClaim({ typed, prospect: claim, link: linked, order: settings.claimOrder });
       if (!choice) {
         if (settings.prospectsEnabled) await Prospects.notePossibleMatch(ownerAdminId, parent, { programme, recordId, invoiceId, detail });
+        return null;
+      }
+      // Our team's own family (26 Nov 2026): it's ours, so nobody earns from it.
+      if (choice.via === "prospect" && claim?.team) {
+        await Prospects.settle(claim.prospect, null, null);
         return null;
       }
       const affiliate = choice.via === "prospect" ? choice.value.affiliate : choice.value;
@@ -1155,12 +1164,12 @@ const AffiliateService = {
   },
   async updateMyProspect(req, id, data) {
     const affiliate = await AffiliateService._myAffiliate(req);
-    await Prospects.updateMine(affiliate, id, data);
+    await Prospects.updateDetails(id, { affiliateId: affiliate.id }, data);
     return Prospects.listMine(affiliate);
   },
-  async releaseMyProspect(req, id) {
+  async setMyProspectStage(req, id, stage) {
     const affiliate = await AffiliateService._myAffiliate(req);
-    await Prospects.release(id, { affiliateId: affiliate.id }, "Released by the affiliate");
+    await Prospects.setStage(id, { affiliateId: affiliate.id }, stage, affiliate.name);
     return Prospects.listMine(affiliate);
   },
   async inviteMyProspect(req, id, channel) {
@@ -1168,18 +1177,23 @@ const AffiliateService = {
     return Prospects.invite(affiliate, id, channel);
   },
 
-  // Admins: every claim; adding one for an affiliate; releasing, moving, deciding possible matches.
+  // Admins: every prospect; registering one for our team (26 Nov 2026: the team's own family, no
+  // affiliate); correcting details; the status; deciding possible matches.
   listProspects(req, filters) {
     return Prospects.listAll(req.ownerAdminId, filters);
   },
-  async addProspectFor(req, affiliateId, data) {
-    const affiliate = await db(A).where({ id: affiliateId, ownerAdminId: req.ownerAdminId }).first();
-    if (!affiliate) fail("Affiliate not found", 404);
-    await Prospects.add(affiliate, data, { source: "admin", createdBy: req.user.id, skipDailyLimit: true });
-    return Prospects.listAll(req.ownerAdminId, {});
+  async addTeamProspect(req, data) {
+    const saved = await Prospects.add(null, data, { source: "admin", createdBy: req.user.id, teamOf: req.ownerAdminId });
+    return { id: saved.id };
   },
-  releaseProspect(req, id) {
-    return Prospects.release(id, { ownerAdminId: req.ownerAdminId }, "Released by our team");
+  async updateProspect(req, id, data) {
+    await Prospects.updateDetails(id, { ownerAdminId: req.ownerAdminId }, data);
+    return Prospects.detail(req.ownerAdminId, id);
+  },
+  async setProspectStage(req, id, stage) {
+    const user = await db("users").where({ id: req.user.id }).first("name");
+    await Prospects.setStage(id, { ownerAdminId: req.ownerAdminId }, stage, user?.name || "Our team");
+    return Prospects.detail(req.ownerAdminId, id);
   },
   // One prospect's page: details, the team's follow-up notes, the follow-up date.
   prospect(req, id) {
@@ -1194,9 +1208,6 @@ const AffiliateService = {
   },
   setProspectFollowUp(req, id, date) {
     return Prospects.setFollowUp(req.ownerAdminId, id, date);
-  },
-  reassignProspect(req, id, affiliateId) {
-    return Prospects.reassign(req.ownerAdminId, id, affiliateId);
   },
   decideProspectMatch(req, id, approve) {
     return Prospects.decideMatch(req.ownerAdminId, id, approve, (args) => AffiliateService.recordReferral(args));

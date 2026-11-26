@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FiArchive, FiArrowRight, FiCalendar, FiPlayCircle } from "react-icons/fi";
 import { classApi } from "../services/classApi";
 
-// A bootcamp run's class, told apart from the same bootcamp's other runs (27 Nov 2026). Runs of one
+// A bootcamp run's class, told apart from the same bootcamp's other runs (26 Nov 2026). Runs of one
 // bootcamp at one hub share the curriculum, so a class says which run it is (its dates) and where
 // that run stands — Upcoming, Running, Ended. The server sends `bootcampRun` and `movedOnCount` on
 // every class (classes/class-former-members.js); a class that isn't a run's has bootcampRun null.

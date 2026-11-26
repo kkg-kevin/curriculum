@@ -103,10 +103,17 @@ export default function TimetablePlannerPage({ fixedHub = null, initialClassId =
   const onlineHubIds = useMemo(() => new Set((data?.hubs || []).filter((h) => h.online).map((h) => h.id)), [data]);
 
   const term = search.trim().toLowerCase();
-  const visibleClasses = useMemo(() => (data?.classes || []).filter((c) => (status === "all" || c.status === status) && (!term || `${c.label} ${c.hubName}`.toLowerCase().includes(term) || c.lessons.some((l) => `${l.courseName} ${l.educatorName}`.toLowerCase().includes(term)))), [data, status, term]);
+  // An ended bootcamp run's classes are kept apart (26 Nov 2026): only under "Run ended", so the
+  // next run is timetabled on its own classes, never the old run's.
+  const ended = (c) => c.run?.state === "ended";
+  const visibleClasses = useMemo(() => (data?.classes || []).filter((c) => (status === "run_ended" ? ended(c) : !ended(c) && (status === "all" || c.status === status)) && (!term || `${c.label} ${c.hubName}`.toLowerCase().includes(term) || c.lessons.some((l) => `${l.courseName} ${l.educatorName}`.toLowerCase().includes(term)))), [data, status, term]);
   const counts = useMemo(() => {
-    const out = { all: data?.classes.length || 0 };
-    for (const c of data?.classes || []) out[c.status] = (out[c.status] || 0) + 1;
+    const out = { all: 0, run_ended: 0 };
+    for (const c of data?.classes || []) {
+      if (ended(c)) { out.run_ended += 1; continue; }
+      out.all += 1;
+      out[c.status] = (out[c.status] || 0) + 1;
+    }
     return out;
   }, [data]);
 
@@ -194,7 +201,7 @@ export default function TimetablePlannerPage({ fixedHub = null, initialClassId =
           </div>
 
           <div role="group" aria-label="Filter by status" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
-            {[["all", "All"], ...Object.entries(STATUS).map(([k, v]) => [k, v.label])].map(([key, text]) => {
+            {[["all", "All"], ...Object.entries(STATUS).map(([k, v]) => [k, v.label]), ...(counts.run_ended ? [["run_ended", "Run ended"]] : [])].map(([key, text]) => {
               const on = status === key;
               return <button key={key} type="button" aria-pressed={on} onClick={() => setStatus(key)} style={{ padding: "5px 12px", borderRadius: 999, border: `1.5px solid ${on ? BRAND.navy : BRAND.border}`, background: on ? BRAND.navy : "#fff", color: on ? "#fff" : BRAND.inkSoft, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>{text} · {counts[key] || 0}</button>;
             })}
@@ -232,7 +239,7 @@ export default function TimetablePlannerPage({ fixedHub = null, initialClassId =
 
       {panel && <LessonPanel key={`${panel.lesson?.id || "new"}-${panel.day || ""}-${panel.classId || ""}`} data={data} initial={panel} perms={perms} onClose={() => setPanel(null)} onOpenDates={(c) => { setPanel(null); setDatesClassId(c.id); }} />}
       {copying && <CopyDialog source={copying} classes={data.classes} onClose={() => setCopying(null)} />}
-      {datesClass && <ClassDatesDialog cls={datesClass} onClose={() => setDatesClassId(null)} />}
+      {datesClass && <ClassDatesDialog cls={datesClass} classes={data.classes} onClose={() => setDatesClassId(null)} />}
     </div>
   );
 }

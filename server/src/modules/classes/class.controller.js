@@ -116,12 +116,12 @@ const getClassById = asyncHandler(async (req, res) => {
       : false;
     assertOwn(enrolled);
   }
-  // With its bootcamp run (Upcoming / Running / Ended) and how many moved on (27 Nov 2026).
+  // With its bootcamp run (Upcoming / Running / Ended) and how many moved on (26 Nov 2026).
   const [withRun] = await require("./class-former-members").withRunInfo([record]);
   res.json({ success: true, data: withRun });
 });
 
-// The learners who moved on from this class to the next run of the same bootcamp (27 Nov 2026):
+// The learners who moved on from this class to the next run of the same bootcamp (26 Nov 2026):
 // still finished here — reports, marking, certificates — and listed as "Moved on" on the class.
 const getMovedOn = asyncHandler(async (req, res) => {
   const record = await ClassService.getClassById(req.params.id);

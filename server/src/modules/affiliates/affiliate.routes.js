@@ -4,6 +4,7 @@ const asyncHandler = require("express-async-handler");
 const { z } = require("zod");
 const { authorize } = require("../../shared/middleware/auth.middleware");
 const AffiliateService = require("./affiliate.service");
+const { SETTABLE_STAGES } = require("./affiliate.rules");
 const { appUrl } = require("../../shared/mail/mail.layout");
 
 // Affiliate marketing (affiliate.service.js), mounted at /api/affiliates with protect +
@@ -36,7 +37,7 @@ router.post("/me/payouts", own, asyncHandler(async (req, res) => ok(res, await A
 // ---- Prospects (19 Nov 2026 — affiliate.prospects.js): families an affiliate pre-registers ---------
 const PROGRAMME_KEYS = ["home_learning", "tech_club", "pathway", "bootcamp", "shop"];
 const optionalText = (max) => z.union([z.string().trim().max(max), z.null()]).optional().transform((v) => (v ? v : null));
-const prospectSchema = z.object({
+const prospectFields = {
   parentName: z.string().trim().min(2, "Enter the parent's name").max(150),
   phone: optionalText(40),
   email: z.union([z.string().trim().email("Enter a valid email address").max(255), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
@@ -44,17 +45,18 @@ const prospectSchema = z.object({
   childAge: z.union([z.coerce.number().int().min(2).max(25), z.literal(""), z.null()]).optional().transform((v) => (v === "" || v == null ? null : v)),
   programme: z.union([z.enum(PROGRAMME_KEYS), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
   notes: optionalText(1000),
+};
+const needsContact = (v, ctx) => {
+  if (!v.phone && !v.email) ctx.addIssue({ code: "custom", path: ["phone"], message: "Give the parent's phone number or email" });
+};
+const prospectSchema = z.object({
+  ...prospectFields,
   // The affiliate confirms the family agreed to be contacted (Data Protection Act).
   consent: z.literal(true, { error: "Confirm the family agreed to be contacted by Digifunzi" }),
-}).superRefine((v, ctx) => {
-  if (!v.phone && !v.email) ctx.addIssue({ code: "custom", path: ["phone"], message: "Give the parent's phone number or email" });
-});
-const prospectEditSchema = z.object({
-  childName: optionalText(150),
-  childAge: z.union([z.coerce.number().int().min(2).max(25), z.literal(""), z.null()]).optional().transform((v) => (v === "" || v == null ? null : v)),
-  programme: z.union([z.enum(PROGRAMME_KEYS), z.literal(""), z.null()]).optional().transform((v) => (v ? v : null)),
-  notes: optionalText(1000),
-});
+}).superRefine(needsContact);
+// Correcting a family's details (26 Nov 2026 — the affiliate or our team): the same fields.
+const prospectEditSchema = z.object(prospectFields).superRefine(needsContact);
+const stageSchema = z.object({ stage: z.enum(SETTABLE_STAGES, { error: "Choose a status" }) });
 // A spreadsheet's rows: each is checked by itself (a bad row is reported, the rest still added).
 const bulkSchema = z.object({
   consent: z.literal(true, { error: "Confirm every family agreed to be contacted by Digifunzi" }),
@@ -72,7 +74,7 @@ router.post("/me/prospects/bulk", own, asyncHandler(async (req, res) => {
   ok(res, await AffiliateService.addMyProspects(req, rows.map(rowOf)));
 }));
 router.put("/me/prospects/:id", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.updateMyProspect(req, req.params.id, prospectEditSchema.parse(req.body || {})))));
-router.post("/me/prospects/:id/release", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.releaseMyProspect(req, req.params.id))));
+router.put("/me/prospects/:id/stage", own, asyncHandler(async (req, res) => ok(res, await AffiliateService.setMyProspectStage(req, req.params.id, stageSchema.parse(req.body || {}).stage))));
 router.post("/me/prospects/:id/invite", own, asyncHandler(async (req, res) => {
   const { channel } = z.object({ channel: z.enum(["whatsapp", "email"]) }).parse(req.body || {});
   ok(res, await AffiliateService.inviteMyProspect(req, req.params.id, channel));
@@ -83,13 +85,13 @@ const admin = authorize("admin");
 router.get("/settings", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.getSettings(req.ownerAdminId))));
 router.put("/settings", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.saveSettings(req.ownerAdminId, req.body || {}))));
 
-// Prospects: every claim; adding one for an affiliate; releasing, moving, deciding possible matches.
-router.get("/prospects", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listProspects(req, { filter: req.query.filter || null, affiliateId: req.query.affiliateId || null }))));
-router.post("/prospects", admin, asyncHandler(async (req, res) => {
-  const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1, "Choose the affiliate").max(36) }).parse(req.body || {});
-  ok(res, await AffiliateService.addProspectFor(req, affiliateId, prospectSchema.parse(req.body || {})));
-}));
+// Prospects: every family; registering one for our team (the team's own — 26 Nov 2026); correcting
+// details; the status; follow-up; deciding possible matches.
+router.get("/prospects", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.listProspects(req, { filter: req.query.filter || null, affiliateId: req.query.affiliateId || null, stage: req.query.stage || null }))));
+router.post("/prospects", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.addTeamProspect(req, prospectSchema.parse(req.body || {})))));
 router.get("/prospects/:id", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.prospect(req, req.params.id))));
+router.put("/prospects/:id", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.updateProspect(req, req.params.id, prospectEditSchema.parse(req.body || {})))));
+router.put("/prospects/:id/stage", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.setProspectStage(req, req.params.id, stageSchema.parse(req.body || {}).stage))));
 router.post("/prospects/:id/notes", admin, asyncHandler(async (req, res) => {
   const { body } = z.object({ body: z.string().trim().min(1, "Write the note first").max(2000) }).parse(req.body || {});
   ok(res, await AffiliateService.addProspectNote(req, req.params.id, body));
@@ -98,11 +100,6 @@ router.delete("/prospects/:id/notes/:noteId", admin, asyncHandler(async (req, re
 router.put("/prospects/:id/follow-up", admin, asyncHandler(async (req, res) => {
   const { date } = z.object({ date: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date"), z.null()]) }).parse(req.body || {});
   ok(res, await AffiliateService.setProspectFollowUp(req, req.params.id, date));
-}));
-router.post("/prospects/:id/release", admin, asyncHandler(async (req, res) => ok(res, await AffiliateService.releaseProspect(req, req.params.id))));
-router.post("/prospects/:id/reassign", admin, asyncHandler(async (req, res) => {
-  const { affiliateId } = z.object({ affiliateId: z.string().trim().min(1).max(36) }).parse(req.body || {});
-  ok(res, await AffiliateService.reassignProspect(req, req.params.id, affiliateId));
 }));
 router.post("/prospects/:id/match", admin, asyncHandler(async (req, res) => {
   const { approve } = z.object({ approve: z.boolean() }).parse(req.body || {});

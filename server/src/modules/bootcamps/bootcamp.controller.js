@@ -104,7 +104,7 @@ const deleteOffering = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-// A cohort added to the curriculum after the hub was added gets its class here (27 Nov 2026).
+// A cohort added to the curriculum after the hub was added gets its class here (26 Nov 2026).
 const addMissingClasses = asyncHandler(async (req, res) => {
   assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
   res.status(201).json({ success: true, data: await BootcampHubService.addMissingClasses(req.params.offeringId, req.params.id) });

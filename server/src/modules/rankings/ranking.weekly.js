@@ -24,7 +24,12 @@ function summaryOf(entry, data, standing, movement) {
 
 async function runWeekly({ today = kenyaDay(new Date()) } = {}) {
   const week = R.weekStart(today);
-  const classIds = (await db("learner_hub_links").where({ status: "active" }).whereNotNull("classId").distinct("classId").pluck("classId")).filter(Boolean);
+  const allClassIds = (await db("learner_hub_links").where({ status: "active" }).whereNotNull("classId").distinct("classId").pluck("classId")).filter(Boolean);
+  // A bootcamp run that has ended isn't ranked or announced any more (26 Nov 2026): its standing
+  // stays as it was, and families stop getting weekly notices about a class that no longer meets.
+  const { withRunInfo } = require("../classes/class-former-members");
+  const ended = new Set((await withRunInfo(allClassIds.map((id) => ({ id })))).filter((c) => c.bootcampRun?.state === "ended").map((c) => c.id));
+  const classIds = allClassIds.filter((id) => !ended.has(id));
   let classes = 0;
   let movedUp = 0;
   let summaries = 0;

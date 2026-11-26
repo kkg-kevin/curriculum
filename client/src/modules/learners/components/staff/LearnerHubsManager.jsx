@@ -185,7 +185,7 @@ function EnrollmentRow({ learnerId, learnerName, enrollment, isAdmin, onRequestU
   );
 }
 
-// "Enroll at hub…": a hub they're not at enrols them; a hub they're ALREADY at (27 Nov 2026) moves
+// "Enroll at hub…": a hub they're not at enrols them; a hub they're ALREADY at (26 Nov 2026) moves
 // them into the class picked — a hub holds one place per learner, so this is how a returning
 // learner joins a new run's class (the server's enrollLearnerHub → Move learner, written down on
 // their History). A hub they once left (Transferred) takes them back.

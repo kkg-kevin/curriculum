@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiBell, FiAward, FiCalendar, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2, FiStar, FiAlertTriangle } from "react-icons/fi";
+import { FiBell, FiAward, FiCalendar, FiCheckCircle, FiFileText, FiUpload, FiCheck, FiMail, FiShare2, FiStar, FiAlertTriangle, FiVolume2 } from "react-icons/fi";
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "../../modules/notifications/hooks/useNotifications";
 import EmailNotificationSettings from "./EmailNotificationSettings";
 
@@ -30,6 +30,8 @@ const ICONS = {
   payment_reminder: { Icon: FiFileText, color: "#B45309" },
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
   general_event_invite: { Icon: FiCalendar, color: "#B45309" },
+  announcement: { Icon: FiVolume2, color: "#25476a" },
+  announcement_email: { Icon: FiVolume2, color: "#25476a" },
   general_event_registrations: { Icon: FiCalendar, color: "#2e7db5" },
   general_event_ended: { Icon: FiCalendar, color: "#25476a" },
   enquiries_waiting: { Icon: FiMail, color: "#B45309" },
@@ -88,6 +90,10 @@ function resolveNotificationPath(n) {
       return p.invoiceId ? `${p.route || "/learner-portal/invoices/"}${p.invoiceId}` : "/learner-portal/invoices";
     case "enquiries_waiting":
       return "/enquiries?status=new";
+    // Connect announcements (26 Nov 2026): the reader's own portal's Announcements page.
+    case "announcement":
+    case "announcement_email":
+      return p.route || null;
     // General events: an invitation opens the sign-in pop-up on that event (?event=); the admins'
     // notices open the event's page.
     case "general_event_invite":

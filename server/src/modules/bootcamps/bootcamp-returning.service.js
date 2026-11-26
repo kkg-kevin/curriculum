@@ -4,7 +4,7 @@ const BootcampHubModel = require("./bootcamp-hub.model");
 const { classIdsArray } = require("../../shared/utils/hub-offering.utils");
 const { kenyaToday, learnerAge } = require("../../shared/utils/age");
 
-// Bringing learners back for another run of a bootcamp (27 Nov 2026). A bootcamp run again is a
+// Bringing learners back for another run of a bootcamp (26 Nov 2026). A bootcamp run again is a
 // new bootcamp record ("Schedule another run", shared seriesId) with its own classes at each hub,
 // and a hub holds one place per learner — so a returning learner isn't added again, they're MOVED:
 // out of their class in the earlier run, into a class of this run (learner-moves/, the same move

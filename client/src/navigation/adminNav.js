@@ -171,6 +171,7 @@ export const ADMIN_SECTIONS = [
         children: [
           { name: "Overview", path: "/connect", isDefault: true, match: (l) => l.pathname === "/connect" && (!tabOf(l) || tabOf(l) === "overview") },
           { name: "Posts", path: "/connect?tab=posts" },
+          { name: "Announcements", path: "/connect?tab=announcements" },
           { name: "Review", path: "/connect?tab=review" },
           { name: "Members", path: "/connect?tab=members" },
           { name: "Communities", path: "/connect?tab=communities" },

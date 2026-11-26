@@ -109,14 +109,8 @@ const decisionSchema = z.object({
 const rejectSchema = z.object({ reason: text(500).optional() });
 const removeSchema = z.object({ reason: text(500).optional() });
 const suspendSchema = z.object({ days: z.number().int().min(1).max(90), reason: z.string().trim().min(3, "Say why").max(500) });
-const recordConsentSchema = z.object({ learnerId: id, note: z.string().trim().min(10, "Say how the parent gave consent (who, when, how)").max(500) });
 
-const consentSchema = z.object({
-  agree: z.literal(true, { message: "Tick the box to agree" }),
-  directMessages: z.boolean().optional(),
-});
 const switchesSchema = z.object({ directMessages: z.boolean().optional() });
-const withdrawSchema = z.object({ deleteData: z.boolean().optional() });
 const parentBlockSchema = z.object({ memberId: id });
 
 const settingsSchema = z.object({
@@ -141,6 +135,6 @@ module.exports = {
   communitySchema, moderatorsSchema, inviteMembersSchema, conversationSchema, messageSchema, muteSchema,
   projectSchema, projectEditSchema, projectInviteSchema, projectMemberSchema, milestoneSchema, milestoneEditSchema, updateSchema,
   challengeSchema, challengeEditSchema, enterSchema, entrySchema, awardSchema,
-  decisionSchema, rejectSchema, removeSchema, suspendSchema, recordConsentSchema,
-  consentSchema, switchesSchema, withdrawSchema, parentBlockSchema, settingsSchema,
+  decisionSchema, rejectSchema, removeSchema, suspendSchema,
+  switchesSchema, parentBlockSchema, settingsSchema,
 };

@@ -216,6 +216,7 @@ function Header({ isMobile = false, onMenuClick = () => {}, photo }) {
   const getPageTitle = (pathname) => {
     if (pageTitles[pathname]) return pageTitles[pathname];
     // Digifunzi Connect, in every portal it's in (modules/connect).
+    if (/^(\/[a-z-]+)?\/announcements(\/|$)/.test(pathname)) return "Announcements";
     if (/^\/(learner-portal\/|teacher-portal\/)?connect(\/|$)/.test(pathname) || /^\/parent\/children\/[^/]+\/connect$/.test(pathname)) return "Digifunzi Connect";
     // Mentor bookings, in every portal (modules/mentor-bookings).
     if (/^\/(parent\/bookings|teacher-portal\/bookings|school-portal\/mentor-bookings)(\/|$)/.test(pathname)) return pathname.endsWith("/new") ? "Book a Mentor" : "Mentor Sessions";

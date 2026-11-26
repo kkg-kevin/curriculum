@@ -228,7 +228,7 @@ export default function ClassViewPage() {
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="classes" id={id} style={{ marginBottom: 20 }} />
-      {/* An earlier run of a bootcamp: what this class is for now (27 Nov 2026). */}
+      {/* An earlier run of a bootcamp: what this class is for now (26 Nov 2026). */}
       <EndedRunBanner cls={cls} style={{ marginBottom: 16 }} />
 
       {/* Details grid */}
@@ -338,7 +338,7 @@ export default function ClassViewPage() {
         </div>
       </div>
 
-      {/* Learners who moved on to the next run — still finished here (27 Nov 2026). */}
+      {/* Learners who moved on to the next run — still finished here (26 Nov 2026). */}
       <MovedOnSection classId={cls.id} onOpen={(l) => navigate(learnerPath(user?.role, l.id, "view"))} style={{ marginBottom: 16 }} />
 
       {/* The class's ranking this term (modules/rankings). */}

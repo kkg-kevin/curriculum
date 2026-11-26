@@ -120,7 +120,7 @@ export default function MyClassPage() {
         </button>
       </div>
 
-      {/* An earlier run of a bootcamp: finish it here, teach in the current run's class (27 Nov 2026). */}
+      {/* An earlier run of a bootcamp: finish it here, teach in the current run's class (26 Nov 2026). */}
       <EndedRunBanner cls={cls} style={{ marginBottom: 20 }} />
 
       <OnlineClassStrip who="teacher" hub={hubs.find((h) => h.id === cls.schoolId)} cls={cls} classId={classId} style={{ marginBottom: 20 }} />

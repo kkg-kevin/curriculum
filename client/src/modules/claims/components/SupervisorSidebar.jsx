@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle, FiHeart, FiBarChart2, FiCheckSquare, FiActivity, FiCreditCard } from "react-icons/fi";
+import { FiGrid, FiFileText, FiUsers, FiUser, FiStar, FiEdit3, FiMessageCircle, FiHeart, FiBarChart2, FiCheckSquare, FiActivity, FiCreditCard, FiVolume2 } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import { useTotMarking } from "../../tot/hooks/useTot";
 import { expensesApi } from "../../expenses/services/expensesApi";
@@ -9,6 +9,7 @@ import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../.
 
 const menuItems = [
   { name: "Dashboard",    path: "/supervisor-portal", icon: FiGrid },
+  { name: "Announcements", path: "/supervisor-portal/announcements", icon: FiVolume2 },
   { name: "Claims",       path: "/supervisor-portal/claims", icon: FiFileText, badge: "claims" },
   { name: "My Educators", path: "/supervisor-portal/educators", icon: FiUsers },
   // Training of trainers: their educators' TOT work waiting to be marked.

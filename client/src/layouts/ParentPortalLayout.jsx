@@ -10,6 +10,7 @@ import { useParentOverview } from "../modules/parent/hooks/useParent";
 import { isParentUser } from "../modules/parent/parentPaths";
 import { SIDEBAR_COLLAPSED_WIDTH } from "../hooks/useSidebarHover";
 import GeneralEventPopup from "../modules/general-events/components/GeneralEventPopup";
+import AnnouncementPopup from "../modules/announcements/components/AnnouncementPopup";
 
 const MOBILE_BREAKPOINT = 900;
 
@@ -68,6 +69,7 @@ export default function ParentPortalLayout() {
       <MentorCheckinsPopup />
       {/* General events: the sign-in pop-up (waits for the check-in pop-ups). */}
       <GeneralEventPopup />
+      <AnnouncementPopup />
     </div>
   );
 }

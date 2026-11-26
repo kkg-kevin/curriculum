@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { FiAlertTriangle, FiCalendar, FiChevronDown, FiChevronRight, FiCopy, FiPlus, FiUsers } from "react-icons/fi";
 import { BRAND, FONT, card, pill } from "../../../../theme/brand";
 import { DAY_LONG, DAY_SHORT, STATUS, fmtRange, hubLook, toMin, travelFlags } from "./shared";
+import ClassRunBadge from "../../../classes/components/ClassRun";
 
 // The week as a grid: one row per class, educator or room, one column per day. On a phone each row
 // becomes a card. Dragging a lesson to another day of its class opens it, ready to confirm.
@@ -44,7 +45,8 @@ function ClassHead({ cls, perms, onCopy, onDates }) {
     <div style={{ minWidth: 0 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: BRAND.ink, overflowWrap: "anywhere" }}>{cls.label}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 3 }}>
-        <span style={pill(status.tone, { fontSize: 10.5, padding: "2px 7px" })}>{status.label}</span>
+        {cls.run?.state !== "ended" && <span style={pill(status.tone, { fontSize: 10.5, padding: "2px 7px" })}>{status.label}</span>}
+        {cls.run && <ClassRunBadge cls={{ bootcampRun: cls.run }} style={{ fontSize: 10.5, padding: "2px 7px" }} />}
         <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: BRAND.muted }}><FiUsers size={10} /> {cls.learners}</span>
       </div>
       {(perms.change || perms.add) && cls.lessons.length > 0 && (

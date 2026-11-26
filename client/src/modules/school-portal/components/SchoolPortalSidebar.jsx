@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   FiGrid, FiBookOpen, FiLayers, FiHome, FiUserCheck, FiUsers, FiCheckSquare,
   FiCalendar, FiRepeat, FiBarChart2, FiDollarSign, FiUser, FiClipboard, FiStar, FiMessageCircle, FiLifeBuoy,
+  FiVolume2,
 } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { learningHubApi as schoolApi } from "../../learning-hubs/services/learningHubApi";
@@ -28,6 +29,7 @@ function SchoolPortalSidebar({ isMobile = false, isMobileOpen = false, onClose =
   const menuItems = [
     ...(hubLead ? [{ name: "Hub Check-ins", path: "/school-portal/checkins", end: false, enabled: true, icon: FiClipboard }] : []),
     { name: "Dashboard",   path: "/school-portal", end: true, enabled: true, icon: FiGrid },
+    { name: "Announcements", path: "/school-portal/announcements", end: false, enabled: true, icon: FiVolume2 },
     { name: "Curriculum",  path: "/school-portal/curriculum", end: false, enabled: true, icon: FiBookOpen },
     { name: "Classes",     path: `/school-portal/classes/${schoolId}`,    end: false, enabled: !!schoolId, icon: FiLayers },
     { name: "Rooms",       path: "/school-portal/rooms",                  end: false, enabled: !!schoolId, icon: FiHome },

@@ -137,6 +137,35 @@ async function areConnected(a, b) {
 }
 
 // Members of the workspace whose content no longer shows (their parent switched Connect off).
+// Every learner is on Connect (26 Nov 2026 — the user removed the parent's switch and the age
+// limit): their member row is made the first time they're seen, and one switched off before is
+// switched back on. Educators' own TOT learner records are never members.
+async function ensureMember(learner, ownerAdminId) {
+  if (!learner || !ownerAdminId || learner.teacherId) return null;
+  let m = await memberByLearner(learner.id);
+  if (!m) {
+    const user = learner.username ? await db("users").whereRaw("LOWER(username) = ?", [String(learner.username).toLowerCase()]).first("id") : null;
+    try {
+      await db("connect_members").insert({
+        id: generateId(), ownerAdminId, learnerId: learner.id, userId: user?.id || null, status: "active",
+        consentMethod: "automatic", consentAt: now(), directMessages: true, photoAllowed: false,
+        displayName: R.shortName(learner.firstName, learner.lastName), avatar: toJson(R.defaultAvatar(learner.id)),
+        interests: toJson([]), skills: toJson([]), showCertificates: true, createdAt: now(), updatedAt: now(),
+      });
+    } catch (err) {
+      if (err.code !== "ER_DUP_ENTRY") throw err;
+    }
+    m = await memberByLearner(learner.id);
+  } else if (m.status === "off") {
+    await db("connect_members").where({ id: m.id }).update({
+      status: "active", withdrawnAt: null, consentMethod: "automatic", consentAt: now(), updatedAt: now(),
+      ...(m.displayName === "Former member" ? { displayName: R.shortName(learner.firstName, learner.lastName) } : {}),
+    });
+    m = await memberByLearner(learner.id);
+  }
+  return m;
+}
+
 async function goneMemberIds(ownerAdminId) {
   return db("connect_members").where({ ownerAdminId, status: "off" }).pluck("id");
 }
@@ -192,6 +221,6 @@ async function countSince(table, column, value, since) {
 
 module.exports = {
   db, refuse, now, parseJson, settingsFor, saveSettings, ensureDefaultCommunities,
-  memberById, memberByLearner, memberCards, card, staffCard, ageOfMember, agesOfMembers,
+  memberById, memberByLearner, ensureMember, memberCards, card, staffCard, ageOfMember, agesOfMembers,
   hiddenFor, isBlockedEitherWay, areConnected, goneMemberIds, filesFor, fileView, claimFiles, log, checkLearnerText, countSince,
 };

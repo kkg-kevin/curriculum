@@ -1,13 +1,15 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { connectApi } from "../../connect/services/connectApi";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiClock, FiRepeat, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy, FiShare2 } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiCheckSquare, FiCalendar, FiClock, FiRepeat, FiUser, FiHome, FiCreditCard, FiStar, FiHeart, FiGift, FiMessageCircle, FiLifeBuoy, FiShare2, FiVolume2 } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
 
 const menuItems = [
   { name: "Dashboard",       path: "/teacher-portal", icon: FiGrid },
+  // From the Digifunzi team (Connect → Announcements, modules/announcements).
+  { name: "Announcements",   path: "/teacher-portal/announcements", icon: FiVolume2 },
   { name: "Course Content",  path: "/teacher-portal/course-content", icon: FiBook },
   { name: "Home Learning",   path: "/teacher-portal/home-learning", icon: FiHome },
   { name: "Assessments",     path: "/teacher-portal/assessments", icon: FiClipboard },
