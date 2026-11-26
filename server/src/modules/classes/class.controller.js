@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const ClassService = require("./class.service");
 const ReportService = require("../reports/report.service");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
+const LearnerModel = require("../learners/learner.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
 const TeacherModel = require("../teachers/teacher.model");
 const TeacherHubLinkModel = require("../teachers/teacher-hub-link.model");
@@ -115,7 +116,29 @@ const getClassById = asyncHandler(async (req, res) => {
       : false;
     assertOwn(enrolled);
   }
-  res.json({ success: true, data: record });
+  // With its bootcamp run (Upcoming / Running / Ended) and how many moved on (27 Nov 2026).
+  const [withRun] = await require("./class-former-members").withRunInfo([record]);
+  res.json({ success: true, data: withRun });
+});
+
+// The learners who moved on from this class to the next run of the same bootcamp (27 Nov 2026):
+// still finished here — reports, marking, certificates — and listed as "Moved on" on the class.
+const getMovedOn = asyncHandler(async (req, res) => {
+  const record = await ClassService.getClassById(req.params.id);
+  if (req.user.role === "school") assertOwn(isOwnHub(req, record.schoolId));
+  if (req.user.role === "admin") assertOwn(await isOwnHubForAdmin(req, record.schoolId));
+  if (req.user.role === "teacher") {
+    const links = await ClassCourseTeacherLinkModel.findByClassId(record.id);
+    assertOwn(links.some((l) => l.teacherId === req.ownTeacher?.id));
+  }
+  const former = await require("./class-former-members").formerMembers(record.id);
+  const learners = former.length ? await LearnerModel.findAll({ ids: former.map((f) => f.learnerId) }) : [];
+  const byId = new Map(learners.map((l) => [l.id, l]));
+  const data = former.filter((f) => byId.has(f.learnerId)).map((f) => {
+    const l = byId.get(f.learnerId);
+    return { id: l.id, firstName: l.firstName, lastName: l.lastName, photo: l.photo || null, username: l.username || null, movedAt: f.movedAt, movedTo: f.toLabel, nowInClassId: f.toClassId || null };
+  });
+  res.json({ success: true, data, count: data.length });
 });
 
 // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
@@ -304,6 +327,7 @@ const bulkCreateClasses = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getMovedOn,
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
   getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,

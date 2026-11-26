@@ -9,6 +9,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { classPath } from "../../../routes/portalPaths";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { formatClassName } from "../utils/classDisplay";
+import ClassRunBadge from "./ClassRun";
 
 const ACCENT    = "#25476a";
 const GRAD_FROM = "#feb139";
@@ -106,6 +107,8 @@ export function ClassCard({ cls }) {
                 {cls.academicYear}
                 {cls.tag && <span style={{ marginLeft: 6, padding: "1px 7px", borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: "#e8f5fb", color: "#25476a", border: "1px solid #a8d5ee" }}>{cls.tag}</span>}
               </p>
+              {/* Which run of a bootcamp this class is, and where it stands (27 Nov 2026). */}
+              <ClassRunBadge cls={cls} style={{ marginTop: 4 }} />
             </div>
           </div>
           <button

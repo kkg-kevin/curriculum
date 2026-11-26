@@ -208,10 +208,19 @@ const getAllLearners = asyncHandler(async (req, res) => {
         .filter(({ record, links }) => record.createdByAdminId === req.ownerAdminId || links.some((l) => ownHubIds.has(l.hubId)))
         .map(({ record }) => record);
     }
-    const data = await Promise.all(scoped.map(async (record) => ({
-      ...record,
-      hubCount: (await LearnerHubLinkModel.findByLearnerId(record.id)).length,
-    })));
+    // ?hubId= (the hub adding them): whether they're already there and in which class, so the
+    // panel offers to MOVE them into a class rather than "enrol" them a second time (27 Nov 2026).
+    const askingHubId = req.user.role === "school" ? req.ownSchool?.id : req.query.hubId;
+    const data = await Promise.all(scoped.map(async (record) => {
+      const links = await LearnerHubLinkModel.findByLearnerId(record.id);
+      const link = askingHubId ? links.find((l) => l.hubId === askingHubId) : null;
+      const cls = link?.classId ? await ClassModel.findById(link.classId) : null;
+      return {
+        ...record,
+        hubCount: links.filter((l) => l.hubId !== askingHubId).length,
+        here: link ? { status: link.status, classId: link.classId || null, className: cls ? [cls.gradeName, cls.streamName].filter(Boolean).join(" · ") : null } : null,
+      };
+    }));
     return res.json({ success: true, data, count: data.length });
   }
   const filters = {
@@ -477,6 +486,27 @@ const enrollLearnerHub = asyncHandler(async (req, res) => {
     assertOwn(ownHubIds.includes(data.hubId));
     const existingLinks = await LearnerHubLinkModel.findByLearnerId(req.params.id);
     assertOwn(existingLinks.length === 0 || existingLinks.some((l) => ownHubIds.includes(l.hubId)));
+  }
+  // Already at this hub (27 Nov 2026): a hub holds one place per learner, so enrolling them there
+  // again used to change nothing, silently. Now it moves them into the class picked — through
+  // Move learner (learner-moves/), so the move is written down, a bootcamp run's class places them
+  // on its pathway, and the parent is told. A place they'd left (transferred) is taken up again.
+  // A non-school hub's "space only" enrolment of someone already there still just sets the space.
+  const existing = await LearnerHubLinkModel.findOne(req.params.id, data.hubId);
+  const active = existing && (existing.status || "active") === "active";
+  const spaceOnly = active && !data.classId && data.spaceId !== undefined;
+  if (existing && !spaceOnly) {
+    if (active && !data.classId) {
+      return res.status(409).json({ success: false, code: "ALREADY_AT_HUB", message: "They're already at this hub — choose the class to move them into" });
+    }
+    const hub = await LearningHubModel.findById(data.hubId);
+    // A hub's own login acts within its owner's workspace (its own hub only — checked above).
+    const scoped = req.user.role === "school" ? Object.assign(Object.create(req), { ownerAdminId: hub?.ownerAdminId || null }) : req;
+    const LearnerMoveService = require("../learner-moves/learner-move.service");
+    const moved = await LearnerMoveService.moveIntoClass(scoped, req.params.id, {
+      hubId: data.hubId, classId: data.classId || null, notifyParent: data.notifyParent !== false,
+    });
+    return res.status(201).json({ success: true, data: await LearnerService.getLearnerHubs(req.params.id), moved });
   }
   const hubs = await LearnerService.enrollInHub(req.params.id, data);
   res.status(201).json({ success: true, data: hubs });

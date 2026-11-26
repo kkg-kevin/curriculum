@@ -1,3 +1,4 @@
+const { withRunInfo } = require("./class-former-members");
 const ClassModel   = require("./class.model");
 const LearnerHubLinkModel = require("../learners/learner-hub-link.model");
 const ClassCourseTeacherLinkModel = require("./class-course-teacher-link.model");
@@ -159,7 +160,8 @@ const ClassService = {
       if (!l.classId) continue;
       countMap[l.classId] = (countMap[l.classId] || 0) + 1;
     }
-    const counted = classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
+    // With the bootcamp run each class belongs to (Upcoming / Running / Ended) — 27 Nov 2026.
+    const counted = await withRunInfo(classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 })));
     // A paged request keeps the model's own stable order (see ClassModel.findAll).
     if (filters?.limit || filters?.offset) return counted;
     return sortByCurriculumOrder(counted);
@@ -173,7 +175,7 @@ const ClassService = {
     const links = await LearnerHubLinkModel.findByClassIds(classes.map((c) => c.id));
     const countMap = {};
     for (const l of links) if (l.classId) countMap[l.classId] = (countMap[l.classId] || 0) + 1;
-    const counted = classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 }));
+    const counted = await withRunInfo(classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 })));
     const lookups = await curriculumLookups([...new Set(counted.map((c) => c.curriculumId).filter(Boolean))]);
     const out = [];
     for (const hubId of hubIds) out.push(...(await sortByCurriculumOrder(counted.filter((c) => c.schoolId === hubId), lookups)));

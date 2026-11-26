@@ -5,6 +5,7 @@ import { useGenerateCertificates, useRevokeReportCertificate } from "../hooks/us
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import CertificatePreviewDialog from "../../certificates/components/CertificatePreviewDialog";
 import { classLabel } from "../../../utils/classLabel";
+import ClassRunBadge, { MovedOnTag } from "../../classes/components/ClassRun";
 
 /*
  * One (class, course): its sessions one at a time, each learner's session report — and, on a
@@ -65,12 +66,12 @@ export function reportStats(sections) {
 }
 
 // One learner's session report for the session picked in the navigator.
-function SessionLearnerRow({ learner, session, reportPath, navigate }) {
+function SessionLearnerRow({ learner, session, movedOn = null, reportPath, navigate }) {
   const published = session?.report?.status === "published";
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px", borderBottom: "1px solid #F9FAFB" }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}</p>
+        <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: T.ink }}>{learner.firstName} {learner.lastName}<MovedOnTag movedOn={movedOn} /></p>
         <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>
           {!session || session.requiredCount === 0 ? "no assessments to report on" : `${session.gradedCount}/${session.requiredCount} assessments marked`}
         </p>
@@ -155,7 +156,7 @@ function CertificateSection({ cls, course, rows, moduleId = null, name, window: 
         return (
           <div key={row.learner.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #F9FAFB", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-              <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}</p>
+              <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: T.ink }}>{row.learner.firstName} {row.learner.lastName}<MovedOnTag movedOn={row.movedOn} /></p>
               <p style={{ margin: 0, fontSize: 11.5, color: cert?.status === "issued" ? "#059669" : cert?.status === "revoked" ? "#B91C1C" : T.inkFaint, fontWeight: cert ? 600 : 400 }}>
                 {cert?.status === "issued"
                   ? `Certificate ${cert.certificateNumber} issued`
@@ -252,6 +253,7 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
         <div>
           <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: T.ink }}>{course.name}</p>
           {showClass && <p style={{ margin: 0, fontSize: 11.5, color: T.inkFaint }}>{classLabel(cls)}</p>}
+          <ClassRunBadge cls={cls} style={{ marginTop: 4 }} />
         </div>
       </div>
       {/* A course's sessions can keep referencing assessments that were later deleted — those
@@ -270,7 +272,7 @@ export function CourseReportCard({ cls, course, rows, reportPath, showClass = tr
           <Navigator items={sessions} index={activeIndex} onChange={setSessionIndex} label={label} />
           {assessedHere
             ? rows.map((row) => (
-              <SessionLearnerRow key={row.learner.id} learner={row.learner} session={row.sessions?.find((s) => s.sessionId === activeSession?.sessionId)} reportPath={reportPath} navigate={navigate} />
+              <SessionLearnerRow key={row.learner.id} learner={row.learner} movedOn={row.movedOn} session={row.sessions?.find((s) => s.sessionId === activeSession?.sessionId)} reportPath={reportPath} navigate={navigate} />
             ))
             : <p style={{ margin: 0, padding: "12px 20px", fontSize: 12.5, color: T.inkFaint }}>No assessments in this session — nothing to report.</p>}
         </>

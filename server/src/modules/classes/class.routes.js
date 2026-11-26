@@ -1,5 +1,6 @@
 const express = require("express");
 const {
+  getMovedOn,
   createClass, getAllClasses, getClassById, updateClass, deleteClass, bulkCreateClasses,
   getClassCourseTeachers, assignCourseTeacher, unassignCourseTeacher, setPrimaryCourseTeacher,
   getCourseTeacherLinksForTeacher, getPromotionReadiness, promoteLearners,
@@ -25,6 +26,9 @@ router.route("/:id")
   .get(authorize("admin", "school", "teacher", "learner"), getClassById)
   .put(authorize("admin", "school"), updateClass)
   .delete(authorize("admin", "school"), deleteClass);
+
+// Learners who moved on to the next run of the same bootcamp — still finished here (27 Nov 2026).
+router.get("/:id/moved-on", authorize("admin", "school", "teacher"), getMovedOn);
 
 // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
 // Reads are open to anyone who can already read the class; writes stay admin/school, same

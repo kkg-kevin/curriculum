@@ -10,6 +10,8 @@ export const classApi = {
   update:      (id, data)   => api.put(`${BASE}/${id}`, data).then((r) => r.data.data),
   remove:      (id)         => api.delete(`${BASE}/${id}`).then((r) => r.data),
   checkRemove: (id) => checkDelete(`${BASE}/${id}`),
+  // Learners who moved on to the next run of the same bootcamp — still finished in this class.
+  movedOn:     (id)         => api.get(`${BASE}/${id}/moved-on`).then((r) => r.data.data || []),
 
   // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.
   // Replaces the old single classTeacherId field.

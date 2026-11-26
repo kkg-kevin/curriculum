@@ -30,6 +30,12 @@ function streamLabelFor(bootcamp) {
   return `${bootcamp.name.slice(0, 100 - suffix.length)}${suffix}`;
 }
 
+// The curriculum's cohorts (Structure step) that have no class among these.
+function missingCohortsOf(curriculum, classes) {
+  const have = new Set(classes.map((c) => c.gradeId).filter(Boolean));
+  return (curriculum?.classes || []).filter((cohort) => cohort?.id && !have.has(cohort.id));
+}
+
 const BootcampHubService = {
   // Runs an already-authored bootcamp (linked to a curriculum from the Curriculum module) at a
   // hub as real Classes — one per cohort already defined in curriculum.classes, same idea as
@@ -111,12 +117,48 @@ const BootcampHubService = {
       learnerCount: (await LearnerHubLinkModel.findByClassId(cls.id)).length,
     })));
     const learnerCount = classesWithCounts.reduce((sum, cls) => sum + cls.learnerCount, 0);
+    const curriculum = bootcamp?.curriculumId ? await CurriculumModel.findById(bootcamp.curriculumId) : null;
     return {
       ...offering,
       status: bootcamp?.startDate && bootcamp?.endDate ? computeStatus(bootcamp.startDate, bootcamp.endDate) : null,
       hubName: hub?.name || null,
       classes: classesWithCounts,
       learnerCount,
+      // Cohorts on the curriculum's Structure step with no class here yet ("Add missing classes").
+      missingCohorts: missingCohortsOf(curriculum, classes).map((c) => ({ id: c.id, name: c.name })),
+    };
+  },
+
+  // A cohort added to the curriculum after the bootcamp was put at this hub gets no class there by
+  // itself (classes are made once, when the hub is added). This makes the missing ones — the same
+  // way, with the run's stream label — and adds them to the hub's run. Nothing else changes: the
+  // classes and learners already there stay as they are. Safe to repeat.
+  async addMissingClasses(offeringId, bootcampId) {
+    const offering = await BootcampHubModel.findById(offeringId);
+    if (!offering || offering.bootcampId !== bootcampId) {
+      const err = new Error("This bootcamp doesn't run at that hub");
+      err.statusCode = 404;
+      throw err;
+    }
+    const bootcamp = await BootcampModel.findById(offering.bootcampId);
+    const curriculum = bootcamp?.curriculumId ? await CurriculumModel.findById(bootcamp.curriculumId) : null;
+    if (!curriculum) {
+      const err = new Error("Link this bootcamp to a curriculum first");
+      err.statusCode = 400;
+      throw err;
+    }
+    const hub = await LearningHubModel.findById(offering.hubId);
+    const classIds = classIdsArray(offering.classIds);
+    const current = (await Promise.all(classIds.map((id) => ClassModel.findById(id)))).filter(Boolean);
+    const missing = missingCohortsOf(curriculum, current);
+    if (!missing.length) return { added: [], offering: await this.enrich(offering) };
+    const created = await getClassService().bulkCreateClasses(
+      cohortClassPayload(hub, { ...curriculum, classes: missing }, bootcamp.startDate, streamLabelFor(bootcamp)),
+    );
+    await BootcampHubModel.update(offering.id, { classIds: [...classIds, ...created.map((c) => c.id)] });
+    return {
+      added: created.map((c) => ({ id: c.id, gradeName: c.gradeName })),
+      offering: await this.enrich(await BootcampHubModel.findById(offering.id)),
     };
   },
 
@@ -180,4 +222,26 @@ const BootcampHubService = {
   },
 };
 
+// A run's classes named with the bare bootcamp name (made before it had a second run) take the
+// run's date too, once it has — so two runs of one bootcamp at one hub never read the same.
+// Only ever renames a stream still exactly the bootcamp's name; safe to repeat.
+BootcampHubService.dateRunClasses = async function dateRunClasses(bootcampId) {
+  const bootcamp = await BootcampModel.findById(bootcampId);
+  if (!bootcamp?.seriesId || !bootcamp.startDate) return 0;
+  const label = streamLabelFor(bootcamp);
+  let renamed = 0;
+  for (const offering of await BootcampHubModel.findByBootcampId(bootcampId)) {
+    for (const classId of classIdsArray(offering.classIds)) {
+      // eslint-disable-next-line no-await-in-loop
+      const cls = await ClassModel.findById(classId);
+      if (!cls || cls.streamName !== bootcamp.name || cls.streamName === label) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await ClassModel.update(cls.id, { streamName: label });
+      renamed += 1;
+    }
+  }
+  return renamed;
+};
+
 module.exports = BootcampHubService;
+module.exports.streamLabelFor = streamLabelFor;
