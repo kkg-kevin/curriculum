@@ -185,9 +185,14 @@ function EnrollmentRow({ learnerId, learnerName, enrollment, isAdmin, onRequestU
   );
 }
 
-function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
+// "Enroll at hub…": a hub they're not at enrols them; a hub they're ALREADY at (27 Nov 2026) moves
+// them into the class picked — a hub holds one place per learner, so this is how a returning
+// learner joins a new run's class (the server's enrollLearnerHub → Move learner, written down on
+// their History). A hub they once left (Transferred) takes them back.
+function EnrollLearnerControl({ learnerId, enrollments }) {
   const { data: allHubsData } = useAllLearningHubsQuery({ status: "active" });
-  const availableHubs = (allHubsData?.data || []).filter((h) => !enrolledHubIds.includes(h.id));
+  const held = new Map(enrollments.map((e) => [e.id, e]));
+  const hubs = allHubsData?.data || [];
   const [selectedHubId, setSelectedHubId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
   const { mutate: enroll, isPending } = useEnrollLearnerHub();
@@ -197,38 +202,56 @@ function EnrollLearnerControl({ learnerId, enrolledHubIds }) {
     queryFn:  () => classApi.getAll({ schoolId: selectedHubId }),
     enabled:  !!selectedHubId,
   });
-  const classes = classesData?.data || [];
+  const here = held.get(selectedHubId) || null;
+  const isActiveHere = !!here && here.status === "active";
+  const classes = (classesData?.data || []).filter((c) => (c.status || "active") === "active" && !(isActiveHere && c.id === here?.class?.id));
+  const needsClass = isActiveHere && !selectedClassId;
+  const disabled = !selectedHubId || isPending || needsClass;
+  const buttonLabel = isActiveHere ? "Move to this class" : here ? "Enrol again" : "Enroll";
 
   return (
-    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <select
-        value={selectedHubId}
-        onChange={(e) => { setSelectedHubId(e.target.value); setSelectedClassId(""); }}
-        style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
-      >
-        <option value="">Enroll at hub…</option>
-        {availableHubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-      </select>
-      <select
-        value={selectedClassId}
-        onChange={(e) => setSelectedClassId(e.target.value)}
-        disabled={!selectedHubId}
-        style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
-      >
-        <option value="">— No class yet —</option>
-        {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)} — {c.academicYear}</option>)}
-      </select>
-      <button
-        type="button"
-        disabled={!selectedHubId || isPending}
-        onClick={() => {
-          enroll({ learnerId, data: { hubId: selectedHubId, classId: selectedClassId, status: "active" } });
-          setSelectedHubId(""); setSelectedClassId("");
-        }}
-        style={{ padding: "8px 16px", backgroundColor: !selectedHubId || isPending ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: !selectedHubId || isPending ? "not-allowed" : "pointer", flexShrink: 0 }}
-      >
-        Enroll
-      </button>
+    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #F3F4F6", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select
+          value={selectedHubId}
+          onChange={(e) => { setSelectedHubId(e.target.value); setSelectedClassId(""); }}
+          style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151" }}
+        >
+          <option value="">Enroll at hub…</option>
+          {hubs.map((h) => {
+            const e = held.get(h.id);
+            const note = !e ? "" : e.status === "active" ? " (already here · change class)" : e.status === "transferred" ? " (left · enrol again)" : ` (${STATUS_LABELS[e.status] || e.status})`;
+            return <option key={h.id} value={h.id}>{h.name}{note}</option>;
+          })}
+        </select>
+        <select
+          value={selectedClassId}
+          onChange={(e) => setSelectedClassId(e.target.value)}
+          disabled={!selectedHubId}
+          style={{ flex: 1, minWidth: 140, padding: "8px 10px", borderRadius: 8, border: "1.5px solid #E5E7EB", fontSize: 13, fontFamily: "Inter, sans-serif", color: "#374151", opacity: selectedHubId ? 1 : 0.5 }}
+        >
+          <option value="">{isActiveHere ? "Choose the new class…" : "— No class yet —"}</option>
+          {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)} — {c.academicYear}</option>)}
+        </select>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            enroll({ learnerId, data: { hubId: selectedHubId, classId: selectedClassId, status: "active" } });
+            setSelectedHubId(""); setSelectedClassId("");
+          }}
+          style={{ padding: "8px 16px", backgroundColor: disabled ? "#b8d9ee" : ACCENT, color: "#ffffff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: disabled ? "not-allowed" : "pointer", flexShrink: 0 }}
+        >
+          {buttonLabel}
+        </button>
+      </div>
+      {here && (
+        <p style={{ margin: 0, fontSize: 12, color: "#6B7280", lineHeight: 1.5 }}>
+          {isActiveHere
+            ? <>Already at this hub{here.class ? <> in <strong>{classLabel(here.class)}</strong></> : ""}. A hub holds one place per learner, so they'll <strong>move</strong> to the class you pick and leave {here.class ? "that one" : "the hub's no-class place"}. Same admission number; their reports, certificates and marked work stay theirs, and the move shows on their History. A bootcamp run's class also places them on its pathway, and their parent is told.</>
+            : <>They left this hub before. Enrolling again takes up their old place (admission number {here.admissionNumber || "—"}) in the class you pick.</>}
+        </p>
+      )}
     </div>
   );
 }
@@ -250,7 +273,7 @@ export default function LearnerHubsManager({ learnerId, learnerName, enrollments
           ))}
         </div>
       )}
-      {isAdmin && <EnrollLearnerControl learnerId={learnerId} enrolledHubIds={enrollments.map((e) => e.id)} />}
+      {isAdmin && <EnrollLearnerControl learnerId={learnerId} enrollments={enrollments} />}
 
       <ConfirmDialog
         isOpen={!!unlinkTarget}

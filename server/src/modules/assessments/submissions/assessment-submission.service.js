@@ -1,3 +1,4 @@
+const { finishingLearnerIds, formerMembers } = require("../../classes/class-former-members");
 const AssessmentIssueModel = require("./assessment-issue.model");
 const AssessmentSubmissionModel = require("./assessment-submission.model");
 const AssessmentRevocationModel = require("./assessment-revocation.model");
@@ -924,8 +925,8 @@ const AssessmentSubmissionService = {
   // row carries `reissueOf` (the original class issue, whose roster is where it's marked) — but
   // only when that original is this class's, so a learner in two classes isn't listed twice.
   async getStandaloneSubmissionsNeedingGrading(classId) {
-    const links = await LearnerHubLinkModel.findByClassId(classId);
-    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    // Its active learners plus any who moved on to the next run of the same bootcamp.
+    const learnerIds = await finishingLearnerIds(classId);
     const submissions = learnerIds.length
       ? await db("assessment_submissions").whereIn("learnerId", learnerIds).whereNull("classId").where({ status: "submitted" })
       : [];
@@ -991,8 +992,15 @@ const AssessmentSubmissionService = {
     // classId/status no longer live on the learner record — resolve the roster via enrollment
     // links for this class instead (see learner-hub-link.model.js).
     const links = await LearnerHubLinkModel.findByClassId(issue.classId);
+    // Learners who moved on to the next run of the same bootcamp stay on the roster to be marked
+    // here (27 Nov 2026, classes/class-former-members.js), tagged movedOn.
+    const former = await formerMembers(issue.classId);
+    const movedOnById = new Map(former.map((f) => [f.learnerId, { at: f.movedAt, to: f.toLabel }]));
     // Issued to chosen learners only: they alone are on its roster.
-    const learnerIds = links.filter((l) => l.status === "active" && AssessmentIssueModel.isForLearner(issue, l.learnerId)).map((l) => l.learnerId);
+    const learnerIds = [...new Set([
+      ...links.filter((l) => l.status === "active").map((l) => l.learnerId),
+      ...former.map((f) => f.learnerId),
+    ])].filter((id) => AssessmentIssueModel.isForLearner(issue, id));
     const learners = await LearnerModel.findAll({ ids: learnerIds });
     const submissions = await AssessmentSubmissionModel.findAll({ issueId: issue.id });
     const submissionByLearner = new Map(submissions.map((s) => [s.learnerId, s]));
@@ -1020,6 +1028,7 @@ const AssessmentSubmissionService = {
       const revoked = revokedAt.get(learner.id) || null;
       return {
         learner, submission: latest.submission, issueId: latest.issueId, attempts, revokedAt: revoked,
+        movedOn: movedOnById.get(learner.id) || null,
         // Why they can't be reissued it now (reissue.rules.js — what reissueToLearner enforces), or null.
         reissueBlocker: reissueBlockerFrom({ groupMode: !!issue.groupMode, revoked: !!revoked, inClass: true, attempts }),
       };

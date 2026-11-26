@@ -34,14 +34,24 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
   const search = () => {
     const trimmed = term.trim();
     if (!trimmed) return;
-    runSearch(trimmed, { onSuccess: (learners) => { setResults(learners); setSelectedId(null); setClassId(""); setSpaceId(""); } });
+    runSearch({ q: trimmed, hubId: schoolId }, { onSuccess: (learners) => { setResults(learners); setSelectedId(null); setClassId(""); setSpaceId(""); } });
   };
 
   const selected = results?.find((l) => l.id === selectedId) || null;
+  // Already at this hub (27 Nov 2026): a hub holds one place per learner, so they're MOVED into the
+  // class picked (a returning learner joining a new bootcamp run's class) — or, having left, taken
+  // back. Before, "Enroll here" on someone already here changed nothing.
+  const here = selected?.here || null;
+  const activeHere = here && here.status === "active";
+  const pickClass = !isNonSchoolHub || !!here;
+  const classChoices = classes.filter((c) => (c.status || "active") === "active" && !(activeHere && c.id === here.classId));
+  const blocked = activeHere && !classId;
 
   const handleEnroll = () => {
-    if (!selected) return;
-    const data = isNonSchoolHub ? { hubId: schoolId, status: "active", spaceId: spaceId || null } : { hubId: schoolId, classId, status: "active" };
+    if (!selected || blocked) return;
+    const data = here
+      ? { hubId: schoolId, classId, status: "active" }
+      : isNonSchoolHub ? { hubId: schoolId, status: "active", spaceId: spaceId || null } : { hubId: schoolId, classId, status: "active" };
     enroll(
       { learnerId: selected.id, data },
       { onSuccess: () => { setTerm(""); setResults(undefined); setSelectedId(null); setSpaceId(""); onEnrolled?.(); } },
@@ -55,7 +65,7 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
         <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: "#9CA3AF", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer" }}>Close</button>
       </div>
       <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>
-        Search by name, username, or registration number to find them if they're already enrolled at another hub.
+        Search by name, username, or registration number: someone at another hub is enrolled here too; someone already here is moved into the class you pick (a returning learner joining a new run).
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
@@ -94,8 +104,11 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
                   {[l.registrationNumber, l.username && `@${l.username}`].filter(Boolean).join(" · ") || "No username or registration number on file"}
                 </p>
               </div>
-              <span style={{ fontSize: 11.5, color: "#6B7280", flexShrink: 0 }}>
-                {l.hubCount > 0 ? `${l.hubCount} other hub${l.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
+              <span style={{ fontSize: 11.5, color: l.here?.status === "active" ? "#25476a" : "#6B7280", fontWeight: l.here?.status === "active" ? 700 : 400, flexShrink: 0 }}>
+                {l.here?.status === "active"
+                  ? `Already here${l.here.className ? ` · ${l.here.className}` : ""}`
+                  : l.here ? "Was here before"
+                  : l.hubCount > 0 ? `${l.hubCount} other hub${l.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
               </span>
             </button>
           ))}
@@ -107,7 +120,10 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
           <div style={{ flex: 1, minWidth: 160 }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#111827" }}>{selected.firstName} {selected.lastName}</p>
             <p style={{ margin: 0, fontSize: 11.5, color: "#9CA3AF" }}>
-              {selected.hubCount > 0 ? `Already enrolled at ${selected.hubCount} other hub${selected.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
+              {activeHere
+                ? `Already at this hub${here.className ? ` in ${here.className}` : ""} — pick the class to move them into`
+                : here ? "They were at this hub before — enrolling again takes up their old place"
+                : selected.hubCount > 0 ? `Already enrolled at ${selected.hubCount} other hub${selected.hubCount === 1 ? "" : "s"}` : "Not enrolled anywhere yet"}
             </p>
           </div>
           {results.length > 1 && (
@@ -115,24 +131,24 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
               ← Back to results
             </button>
           )}
-          {isNonSchoolHub ? (
+          {!pickClass ? (
             <select value={spaceId} onChange={(e) => setSpaceId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
               <option value="">— No space yet —</option>
               {spaces.map((s) => <option key={s.id} value={s.id}>{s.name}{s.pricingModel !== "free" ? ` — KES ${s.rate} ${s.priceUnit}` : " — Free"}</option>)}
             </select>
           ) : (
             <select value={classId} onChange={(e) => setClassId(e.target.value)} style={{ ...selectStyle, minWidth: 160 }}>
-              <option value="">— No class yet —</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}
+              <option value="">{activeHere ? "Choose the new class…" : "— No class yet —"}</option>
+              {(here ? classChoices : classes).map((c) => <option key={c.id} value={c.id}>{formatClassName(c)}</option>)}
             </select>
           )}
           <button
             type="button"
             onClick={handleEnroll}
-            disabled={enrolling}
-            style={{ padding: "8px 16px", backgroundColor: enrolling ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: enrolling ? "not-allowed" : "pointer" }}
+            disabled={enrolling || blocked}
+            style={{ padding: "8px 16px", backgroundColor: enrolling || blocked ? "#b8d9ee" : "#25476a", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: enrolling || blocked ? "not-allowed" : "pointer" }}
           >
-            {enrolling ? "Enrolling…" : "Enroll here"}
+            {enrolling ? "Saving…" : activeHere ? "Move to this class" : here ? "Enrol again" : "Enroll here"}
           </button>
         </div>
       )}

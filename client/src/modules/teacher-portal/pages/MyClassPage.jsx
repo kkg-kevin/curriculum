@@ -9,6 +9,7 @@ import { learnerApi } from "../../learners/services/learnerApi";
 import ClassGroupsPanel from "../components/ClassGroupsPanel";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
+import ClassRunBadge, { EndedRunBanner, MovedOnSection } from "../../classes/components/ClassRun";
 
 const LEARNER_STATUS_STYLES = {
   active:      { bg: "#e8f5fb", color: "#25476a", border: "#a8d5ee", label: "Active" },
@@ -107,7 +108,8 @@ export default function MyClassPage() {
       <div style={{ background: "linear-gradient(135deg, #1a3550 0%, #25476a 40%, #2e7db5 75%, #38aae1 100%)", borderRadius: 20, padding: "28px 32px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
           <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{formatClassName(cls)}</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {learners.length} learner{learners.length !== 1 ? "s" : ""}</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>Academic Year {cls.academicYear} · {learners.length} learner{learners.length !== 1 ? "s" : ""}{cls.movedOnCount > 0 ? ` · ${cls.movedOnCount} moved on` : ""}</p>
+          <ClassRunBadge cls={cls} onDark style={{ marginTop: 8 }} />
         </div>
         <button
           type="button"
@@ -117,6 +119,9 @@ export default function MyClassPage() {
           <FiClipboard size={14} /> Take Attendance
         </button>
       </div>
+
+      {/* An earlier run of a bootcamp: finish it here, teach in the current run's class (27 Nov 2026). */}
+      <EndedRunBanner cls={cls} style={{ marginBottom: 20 }} />
 
       <OnlineClassStrip who="teacher" hub={hubs.find((h) => h.id === cls.schoolId)} cls={cls} classId={classId} style={{ marginBottom: 20 }} />
 
@@ -129,6 +134,9 @@ export default function MyClassPage() {
           learners.map((l) => <LearnerRow key={l.id} learner={l} />)
         )}
       </div>
+
+      {/* Learners who moved on to the next run — still marked, reported and certified here. */}
+      <MovedOnSection classId={classId} style={{ marginTop: 20 }} />
 
       {/* The class's ranking this term (modules/rankings). */}
       <div style={{ marginTop: 20 }}>

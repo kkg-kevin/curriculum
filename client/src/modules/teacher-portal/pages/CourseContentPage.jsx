@@ -9,6 +9,7 @@ import { courseHomePath } from "../../../routes/portalPaths";
 import CourseCatalogGrid from "../../courses/components/CourseCatalogGrid";
 import { OnlineClassStrip } from "../../timetable/components/OnlineClass";
 import { classLabel } from "../../../utils/classLabel";
+import ClassRunBadge from "../../classes/components/ClassRun";
 
 const T = { accent: "#25476a", accentMid: "#2e7db5", tintBg: "#e8f5fb", tintBorder: "#a8d5ee", ink: "#111827", inkMuted: "#6B7280", inkFaint: "#9CA3AF", border: "#E5E7EB" };
 
@@ -68,6 +69,7 @@ function ClassCard({ cls, hub, courses, teacherName, isOpen, onToggleOpen, showF
             <div style={{ minWidth: 0 }}>
               <h3 style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{classLabel(cls)}</h3>
               <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>1 class</p>
+              <ClassRunBadge cls={cls} style={{ marginTop: 4 }} />
             </div>
           </div>
           <span style={{ fontSize: 11.5, fontWeight: 700, color: T.accent, backgroundColor: T.tintBg, border: `1px solid ${T.tintBorder}`, borderRadius: 20, padding: "3px 10px", flexShrink: 0, whiteSpace: "nowrap" }}>

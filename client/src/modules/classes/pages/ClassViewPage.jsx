@@ -15,6 +15,7 @@ import PromotionPanel from "../components/PromotionPanel";
 import ClassCompletionPanel from "../components/ClassCompletionPanel";
 import ClassReportsPanel from "../components/ClassReportsPanel";
 import { formatClassName } from "../utils/classDisplay";
+import ClassRunBadge, { EndedRunBanner, MovedOnSection } from "../components/ClassRun";
 import RecordStamp from "../../activity/components/RecordStamp";
 import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
 
@@ -195,8 +196,9 @@ export default function ClassViewPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><FiHome size={26} /></div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <h1 style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{formatClassName(cls)}</h1>
+                <ClassRunBadge cls={cls} onDark />
                 {cls.tag && (
                   <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff" }}>
                     {cls.tag}
@@ -226,6 +228,8 @@ export default function ClassViewPage() {
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="classes" id={id} style={{ marginBottom: 20 }} />
+      {/* An earlier run of a bootcamp: what this class is for now (27 Nov 2026). */}
+      <EndedRunBanner cls={cls} style={{ marginBottom: 16 }} />
 
       {/* Details grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -333,6 +337,9 @@ export default function ClassViewPage() {
           )}
         </div>
       </div>
+
+      {/* Learners who moved on to the next run — still finished here (27 Nov 2026). */}
+      <MovedOnSection classId={cls.id} onOpen={(l) => navigate(learnerPath(user?.role, l.id, "view"))} style={{ marginBottom: 16 }} />
 
       {/* The class's ranking this term (modules/rankings). */}
       <div style={{ marginBottom: 16 }}>

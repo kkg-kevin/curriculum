@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TotBadge from "../components/TotBadge";
-import { FiAward, FiCalendar, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiTag, FiUsers, FiX } from "react-icons/fi";
+import { FiAward, FiCalendar, FiEdit2, FiExternalLink, FiMapPin, FiPlus, FiRotateCcw, FiTag, FiUsers, FiX } from "react-icons/fi";
 import { useBootcampQuery, useDeleteBootcamp, useUpdateBootcamp } from "../hooks/useBootcamps";
-import { useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
+import { useAddMissingClasses, useBootcampHubsQuery, useCreateBootcampHub, useDeleteBootcampHub } from "../hooks/useBootcampHubs";
+import BringBackLearnersDialog from "../components/BringBackLearnersDialog";
 import { useAllLearningHubsQuery } from "../../learning-hubs/hooks/useLearningHub";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import { bootcampApi } from "../services/bootcampApi";
@@ -77,6 +78,9 @@ function RunsAtHubsSection({ bootcamp }) {
   const { data: hubsData } = useAllLearningHubsQuery({});
   const { mutate: addHub, isPending: adding } = useCreateBootcampHub(bootcamp.id);
   const { mutate: removeHub } = useDeleteBootcampHub(bootcamp.id);
+  const addMissing = useAddMissingClasses(bootcamp.id);
+  const [bringingBack, setBringingBack] = useState(false);
+  const ended = !!bootcamp.endDate && String(bootcamp.endDate).slice(0, 10) < new Date().toISOString().slice(0, 10);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedHubId, setSelectedHubId] = useState("");
   const [confirmRemove, setConfirmRemove] = useState(null);
@@ -106,6 +110,17 @@ function RunsAtHubsSection({ bootcamp }) {
             {canRun ? "One class per cohort is created automatically at each hub." : "Link a curriculum and set start/end dates before running this bootcamp at a hub."}
           </p>
         </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        {offerings.length > 0 && !ended && bootcamp.audience !== "educators" && (
+          <button
+            type="button"
+            onClick={() => setBringingBack(true)}
+            title="Move learners of this bootcamp's earlier runs into this run's classes"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1.5px solid #25476a", backgroundColor: "#fff", color: "#25476a", fontSize: 12.5, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            <FiRotateCcw size={13} /> Bring back learners
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
@@ -115,7 +130,9 @@ function RunsAtHubsSection({ bootcamp }) {
         >
           <FiPlus size={13} /> Run at a Hub
         </button>
+        </div>
       </div>
+      {bringingBack && <BringBackLearnersDialog bootcamp={bootcamp} onClose={() => setBringingBack(false)} />}
 
       {pickerOpen && (
         <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, border: "1.5px solid #a8d5ee", backgroundColor: "#F0F7FF" }}>
@@ -154,12 +171,15 @@ function RunsAtHubsSection({ bootcamp }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {offerings.map((o) => {
               const s = OFFERING_STATUS[o.status] || OFFERING_STATUS.upcoming;
+              const missing = o.missingCohorts || [];
               return (
-                <div key={o.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, border: "1px solid #E5E7EB" }}>
-                  <div>
+                <div key={o.id} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "#111827" }}>{o.hubName}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>
                       {(o.classes || []).length} class{(o.classes || []).length !== 1 ? "es" : ""} · {o.learnerCount} learner{o.learnerCount !== 1 ? "s" : ""}
+                      {(o.classes || []).length > 0 && <> · {(o.classes || []).map((c) => `${c.gradeName} (${c.learnerCount})`).join(", ")}</>}
                     </p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -170,6 +190,22 @@ function RunsAtHubsSection({ bootcamp }) {
                       <FiX size={15} />
                     </button>
                   </div>
+                </div>
+                {missing.length > 0 && (
+                  <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: "#FFFBEB", border: "1px solid #FDE68A", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "#92400E", lineHeight: 1.5, flex: "1 1 220px" }}>
+                      {missing.length === 1 ? "A cohort" : `${missing.length} cohorts`} on the curriculum {missing.length === 1 ? "has" : "have"} no class here yet: <strong>{missing.map((c) => c.name).join(", ")}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addMissing.mutate(o.id)}
+                      disabled={addMissing.isPending}
+                      style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#25476a", color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: addMissing.isPending ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {addMissing.isPending ? "Adding…" : "Add missing classes"}
+                    </button>
+                  </div>
+                )}
                 </div>
               );
             })}

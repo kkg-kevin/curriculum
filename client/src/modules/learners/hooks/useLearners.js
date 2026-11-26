@@ -102,7 +102,9 @@ export function useLearnerHubsQuery(learnerId) {
 // learner.controller.js's getAllLearners).
 export function useSearchLearners() {
   return useMutation({
-    mutationFn: (q) => learnerApi.getAll({ q }).then((r) => r.data || []),
+    // A search term, or { q, hubId } — with the hub adding them, each match says whether they're
+    // already there (`here`).
+    mutationFn: (arg) => learnerApi.getAll(typeof arg === "string" ? { q: arg } : arg).then((r) => r.data || []),
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Search failed"),
   });
 }
@@ -111,9 +113,16 @@ export function useEnrollLearnerHub() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ learnerId, data }) => learnerApi.enrollHub(learnerId, data),
-    onSuccess: (_data, { learnerId }) => {
+    onSuccess: (data, { learnerId }) => {
       qc.invalidateQueries({ queryKey: LEARNER_KEYS.hubs(learnerId) });
-      toast.success("Learner enrolled at hub");
+      // Already at that hub: they were moved into the class picked (a hub holds one place each).
+      if (data?.moved) {
+        qc.invalidateQueries({ queryKey: ["learners"] });
+        qc.invalidateQueries({ queryKey: ["classes"] });
+        toast.success(`Moved to ${data.moved.label}${data.moved.invoice ? ` · invoice ${data.moved.invoice.invoiceNumber}` : ""}`);
+      } else {
+        toast.success("Learner enrolled at hub");
+      }
     },
     onError: (err) => toast.error(err.response?.data?.message || err.message || "Failed to enroll at hub"),
   });

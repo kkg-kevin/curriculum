@@ -383,8 +383,8 @@ const startObservationSubmission = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const links = await LearnerHubLinkModel.findByClassId(classId);
-  const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
+  // In the class now, or moved on to the next run of the same bootcamp (still marked here).
+  const enrolled = (await require("../../classes/class-former-members").finishingLearnerIds(classId)).includes(learnerId);
   if (!enrolled) {
     const err = new Error("This learner isn't enrolled in this class");
     err.statusCode = 400;
@@ -422,8 +422,8 @@ const gradeMilestone = asyncHandler(async (req, res) => {
     err.statusCode = 400;
     throw err;
   }
-  const links = await LearnerHubLinkModel.findByClassId(classId);
-  const enrolled = links.some((l) => l.learnerId === learnerId && l.status === "active");
+  // In the class now, or moved on to the next run of the same bootcamp (still marked here).
+  const enrolled = (await require("../../classes/class-former-members").finishingLearnerIds(classId)).includes(learnerId);
   if (!enrolled) {
     const err = new Error("This learner isn't enrolled in this class");
     err.statusCode = 400;

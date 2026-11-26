@@ -288,7 +288,9 @@ const CertificateService = {
     }
     if (!scopes.course.lastSessionId) fail(409, "This course has no sessions yet.");
     if (!window.open) fail(409, `Certificates open when the class reaches the ${moduleId ? "module's" : "course's"} last session${window.date ? ` (${window.date})` : ""}.`);
-    const active = (await db("learner_hub_links").where({ classId, status: "active" }).pluck("learnerId"));
+    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026):
+    // their certificate for this run is still issued here.
+    const active = await require("../classes/class-former-members").finishingLearnerIds(classId);
     const targets = learnerIds ? active.filter((id) => learnerIds.includes(id)) : active;
     if (learnerIds && targets.length === 0) fail(400, "That learner isn't active in this class.");
     let done = 0;

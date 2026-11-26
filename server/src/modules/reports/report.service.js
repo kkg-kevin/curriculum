@@ -1,3 +1,4 @@
+const { finishingLearnerIds, formerMembers } = require("../classes/class-former-members");
 const ReportModel = require("./report.model");
 const SessionModel = require("../courses/session.model");
 const { getSessionAssessmentIds } = require("../courses/sessionAssessment.utils");
@@ -692,8 +693,9 @@ const ReportService = {
     if (!session) return null;
     const cls = await ClassModel.findById(classId);
     const sessionRequiredIds = await getSessionRequiredAssessmentIds(session);
-    const links = await LearnerHubLinkModel.findByClassId(classId);
-    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // classes/class-former-members.js) — the run's reports are still finished here.
+    const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
 
     const learnerRows = await Promise.all(learners.map(async (learner) => {
@@ -733,9 +735,11 @@ const ReportService = {
     // In the course pages' order — the Reports navigator steps through them in turn.
     const sessions = courseOrder(await SessionModel.findByCourseId(courseId), await ModuleModel.findByCourseId(courseId));
     const numbering = await sessionNumbering(courseId);
-    const links = await LearnerHubLinkModel.findByClassId(classId);
-    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // classes/class-former-members.js) — the run's reports are still finished here.
+    const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
+    const movedOnById = new Map((await formerMembers(classId)).map((f) => [f.learnerId, { at: f.movedAt, to: f.toLabel }]));
 
     // Side effect: auto-generates/publishes any session report that just became ready for any of
     // these learners — this page load is the trigger, there's no separate "Generate" click for
@@ -800,6 +804,8 @@ const ReportService = {
       const report = await ReportModel.findOne({ learnerId: learner.id, courseId, classId });
       return {
         learner,
+        // Moved on to the next run of the bootcamp — still finished here ("Moved on" on the row).
+        movedOn: movedOnById.get(learner.id) || null,
         requiredCount: theirRequiredIds.length,
         // How many assessments the course's sessions reference at all — larger than requiredCount
         // when some of those assessments have since been deleted. The UI needs both to explain
@@ -913,8 +919,9 @@ const ReportService = {
   // silently became ready doesn't show as outstanding.
   async getUnresolvedSessionWork(classId, courseIds) {
     const cls = await ClassModel.findById(classId);
-    const links = await LearnerHubLinkModel.findByClassId(classId);
-    const learnerIds = links.filter((l) => l.status === "active").map((l) => l.learnerId);
+    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // classes/class-former-members.js) — the run's reports are still finished here.
+    const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
     const learnerById = new Map(learners.map((l) => [l.id, l]));
 
@@ -986,7 +993,7 @@ const ReportService = {
   // Returns { done, skipped } - skipped: learners not ready yet (generate).
   async bulkReports({ action, classId, courseId, moduleId = null, actorId }) {
     if (moduleId) await assertModuleOfCourse(moduleId, courseId);
-    const learnerIds = (await LearnerHubLinkModel.findByClassId(classId)).filter((l) => l.status === "active").map((l) => l.learnerId);
+    const learnerIds = await finishingLearnerIds(classId);
     let done = 0;
     let skipped = 0;
     if (action === "generate") {

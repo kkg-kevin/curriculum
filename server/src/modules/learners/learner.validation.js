@@ -119,6 +119,9 @@ const enrollLearnerSchema = z.object({
   spaceId: z.string().optional().nullable(),
   pricingOverrideRate: z.coerce.number().positive().optional().nullable(),
   pricingOverrideUnit: z.string().max(30).optional().nullable(),
+  // Already at this hub, the enrolment is a move into the class picked (learner.controller.js's
+  // enrollLearnerHub) — and the parent is told where the child went unless this is false.
+  notifyParent: z.boolean().optional(),
 });
 
 const updateEnrollmentSchema = z.object({

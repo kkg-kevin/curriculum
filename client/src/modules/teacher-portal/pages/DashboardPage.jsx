@@ -20,6 +20,7 @@ import Avatar from "../../../components/ui/Avatar";
 import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
 import AvailabilityPrompt from "../../availability/components/AvailabilityPrompt";
 import { classLabel } from "../../../utils/classLabel";
+import ClassRunBadge, { isEndedRun } from "../../classes/components/ClassRun";
 
 const ACCENT = "#25476a";
 const T = {
@@ -62,7 +63,8 @@ export default function DashboardPage() {
     queryFn: () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = classesData?.data || [];
+  // Runs still going first; an earlier bootcamp run's classes after them (27 Nov 2026).
+  const myClasses = [...(classesData?.data || [])].sort((a, b) => Number(isEndedRun(a)) - Number(isEndedRun(b)));
 
   // The hub's curriculum, else the one its classes run (the Home Learning hub has none of its own).
   const { data: curriculum } = useCurriculumQuery(selectedHub?.curriculumId || myClasses.find((c) => c.curriculumId)?.curriculumId);
@@ -175,12 +177,13 @@ export default function DashboardPage() {
             {myClasses.map((c) => {
               const courseCount = forClass(c).length;
               return (
-                <div key={c.id} style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div key={c.id} style={{ ...cardStyle, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, ...(isEndedRun(c) ? { backgroundColor: "#F9FAFB", borderStyle: "dashed" } : {}) }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, #feb139, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><SchoolIcon fontSize="small" /></div>
                     <div style={{ minWidth: 0 }}>
                       <h3 style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: T.ink }}>{classLabel(c)}</h3>
-                      <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Academic Year {c.academicYear}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: T.inkFaint }}>Academic Year {c.academicYear}{c.movedOnCount > 0 ? ` · ${c.movedOnCount} moved on` : ""}</p>
+                      <ClassRunBadge cls={c} style={{ marginTop: 4 }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 14, fontSize: 12.5, color: T.inkMuted, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>

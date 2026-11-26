@@ -2,6 +2,8 @@ const asyncHandler = require("express-async-handler");
 const BootcampService = require("./bootcamp.service");
 const BootcampHubService = require("./bootcamp-hub.service");
 const BootcampParticipantsService = require("./bootcamp-participants.service");
+const BootcampReturningService = require("./bootcamp-returning.service");
+const { z } = require("zod");
 const LearningHubModel = require("../learning-hubs/learning-hub.model");
 const { assertOwn } = require("../../shared/middleware/scope.middleware");
 const { createBootcampSchema, updateBootcampSchema, scheduleRunSchema } = require("./bootcamp.validation");
@@ -102,7 +104,53 @@ const deleteOffering = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+// A cohort added to the curriculum after the hub was added gets its class here (27 Nov 2026).
+const addMissingClasses = asyncHandler(async (req, res) => {
+  assertOwn(isOwn(req, await BootcampService.getBootcampById(req.params.id)));
+  res.status(201).json({ success: true, data: await BootcampHubService.addMissingClasses(req.params.offeringId, req.params.id) });
+});
+
+// Bringing learners of earlier runs back into this one (bootcamp-returning.service.js). Moving a
+// learner is Learners → Edit for staff too, as on the learner page's Move learner.
+function assertMayMoveLearners(req) {
+  if (req.user?.actualRole !== "collaborator") return;
+  const { can } = require("../access/access.service");
+  if (!can(req.user.permissions, "learners", "edit")) {
+    throw Object.assign(new Error("Your role doesn't allow you to move learners (Learners → Edit)."), { statusCode: 403 });
+  }
+}
+
+const listReturning = asyncHandler(async (req, res) => {
+  const bootcamp = await BootcampService.getBootcampById(req.params.id);
+  assertOwn(isOwn(req, bootcamp));
+  res.json({ success: true, data: await BootcampReturningService.candidates(bootcamp) });
+});
+
+const id = z.string().trim().min(1).max(64);
+const bringBackSchema = z.object({
+  hubId: id,
+  learnerIds: z.array(id).min(1, "Tick the learners to bring back").max(200),
+  classId: id.optional().nullable().or(z.literal("")),
+  invoice: z.boolean().optional(),
+  notifyParent: z.boolean().optional(),
+  leaveEarlierPlace: z.boolean().optional(),
+});
+
+const bringBack = asyncHandler(async (req, res) => {
+  assertMayMoveLearners(req);
+  const bootcamp = await BootcampService.getBootcampById(req.params.id);
+  assertOwn(isOwn(req, bootcamp));
+  const parsed = bringBackSchema.safeParse(req.body || {});
+  if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message || "Check the details" });
+  await assertOwnHub(req, parsed.data.hubId);
+  const data = { ...parsed.data, classId: parsed.data.classId || null };
+  res.status(201).json({ success: true, data: await BootcampReturningService.bringBack(req, bootcamp, data) });
+});
+
 module.exports = {
+  addMissingClasses,
+  listReturning,
+  bringBack,
   createBootcamp,
   getAllBootcamps,
   getBootcampById,

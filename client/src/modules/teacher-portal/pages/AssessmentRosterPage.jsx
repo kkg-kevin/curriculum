@@ -4,6 +4,7 @@ import { FiUsers, FiCheck } from "react-icons/fi";
 import { useRosterForIssue, useGradeSubmission, useStartObservationSubmission, useGradeMilestone, useReissueAssessment, useRestoreForLearners } from "../../assessments/hooks/useAssessmentSubmission";
 import { T, STATUS_CONFIG, StatusBadge, reissueBlockerOf, fullName, ReissueDialog, RevokeDialog } from "../components/IssueLearnerDialogs";
 import GradingPanel from "../../assessments/components/GradingPanel";
+import { MovedOnTag } from "../../classes/components/ClassRun";
 import { entryMarks, normalizeLegacyItem } from "../../assessments/schemas/assessment.schema";
 
 // Questions marked automatically (GradingPanel.jsx / grading.utils.js keep the same list) — can-do
@@ -12,7 +13,7 @@ const AUTO_GRADABLE_KINDS = ["mcqSingle", "mcqMultiple", "trueFalse", "matching"
 
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
-function LearnerRosterButton({ learner, submission, attemptCount = 1, revoked = false, active, onClick }) {
+function LearnerRosterButton({ learner, submission, attemptCount = 1, revoked = false, movedOn = null, active, onClick }) {
   return (
     <button
       type="button"
@@ -21,6 +22,7 @@ function LearnerRosterButton({ learner, submission, attemptCount = 1, revoked = 
     >
       <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: active ? T.accent : T.ink, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         {learner.firstName} {learner.lastName}
+        <MovedOnTag movedOn={movedOn} />
         {attemptCount > 1 && <span style={{ padding: "1px 7px", borderRadius: 999, background: "#FFFBEB", border: "1px solid #FDE68A", color: "#B45309", fontSize: 10.5, fontWeight: 800 }}>Attempt {attemptCount}</span>}
       </p>
       {revoked
@@ -339,8 +341,8 @@ export default function AssessmentRosterPage() {
             roster.length === 0 ? (
               <p style={{ margin: 0, padding: "24px 16px", fontSize: 13, color: T.inkFaint, textAlign: "center" }}>No learners in this class yet.</p>
             ) : (
-              roster.map(({ learner, submission, attempts: tries, revokedAt }) => (
-                <LearnerRosterButton key={learner.id} learner={learner} submission={submission} attemptCount={tries?.length || 1} revoked={!!revokedAt} active={learner.id === selectedLearnerId} onClick={() => selectLearner(learner.id)} />
+              roster.map(({ learner, submission, attempts: tries, revokedAt, movedOn }) => (
+                <LearnerRosterButton key={learner.id} learner={learner} submission={submission} attemptCount={tries?.length || 1} revoked={!!revokedAt} movedOn={movedOn} active={learner.id === selectedLearnerId} onClick={() => selectLearner(learner.id)} />
               ))
             )
           ) : (

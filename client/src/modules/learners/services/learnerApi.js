@@ -22,7 +22,9 @@ export const learnerApi = {
   websiteDiagnostics: (id) => api.get(`${BASE}/${id}/website-diagnostics`).then((r) => r.data.data),
   linkWebsiteDiagnostic: (id, attemptId) => api.post(`${BASE}/${id}/website-diagnostics/${attemptId}`).then((r) => r.data.data),
   getHubs:   (id)                  => api.get(`${BASE}/${id}/hubs/links`).then((r) => r.data.data),
-  enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => r.data.data),
+  // Returns the learner's hubs; `moved` is set when they were already at the hub and were moved
+  // into the class picked (the server's enrollLearnerHub).
+  enrollHub: (id, data)            => api.post(`${BASE}/${id}/hubs/links`, data).then((r) => Object.assign(r.data.data || [], { moved: r.data.moved || null })),
   updateHub: (id, hubId, data)     => api.put(`${BASE}/${id}/hubs/links/${hubId}`, data).then((r) => r.data.data),
   unenrollHub: (id, hubId)         => api.delete(`${BASE}/${id}/hubs/links/${hubId}`).then((r) => r.data.data),
   transferHub: (id, hubId, data)   => api.post(`${BASE}/${id}/hubs/links/${hubId}/transfer`, data).then((r) => r.data.data),

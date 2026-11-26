@@ -22,4 +22,10 @@ export const bootcampApi = {
   listHubs:  (id)         => api.get(`${BASE}/${id}/hubs`).then((r) => r.data.data),
   addHub:    (id, data)   => api.post(`${BASE}/${id}/hubs`, data).then((r) => r.data.data),
   removeHub: (id, offeringId) => api.delete(`${BASE}/${id}/hubs/${offeringId}`).then((r) => r.data),
+  // A cohort added to the curriculum after the hub was added: its class there → { added, offering }.
+  addMissingClasses: (id, offeringId) => api.post(`${BASE}/${id}/hubs/${offeringId}/classes`).then((r) => r.data.data),
+
+  // Learners of earlier runs, and bringing them back into this one (moved into its classes).
+  returning: (id)       => api.get(`${BASE}/${id}/returning`).then((r) => r.data.data),
+  bringBack: (id, data) => api.post(`${BASE}/${id}/returning`, data).then((r) => r.data.data),
 };

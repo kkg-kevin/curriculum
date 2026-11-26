@@ -126,6 +126,15 @@ async function bootcampsOffered(ownerAdminId, hubs, today) {
   }).filter((b) => b.runs.length).sort((a, b) => String(a.startDate || "").localeCompare(String(b.startDate || "")));
 }
 
+// The learners' bootcamp run (not yet ended) whose classes at this hub include this class, if any.
+async function runOfClass(ownerAdminId, hubId, classId, today) {
+  const offerings = await db("bootcamp_hubs").where({ hubId });
+  const ids = offerings.filter((o) => list(o.classIds).includes(classId)).map((o) => o.bootcampId);
+  if (!ids.length) return null;
+  const runs = await db("bootcamps").whereIn("id", ids).where({ ownerAdminId }).select("id", "endDate", "audience");
+  return runs.find((b) => (b.audience || "learners") === "learners" && (!b.endDate || dayOf(b.endDate) >= today)) || null;
+}
+
 const priceList = (pkg) => pricesOf(pkg).filter((p) => p.billingPeriod !== "daily")
   .map((p) => ({ billingPeriod: p.billingPeriod, amount: Number(p.amount), extraChildAmount: Number(p.extraChildAmount || 0) }));
 
@@ -297,6 +306,36 @@ const LearnerMoveService = {
       programme, label: toLabel, recordId: opened.recordId, active: opened.active !== false,
       ended: ended.length, notEnded, invoice: opened.invoice || null, parentTold,
     };
+  },
+
+  // A learner into one class at a hub (27 Nov 2026) — the move behind "Enroll" at a hub they're
+  // already at (learner page, hub's Add an existing learner) and a bootcamp run's "Bring back
+  // learners". A hub has one place per learner, so the place they hold there is left (ended and
+  // written down) and the new class put on the same hub link: one admission number per hub.
+  // A class of a bootcamp run that hasn't ended is a bootcamp move (placed on its pathway, an
+  // invoice if asked); any other class a hub move. Only a plain hub / bootcamp place is left here
+  // — a learner whose place at the hub is Home Learning, a Tech Club or a pathway plan is moved
+  // from their page, where staff see what that ends.
+  //   { hubId, classId?, bootcampId?, invoice?, notifyParent?, alsoEndKeys? }
+  async moveIntoClass(req, learnerId, { hubId, classId = null, bootcampId = null, invoice = false, notifyParent = true, alsoEndKeys = [] }) {
+    const ownerAdminId = req.ownerAdminId;
+    const learner = await loadLearner(ownerAdminId, learnerId);
+    const first = learner.firstName || "This learner";
+    const places = await placesOf(ownerAdminId, learner.id);
+    const here = places.find((p) => p.hubId === hubId) || null;
+    if (here && !String(here.key).startsWith("link:")) {
+      fail(`${first} is in ${here.label} at this hub — move them from their page (Move learner), which shows what that ends`, 409);
+    }
+    if (here && classId && here.classId === classId && (here.status || "active") === "active") {
+      fail(`${first} is already in that class`, 409);
+    }
+    let runId = bootcampId;
+    if (!runId && classId) runId = (await runOfClass(ownerAdminId, hubId, classId, kenyaToday()))?.id || null;
+    const destination = runId
+      ? { programme: "bootcamp", bootcampId: runId, hubId, classId, invoice: !!invoice }
+      : { programme: "hub", hubId, classId };
+    const endKeys = [...new Set([...(here ? [here.key] : []), ...alsoEndKeys.filter((k) => places.some((p) => p.key === k))])];
+    return this.move(req, learner.id, { destination, endKeys, notifyParent });
   },
 
   // Earlier programmes (learner-move.past.js): the learner themself (or their parent) sees all of

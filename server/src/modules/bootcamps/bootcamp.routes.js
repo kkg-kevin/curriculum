@@ -11,6 +11,9 @@ const {
   listRuns,
   scheduleRun,
   listParticipants,
+  addMissingClasses,
+  listReturning,
+  bringBack,
 } = require("./bootcamp.controller");
 
 const gameRoutes = require("./games/game.routes");
@@ -32,5 +35,8 @@ router.route("/:id/runs").get(listRuns).post(scheduleRun);
 // The learners and parents who took part (?scope=series: every run), to reach out when it runs again.
 router.get("/:id/participants", listParticipants);
 router.route("/:id/hubs/:offeringId").delete(deleteOffering);
+router.post("/:id/hubs/:offeringId/classes", addMissingClasses);
+// Learners of earlier runs of this bootcamp, and bringing them back into this one.
+router.route("/:id/returning").get(listReturning).post(bringBack);
 
 module.exports = router;

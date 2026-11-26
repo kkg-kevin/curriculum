@@ -319,8 +319,9 @@ export default function AttendancePage() {
                     backgroundColor: c.id === selectedClassId ? T.accent : "#fff", color: c.id === selectedClassId ? "#fff" : T.inkMuted,
                     fontSize: 13, fontWeight: 700, fontFamily: "Inter, sans-serif", cursor: "pointer",
                   }}
+                  title={c.bootcampRun ? `${c.bootcampRun.name}: ${c.bootcampRun.state === "ended" ? "run ended" : c.bootcampRun.state}` : undefined}
                 >
-                  {classLabel(c)}
+                  {classLabel(c)}{c.bootcampRun?.state === "ended" ? " (run ended)" : ""}
                 </button>
               ))}
             </div>
