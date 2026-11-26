@@ -457,6 +457,9 @@ app.use("/api/my-events", protect, attachOwnRecords, myEventRoutes);
 // (connect.context.js for who is asking). Files are sent by signed link: the signature is the access.
 app.use("/api/connect-media", connectMediaRoutes);
 app.use("/api/connect", protect, attachOwnRecords, connectContext, connectRoutes);
+// Connect → Announcements, for everyone they reach (26 Nov 2026): each portal's Announcements page,
+// the sign-in pop-up. Every call checks the person's own recipient row. See modules/connect/.
+app.use("/api/announcements", protect, require("./modules/connect/connect.announcement.routes").readerRouter);
 
 app.use(notFound);
 app.use(errorHandler);

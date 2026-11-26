@@ -82,7 +82,19 @@ function copyStatus(lessons = []) {
   return lessons.some((l) => l.status === "ready") ? "ready" : "already_set";
 }
 
+// Two lessons on the same weekday and time only clash if the dates their classes run on meet
+// (26 Nov 2026). A bootcamp / competition run's class only meets inside its run, so the lessons of a
+// run that has ended never block the next run's classes. `from` / `to` are "YYYY-MM-DD" or null (no
+// limit that side); `mine` is the new lesson's window, already starting no earlier than today.
+function windowsMeet(mine, theirs) {
+  if (!theirs) return true;
+  if (theirs.to && mine?.from && theirs.to < mine.from) return false;
+  if (theirs.from && mine?.to && theirs.from > mine.to) return false;
+  return true;
+}
+
 module.exports = {
+  windowsMeet,
   DAYS, TRAVEL_MINUTES, dayKey, toMinutes, weekdayOf, addDaysTo,
   validOn, slotForDate, classStatus, gapBetween, travelProblems, walkSessions, copyStatus,
 };

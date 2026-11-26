@@ -263,7 +263,7 @@ const BootcampService = {
     if (!source.seriesId) {
       await BootcampModel.update(source.id, { seriesId });
       // Its classes were named with the bare bootcamp name; the new run's carry their date, so
-      // these take theirs too (27 Nov 2026) — the two runs never read the same at one hub.
+      // these take theirs too (26 Nov 2026) — the two runs never read the same at one hub.
       await BootcampHubService.dateRunClasses(source.id).catch((err) => console.error("[bootcamps] could not date the first run's classes:", err.message));
     }
 

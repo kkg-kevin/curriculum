@@ -2,16 +2,18 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 import toast from "react-hot-toast";
-import { FiDownload, FiMail, FiMessageCircle, FiPlus, FiUpload, FiUserPlus, FiX } from "react-icons/fi";
+import { FiDownload, FiEdit2, FiMail, FiMessageCircle, FiPlus, FiUpload, FiUserPlus } from "react-icons/fi";
 import { BRAND, FONT, card, cardHeading, pill } from "../../../theme/brand";
-import { askConfirm } from "../../../components/ui/AskDialog";
 import { affiliatesApi, errorOf, formatDay, PROGRAMMES } from "../services/affiliatesApi";
 import PopUp from "./PopUp";
+import { ProspectDetailsForm, StagePill, StageSelect } from "./ProspectBits";
 
 // My prospects (19 Nov 2026 — server affiliate.prospects.js): families the affiliate has talked to.
 // While the claim is open (60 days by default), if the family signs up — even without the code —
 // matched by the parent's phone or email, the affiliate earns. Add one family, or upload a list;
-// invite them by WhatsApp (opens on the affiliate's phone) or email (sent by Digifunzi); let one go.
+// invite them by WhatsApp (opens on the affiliate's phone) or email (sent by Digifunzi). 26 Nov 2026:
+// each family has a status (new, contacted, interested...) and its details can be corrected;
+// "let them go" is gone.
 
 const btn = { display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 13px", borderRadius: 10, border: `1px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" };
 const primary = { ...btn, background: BRAND.navy, borderColor: BRAND.navy, color: "#fff" };
@@ -158,6 +160,7 @@ export default function MyProspects() {
   const { data } = useQuery({ queryKey: ["affiliates", "prospects"], queryFn: affiliatesApi.myProspects });
   const [panel, setPanel] = useState(null); // null | "add" | "upload"
   const [filter, setFilter] = useState("open");
+  const [editing, setEditing] = useState(null); // a prospect
   const invite = useMutation({
     mutationFn: ({ id, channel }) => affiliatesApi.inviteProspect(id, channel),
     onSuccess: (d) => {
@@ -167,9 +170,14 @@ export default function MyProspects() {
     },
     onError: (err) => toast.error(errorOf(err)),
   });
-  const release = useMutation({
-    mutationFn: (id) => affiliatesApi.releaseProspect(id),
-    onSuccess: (d) => { qc.setQueryData(["affiliates", "prospects"], d); toast.success("Released"); },
+  const setStage = useMutation({
+    mutationFn: ({ id, stage }) => affiliatesApi.setProspectStage(id, stage),
+    onSuccess: (d) => { qc.setQueryData(["affiliates", "prospects"], d); toast.success("Status saved"); },
+    onError: (err) => toast.error(errorOf(err)),
+  });
+  const saveDetails = useMutation({
+    mutationFn: ({ id, body }) => affiliatesApi.updateProspect(id, body),
+    onSuccess: (d) => { qc.setQueryData(["affiliates", "prospects"], d); setEditing(null); toast.success("Details saved"); },
     onError: (err) => toast.error(errorOf(err)),
   });
   if (!data || !data.settings?.enabled) return null;
@@ -202,6 +210,12 @@ export default function MyProspects() {
       {panel === "upload" && (
         <PopUp title="Upload a list of families" subtitle="Add up to 200 families at once from a spreadsheet." onClose={() => setPanel(null)}>
           <UploadForm onDone={() => setPanel(null)} onCancel={() => setPanel(null)} />
+        </PopUp>
+      )}
+
+      {editing && (
+        <PopUp title={`Edit ${editing.parentName}`} subtitle="Correct the family's details. A new phone or email is checked like a new family." onClose={() => setEditing(null)}>
+          <ProspectDetailsForm prospect={editing} saving={saveDetails.isPending} onSave={(body) => saveDetails.mutate({ id: editing.id, body })} onCancel={() => setEditing(null)} />
         </PopUp>
       )}
 
@@ -239,15 +253,16 @@ export default function MyProspects() {
                   </div>
                   {open && p.notes && <div style={{ fontSize: 12.5, color: BRAND.inkSoft, marginTop: 2 }}>{p.notes}</div>}
                 </div>
-                <span style={pill(TONE[p.state.key] || "neutral")}>{p.state.label}{open ? ` · ${p.state.daysLeft} ${p.state.daysLeft === 1 ? "day" : "days"} left` : ""}</span>
+                <span style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  {!open && <StagePill stage={p.stage} label={p.stageLabel} />}
+                  <span style={pill(TONE[p.state.key] || "neutral")}>{p.state.label}{open ? ` · ${p.state.daysLeft} ${p.state.daysLeft === 1 ? "day" : "days"} left` : ""}</span>
+                </span>
                 {open && (
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {data.canInvite && p.phone && <button type="button" style={btn} disabled={invite.isPending} onClick={() => invite.mutate({ id: p.id, channel: "whatsapp" })}><FiMessageCircle size={14} /> WhatsApp</button>}
                     {data.canInvite && p.email && <button type="button" style={btn} disabled={invite.isPending} onClick={() => invite.mutate({ id: p.id, channel: "email" })}><FiMail size={14} /> Email</button>}
-                    <button type="button" style={{ ...btn, padding: "8px 10px" }} aria-label={`Let ${p.parentName} go`} title="Let this family go"
-                      onClick={async () => { if (await askConfirm({ title: `Let ${p.parentName} go?`, message: "They come off your list and their details are removed. If they sign up later, it won't be credited to you.", confirmLabel: "Let them go", tone: "danger" })) release.mutate(p.id); }}>
-                      <FiX size={14} />
-                    </button>
+                    <StageSelect stages={data.stages} value={p.stage} disabled={setStage.isPending} onChange={(stage) => setStage.mutate({ id: p.id, stage })} ariaLabel={`Status of ${p.parentName}`} />
+                    <button type="button" style={btn} onClick={() => setEditing(p)}><FiEdit2 size={14} /> Edit</button>
                   </div>
                 )}
               </div>

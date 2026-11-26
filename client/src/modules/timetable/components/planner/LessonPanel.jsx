@@ -133,7 +133,7 @@ export default function LessonPanel({ data, initial, perms, onClose, onOpenDates
               <label htmlFor="tp-class" style={label}>Class</label>
               <select id="tp-class" value={classId} onChange={(e) => { setClassId(e.target.value); setCourseId(""); setTeacherId(""); setRoomId(""); }} style={control}>
                 <option value="">Choose a class…</option>
-                {data.classes.map((c) => <option key={c.id} value={c.id}>{c.label}{data.hubs.length > 1 ? ` · ${c.hubName}` : ""}</option>)}
+                {data.classes.filter((c) => c.run?.state !== "ended" || c.id === classId).map((c) => <option key={c.id} value={c.id}>{c.label}{data.hubs.length > 1 ? ` · ${c.hubName}` : ""}</option>)}
               </select>
             </div>
           )}

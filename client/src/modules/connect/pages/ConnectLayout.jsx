@@ -90,10 +90,9 @@ function NotOnYet({ firstName }) {
         </p>
       </div>
       <div style={{ ...card, marginTop: 14, lineHeight: 1.6 }}>
-        <h2 style={{ marginTop: 0, fontSize: 19 }}>Ask your parent to switch it on{firstName ? `, ${firstName}` : ""}</h2>
+        <h2 style={{ marginTop: 0, fontSize: 19 }}>Almost there{firstName ? `, ${firstName}` : ""}</h2>
         <p style={{ color: C.muted }}>
-          To keep everyone safe, a parent or guardian says yes first. They sign in to their own Digifunzi account, open your page
-          and choose <strong>Connect</strong>. Once they've switched it on, come back here.
+          Connect opens once you&apos;re at a Digifunzi learning hub. Ask your teacher, then come back here.
         </p>
       </div>
     </div>

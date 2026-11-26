@@ -160,7 +160,7 @@ const ClassService = {
       if (!l.classId) continue;
       countMap[l.classId] = (countMap[l.classId] || 0) + 1;
     }
-    // With the bootcamp run each class belongs to (Upcoming / Running / Ended) — 27 Nov 2026.
+    // With the bootcamp run each class belongs to (Upcoming / Running / Ended) — 26 Nov 2026.
     const counted = await withRunInfo(classes.map((c) => ({ ...c, learnerCount: countMap[c.id] || 0 })));
     // A paged request keeps the model's own stable order (see ClassModel.findAll).
     if (filters?.limit || filters?.offset) return counted;

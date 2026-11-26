@@ -209,7 +209,7 @@ const getAllLearners = asyncHandler(async (req, res) => {
         .map(({ record }) => record);
     }
     // ?hubId= (the hub adding them): whether they're already there and in which class, so the
-    // panel offers to MOVE them into a class rather than "enrol" them a second time (27 Nov 2026).
+    // panel offers to MOVE them into a class rather than "enrol" them a second time (26 Nov 2026).
     const askingHubId = req.user.role === "school" ? req.ownSchool?.id : req.query.hubId;
     const data = await Promise.all(scoped.map(async (record) => {
       const links = await LearnerHubLinkModel.findByLearnerId(record.id);
@@ -487,7 +487,7 @@ const enrollLearnerHub = asyncHandler(async (req, res) => {
     const existingLinks = await LearnerHubLinkModel.findByLearnerId(req.params.id);
     assertOwn(existingLinks.length === 0 || existingLinks.some((l) => ownHubIds.includes(l.hubId)));
   }
-  // Already at this hub (27 Nov 2026): a hub holds one place per learner, so enrolling them there
+  // Already at this hub (26 Nov 2026): a hub holds one place per learner, so enrolling them there
   // again used to change nothing, silently. Now it moves them into the class picked — through
   // Move learner (learner-moves/), so the move is written down, a bootcamp run's class places them
   // on its pathway, and the parent is told. A place they'd left (transferred) is taken up again.

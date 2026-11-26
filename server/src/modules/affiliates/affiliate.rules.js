@@ -205,6 +205,8 @@ function chooseClaim({ typed = null, prospect = null, link = null, order = "code
 // What a claim looks like from the affiliate's side, from its status and dates: open (and days
 // left), signed up, paying, lost, expired, released, opted out.
 function prospectState(p, referral = null, today = new Date()) {
+  // Our team's own family (26 Nov 2026): no affiliate, no claim clock.
+  if (p.status === "open" && !p.affiliateId) return { key: "open", label: "Ours · not signed up yet", team: true };
   if (p.status === "open" && new Date(p.expiresAt) < today) return { key: "expired", label: "Claim ended" };
   if (p.status === "open") {
     const days = Math.max(0, Math.ceil((new Date(p.expiresAt) - today) / 864e5));
@@ -217,6 +219,33 @@ function prospectState(p, referral = null, today = new Date()) {
     released: { key: "released", label: "Released" },
     opted_out: { key: "opted_out", label: "Asked not to be contacted" },
   }[p.status] || { key: p.status, label: p.status };
+}
+
+// Where the conversation with a prospect stands (26 Nov 2026) — set by the affiliate or our team,
+// apart from "signed_up", which comes from the sign-up itself. Order = the usual path.
+const PROSPECT_STAGES = [
+  { key: "new", label: "New", hint: "Not contacted yet" },
+  { key: "contacted", label: "Contacted", hint: "We've talked to them" },
+  { key: "no_answer", label: "Couldn't reach", hint: "No answer yet, try again" },
+  { key: "interested", label: "Interested", hint: "Keen, still deciding" },
+  { key: "visit_booked", label: "Visit or trial booked", hint: "Coming to see a class or a hub" },
+  { key: "later", label: "Maybe later", hint: "Not now, ask again later" },
+  { key: "not_interested", label: "Not interested", hint: "Said no" },
+  { key: "signed_up", label: "Signed up", hint: "Signed up on the website", auto: true },
+];
+const STAGE_KEYS = PROSPECT_STAGES.map((s) => s.key);
+const SETTABLE_STAGES = PROSPECT_STAGES.filter((s) => !s.auto).map((s) => s.key);
+// A prospect's stage: "signed_up" once they have, else what was last set ("new" by default).
+function stageOf(p) {
+  if (p?.status === "signed_up") return PROSPECT_STAGES.find((s) => s.key === "signed_up");
+  return PROSPECT_STAGES.find((s) => s.key === p?.stage) || PROSPECT_STAGES[0];
+}
+// Why a stage can't be set now, or null.
+function stageProblem(p, stage) {
+  if (!SETTABLE_STAGES.includes(stage)) return "Choose a status";
+  if (p.status === "signed_up") return "They've signed up already";
+  if (p.status !== "open") return "This claim has closed";
+  return null;
 }
 
 // Is the family the affiliate themself (their own login, email or phone)?
@@ -382,6 +411,6 @@ module.exports = {
   normaliseTargets, effectiveTargets, teamTargets, measureProgress, overallState, milestoneReached,
   PROGRAMMES, PROGRAMME_LABEL, RECURRING, PAYOUT_METHODS, DEFAULT_SETTINGS, TEAM_BASES,
   normaliseSettings, normaliseCustomRates, effectiveSettings, teamShareFor, teamProblem, normaliseCode, suggestCode, phoneKey, emailKey, pickAttribution, isSelfReferral,
-  CLAIM_ORDERS, nameKey, chooseClaim, prospectState,
+  CLAIM_ORDERS, nameKey, chooseClaim, prospectState, PROSPECT_STAGES, STAGE_KEYS, SETTABLE_STAGES, stageOf, stageProblem,
   commissionFor, availableFrom, commissionState, totals, firstNameOf, money,
 };

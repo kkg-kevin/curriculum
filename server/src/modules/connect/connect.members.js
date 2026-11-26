@@ -8,8 +8,9 @@ const { requireMember, isSuspended, workspaceOfLearner } = require("./connect.co
 
 const { db, refuse, now, parseJson } = S;
 
-// Members: switching Connect on (a parent's consent), profiles, finding people with the same
-// interests, connections, blocking and muting, badges — and what a parent sees.
+// Members: profiles, finding people with the same interests, connections, blocking and muting,
+// badges, and what a parent sees. Every learner is a member (26 Nov 2026: no parent's consent and
+// no age limit — the user's choice); parents see everything their child does on Connect.
 
 const CATALOGUE = {
   interests: R.INTERESTS,
@@ -92,7 +93,6 @@ const MemberService = {
       };
     }
     const member = ctx.member;
-    const age = learnerAge(ctx.learner);
     if (!member || member.status === "off") return { ...base, status: "not_member", rules, firstName: ctx.learner.firstName };
     await db("connect_members").where({ id: member.id }).update({ lastSeenAt: now() });
     const suspended = isSuspended(member);
@@ -103,8 +103,8 @@ const MemberService = {
       suspendedReason: suspended ? member.suspendedReason : null,
       rules,
       profile: ownProfile(member, ctx.learner),
-      canDirectMessage: !!(s.directMessages && member.directMessages && age != null && age >= s.dmMinAge),
-      canGroupChat: !!(s.groupChats && s.directMessages && member.directMessages && age != null && age >= s.dmMinAge),
+      canDirectMessage: !!(s.directMessages && member.directMessages),
+      canGroupChat: !!(s.groupChats && s.directMessages && member.directMessages),
       counts: await counts(member),
     };
   },
@@ -368,8 +368,10 @@ const MemberService = {
     const byLearner = new Map(members.map((m) => [m.learnerId, m]));
     const out = [];
     for (const l of learners) {
-      const m = byLearner.get(l.id);
+      let m = byLearner.get(l.id);
       const ownerAdminId = m?.ownerAdminId || (await workspaceOfLearner(l));
+      // On Connect by default: the parent sees them as a member straight away.
+      if (ownerAdminId && (!m || m.status === "off")) m = await S.ensureMember(l, ownerAdminId);
       const settings = ownerAdminId ? await S.settingsFor(ownerAdminId) : R.mergeSettings({});
       const age = learnerAge(l);
       out.push({
@@ -384,29 +386,11 @@ const MemberService = {
         directMessages: m ? !!m.directMessages : true,
         consentAt: m?.consentAt || null,
         consentMethod: m?.consentMethod || null,
-        dmMinAge: settings.dmMinAge,
-        dmPossible: settings.directMessages && age != null && age >= settings.dmMinAge,
+        dmPossible: !!settings.directMessages,
         hasWorkspace: !!ownerAdminId,
       });
     }
     return out;
-  },
-
-  async parentConsent(ctx, learnerId, input) {
-    const learner = parentChild(ctx, learnerId);
-    if (!learner.username) throw refuse(400, `${learner.firstName} needs their own Digifunzi login first — Connect is used from the child's own login. Set one up on their Login page.`);
-    const ownerAdminId = await workspaceOfLearner(learner);
-    if (!ownerAdminId) throw refuse(400, `${learner.firstName} isn't at a Digifunzi hub yet, so Connect can't be switched on.`);
-    const existing = await S.memberByLearner(learner.id);
-    const consent = { consentByUserId: ctx.userId, consentMethod: "parent", consentNote: null, consentAt: now(), withdrawnAt: null };
-    const switches = {};
-    if (input.directMessages !== undefined) switches.directMessages = input.directMessages;
-    if (existing) {
-      await db("connect_members").where({ id: existing.id }).update({ ...consent, ...switches, status: existing.status === "off" ? "active" : existing.status, updatedAt: now() });
-    } else {
-      await createMember(learner, ownerAdminId, { ...consent, ...switches });
-    }
-    return MemberService.parentChildren(ctx).then((list) => list.find((c) => c.learnerId === learner.id));
   },
 
   async parentSwitches(ctx, learnerId, input) {
@@ -419,20 +403,9 @@ const MemberService = {
     return MemberService.parentChildren(ctx).then((list) => list.find((c) => c.learnerId === learner.id));
   },
 
-  // Switching Connect off: the child's profile and everything they posted stop showing at once.
-  // With deleteData their posts, comments, reactions, files, connections and message texts are
-  // deleted too (the bare member row stays, as the record of consent given and withdrawn).
-  async parentWithdraw(ctx, learnerId, { deleteData = false } = {}) {
-    const learner = parentChild(ctx, learnerId);
-    const member = await S.memberByLearner(learner.id);
-    if (!member) return { status: "not_member" };
-    await db("connect_members").where({ id: member.id }).update({ status: "off", withdrawnAt: now(), updatedAt: now() });
-    if (deleteData) await eraseMemberData(member);
-    await S.log(member.ownerAdminId, { userId: ctx.userId, name: "Parent", roleLabel: "Parent" }, deleteData ? "parent_withdrew_and_deleted" : "parent_withdrew", { targetType: "member", targetId: member.id, memberId: member.id });
-    return { status: "off" };
-  },
-
-  // Who the child talks to — never what (the user's choice, 24 Nov 2026).
+  // Everything the child does on Connect (26 Nov 2026 — the user's choice, replacing "who, never
+  // what"): their posts and comments with what they said, every chat (opened one by one with
+  // parentConversation), connections, communities, projects, blocks.
   async parentActivity(ctx, learnerId) {
     const learner = parentChild(ctx, learnerId);
     const member = await S.memberByLearner(learner.id);
@@ -445,6 +418,23 @@ const MemberService = {
       db("connect_blocks").where({ memberId: member.id }),
       db("connect_posts").where({ authorMemberId: member.id }).whereNot({ status: "removed" }).count({ n: "*" }).first(),
     ]);
+    const [postRows, commentRows, reactionRows] = await Promise.all([
+      db("connect_posts").where({ authorMemberId: member.id }).orderBy("createdAt", "desc").limit(100),
+      db("connect_comments").where({ authorMemberId: member.id }).orderBy("createdAt", "desc").limit(100),
+      db("connect_reactions").where({ memberId: member.id }).orderBy("createdAt", "desc").limit(50),
+    ]);
+    const onPostIds = [...new Set([...commentRows.map((c) => c.postId), ...reactionRows.map((r) => r.postId)])];
+    const onPosts = onPostIds.length ? await whereInChunks(db, "connect_posts", "id", onPostIds) : [];
+    const communityIds = [...new Set([...postRows, ...onPosts].map((p) => p.communityId).filter(Boolean))];
+    const communityNames = new Map((communityIds.length ? await whereInChunks(db, "connect_communities", "id", communityIds) : []).map((c) => [c.id, c.name]));
+    const postFiles = await S.filesFor(postRows.flatMap((p) => parseJson(p.fileIds, [])));
+    const onPostAuthors = await S.memberCards(onPosts.map((p) => p.authorMemberId).filter(Boolean));
+    const onPostById = new Map(onPosts.map((p) => [p.id, p]));
+    const postRef = (id) => {
+      const p = onPostById.get(id);
+      if (!p) return null;
+      return { id: p.id, snippet: String(p.body || "").slice(0, 140), by: p.authorKind === "staff" ? p.authorName || "Digifunzi team" : onPostAuthors.get(p.authorMemberId)?.displayName || "A learner", where: communityNames.get(p.communityId) || "Main feed", mine: p.authorMemberId === member.id };
+    };
     const convIds = parts.map((p) => p.conversationId);
     const convs = convIds.length ? await whereInChunks(db, "connect_conversations", "id", convIds) : [];
     const allParts = convIds.length ? await whereInChunks(db, "connect_conversation_participants", "conversationId", convIds) : [];
@@ -464,6 +454,7 @@ const MemberService = {
         with: allParts.filter((p) => p.conversationId === c.id && p.memberId !== member.id && !p.leftAt).map((p) => cards.get(p.memberId)).filter(Boolean),
         lastMessageAt: c.lastMessageAt,
         sentByChild: Number(sent?.n || 0),
+        status: c.status,
       });
     }
     conversations.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
@@ -476,6 +467,38 @@ const MemberService = {
       communities,
       projects,
       blocks: blockRows.map((b) => ({ member: cards.get(b.otherMemberId), kind: b.kind, byParent: !!b.byParent })),
+      posts: postRows.map((p) => ({
+        id: p.id, body: p.body, link: p.link, category: p.category, where: communityNames.get(p.communityId) || "Main feed",
+        status: p.status, removedReason: p.removedReason, createdAt: p.createdAt, editedAt: p.editedAt,
+        reactionCount: p.reactionCount, commentCount: p.commentCount,
+        files: parseJson(p.fileIds, []).map((id) => postFiles.get(id)).filter(Boolean),
+      })),
+      comments: commentRows.map((c) => ({ id: c.id, body: c.body, status: c.status, createdAt: c.createdAt, post: postRef(c.postId) })),
+      reactions: reactionRows.map((r) => ({ kind: r.kind, createdAt: r.createdAt, post: postRef(r.postId) })),
+    };
+  },
+
+  // One of the child's chats, every message in it (26 Nov 2026: parents read what was said).
+  async parentConversation(ctx, learnerId, conversationId) {
+    const learner = parentChild(ctx, learnerId);
+    const member = await S.memberByLearner(learner.id);
+    const part = member ? await db("connect_conversation_participants").where({ conversationId, memberId: member.id }).first() : null;
+    if (!part) throw refuse(404, "That chat isn't one of your child's.");
+    const conv = await db("connect_conversations").where({ id: conversationId }).first();
+    const messages = await db("connect_messages").where({ conversationId }).orderBy("createdAt", "desc").limit(500);
+    const people = await db("connect_conversation_participants").where({ conversationId }).pluck("memberId");
+    const cards = await S.memberCards([...new Set([...people, ...messages.map((m) => m.senderMemberId)])]);
+    const files = await S.filesFor(messages.flatMap((m) => parseJson(m.fileIds, [])));
+    return {
+      id: conv.id, kind: conv.kind, title: conv.title, status: conv.status,
+      with: people.filter((id) => id !== member.id).map((id) => cards.get(id)).filter(Boolean),
+      childMemberId: member.id,
+      messages: messages.reverse().map((m) => ({
+        id: m.id, fromChild: m.senderMemberId === member.id, sender: cards.get(m.senderMemberId) || null,
+        body: m.status === "removed" ? null : m.body, removed: m.status === "removed", removedBy: m.removedBy,
+        files: m.status === "removed" ? [] : parseJson(m.fileIds, []).map((id) => files.get(id)).filter(Boolean),
+        createdAt: m.createdAt,
+      })),
     };
   },
 
@@ -489,37 +512,9 @@ const MemberService = {
     return MemberService.parentActivity(ctx, learnerId);
   },
 
-  // ── Admin: recording consent given another way ─────────────────────────────────────────────────
-  async recordConsent(ctx, { learnerId, note }) {
-    const learner = await db("learners").where({ id: learnerId }).first();
-    if (!learner || (await workspaceOfLearner(learner)) !== ctx.ownerAdminId) throw refuse(404, "That learner isn't in this workspace.");
-    if (learner.teacherId) throw refuse(400, "Educators in training don't take part in Connect as learners.");
-    if (!learner.username) throw refuse(400, `${learner.firstName} needs their own login before Connect can be switched on.`);
-    const existing = await S.memberByLearner(learner.id);
-    const consent = { consentByUserId: ctx.userId, consentMethod: "recorded", consentNote: note, consentAt: now(), withdrawnAt: null };
-    if (existing) await db("connect_members").where({ id: existing.id }).update({ ...consent, status: existing.status === "off" ? "active" : existing.status, updatedAt: now() });
-    else await createMember(learner, ctx.ownerAdminId, consent);
-    const member = await S.memberByLearner(learner.id);
-    await S.log(ctx.ownerAdminId, ctx, "consent_recorded", { targetType: "member", targetId: member.id, memberId: member.id, note });
-    return member;
-  },
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────────────────────────
-async function createMember(learner, ownerAdminId, fields) {
-  const user = learner.username ? await db("users").whereRaw("LOWER(username) = ?", [learner.username.toLowerCase()]).first("id") : null;
-  try {
-    await db("connect_members").insert({
-      id: generateId(), ownerAdminId, learnerId: learner.id, userId: user?.id || null, status: "active",
-      directMessages: true, photoAllowed: false, displayName: R.shortName(learner.firstName, learner.lastName),
-      avatar: toJson(R.defaultAvatar(learner.id)), interests: toJson([]), skills: toJson([]), showCertificates: true,
-      createdAt: now(), updatedAt: now(), ...fields,
-    });
-  } catch (err) {
-    if (err.code !== "ER_DUP_ENTRY") throw err;
-  }
-}
-
 function parentChild(ctx, learnerId) {
   if (ctx.kind !== "parent") throw refuse(403, "Only a parent can do this.");
   const learner = (ctx.ownLearners || []).find((l) => l.id === learnerId && !l.teacherId);
@@ -584,38 +579,6 @@ async function certificatesOf(learnerId) {
     const snap = parseJson(c.snapshot, {}) || {};
     return { id: c.id, kind: c.kind, kindLabel: CERT_KINDS[c.kind] || "Certificate", title: snap.title || snap.courseName || snap.bootcampName || "Certificate", issuedAt: c.issuedAt };
   });
-}
-
-async function eraseMemberData(member) {
-  const postIds = await db("connect_posts").where({ authorMemberId: member.id }).pluck("id");
-  const fileIds = [];
-  for (const p of await db("connect_posts").whereIn("id", postIds).select("fileIds")) fileIds.push(...parseJson(p.fileIds, []));
-  if (postIds.length) {
-    await db("connect_comments").whereIn("postId", postIds).del();
-    await db("connect_reactions").whereIn("postId", postIds).del();
-    await db("connect_posts").whereIn("id", postIds).del();
-  }
-  // Their comments on other posts: the text goes, the thread keeps its shape.
-  const comments = await db("connect_comments").where({ authorMemberId: member.id }).select("id", "postId");
-  await db("connect_comments").where({ authorMemberId: member.id }).update({ body: "(removed)", status: "removed" });
-  for (const postId of new Set(comments.map((c) => c.postId))) await recountPost(postId);
-  const reacted = await db("connect_reactions").where({ memberId: member.id }).pluck("postId");
-  await db("connect_reactions").where({ memberId: member.id }).del();
-  for (const postId of new Set(reacted)) await recountPost(postId);
-  for (const m of await db("connect_messages").where({ senderMemberId: member.id }).select("fileIds")) fileIds.push(...parseJson(m.fileIds, []));
-  await db("connect_messages").where({ senderMemberId: member.id }).update({ body: null, fileIds: null, status: "removed", removedBy: "sender" });
-  await db("connect_connections").where((q) => q.where({ requesterMemberId: member.id }).orWhere({ addresseeMemberId: member.id })).del();
-  await db("connect_blocks").where({ memberId: member.id }).del();
-  await db("connect_community_members").where({ memberId: member.id }).del();
-  await db("connect_project_members").where({ memberId: member.id }).update({ status: "left", updatedAt: now() });
-  await db("connect_conversation_participants").where({ memberId: member.id }).update({ leftAt: now() });
-  await db("connect_badges").where({ memberId: member.id }).del();
-  const files = fileIds.length ? await whereInChunks(db, "connect_files", "id", fileIds) : [];
-  const uploads = member.userId ? await db("connect_files").where({ uploaderUserId: member.userId }) : [];
-  for (const f of [...files, ...uploads]) Files.removeStored(f.storedName);
-  const allFileIds = [...new Set([...files, ...uploads].map((f) => f.id))];
-  if (allFileIds.length) await db("connect_files").whereIn("id", allFileIds).del();
-  await db("connect_members").where({ id: member.id }).update({ displayName: "Former member", bio: null, interests: toJson([]), skills: toJson([]), avatar: null });
 }
 
 async function recountPost(postId) {

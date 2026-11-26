@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar, FiAward, FiPieChart, FiShare2 } from "react-icons/fi";
+import { FiGrid, FiBook, FiClipboard, FiBarChart2, FiTrendingUp, FiCalendar, FiFileText, FiUser, FiUsers, FiStar, FiAward, FiPieChart, FiShare2, FiVolume2 } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -20,6 +20,7 @@ const menuItems = [
   { name: "How I'm doing", path: "/learner-portal/analytics", icon: FiPieChart },
   // Digifunzi Connect — the learners' community, whatever classes they're in (modules/connect).
   { name: "Connect",      path: "/learner-portal/connect", icon: FiShare2 },
+  { name: "Announcements", path: "/learner-portal/announcements", icon: FiVolume2 },
   { name: "Timetable",    path: "/learner-portal/timetable", icon: FiCalendar },
   { name: "Invoices",     path: "/learner-portal/invoices", icon: FiFileText },
   { name: "My Family",    path: "/learner-portal/family", icon: FiUsers },

@@ -75,7 +75,7 @@ export default function TargetsTab({ onOpenSettings }) {
 
       {noTargets && (
         <div style={{ padding: "12px 14px", borderRadius: 12, background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, fontSize: 13, color: BRAND.goldText, lineHeight: 1.55 }}>
-          <strong>No targets set{data.current ? "" : " that month"}.</strong> Set one for everyone in <button type="button" onClick={onOpenSettings} style={{ border: 0, background: "none", padding: 0, color: BRAND.navy, fontWeight: 800, cursor: "pointer", textDecoration: "underline", fontFamily: FONT, fontSize: 13 }}>Settings → Monthly targets</button>, or give someone their own in Edit → Targets. What each affiliate reached is shown below either way.
+          <strong>No targets set{data.current ? "" : " that month"}.</strong> Set one for everyone in <button type="button" onClick={onOpenSettings} style={{ border: 0, background: "none", padding: 0, color: BRAND.navy, fontWeight: 800, cursor: "pointer", textDecoration: "underline", fontFamily: FONT, fontSize: 13 }}>Settings → Monthly targets</button>, or give someone their own in Edit → Monthly targets. What each affiliate reached is shown below either way.
         </div>
       )}
 

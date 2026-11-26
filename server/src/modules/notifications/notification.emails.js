@@ -413,6 +413,9 @@ const EMAIL_TYPES = {
     look: { tone: "warning", icon: "alert", eyebrow: "Learner needs support" },
     path: (p) => routeOr(p, "/teacher-portal"),
   },
+  // Connect → Announcements (26 Nov 2026): only those the team ticked "Also email" go out as this type
+  // (the others are "announcement", the bell only).
+  announcement_email: { label: "Announcements from the team", roles: EVENT_INVITE_ROLES, default: true, look: { tone: "info", icon: "megaphone", eyebrow: "Announcement" }, path: (p) => routeOr(p, "/") },
   general_event_invite: { label: "You're invited to an event", roles: EVENT_INVITE_ROLES, default: true, look: { tone: "celebrate", icon: "star", eyebrow: "You're invited" }, path: (p) => routeOr(p, "/") },
   general_event_registrations: { label: "People are registering for an event (once a day)", roles: EVENT_ADMIN_ROLES, default: true, look: { tone: "info", icon: "check", eyebrow: "Events" }, path: (p) => routeOr(p, "/events#general") },
   general_event_ended: { label: "An event is over — time to say thank you", roles: EVENT_ADMIN_ROLES, default: true, look: { tone: "info", icon: "envelope", eyebrow: "Events" }, path: (p) => routeOr(p, "/events#general") },

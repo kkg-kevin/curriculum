@@ -60,7 +60,21 @@ function CourseRow({ course, lessons, periods, runStart, saving, onSave }) {
   );
 }
 
-export default function ClassDatesDialog({ cls, onClose }) {
+// An ended run's class: say so, and point at the same cohort's class in the newer run at this hub.
+function EndedRunNote({ cls, classes }) {
+  if (cls.run?.state !== "ended") return null;
+  const next = classes
+    .filter((c) => c.id !== cls.id && c.hubId === cls.hubId && c.gradeId === cls.gradeId && c.run && c.run.seriesId === cls.run.seriesId && c.run.state !== "ended")
+    .sort((a, b) => (a.run.startDate || "").localeCompare(b.run.startDate || ""))[0];
+  return (
+    <div role="note" style={{ padding: "10px 12px", borderRadius: 10, background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, fontSize: 12.5, color: BRAND.ink, lineHeight: 1.55 }}>
+      <strong>This class is from the run of {fmtDate(cls.run.startDate)} to {fmtDate(cls.run.endDate)}</strong>, which has ended, so it only takes dates inside that run.
+      {" "}{next ? <>For the run starting {fmtDate(next.run.startDate)}, set the dates on its own class: <strong>{next.label}</strong>.</> : <>For a new run, use &ldquo;Schedule another run&rdquo; on the bootcamp&apos;s page: it gets its own classes with its own dates.</>}
+    </div>
+  );
+}
+
+export default function ClassDatesDialog({ cls, classes = [], onClose }) {
   const { data: periodsData } = useClassPeriods(cls.id);
   const { data: window } = useClassDateWindow(cls.id);
   const periods = Array.isArray(periodsData) ? periodsData : [];
@@ -99,6 +113,7 @@ export default function ClassDatesDialog({ cls, onClose }) {
     <Modal title={`Start dates · ${cls.label}`} onClose={onClose} width={620} footer={<button type="button" className="ci-btn" onClick={onClose} style={btn("primary")}>Done</button>}>
       <QaStyles />
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "100%", fontFamily: FONT }}>
+        <EndedRunNote cls={cls} classes={classes} />
         {courses.length > 1 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "9px 12px", borderRadius: 10, border: `1px dashed ${BRAND.skyBorder}` }}>
             <span style={{ flex: "1 1 180px", fontSize: 13, fontWeight: 700, color: BRAND.navy }}>Same date for all {courses.length} courses</span>

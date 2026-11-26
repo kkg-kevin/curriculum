@@ -168,6 +168,9 @@ const SKIP = [
   // (messages are read by moderators only through a report). Moderation, communities, challenges,
   // Settings and parents' consent are still logged — and in Connect's own moderation history.
   /^\/api\/connect\/(me|files|people|connections|conversations|messages|posts|comments|projects|reports)(\/|$)/,
+  // Reading and answering announcements (seen, "I've read this", reactions, comments — children's
+  // too). Writing and sending them (/api/connect/admin/announcements) is logged.
+  /^\/api\/announcements(\/|$)/,
   /^\/api\/audit(\/|$)/,
   /\/(preview|search|validate|check|export)$/, // work things out, save nothing
   /^\/api\/assessment-submissions\/submissions$/, // a learner opening an assessment

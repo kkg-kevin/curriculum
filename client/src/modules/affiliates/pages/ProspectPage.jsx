@@ -2,16 +2,20 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { FiArrowLeft, FiCalendar, FiCheck, FiClock, FiMail, FiMessageSquare, FiPhone, FiRepeat, FiTrash2, FiUser, FiUsers, FiX, FiAlertCircle } from "react-icons/fi";
+import { FiArrowLeft, FiCalendar, FiCheck, FiClock, FiEdit2, FiFlag, FiMail, FiMessageSquare, FiPhone, FiTrash2, FiUser, FiUsers, FiAlertCircle } from "react-icons/fi";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import { askConfirm } from "../../../components/ui/AskDialog";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import { affiliatesApi, errorOf, formatDay } from "../services/affiliatesApi";
+import PopUp from "../components/PopUp";
+import { ProspectDetailsForm, StageSelect, StagePill } from "../components/ProspectBits";
 
 // One prospect (Affiliates → Prospects → a family, /affiliates/prospects/:id — 24 Nov 2026): the
 // family's details, who registered them and when, where the claim stands, a possible match to decide,
 // and the team's follow-up — a date to get back to them and a thread of notes (only the team sees
 // them; they go with the family's details if the claim closes without a sign-up).
+// 26 Nov 2026: Move and Release are gone; the header's side holds the family's STATUS (new,
+// contacted, interested...) with its history, and the family's details can be corrected (Edit).
 
 const TONE = { open: "waiting", signed_up: "good", paying: "strong", lost: "neutral", expired: "neutral", released: "neutral", opted_out: "neutral", cancelled: "neutral" };
 const btn = { display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 14px", minHeight: 40, borderRadius: 10, border: `1.5px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" };
@@ -58,9 +62,8 @@ export default function ProspectPage() {
   const wide = useWide(1000);
   const key = ["affiliates", "prospect", id];
   const { data: p, isLoading, error } = useQuery({ queryKey: key, queryFn: () => affiliatesApi.prospect(id) });
-  const { data: affiliates = [] } = useQuery({ queryKey: ["affiliates", "list"], queryFn: affiliatesApi.list });
   const [note, setNote] = useState("");
-  const [moving, setMoving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const refresh = (d) => {
     if (d) qc.setQueryData(key, d); else qc.invalidateQueries({ queryKey: key });
@@ -70,8 +73,8 @@ export default function ProspectPage() {
   const addNote = useMutation({ mutationFn: () => affiliatesApi.addProspectNote(id, note), onSuccess: (d) => { refresh(d); setNote(""); toast.success("Note added"); }, onError: fail });
   const followUp = useMutation({ mutationFn: (date) => affiliatesApi.setProspectFollowUp(id, date), onSuccess: (d) => { refresh(d); toast.success(d.followUpOn ? `Follow up on ${formatDay(d.followUpOn)}` : "Follow-up date cleared"); }, onError: fail });
   const decide = useMutation({ mutationFn: (approve) => affiliatesApi.decideMatch(id, approve), onSuccess: (d) => { refresh(); qc.invalidateQueries({ queryKey: ["affiliates", "referrals"] }); toast.success(d.approved ? "Credited to the affiliate" : "Dismissed"); }, onError: fail });
-  const release = useMutation({ mutationFn: () => affiliatesApi.adminReleaseProspect(id), onSuccess: () => { refresh(); toast.success("Released"); }, onError: fail });
-  const move = useMutation({ mutationFn: (affiliateId) => affiliatesApi.reassignProspect(id, affiliateId), onSuccess: () => { refresh(); setMoving(false); toast.success("Moved"); }, onError: fail });
+  const setStage = useMutation({ mutationFn: (stage) => affiliatesApi.setTeamProspectStage(id, stage), onSuccess: (d) => { refresh(d); toast.success(`Status: ${d.stageLabel}`); }, onError: fail });
+  const saveDetails = useMutation({ mutationFn: (body) => affiliatesApi.updateTeamProspect(id, body), onSuccess: (d) => { refresh(d); setEditing(false); toast.success("Details saved"); }, onError: fail });
   const removeNote = async (n) => {
     if (!(await askConfirm({ title: "Delete this note?", confirmLabel: "Delete", tone: "danger" }))) return;
     try { refresh(await affiliatesApi.deleteProspectNote(id, n.id)); } catch (err) { fail(err); }
@@ -84,7 +87,6 @@ export default function ProspectPage() {
   const open = p.state.key === "open";
   const keepsDetails = open || p.status === "signed_up";
   const fu = followUpTone(p.followUpOn);
-  const otherAffiliates = (Array.isArray(affiliates) ? affiliates : []).filter((a) => a.status === "active" && a.id !== p.affiliateId);
 
   return (
     <div style={{ display: "grid", gap: 16, fontFamily: FONT, width: "100%" }}>
@@ -94,32 +96,29 @@ export default function ProspectPage() {
           <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: BRAND.gold }}>Prospect</div>
           <h1 style={{ margin: "4px 0 6px", fontSize: wide ? 26 : 22, fontWeight: 900 }}>{p.parentName}</h1>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", fontSize: 13.5 }}>
-            <span style={{ ...pill(TONE[p.state.key] || "neutral"), fontSize: 12.5 }}>{p.state.label}</span>
-            {open && <span style={{ opacity: 0.9 }}>Claim ends {formatDay(p.expiresAt)} · {p.state.daysLeft} {p.state.daysLeft === 1 ? "day" : "days"} left</span>}
+            <StagePill stage={p.stage} label={p.stageLabel} style={{ fontSize: 12.5 }} />
+            <span style={{ ...pill(TONE[p.state.key] || "neutral"), fontSize: 12.5 }}>{p.team ? "Our team's family" : p.state.label}</span>
+            {open && !p.team && <span style={{ opacity: 0.9 }}>Claim ends {formatDay(p.expiresAt)} · {p.state.daysLeft} {p.state.daysLeft === 1 ? "day" : "days"} left</span>}
             {fu && open && <span style={{ ...pill(fu.tone), fontSize: 12.5 }}><FiCalendar size={12} /> {fu.label}</span>}
           </div>
         </div>
-        {open && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={{ ...btn, background: "rgba(255,255,255,0.14)", color: "#fff", borderColor: "rgba(255,255,255,0.4)" }} onClick={() => setMoving((m) => !m)}><FiRepeat size={14} /> Move to another affiliate</button>
-            <button type="button" style={{ ...btn, background: "rgba(255,255,255,0.14)", color: "#fff", borderColor: "rgba(255,255,255,0.4)" }}
-              onClick={async () => { if (await askConfirm({ title: `Release ${p.parentName}?`, message: "The claim ends and the family's details and follow-up notes are removed. A later sign-up won't be credited to this affiliate.", confirmLabel: "Release", tone: "danger" })) release.mutate(); }}>
-              <FiX size={14} /> Release
-            </button>
-          </div>
-        )}
+        {/* Where Move and Release used to be: the family's status. */}
+        <div style={{ display: "grid", gap: 8, flex: wide ? "0 0 auto" : "1 1 100%", minWidth: 0 }}>
+          <label style={{ display: "grid", gap: 5, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><FiFlag size={12} /> Status</span>
+            {open
+              ? <StageSelect stages={p.stages} value={p.stage} disabled={setStage.isPending} onChange={(stage) => setStage.mutate(stage)} style={{ minWidth: 220, padding: "10px 12px", fontSize: 14, textTransform: "none", letterSpacing: 0 }} />
+              : <span style={{ textTransform: "none", letterSpacing: 0 }}><StagePill stage={p.stage} label={p.stageLabel} style={{ fontSize: 13 }} /></span>}
+          </label>
+          {p.stageAt && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>Changed {formatDay(p.stageAt)}{p.stageBy ? ` by ${p.stageBy}` : ""}</span>}
+          {open && <button type="button" style={{ ...btn, background: "rgba(255,255,255,0.14)", color: "#fff", borderColor: "rgba(255,255,255,0.4)", justifyContent: "center" }} onClick={() => setEditing(true)}><FiEdit2 size={14} /> Edit details</button>}
+        </div>
       </header>
 
-      {moving && open && (
-        <div style={{ ...card, padding: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, color: BRAND.inkSoft }}>Move {p.parentName} to</span>
-          <select aria-label="Affiliate" defaultValue="" onChange={(e) => e.target.value && move.mutate(e.target.value)} style={{ ...input, width: "auto", minWidth: 240, maxWidth: "100%" }}>
-            <option value="">Choose an affiliate…</option>
-            {otherAffiliates.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.code}</option>)}
-          </select>
-          <span style={{ fontSize: 12.5, color: BRAND.muted }}>The claim keeps its end date. Neither affiliate is told.</span>
-          <button type="button" style={btn} onClick={() => setMoving(false)}>Cancel</button>
-        </div>
+      {editing && (
+        <PopUp title={`Edit ${p.parentName}`} subtitle="Correct the family's details. A new phone or email is checked like a new family." onClose={() => setEditing(false)}>
+          <ProspectDetailsForm prospect={p} saving={saveDetails.isPending} onSave={(form) => saveDetails.mutate(form)} onCancel={() => setEditing(false)} />
+        </PopUp>
       )}
 
       {p.possibleMatch && open && (
@@ -130,7 +129,7 @@ export default function ProspectPage() {
             {[p.possibleMatch.parent?.phone, p.possibleMatch.parent?.email].filter(Boolean).length ? ` (${[p.possibleMatch.parent?.phone, p.possibleMatch.parent?.email].filter(Boolean).join(" · ")})` : ""} — the same parent name, but a different phone or email.
           </span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={primary} disabled={decide.isPending} onClick={async () => { if (await askConfirm({ title: "Credit this sign-up?", message: `${p.possibleMatch.parent?.name}'s sign-up becomes ${p.affiliate?.name}'s referral, and they earn when the family pays.`, confirmLabel: "Credit it" })) decide.mutate(true); }}><FiCheck size={14} /> Same family — credit it</button>
+            <button type="button" style={primary} disabled={decide.isPending} onClick={async () => { if (await askConfirm(p.team ? { title: "Same family?", message: `${p.parentName} is marked signed up. Nobody earns: they're our team's own family.`, confirmLabel: "Mark signed up" } : { title: "Credit this sign-up?", message: `${p.possibleMatch.parent?.name}'s sign-up becomes ${p.affiliate?.name}'s referral, and they earn when the family pays.`, confirmLabel: "Credit it" })) decide.mutate(true); }}><FiCheck size={14} /> {p.team ? "Same family: mark signed up" : "Same family: credit it"}</button>
             <button type="button" style={btn} disabled={decide.isPending} onClick={() => decide.mutate(false)}>Not the same</button>
           </span>
         </div>
@@ -159,12 +158,21 @@ export default function ProspectPage() {
               <h2 style={cardHeading}><FiClock size={13} /> The claim</h2>
               <HistoryButton type="affiliate_prospects" id={p.id} label={p.parentName} />
             </div>
-            <Row icon={FiUser} label="Affiliate">
-              {p.affiliate ? <>{p.affiliate.name} <span style={{ color: BRAND.muted }}>· {p.affiliate.code}</span>{p.affiliate.status !== "active" && <span style={{ ...pill("neutral"), marginLeft: 6 }}>{p.affiliate.status}</span>}</> : "—"}
+            <Row icon={FiUser} label="Belongs to">
+              {p.team ? "Our team (no affiliate earns from this family)" : p.affiliate ? <>{p.affiliate.name} <span style={{ color: BRAND.muted }}>· {p.affiliate.code}</span>{p.affiliate.status !== "active" && <span style={{ ...pill("neutral"), marginLeft: 6 }}>{p.affiliate.status}</span>}</> : "—"}
             </Row>
             <Row icon={FiCalendar} label="Added">{formatDay(p.createdAt)} · {SOURCE[p.source] || "Added"}{p.createdByName ? ` (${p.createdByName})` : ""}</Row>
-            <Row icon={FiClock} label={open ? "Claim ends" : "Claim"}>{open ? `${formatDay(p.expiresAt)} — ${p.state.daysLeft} ${p.state.daysLeft === 1 ? "day" : "days"} left (claims last ${p.claimDays} days)` : p.closedReason || p.state.label}</Row>
+            <Row icon={FiClock} label={open ? "Claim ends" : "Claim"}>{open && p.team ? "No end date: the family stays ours until they sign up" : open ? `${formatDay(p.expiresAt)} — ${p.state.daysLeft} ${p.state.daysLeft === 1 ? "day" : "days"} left (claims last ${p.claimDays} days)` : p.closedReason || p.state.label}</Row>
             <Row icon={FiMessageSquare} label="Invited">{p.invitedAt ? `${formatDay(p.invitedAt)}${p.inviteCount > 1 ? ` · ${p.inviteCount} times` : ""}` : "Not yet"}</Row>
+            <Row icon={FiFlag} label="Status changes">
+              {p.stageHistory?.length ? (
+                <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 3, fontSize: 13.5 }}>
+                  {p.stageHistory.slice().reverse().map((h, i) => (
+                    <li key={`${h.at}-${i}`}><strong>{h.label}</strong> · {new Date(h.at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}{h.by ? ` · ${h.by}` : ""}</li>
+                  ))}
+                </ol>
+              ) : "None yet (New since it was added)"}
+            </Row>
             {p.referral && <Row icon={FiCheck} label="Signed up">{p.referral.programmeLabel} on {formatDay(p.referral.createdAt)} · referral {p.referral.status}</Row>}
           </section>
         </div>
@@ -186,7 +194,7 @@ export default function ProspectPage() {
 
           {p.affiliateNote && keepsDetails && (
             <div style={{ padding: "12px 14px", borderRadius: 12, background: BRAND.canvas, border: `1px solid ${BRAND.line}` }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>From {p.source === "admin" ? "our team" : p.affiliate?.name || "the affiliate"}, when added</div>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: BRAND.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>From {p.source === "admin" ? "our team" : p.affiliate?.name || "the affiliate"}</div>
               <p style={{ margin: "4px 0 0", fontSize: 14, color: BRAND.ink, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{p.affiliateNote}</p>
             </div>
           )}

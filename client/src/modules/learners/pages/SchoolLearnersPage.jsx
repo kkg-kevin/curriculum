@@ -38,7 +38,7 @@ function AddExistingLearnerPanel({ schoolId, classes, spaces, isNonSchoolHub, on
   };
 
   const selected = results?.find((l) => l.id === selectedId) || null;
-  // Already at this hub (27 Nov 2026): a hub holds one place per learner, so they're MOVED into the
+  // Already at this hub (26 Nov 2026): a hub holds one place per learner, so they're MOVED into the
   // class picked (a returning learner joining a new bootcamp run's class) — or, having left, taken
   // back. Before, "Enroll here" on someone already here changed nothing.
   const here = selected?.here || null;

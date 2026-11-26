@@ -4,7 +4,7 @@ import { FiCheckCircle, FiRotateCcw, FiSearch, FiXCircle } from "react-icons/fi"
 import { useBringBackLearners, useReturningLearners } from "../hooks/useBootcampHubs";
 import { CheckinStyles, Modal, btn, hint, input, label } from "../../checkins/shared";
 
-// "Bring back learners" (27 Nov 2026): the learners of this bootcamp's earlier runs, ticked and
+// "Bring back learners" (26 Nov 2026): the learners of this bootcamp's earlier runs, ticked and
 // moved into this run at one hub — into the class chosen, or each into the class for their stage.
 // A hub holds one place per learner, so each is MOVED (server: bootcamp-returning.service.js →
 // Move learner): out of their earlier-run class, same admission number, written on their History,

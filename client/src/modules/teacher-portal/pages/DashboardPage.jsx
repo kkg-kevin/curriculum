@@ -16,6 +16,7 @@ import { useCurriculumQuery } from "../../curriculum/hooks/useCurriculum";
 import { useClassCourses } from "../../curriculum/hooks/useCurriculumVersion";
 import { ATTENDANCE_KEYS } from "../../attendance/hooks/useAttendance";
 import { attendanceApi } from "../../attendance/services/attendanceApi";
+import { timetableApi } from "../../timetable/services/timetableApi";
 import Avatar from "../../../components/ui/Avatar";
 import { NextOnlineClassCard } from "../../timetable/components/OnlineClass";
 import AvailabilityPrompt from "../../availability/components/AvailabilityPrompt";
@@ -30,8 +31,16 @@ const T = {
 
 const cardStyle = { backgroundColor: "#fff", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" };
 
+// Today on the Kenyan calendar (UTC+3) — the timetable's dates are Kenyan days.
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+// "YYYY-MM-DD" moved by n days (calendar arithmetic in UTC, so no time-zone drift).
+function addDaysStr(day, n) {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 function HeroPill({ icon, value, label, highlight }) {
@@ -63,7 +72,7 @@ export default function DashboardPage() {
     queryFn: () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled: !!teacher?.id && !!selectedHubId,
   });
-  // Runs still going first; an earlier bootcamp run's classes after them (27 Nov 2026).
+  // Runs still going first; an earlier bootcamp run's classes after them (26 Nov 2026).
   const myClasses = [...(classesData?.data || [])].sort((a, b) => Number(isEndedRun(a)) - Number(isEndedRun(b)));
 
   // The hub's curriculum, else the one its classes run (the Home Learning hub has none of its own).
@@ -77,16 +86,33 @@ export default function DashboardPage() {
   // attendance records for today, one lightweight query per class (same query the Attendance
   // page itself uses, just checked across every class instead of one at a time).
   const today = todayStr();
+  // Only classes that really meet today (26 Nov 2026). Before, every class with learners was
+  // flagged on every day, so a bootcamp run that had ended — or a class with no session today —
+  // kept asking for attendance. The educator's own calendar (the same engine as the Attendance
+  // page: a run's sessions only fall between its dates) says which classes have a session today;
+  // a class with no timetable at all in the last 60 days keeps the old "any day" check, unless
+  // it belongs to a bootcamp run that has ended.
+  const { data: myCalendar, isLoading: calendarLoading } = useQuery({
+    queryKey: ["timetable", "teacher-mine", "attendance-check", addDaysStr(today, -60), today],
+    queryFn: () => timetableApi.getMyTeacherCalendar(addDaysStr(today, -60), today),
+    enabled: !!teacher?.id,
+  });
+  const attendanceDue = useMemo(() => {
+    const events = myCalendar?.data || [];
+    const onTimetable = new Set(events.map((e) => e.classId));
+    const meetsToday = new Set(events.filter((e) => e.date === today).map((e) => e.classId));
+    return myClasses.filter((c) => (c.learnerCount ?? 0) > 0 && !isEndedRun(c) && (meetsToday.has(c.id) || !onTimetable.has(c.id)));
+  }, [myCalendar, myClasses, today]);
   const attendanceChecks = useQueries({
-    queries: myClasses.map((c) => ({
+    queries: attendanceDue.map((c) => ({
       queryKey: ATTENDANCE_KEYS.byDate(c.id, today),
       queryFn: () => attendanceApi.getByClassDate(c.id, today),
-      enabled: !!c.id,
+      enabled: !!c.id && !calendarLoading,
     })),
   });
   const unmarkedClasses = useMemo(
-    () => myClasses.filter((c, i) => (c.learnerCount ?? 0) > 0 && attendanceChecks[i]?.data && (attendanceChecks[i].data.data || []).length === 0),
-    [myClasses, attendanceChecks]
+    () => attendanceDue.filter((c, i) => attendanceChecks[i]?.data && (attendanceChecks[i].data.data || []).length === 0),
+    [attendanceDue, attendanceChecks]
   );
   const attendanceChecksLoading = attendanceChecks.some((q) => q.isLoading);
 

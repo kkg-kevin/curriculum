@@ -27,7 +27,7 @@ router.route("/:id")
   .put(authorize("admin", "school"), updateClass)
   .delete(authorize("admin", "school"), deleteClass);
 
-// Learners who moved on to the next run of the same bootcamp — still finished here (27 Nov 2026).
+// Learners who moved on to the next run of the same bootcamp — still finished here (26 Nov 2026).
 router.get("/:id/moved-on", authorize("admin", "school", "teacher"), getMovedOn);
 
 // Course-educator assignment — per (class, course) pair, multiple co-equal educators allowed.

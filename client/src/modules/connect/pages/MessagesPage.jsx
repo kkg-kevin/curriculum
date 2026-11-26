@@ -60,7 +60,7 @@ export default function MessagesPage() {
     <div style={{ display: "grid", gridTemplateColumns: narrow ? "1fr" : "320px minmax(0, 1fr)", gap: 14 }}>
       {(!narrow || !conversationId) && listPane}
       {conversationId ? <Conversation key={conversationId} id={conversationId} me={me} narrow={narrow} />
-        : !narrow && <Empty icon="link" title="Pick a chat">{me.canDirectMessage ? "Or start a new one with someone you're connected with." : `Chat with your project teams here. One-to-one messages open when you're ${me.rules?.dmMinAge}.`}</Empty>}
+        : !narrow && <Empty icon="link" title="Pick a chat">{me.canDirectMessage ? "Or start a new one with someone you're connected with." : me.profile?.directMessages === false ? "Chat with your project teams here. Your parent has switched other messages off." : "Chat with your project teams here."}</Empty>}
       <NewChatDialog open={starting} onClose={() => setStarting(false)} me={me} />
     </div>
   );
@@ -236,7 +236,7 @@ function NewChatDialog({ open, onClose, me }) {
       footer={me.canDirectMessage && <><button type="button" style={btn("ghost")} onClick={onClose}>Cancel</button><button type="button" style={btn("primary")} disabled={!chosen.length || start.isPending} onClick={() => start.mutate()}>{chosen.length > 1 ? "Start group chat" : "Start chat"}</button></>}>
       {!me.canDirectMessage ? (
         <div style={{ lineHeight: 1.6, fontFamily: FONT }}>
-          <p style={{ marginTop: 0 }}>{me.rules?.directMessages === false ? "One-to-one messages are switched off on Connect." : `One-to-one messages open when you're ${me.rules?.dmMinAge}${me.profile?.directMessages === false ? " and your parent says yes" : ""}.`}</p>
+          <p style={{ marginTop: 0 }}>{me.rules?.directMessages === false ? "One-to-one messages are switched off on Connect." : "Your parent has switched messages with other learners off for you."}</p>
           <p>You can chat with your <strong>project teams</strong> — every project has its own team chat.</p>
           <Link to={`${CONNECT_BASE}/projects`} onClick={onClose} style={{ ...btn("primary"), textDecoration: "none" }}><FiTool /> Go to projects</Link>
         </div>

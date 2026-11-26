@@ -693,7 +693,7 @@ const ReportService = {
     if (!session) return null;
     const cls = await ClassModel.findById(classId);
     const sessionRequiredIds = await getSessionRequiredAssessmentIds(session);
-    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // Its active learners plus any who moved on to the next run of the same bootcamp (26 Nov 2026,
     // classes/class-former-members.js) — the run's reports are still finished here.
     const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
@@ -735,7 +735,7 @@ const ReportService = {
     // In the course pages' order — the Reports navigator steps through them in turn.
     const sessions = courseOrder(await SessionModel.findByCourseId(courseId), await ModuleModel.findByCourseId(courseId));
     const numbering = await sessionNumbering(courseId);
-    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // Its active learners plus any who moved on to the next run of the same bootcamp (26 Nov 2026,
     // classes/class-former-members.js) — the run's reports are still finished here.
     const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });
@@ -919,7 +919,7 @@ const ReportService = {
   // silently became ready doesn't show as outstanding.
   async getUnresolvedSessionWork(classId, courseIds) {
     const cls = await ClassModel.findById(classId);
-    // Its active learners plus any who moved on to the next run of the same bootcamp (27 Nov 2026,
+    // Its active learners plus any who moved on to the next run of the same bootcamp (26 Nov 2026,
     // classes/class-former-members.js) — the run's reports are still finished here.
     const learnerIds = await finishingLearnerIds(classId);
     const learners = await LearnerModel.findAll({ ids: learnerIds });

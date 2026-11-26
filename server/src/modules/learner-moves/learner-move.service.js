@@ -308,7 +308,7 @@ const LearnerMoveService = {
     };
   },
 
-  // A learner into one class at a hub (27 Nov 2026) — the move behind "Enroll" at a hub they're
+  // A learner into one class at a hub (26 Nov 2026) — the move behind "Enroll" at a hub they're
   // already at (learner page, hub's Add an existing learner) and a bootcamp run's "Bring back
   // learners". A hub has one place per learner, so the place they hold there is left (ended and
   // written down) and the new class put on the same hub link: one admission number per hub.

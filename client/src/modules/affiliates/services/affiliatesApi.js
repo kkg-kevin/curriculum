@@ -43,13 +43,14 @@ export const affiliatesApi = {
   addProspect: (body) => api.post(`${BASE}/me/prospects`, body).then(data),
   addProspects: (rows) => api.post(`${BASE}/me/prospects/bulk`, { consent: true, rows }).then(data),
   updateProspect: (id, body) => api.put(`${BASE}/me/prospects/${id}`, body).then(data),
-  releaseProspect: (id) => api.post(`${BASE}/me/prospects/${id}/release`).then(data),
+  setProspectStage: (id, stage) => api.put(`${BASE}/me/prospects/${id}/stage`, { stage }).then(data),
   inviteProspect: (id, channel) => api.post(`${BASE}/me/prospects/${id}/invite`, { channel }).then(data),
   // Admin
   prospects: (params = {}) => api.get(`${BASE}/prospects`, { params }).then(data),
-  addProspectFor: (body) => api.post(`${BASE}/prospects`, body).then(data),
-  adminReleaseProspect: (id) => api.post(`${BASE}/prospects/${id}/release`).then(data),
-  reassignProspect: (id, affiliateId) => api.post(`${BASE}/prospects/${id}/reassign`, { affiliateId }).then(data),
+  // Our team's own family (26 Nov 2026 — no affiliate earns from it); correcting details; the status.
+  addTeamProspect: (body) => api.post(`${BASE}/prospects`, body).then(data),
+  updateTeamProspect: (id, body) => api.put(`${BASE}/prospects/${id}`, body).then(data),
+  setTeamProspectStage: (id, stage) => api.put(`${BASE}/prospects/${id}/stage`, { stage }).then(data),
   decideMatch: (id, approve) => api.post(`${BASE}/prospects/${id}/match`, { approve }).then(data),
   // One prospect's page (24 Nov 2026): details, the team's follow-up notes, a follow-up date.
   prospect: (id) => api.get(`${BASE}/prospects/${id}`).then(data),

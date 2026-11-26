@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FiCalendar, FiClipboard, FiCreditCard, FiGift, FiHome, FiLifeBuoy, FiMessageCircle, FiPackage, FiSearch, FiStar, FiUser } from "react-icons/fi";
+import { FiCalendar, FiClipboard, FiCreditCard, FiGift, FiHome, FiLifeBuoy, FiMessageCircle, FiPackage, FiSearch, FiStar, FiUser, FiVolume2 } from "react-icons/fi";
 import { homeLearningApi } from "../../home-learning/services/homeLearningApi";
 import { techClubApi } from "../../tech-clubs/services/techClubApi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
@@ -91,6 +91,10 @@ export default function ParentSidebar({ children = [], isMobile = false, isMobil
           ))}
 
           <SectionLabel collapsed={isCollapsed}>Family</SectionLabel>
+          <NavLink to="/parent/announcements" onClick={close} title={isCollapsed ? "Announcements" : undefined} style={linkStyle(isCollapsed)}>
+            <FiVolume2 size={18} style={{ flexShrink: 0 }} />
+            {!isCollapsed && <span>Announcements</span>}
+          </NavLink>
           <NavLink to="/parent/timetable" onClick={close} title={isCollapsed ? "Timetable" : undefined} style={linkStyle(isCollapsed)}>
             <FiCalendar size={18} style={{ flexShrink: 0 }} />
             {!isCollapsed && <span>Timetable</span>}

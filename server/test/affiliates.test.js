@@ -159,12 +159,27 @@ test("prospects: names match without case, spaces or punctuation; phones by thei
 test("prospects: what the affiliate sees of a claim", () => {
   const R = require("../src/modules/affiliates/affiliate.rules");
   const today = new Date("2026-11-19T10:00:00Z");
-  assert.deepEqual(R.prospectState({ status: "open", expiresAt: "2026-11-29T10:00:00Z" }, null, today), { key: "open", label: "Waiting to sign up", daysLeft: 10 });
-  assert.equal(R.prospectState({ status: "open", expiresAt: "2026-11-18T10:00:00Z" }, null, today).key, "expired");
+  assert.deepEqual(R.prospectState({ status: "open", affiliateId: "a1", expiresAt: "2026-11-29T10:00:00Z" }, null, today), { key: "open", label: "Waiting to sign up", daysLeft: 10 });
+  assert.equal(R.prospectState({ status: "open", affiliateId: "a1", expiresAt: "2026-11-18T10:00:00Z" }, null, today).key, "expired");
+  // Our team's own family (26 Nov 2026): no affiliate, never expires.
+  const team = R.prospectState({ status: "open", affiliateId: null, expiresAt: "2026-11-18T10:00:00Z" }, null, today);
+  assert.deepEqual([team.key, team.team], ["open", true]);
   assert.equal(R.prospectState({ status: "signed_up" }, { status: "signed_up" }, today).label, "Signed up");
   assert.equal(R.prospectState({ status: "signed_up" }, { status: "paid" }, today).label, "Paying");
   assert.equal(R.prospectState({ status: "lost" }, null, today).label, "Signed up with another code");
   assert.equal(R.prospectState({ status: "opted_out" }, null, today).key, "opted_out");
+});
+
+test("prospect statuses: set by people, signed up only by the sign-up", () => {
+  const R = require("../src/modules/affiliates/affiliate.rules");
+  assert.equal(R.stageOf({ status: "open" }).key, "new", "new by default");
+  assert.equal(R.stageOf({ status: "open", stage: "interested" }).label, "Interested");
+  assert.equal(R.stageOf({ status: "signed_up", stage: "contacted" }).key, "signed_up");
+  assert.equal(R.stageProblem({ status: "open" }, "contacted"), null);
+  assert.ok(R.stageProblem({ status: "open" }, "signed_up"), "nobody sets Signed up by hand");
+  assert.ok(R.stageProblem({ status: "signed_up" }, "contacted"));
+  assert.ok(R.stageProblem({ status: "expired" }, "contacted"));
+  assert.ok(!R.SETTABLE_STAGES.includes("signed_up"));
 });
 
 // ---- Targets (25 Nov 2026) ------------------------------------------------------------------------

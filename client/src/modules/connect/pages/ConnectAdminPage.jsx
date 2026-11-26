@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { FiUsers, FiActivity, FiEdit3, FiMessageCircle, FiTool, FiFlag, FiAlertTriangle, FiClock, FiShield, FiPlus, FiCheck, FiX, FiSettings, FiList } from "react-icons/fi";
+import { FiUsers, FiActivity, FiEdit3, FiMessageCircle, FiTool, FiFlag, FiAlertTriangle, FiClock, FiShield, FiPlus, FiCheck, FiX, FiSettings, FiList, FiVolume2 } from "react-icons/fi";
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import { connectApi } from "../services/connectApi";
 import { HERO_GRADIENT } from "../../../theme/brand";
@@ -11,6 +11,8 @@ import { C, FONT, card, btn, pill, input, label, Chip, Empty, ErrorBox, Loading,
 import { PostCard, Comments } from "../components/posts";
 import { usePostPages } from "./FeedPages";
 import { AWARD_LABEL, ChallengeHeader, EntryCard } from "./ChallengePages";
+import AnnouncementsAdminTab from "../../announcements/components/AnnouncementsAdminTab";
+import AnnouncementComposer from "../../announcements/components/AnnouncementComposer";
 
 // Digifunzi Connect for the people who look after it: admins and staff with Digifunzi Connect
 // (admin app, /connect) and educators named as moderators (teacher portal, /teacher-portal/connect).
@@ -19,6 +21,8 @@ import { AWARD_LABEL, ChallengeHeader, EntryCard } from "./ChallengePages";
 const TABS = [
   { key: "overview", label: "Overview", icon: FiActivity, show: (m) => m.kind === "staff" || m.canModerateAll },
   { key: "posts", label: "Posts", icon: FiEdit3 },
+  // Announcements to groups of people across the system (26 Nov 2026 — modules/announcements).
+  { key: "announcements", label: "Announcements", icon: FiVolume2, show: (m) => m.kind === "staff" && m.canManage },
   { key: "review", label: "Review", icon: FiShield, count: (m) => (m.counts?.openReports || 0) + (m.counts?.waitingPosts || 0) },
   { key: "members", label: "Members", icon: FiUsers, show: (m) => m.kind === "staff" || m.canModerateAll },
   { key: "communities", label: "Communities", icon: FiList },
@@ -31,6 +35,7 @@ export default function ConnectAdminPage() {
   const me = useQuery({ queryKey: ["connect", "me"], queryFn: connectApi.me });
   const [params, setParams] = useSearchParams();
   const narrow = useNarrow(640);
+  const [composing, setComposing] = useState(false);
   if (me.isLoading) return <Loading rows={2} />;
   if (me.error) return <ErrorBox error={me.error} />;
   const m = me.data;
@@ -42,11 +47,20 @@ export default function ConnectAdminPage() {
   return (
     <div className="cx" style={{ fontFamily: FONT, color: C.ink, display: "grid", gap: narrow ? 10 : 14 }}>
       <ConnectStyles />
-      <header style={{ background: HERO_GRADIENT, color: "#fff", borderRadius: narrow ? 16 : 20, padding: narrow ? "12px 16px" : "18px 22px" }}>
-        <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: C.gold }}>Digifunzi Connect</div>
-        <h1 style={{ margin: "4px 0 2px", fontSize: narrow ? 19 : 24 }}>The learners' community</h1>
-        <div className="cx-hide-narrow" style={{ opacity: 0.9, fontSize: 14 }}>{m.kind === "staff" ? "Keep it safe and lively: check posts, answer reports, run communities and challenges." : "Thank you for moderating. Check posts and reports for the communities you look after."}</div>
+      <header style={{ background: HERO_GRADIENT, color: "#fff", borderRadius: narrow ? 16 : 20, padding: narrow ? "12px 16px" : "18px 22px", display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: C.gold }}>Digifunzi Connect</div>
+          <h1 style={{ margin: "4px 0 2px", fontSize: narrow ? 19 : 24 }}>The learners' community</h1>
+          <div className="cx-hide-narrow" style={{ opacity: 0.9, fontSize: 14 }}>{m.kind === "staff" ? "Keep it safe and lively: check posts, answer reports, run communities and challenges." : "Thank you for moderating. Check posts and reports for the communities you look after."}</div>
+        </div>
+        {/* Announcements to groups of people across the system (26 Nov 2026). */}
+        {m.kind === "staff" && m.canManage && (
+          <button type="button" onClick={() => setComposing(true)} style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44, padding: "10px 18px", borderRadius: 12, border: "none", background: C.gold, color: C.navyDeep, fontSize: 14.5, fontWeight: 900, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap", flex: narrow ? "1 1 100%" : "0 0 auto", justifyContent: "center" }}>
+            <FiVolume2 size={17} /> New announcement
+          </button>
+        )}
       </header>
+      <AnnouncementComposer open={composing} onClose={() => setComposing(false)} onSaved={(d) => setParams({ tab: "announcements", announcement: d.id })} />
       <ScrollRow aria-label="Connect sections" activeKey={tab}>
         {tabs.map((t) => {
           const Icon = t.icon;
@@ -60,6 +74,7 @@ export default function ConnectAdminPage() {
       </ScrollRow>
       {tab === "overview" && <Overview />}
       {tab === "posts" && <Posts me={m} />}
+      {tab === "announcements" && <AnnouncementsAdminTab openId={params.get("announcement")} onOpen={(id) => setParams(id ? { tab: "announcements", announcement: id } : { tab: "announcements" })} onNew={() => setComposing(true)} />}
       {tab === "review" && <Review me={m} />}
       {tab === "members" && <Members me={m} />}
       {tab === "communities" && <Communities me={m} />}
@@ -299,7 +314,6 @@ function Members({ me }) {
   const narrow = useNarrow(760);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
-  const [recording, setRecording] = useState(false);
   const list = useQuery({ queryKey: ["connect", "admin", "members", q, status], queryFn: () => connectApi.admin.members({ q, status }) });
   const suspend = async (m) => {
     const reason = await askText({ title: `Pause ${m.displayName}'s posting?`, message: "They can still read Connect. This is for 7 days; they'll see the reason.", label: "Reason", required: true, tone: "danger", confirmLabel: "Pause for 7 days" });
@@ -311,10 +325,9 @@ function Members({ me }) {
     <div style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <input aria-label="Search members" placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} style={{ ...input, flex: 1, minWidth: 200 }} />
-        {[["", "Everyone"], ["active", "On"], ["suspended", "Paused"], ["off", "Switched off"]].map(([k, v]) => <Chip key={k} active={status === k} onClick={() => setStatus(k)}>{v}</Chip>)}
-        {me.kind === "staff" && me.canManage && <button type="button" style={btn("gold")} onClick={() => setRecording(true)}><FiPlus /> Switch on with recorded consent</button>}
+        {[["", "Everyone"], ["active", "On"], ["suspended", "Paused"]].map(([k, v]) => <Chip key={k} active={status === k} onClick={() => setStatus(k)}>{v}</Chip>)}
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Parents switch Connect on from their own account. Contact details are never shown here.</p>
+      <p style={{ margin: 0, fontSize: 13, color: C.muted }}>Every learner with their own login at a hub is on Connect. Parents see everything their child does there. Contact details are never shown here.</p>
       {list.isLoading ? <Loading rows={2} /> : list.error ? <ErrorBox error={list.error} /> : list.data.length && narrow ? (
         <div style={{ display: "grid", gap: 8 }}>
           {list.data.map((m) => <MemberCardRow key={m.id} m={m} me={me} onSuspend={suspend} onRestore={restore} />)}
@@ -322,14 +335,14 @@ function Members({ me }) {
       ) : list.data.length ? (
         <div style={{ ...card, padding: 0, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
-            <thead><tr style={{ textAlign: "left", color: C.muted, fontSize: 12 }}>{["Learner", "On Connect as", "Status", "Consent", "Posts", "Reports", "Last seen", ""].map((h) => <th key={h} style={{ padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>{h}</th>)}</tr></thead>
+            <thead><tr style={{ textAlign: "left", color: C.muted, fontSize: 12 }}>{["Learner", "On Connect as", "Status", "Joined", "Posts", "Reports", "Last seen", ""].map((h) => <th key={h} style={{ padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>{h}</th>)}</tr></thead>
             <tbody>
               {list.data.map((m) => (
                 <tr key={m.id} style={{ borderBottom: `1px solid ${C.line}` }}>
                   <td style={{ padding: "8px 12px" }}><strong>{m.learner?.name}</strong>{m.learner?.age != null ? <span style={{ color: C.muted }}> · {m.learner.age}</span> : null}</td>
                   <td style={{ padding: "8px 12px" }}><span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><MemberAvatar card={m.card} size={24} /> {m.displayName}</span></td>
                   <td style={{ padding: "8px 12px" }}><span style={pill(m.status === "active" ? "good" : m.status === "suspended" ? "waiting" : "neutral")}>{m.status === "active" ? "On" : m.status === "suspended" ? `Paused to ${new Date(m.suspendedUntil).toLocaleDateString("en-GB")}` : "Off"}</span>{!m.directMessages && <span style={{ ...pill("neutral"), marginLeft: 4 }}>No DMs</span>}</td>
-                  <td style={{ padding: "8px 12px" }} title={m.consentNote || ""}>{m.consentMethod === "recorded" ? "Recorded by staff" : "Parent"}{m.consentAt ? ` · ${new Date(m.consentAt).toLocaleDateString("en-GB")}` : ""}</td>
+                  <td style={{ padding: "8px 12px", color: C.muted }}>{m.consentAt ? new Date(m.consentAt).toLocaleDateString("en-GB") : "—"}</td>
                   <td style={{ padding: "8px 12px" }}>{m.postsSent}</td>
                   <td style={{ padding: "8px 12px", color: m.reports ? C.danger : C.ink }}>{m.reports}</td>
                   <td style={{ padding: "8px 12px", color: C.muted }}>{m.lastSeenAt ? timeAgo(m.lastSeenAt) : "—"}</td>
@@ -342,8 +355,7 @@ function Members({ me }) {
             </tbody>
           </table>
         </div>
-      ) : <Empty icon="users" title="No learners here yet">Learners appear once a parent switches Connect on for them.</Empty>}
-      <RecordConsentDialog open={recording} onClose={() => setRecording(false)} />
+      ) : <Empty icon="users" title="No learners here yet">Learners with their own login at one of your hubs appear here.</Empty>}
     </div>
   );
 }
@@ -362,7 +374,7 @@ function MemberCardRow({ m, me, onSuspend, onRestore }) {
         <span style={pill(m.status === "active" ? "good" : m.status === "suspended" ? "waiting" : "neutral")}>{m.status === "active" ? "On" : m.status === "suspended" ? "Paused" : "Off"}</span>
       </div>
       <div style={{ fontSize: 13, color: C.muted, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <span>{m.consentMethod === "recorded" ? "Consent recorded by staff" : "Parent consent"}{m.consentAt ? ` · ${new Date(m.consentAt).toLocaleDateString("en-GB")}` : ""}</span>
+        {m.consentAt && <span>Joined {new Date(m.consentAt).toLocaleDateString("en-GB")}</span>}
         <span>{m.postsSent} posts</span>
         <span style={{ color: m.reports ? C.danger : C.muted }}>{m.reports} reports</span>
         <span>Seen {m.lastSeenAt ? timeAgo(m.lastSeenAt) : "never"}</span>
@@ -372,35 +384,6 @@ function MemberCardRow({ m, me, onSuspend, onRestore }) {
       {mod && m.status === "active" && <button type="button" style={btn("ghost", { justifySelf: "start" })} onClick={() => onSuspend(m)}>Pause posting</button>}
       {mod && m.status === "suspended" && <button type="button" style={btn("ghost", { justifySelf: "start" })} onClick={() => onRestore(m)}>Restore</button>}
     </div>
-  );
-}
-
-function RecordConsentDialog({ open, onClose }) {
-  const qc = useQueryClient();
-  const [q, setQ] = useState("");
-  const [chosen, setChosen] = useState(null);
-  const [note, setNote] = useState("");
-  const list = useQuery({ queryKey: ["connect", "admin", "consent", q], queryFn: () => connectApi.admin.consentCandidates(q), enabled: open && q.trim().length >= 2 });
-  const save = useMutation({
-    mutationFn: () => connectApi.admin.recordConsent({ learnerId: chosen.learnerId, note }),
-    onSuccess: () => { toast.success(`${chosen.name} is on Connect`); setChosen(null); setNote(""); setQ(""); onClose(); qc.invalidateQueries({ queryKey: ["connect", "admin"] }); },
-    onError: (e) => toast.error(errorOf(e)),
-  });
-  return (
-    <Modal open={open} title="Switch on with consent recorded" onClose={onClose}
-      footer={<><button type="button" style={btn("ghost")} onClick={onClose}>Cancel</button><button type="button" style={btn("primary")} disabled={!chosen || note.trim().length < 10 || save.isPending} onClick={() => save.mutate()}>Switch on</button></>}>
-      <p style={{ marginTop: 0, color: C.muted }}>Only when a parent gave consent another way (a signed form, in person, by phone). Their parent can still switch it off from their account.</p>
-      <label style={label} htmlFor="rc-q">Learner</label>
-      <input id="rc-q" value={q} onChange={(e) => { setQ(e.target.value); setChosen(null); }} placeholder="Type a name" style={input} />
-      {(list.data || []).map((l) => (
-        <button key={l.learnerId} type="button" disabled={l.status === "active"} onClick={() => setChosen(l)} style={{ ...btn(chosen?.learnerId === l.learnerId ? "soft" : "link"), width: "100%", justifyContent: "flex-start", marginTop: 4 }}>
-          {l.name}{l.age != null ? ` · ${l.age}` : ""} {l.status === "active" ? "(already on)" : l.status === "off" ? "(switched off before)" : ""}
-        </button>
-      ))}
-      {q.trim().length >= 2 && list.data && !list.data.length && <p style={{ color: C.muted }}>No learner with their own login matches.</p>}
-      <label style={label} htmlFor="rc-note">How the parent gave consent</label>
-      <textarea id="rc-note" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} style={input} placeholder="e.g. Signed form from Mrs Achieng, 24 Nov 2026, filed at the hub" />
-    </Modal>
   );
 }
 
@@ -683,9 +666,7 @@ function Settings() {
     <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 420px), 1fr))", alignItems: "start" }}>
       <Box title="Messages">
         <Check k="directMessages">One-to-one messages between connected learners</Check>
-        <label style={label} htmlFor="st-age">Youngest age for one-to-one and group messages</label>
-        <input id="st-age" type="number" min={8} max={18} value={s.dmMinAge} onChange={num("dmMinAge")} disabled={!canEdit} style={{ ...input, maxWidth: 120 }} />
-        <p style={{ fontSize: 12.5, color: C.muted, margin: "4px 0" }}>Younger learners chat only in their project teams. A learner with no date of birth on record counts as too young. Parents can switch messages off for their child.</p>
+        <p style={{ fontSize: 12.5, color: C.muted, margin: "4px 0" }}>Any age, only with people they&apos;re connected with. Parents read every message and can switch messages off for their child.</p>
         <Check k="groupChats">Group chats that learners start with their connections</Check>
         <label style={label} htmlFor="st-files">Pictures and files in messages</label>
         <select id="st-files" value={s.messageFiles} onChange={(e) => setS((x) => ({ ...x, messageFiles: e.target.value }))} disabled={!canEdit} style={{ ...input, maxWidth: 320 }}>

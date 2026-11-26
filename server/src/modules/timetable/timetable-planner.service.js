@@ -57,6 +57,8 @@ async function courseIdsByClass(classes) {
 
 const teachersOfLesson = (lesson, links) => (lesson.teacherId ? [lesson.teacherId] : links.filter((l) => l.classId === lesson.classId && l.courseId === lesson.courseId).map((l) => l.teacherId));
 
+const { withRunInfo } = require("../classes/class-former-members");
+
 const TimetablePlanner = {
   async overview(req, { hubId = null } = {}) {
     const all = await hubsFor(req);
@@ -113,6 +115,10 @@ const TimetablePlanner = {
         lessons,
       };
     }).sort((a, b) => a.hubName.localeCompare(b.hubName) || a.label.localeCompare(b.label));
+    // Each bootcamp run's class with its run (26 Nov 2026): an ended run's classes are shown apart
+    // ("Run ended") so the next run is never timetabled on the old run's classes by mistake.
+    const runInfo = new Map((await withRunInfo(shaped.map((c) => ({ id: c.id })))).map((c) => [c.id, c.bootcampRun]));
+    for (const c of shaped) c.run = runInfo.get(c.id) || null;
 
     const hubsOfTeacher = new Map();
     for (const l of hubLinks) hubsOfTeacher.set(l.teacherId, [...(hubsOfTeacher.get(l.teacherId) || []), l.hubId]);
@@ -228,7 +234,7 @@ const TimetablePlanner = {
     const startDate = body.startDate || anchorDate;
     if (startDate && body.startDate && periods.length) {
       const inside = periods.some((p) => p.startDate && p.endDate && startDate >= p.startDate && startDate <= p.endDate);
-      if (!inside) blocks.push({ type: "date", message: "That start date is outside this class's run." });
+      if (!inside) blocks.push({ type: "date", message: `That start date is outside this class's run.${await require("../classes/class-former-members").outsideRunHint(cls.id)}` });
     }
     const sessionCount = Number((await db("course_sessions").where({ courseId }).count({ n: "*" }).first())?.n || 0);
     const otherDays = sameCourse.filter((s) => s.id !== slotId).map((s) => s.dayOfWeek);

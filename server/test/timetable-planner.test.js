@@ -77,3 +77,13 @@ test("educator hours for sessions held stay with the lesson as it was that day",
   assert.deepEqual(row.sessions, ["2026-11-30", "2026-12-07"]);
   assert.equal(row.minutes, 60 + 120, "one hour before the change, two after");
 });
+
+test("an ended run's lessons don't clash with the next run's (windowsMeet)", () => {
+  const R = require("../src/modules/timetable/timetable.rules");
+  const next = { from: "2026-11-26", to: "2026-12-12" };
+  assert.equal(R.windowsMeet(next, { from: "2026-11-02", to: "2026-11-21" }), false, "old run over before the new lesson starts");
+  assert.equal(R.windowsMeet(next, { from: "2026-11-23", to: "2026-12-12" }), true, "both running");
+  assert.equal(R.windowsMeet(next, { from: "2027-01-05", to: "2027-01-20" }), false, "later run starts after this one ends");
+  assert.equal(R.windowsMeet(next, null), true, "a class with no run dates always counts");
+  assert.equal(R.windowsMeet({ from: "2026-11-26", to: null }, { from: "2027-01-05", to: "2027-01-20" }), true, "an open-ended class meets any later run");
+});

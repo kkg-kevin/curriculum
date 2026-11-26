@@ -47,7 +47,6 @@ async function sendBlocker(ctx, conv, me) {
   // group: the sender must still be allowed group chats.
   const s = ctx.settings;
   if (!s.groupChats || !s.directMessages) return "Group chats are switched off on Connect.";
-  if (myAge == null || myAge < s.dmMinAge) return `Group chats open when you're ${s.dmMinAge}.`;
   if (!me.directMessages) return "Your parent has switched messages with other learners off for you.";
   return null;
 }

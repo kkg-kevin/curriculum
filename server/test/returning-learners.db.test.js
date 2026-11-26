@@ -5,7 +5,7 @@
 //
 // Same set-up as submissions.db.test.js: the name must end in "_test", the database is created if
 // missing and migrated, the rows added are removed at the end, and email is off for the run.
-// Covers (27 Nov 2026): "Add missing classes" on a run's hub, enrolling someone already at a hub
+// Covers (26 Nov 2026): "Add missing classes" on a run's hub, enrolling someone already at a hub
 // (a move into the class picked), and "Bring back learners" from an earlier run.
 const test = require("node:test");
 const assert = require("node:assert/strict");

@@ -31,6 +31,8 @@ const MentorCheckinService = require("../modules/mentor-checkins/mentor-checkin.
   console.log("Session covers:", JSON.stringify(await require("../modules/session-covers/session-cover.service").keepCurrent({ force: true })));
   // General events: reminders to the people registered, and "say thank you" to the admins after.
   console.log("General events:", JSON.stringify(await require("../modules/general-events/general-event.service").processAll()));
+  // Connect announcements scheduled for later whose time has come.
+  console.log("Announcements sent:", await require("../modules/connect/connect.announcements").publishDue({ force: true }));
 })()
   .catch((err) => {
     console.error("Hub check-ins processing failed:", err);

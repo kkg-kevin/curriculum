@@ -159,7 +159,8 @@ export default function AttendancePage() {
     queryFn: () => classApi.getAll({ teacherId: teacher.id, schoolId: selectedHubId }),
     enabled: !!teacher?.id && !!selectedHubId,
   });
-  const myClasses = classesData?.data || [];
+  // A bootcamp run that has ended goes last, so the page opens on a class that still meets (26 Nov 2026).
+  const myClasses = [...(classesData?.data || [])].sort((a, b) => Number(a.bootcampRun?.state === "ended") - Number(b.bootcampRun?.state === "ended"));
 
   const classIdParam = searchParams.get("classId");
   const selectedClassId = (classIdParam && myClasses.some((c) => c.id === classIdParam)) ? classIdParam : myClasses[0]?.id;

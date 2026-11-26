@@ -24,7 +24,7 @@ const { DAYS_OF_WEEK } = require("./timetable.validation");
 const { insideStatedHours } = require("../mentor-bookings/availability.rules");
 const TimetableVersionModel = require("./timetable-version.model");
 const TimetableNotifications = require("./timetable.notifications");
-const { slotForDate, validOn, addDaysTo } = require("./timetable.rules");
+const { slotForDate, validOn, addDaysTo, windowsMeet } = require("./timetable.rules");
 const { todayInKenya } = require("../checkins/checkin.dates");
 const db = require("../../config/db");
 
@@ -61,13 +61,36 @@ async function resolveEffectiveTeacherIds(classId, courseId, explicitTeacherId) 
 // match, since most slots identify their teacher through the course assignment. Two different
 // classes/teachers can otherwise happily share a time. Old versions of a lesson still in force on
 // or after `validFrom` count too. excludeId skips the lesson being edited (and its own old versions).
+// The dates a class's lessons can happen on: its bootcamp / competition run, else no limit.
+const dayStr = (v) => (v ? (v instanceof Date ? v.toISOString() : String(v)).slice(0, 10) : null);
+async function classWindow(classId, cache) {
+  if (!cache.has(classId)) {
+    cache.set(classId, (async () => {
+      const w = (await BootcampHubService.getDateWindowForClass(classId)) || (await CompetitionHubService.getDateWindowForClass(classId));
+      return w ? { from: dayStr(w.startDate), to: dayStr(w.endDate) } : null;
+    })());
+  }
+  return cache.get(classId);
+}
+
 async function findClashes({ classId, courseId, teacherId, roomId, dayOfWeek, startTime, endTime, excludeId, validFrom = null }) {
+  const since = validFrom || todayInKenya();
   const [current, ending] = await Promise.all([
     TimetableModel.findAll({ dayOfWeek }),
-    TimetableVersionModel.findEndingOnDay(dayOfWeek, validFrom || todayInKenya()),
+    TimetableVersionModel.findEndingOnDay(dayOfWeek, since),
   ]);
   const rows = [...current.filter((s) => s.id !== excludeId), ...ending.filter((v) => v.slotId !== excludeId)];
-  const overlapping = rows.filter((s) => timesOverlap(startTime, endTime, s.startTime, s.endTime));
+  const timed = rows.filter((s) => timesOverlap(startTime, endTime, s.startTime, s.endTime));
+  // Only lessons whose classes meet on dates this one will: an ended run's lessons don't block the
+  // next run's (same educators, rooms and times — 26 Nov 2026).
+  const windows = new Map();
+  const own = await classWindow(classId, windows);
+  const ownDates = { from: own?.from && own.from > since ? own.from : since, to: own?.to || null };
+  const overlapping = [];
+  for (const s of timed) {
+    // eslint-disable-next-line no-await-in-loop
+    if (s.classId === classId || windowsMeet(ownDates, await classWindow(s.classId, windows))) overlapping.push(s);
+  }
   const classClash = overlapping.find((s) => s.classId === classId) || null;
   // A room is one physical resource — any two overlapping lessons sharing it clash, whoever teaches.
   const roomClash = roomId ? overlapping.find((s) => s.roomId === roomId) || null : null;
@@ -414,7 +437,8 @@ const TimetableService = {
       if (!inside) {
         const dated = periods.filter((p) => p.startDate && p.endDate);
         const span = dated.length ? `${dated[0].startDate} to ${dated[dated.length - 1].endDate}` : "";
-        fail(`That date is outside this class's run${span ? ` (${span})` : ""} - pick a date inside it.`, "OUTSIDE_RUN", { periods: dated.map((p) => ({ name: p.name, startDate: p.startDate, endDate: p.endDate })) });
+        const hint = await require("../classes/class-former-members").outsideRunHint(classId);
+        fail(`That date is outside this class's run${span ? ` (${span})` : ""} - pick a date inside it.${hint}`, "OUTSIDE_RUN", { periods: dated.map((p) => ({ name: p.name, startDate: p.startDate, endDate: p.endDate })) });
       }
     }
     const existing = await CourseScheduleModel.findOne(classId, courseId);

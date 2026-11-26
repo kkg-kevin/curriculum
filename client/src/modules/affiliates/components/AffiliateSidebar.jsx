@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { FiGift, FiUser } from "react-icons/fi";
+import { FiGift, FiUser, FiVolume2 } from "react-icons/fi";
 import { BRAND_NAME, BRAND_LOGO_DARK_BG, BRAND_LOGO_DARK_BG_FILTER } from "../../../branding";
 import LogoutButton from "../../../components/ui/LogoutButton";
 import { useSidebarHover, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "../../../hooks/useSidebarHover";
 
 const menuItems = [
   { name: "Refer & Earn", path: "/affiliate-portal", icon: FiGift },
+  { name: "Announcements", path: "/affiliate-portal/announcements", icon: FiVolume2 },
   { name: "My Account", path: "/affiliate-portal/account", icon: FiUser },
 ];
 
