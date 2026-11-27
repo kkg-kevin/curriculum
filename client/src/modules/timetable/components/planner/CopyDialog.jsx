@@ -16,7 +16,9 @@ const STATE = {
 };
 
 export default function CopyDialog({ source, classes, onClose }) {
-  const candidates = useMemo(() => classes.filter((c) => c.id !== source.id), [classes, source.id]);
+  // Never onto a class of a bootcamp run that has ended (26 Nov 2026): copy the old run's lessons
+  // onto the new run's classes instead.
+  const candidates = useMemo(() => classes.filter((c) => c.id !== source.id && c.run?.state !== "ended"), [classes, source.id]);
   const sameGrade = useMemo(() => candidates.filter((c) => c.curriculumId === source.curriculumId && c.gradeId === source.gradeId), [candidates, source]);
   const [chosen, setChosen] = useState(() => new Set());
   const [onlyMatching, setOnlyMatching] = useState(sameGrade.length > 0);

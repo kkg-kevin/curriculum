@@ -48,6 +48,15 @@ async function getAttention(scope) {
     label: notFollowed.length === 1 ? "learner at risk not followed up" : "learners at risk not followed up",
     detail: risk.atRiskCount > notFollowed.length ? `${risk.atRiskCount - notFollowed.length} more already followed up` : null, tab: "at-risk" });
 
+  // Follow-up cases past their due date (analytics.cases.js, 26 Nov 2026).
+  const day = new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+  const overdue = (await db("learner_followup_cases").whereNot({ status: "resolved" }).where("dueOn", "<", day)
+    .whereIn("ownerAdminId", [...new Set(scope.hubs.map((h) => h.ownerAdminId).filter(Boolean))].concat(["-"])).select("learnerId", "status"))
+    .filter((c) => scope.learnerIds.has(c.learnerId));
+  add({ key: "followups", tone: "danger", icon: "flag", count: overdue.length,
+    label: overdue.length === 1 ? "learner follow-up past its due date" : "learner follow-ups past their due date",
+    detail: overdue.filter((c) => c.status === "escalated").length ? `${overdue.filter((c) => c.status === "escalated").length} escalated to the admins` : null, tab: "followups" });
+
   // Repeated absences, last 14 days.
   const recent = withPeriod(scope, 14);
   const att = await inChunks(learnerIds, (ids) => db("attendance").whereIn("learnerId", ids).where({ status: "absent" })

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiBookOpen, FiMessageCircle, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiFlag, FiActivity, FiAlertTriangle, FiArrowUpRight, FiAward, FiBookOpen, FiMessageCircle, FiCalendar, FiClipboard, FiClock, FiDollarSign, FiGrid, FiHeart, FiHome, FiLogIn, FiStar, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { readLocal, writeLocal } from "../../../../utils/safeStorage";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAnalytics, useAnalyticsFilters } from "../../hooks/useAnalytics";
@@ -22,6 +22,7 @@ import CoverageTab from "./CoverageTab";
 import MentorCheckinsTab from "./MentorCheckinsTab";
 import RankingsTab from "./RankingsTab";
 import AttentionPanel from "./AttentionPanel";
+import FollowupsPanel from "../../../followups/components/FollowupsPanel";
 import { Card, Empty, STYLES, T } from "./ui";
 
 /*
@@ -34,6 +35,8 @@ import { Card, Empty, STYLES, T } from "./ui";
 // Grouped (10 Nov 2026): a summary, how learning is going, the people, and the business side.
 const TABS = [
   { key: "overview", label: "Overview", icon: FiGrid, group: "Summary" },
+  // Learner follow-up cases (26 Nov 2026, modules/followups): loads itself, no period filter.
+  { key: "followups", label: "Follow-ups", icon: FiFlag, group: "Summary", selfLoading: true },
   { key: "trends", label: "Trends", icon: FiTrendingUp, group: "Summary", Component: TrendsTab },
   { key: "hubs", label: "Hubs", icon: FiHome, group: "Summary", Component: HubsTab, adminOnly: true },
   // 17 Nov 2026: how far each class has got through its courses.
@@ -113,7 +116,7 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
 
   const current = tabs.find((t) => t.key === tab);
   const filtersQuery = useAnalyticsFilters(isHub ? "" : value.hubId);
-  const viewQuery = useAnalytics(tab, query, { enabled: tab !== "overview" });
+  const viewQuery = useAnalytics(tab, query, { enabled: tab !== "overview" && tab !== "followups" });
   // "Focus" on a hub (Hubs tab): every tab narrowed to it, starting with its trends.
   const focusHub = (hubId) => {
     const next = new URLSearchParams(params);
@@ -174,6 +177,8 @@ export default function AnalyticsPage({ level = "admin", overview, onCertificate
           <AttentionPanel onTab={setTab} />
           {overview}
         </>
+      ) : current.selfLoading ? (
+        <FollowupsPanel level={isHub ? "hub" : "admin"} learnerLink={(id) => learnerPath(isHub ? "school" : "admin", id, "view")} />
       ) : (
         <>
           <FilterBar filters={filtersQuery.data} value={value} onChange={update} isHub={isHub} />

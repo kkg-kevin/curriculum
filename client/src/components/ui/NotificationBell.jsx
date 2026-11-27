@@ -31,6 +31,8 @@ const ICONS = {
   lead_submitted: { Icon: FiMail, color: "#2e7db5" },
   general_event_invite: { Icon: FiCalendar, color: "#B45309" },
   announcement: { Icon: FiVolume2, color: "#25476a" },
+  followup_assigned: { Icon: FiAlertTriangle, color: "#B45309" },
+  followup_recheck: { Icon: FiAlertTriangle, color: "#DC2626" },
   announcement_email: { Icon: FiVolume2, color: "#25476a" },
   general_event_registrations: { Icon: FiCalendar, color: "#2e7db5" },
   general_event_ended: { Icon: FiCalendar, color: "#25476a" },
@@ -93,6 +95,10 @@ function resolveNotificationPath(n) {
     // Connect announcements (26 Nov 2026): the reader's own portal's Announcements page.
     case "announcement":
     case "announcement_email":
+      return p.route || null;
+    // Learner follow-up cases (26 Nov 2026): the reader's own Follow-ups list, opened on the case.
+    case "followup_assigned":
+    case "followup_recheck":
       return p.route || null;
     // General events: an invitation opens the sign-in pop-up on that event (?event=); the admins'
     // notices open the event's page.

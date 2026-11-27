@@ -96,6 +96,8 @@ const PATH_PREFIX_TO_MODULE = {
   "/api/assessment-submissions": "assessments",
   "/api/reports": "reports",
   "/api/analytics": "reports",
+  // Learner follow-up cases (analytics.cases.js) — part of Reports & Analytics.
+  "/api/followups": "reports",
   "/api/certificates": "reports",
   "/api/competitions": "competitions",
   "/api/bootcamps": "bootcamps",

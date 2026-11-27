@@ -88,6 +88,8 @@ const ConnectRulesPage = lazyPage(() => import("../modules/connect/pages/PeopleP
 const ConnectAdminPage = lazyPage(() => import("../modules/connect/pages/ConnectAdminPage"));
 // Announcements from the team, in every portal (26 Nov 2026 — modules/announcements).
 const AnnouncementsPage = lazyPage(() => import("../modules/announcements/pages/AnnouncementsPage"));
+// The educator's learner follow-ups (26 Nov 2026 — modules/followups).
+const EducatorFollowupsPage = lazyPage(() => import("../modules/followups/pages/EducatorFollowupsPage"));
 const ParentConnectPage = lazyPage(() => import("../modules/connect/pages/ParentConnectPage"));
 const AdminReportsPage = lazyPage(() => import("../modules/reports/pages/AdminReportsPage"));
 const CourseContentLandingPage = lazyPage(() => import("../modules/courses/pages/CourseContentLandingPage"));
@@ -424,6 +426,7 @@ export default function AppRoutes() {
       <Route element={<RoleRoute allow={["teacher"]} />}>
         <Route path="/teacher-portal" element={<TeacherPortalLayout />}>
           <Route index element={<TeacherPortalDashboardPage />} />
+          <Route path="follow-ups" element={<EducatorFollowupsPage />} />
           <Route path="announcements" element={<AnnouncementsPage />} />
           <Route path="announcements/:id" element={<AnnouncementsPage />} />
           <Route path="classes/:classId" element={<MyClassPage />} />

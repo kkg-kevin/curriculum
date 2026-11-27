@@ -460,6 +460,9 @@ app.use("/api/connect", protect, attachOwnRecords, connectContext, connectRoutes
 // Connect → Announcements, for everyone they reach (26 Nov 2026): each portal's Announcements page,
 // the sign-in pop-up. Every call checks the person's own recipient row. See modules/connect/.
 app.use("/api/announcements", protect, require("./modules/connect/connect.announcement.routes").readerRouter);
+// Learner follow-up cases (26 Nov 2026): who needs help and why, who looks after it, what was done.
+// See modules/analytics/analytics.cases.js.
+app.use("/api/followups", protect, attachOwnRecords, require("./modules/analytics/followup-cases.routes"));
 
 app.use(notFound);
 app.use(errorHandler);

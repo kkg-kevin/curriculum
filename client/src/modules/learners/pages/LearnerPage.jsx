@@ -17,6 +17,7 @@ import HubSwitcher from "../../../components/ui/HubSwitcher";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import PasswordRevealDialog from "../../../components/ui/PasswordRevealDialog";
 import RecordHistory, { canSeeRecordHistory } from "../../activity/components/RecordHistory";
+import FollowupsPanel, { OpenFollowupButton } from "../../followups/components/FollowupsPanel";
 import { T, cardStyle, EmptyState } from "../../learner-portal/components/profile/theme";
 import ProfileIdentityCard from "../../learner-portal/components/profile/ProfileIdentityCard";
 import AssessmentActivity from "../../learner-portal/components/profile/AssessmentActivity";
@@ -145,7 +146,8 @@ export default function LearnerPage() {
   // An educator in training (TOT — learner.teacherId) is an adult learning for themself: no parent.
   const isEducatorTrainee = !!learner?.teacherId;
   // Analytics (modules/rankings): everything the learner does, with their place in each class.
-  const tabs = preview ? PROFILE_TABS : [...PROFILE_TABS, "Analytics", ...(isEducatorTrainee ? [] : ["Parent"]), ...(canSeeRecordHistory(user) ? ["History"] : [])];
+  // Follow-ups (26 Nov 2026, modules/followups): this learner's follow-up cases, open or closed.
+  const tabs = preview ? PROFILE_TABS : [...PROFILE_TABS, "Analytics", ...(isEducatorTrainee ? [] : ["Parent", "Follow-ups"]), ...(canSeeRecordHistory(user) ? ["History"] : [])];
   const tab = tabs.includes(activeTab) ? activeTab : "Overview";
 
   if (isLoading) {
@@ -289,10 +291,19 @@ export default function LearnerPage() {
       {tab === "Parent" && <ParentTab learnerId={id} onEdit={manage ? () => setEditing("guardian") : undefined} />}
 
       {tab === "Analytics" && <LearnerAnalyticsView staff learnerId={id} />}
+      {tab === "Follow-ups" && (
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13.5, color: "#64748B" }}>Every follow-up for {learner.firstName}: why it opened, who looked after it and what was done.</span>
+            <OpenFollowupButton learnerId={id} />
+          </div>
+          <FollowupsPanel learnerId={id} level={isSchool ? "hub" : "admin"} />
+        </div>
+      )}
       {tab === "History" && isAdmin && <LearnerMoves learnerId={id} />}
       {tab === "History" && <RecordHistory entityType="learners" entityId={id} defaultOpen />}
 
-      {tab !== "History" && tab !== "Parent" && tab !== "Analytics" && (
+      {tab !== "History" && tab !== "Parent" && tab !== "Analytics" && tab !== "Follow-ups" && (
         <>
           {cls ? <SummaryRow classId={cls.id} staffLearnerId={id} /> : <NoClassNotice />}
           <FrameworkLegend />

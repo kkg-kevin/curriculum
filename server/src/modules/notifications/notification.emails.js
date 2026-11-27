@@ -406,6 +406,10 @@ const EMAIL_TYPES = {
     look: { tone: "info", icon: "envelope", eyebrow: "From your supervisor" },
     path: (p) => routeOr(p, "/teacher-portal"),
   },
+  // Learner follow-up cases (26 Nov 2026): new ones for you (once a day), one handed to you or
+  // escalated, and the two-week re-check that found the learner still needs help.
+  followup_assigned: { label: "Learner follow-ups for you", roles: ["admin", "collaborator", "teacher", "school"], default: true, look: { tone: "warning", icon: "alert", eyebrow: "Follow-up" }, path: (p) => routeOr(p, "/reports?tab=followups") },
+  followup_recheck: { label: "A follow-up still needs help after two weeks", roles: ["admin", "collaborator", "teacher", "school"], default: true, look: { tone: "warning", icon: "refresh", eyebrow: "Follow-up" }, path: (p) => routeOr(p, "/reports?tab=followups") },
   learner_flagged: {
     label: "A learner of yours needs support",
     roles: EDUCATOR_ROLES,
