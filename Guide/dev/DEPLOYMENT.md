@@ -128,6 +128,188 @@ the app first (cPanel → Setup Node.js App → Stop) and tell people.
 
 ---
 
+## Uploading the backend: upload → stop → extract → start
+
+Every backend release, in this order (cPanel → **Setup Node.js App** for the API):
+
+1. **Upload** `backend-deploy.zip` into the app's folder — don't extract it yet; the API keeps working while it uploads.
+2. **Stop App.**
+3. **Extract** `backend-deploy.zip` over the old files. Keep `.env`, `uploads/` (with its hidden `.expenses` and `.connect`
+   folders) and `node_modules` (a link to cPanel's Node environment — never delete it).
+4. **Run NPM Install** — only when the release says it adds a package (never while the app runs: it fails "without a diagnostic").
+5. **Start App** — new migrations run now.
+6. **Check** `https://<api-address>/health` shows `{"status":"ok"}` and run the release's migration check queries. If it won't
+   start, `stderr.log` in the app's folder says why.
+
+Why this order: a running app loads some files only when first needed, so extracting under it can mix old and new code for a
+request (or a fresh copy can start from half-replaced files); stopping first avoids that, and uploading before stopping keeps the
+API down only for the extract and start (about a minute). A plain **Restart** without stopping is only for an environment-variable
+change. A portal- or website-only release needs no restart at all.
+
+---
+
+## This release (26 Nov 2026) — Returning learners for another bootcamp run, affiliate monthly targets, town pages on the website
+
+**Backend and portal** from `curriculum` (branch `modules`) at `605636fa`. **Website** from `curriculum-web` (branch `new`) at `a341f88`.
+**Two new migrations, no new npm package, no new environment variable, no new cron job.** If the 24 Nov release below isn't up yet,
+these files include it (its four migrations run too) — upload only this one.
+
+### Before you upload: tell the team
+
+- **Bootcamps run again** — a hub holds one place per learner, so a learner coming back for the next run of the same bootcamp is
+  **moved** into the new run's class, never added again. On the new run's page: **Bring back learners** (tick learners from earlier
+  runs, choose the hub and class, optionally raise the invoice and tell the parents). A returning cohort added to the curriculum after
+  the hub was added gets its class with **Add missing classes** on the hub. Finish the old run's marking, reports and certificates in
+  the old class — moved learners stay there under **Moved on** for that.
+- **Classes from an ended run** show a grey **Run ended** badge and a banner; running runs show **Running now**, later ones
+  **Upcoming** — on class lists, class pages and the educator's dashboard (ended runs last).
+- **Affiliates** — monthly targets (money the families they brought in paid, and paying families). Off until set in Affiliates →
+  Settings.
+
+### Upload in this order
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/`.
+1. **Backend** — `backend-deploy.zip` (833 files, 201 migrations — two new), in the standing order (above): **upload → Stop App →
+   Extract → Start App** (no new package, so no NPM install). The migrations run on start:
+   - `20261125090000` affiliate targets — `affiliates.targets` and the new `affiliate_target_results` table
+   - `20261127090000` class names — the classes of a bootcamp that already has a second run take their run's date
+     ("Starters · Robotics Bootcamp" → "Starters · Robotics Bootcamp · 3 Aug 2026"), as the next run's already do. Names someone
+     changed by hand are left alone; no table changes.
+
+   Check: `SHOW COLUMNS FROM affiliates LIKE 'targets';`, `SHOW TABLES LIKE 'affiliate_target_results';` and
+   `SELECT name FROM knex_migrations WHERE name LIKE '2026112%';` (the two above). If any is missing: Run JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-B6c5XfNE.js`), after the backend. In `curriculum.digifunzi.com`: delete the old `assets/` folder
+   and `index.html`, upload both and Extract `assets.zip`. Leave the `.htaccess` as it is (the 17 Nov morning's).
+3. **Website** — `africa-digifunzi-com-dist.zip` to https://africa.digifunzi.com (entry `index-BcMbIJfm.js`, 34 pages), after the backend. Unzip over the old files. The
+   footer's **Where we teach** and the town pages (`/locations`) need this backend. They work straight away, but were built before the
+   API had them, so they aren't pre-rendered or in the sitemap yet: once the backend is up, ask for a website rebuild and upload that
+   zip too (better for search).
+
+### Then, in the portal
+
+1. **For the next run of a bootcamp:** the curriculum's **Structure** step → add a cohort for returning learners with the follow-on
+   course (skip if it has one) → the new run's page → **Add missing classes** on its hub → **Bring back learners** → **Timetable →
+   Weekly plan**: give each new class its educator and lessons.
+2. Optional: **Affiliates → Settings → Monthly targets** (money and families; 0 = no target), and per affiliate under Edit.
+
+### What changed
+
+**Returning learners** — enrolling someone at a hub they're already at now moves them into the class picked (learner page → Learning
+Hubs → "Enroll at hub…", where held hubs say "already here · change class"; the hub's **Add an existing learner** says "Already here"
+and offers **Move to this class**). Before, it silently did nothing. A learner who once left a hub can be enrolled there again. Every
+move is on the learner's History, places them on the bootcamp's pathway and tells the parent. **Bring back learners** (bootcamp page)
+does it for many at once, each with its own result. **Moved on**: learners moved to the next run stay on the old run's class for its
+marking roster, report pages and certificate generation (tagged "Moved on"), never on its attendance or for new work. **Run badges**
+on classes everywhere a class is shown, and an ended-run banner on its page.
+
+**Affiliates → Targets** — a monthly target per affiliate (and for a manager's team): money in and paying families, met / on track /
+behind, a Targets tab, "This month" on the list and **Your target** on Refer & earn. Tracking only (no bonus).
+
+**Website** — town pages (**Where we teach**: each town's hubs, bootcamps and pathways), shorter page titles and fuller descriptions
+for search, lighter images (WebP), and no long dashes in the wording.
+
+### Verify
+
+1. A bootcamp run that hasn't ended, with a hub: **Bring back learners** opens and lists the earlier runs' learners; the hub card
+   lists its classes (and **Add missing classes** when a cohort is missing).
+2. Classes list: a class from an ended run shows **Run ended · dates**; its page shows the banner (and **Moved on** once someone moved).
+3. A learner page → Learning Hubs → **Enroll at hub…**: their own hub reads "already here · change class".
+4. **Affiliates → Targets** opens.
+5. Website: footer **Where we teach** → the towns list.
+
+---
+
+## This release (24 Nov 2026) — Digifunzi Connect, Timetable Planner and My Availability, Book a mentor redesigned, prospect follow-up
+
+**Backend and portal** from `curriculum` (branch `modules`) at `dd0c4c91`. The website zips are unchanged. **Four new migrations, no new npm
+package, no new environment variable, no new cron job** (the hourly `checkins:process` now also checks timetable clashes with mentor
+sessions — nothing to change). If the 21 Nov release below isn't up yet, these files include it.
+
+### Before you upload: tell the team
+
+- **Timetable** — the admin's **Timetable** (Teaching & learning) and the hub's Timetable are now the **Timetable Planner**: a weekly plan by
+  class, educator or room, a Today board and a calendar; a lesson is set up in one step with a live clash check. Changing a lesson that
+  has already run applies **from a date** (tomorrow by default) — past sessions, educator hours and claims stay as they were. Families and
+  educators are told about live changes. Classes can now run at weekends.
+- **Educators** — **My Availability** has its own menu item: the hours they offer families for mentor sessions, drawn over their classes.
+  Availability never blocks a class any more; if a class lands on a paid mentor session, the family is asked to pick a new time (or gets a
+  full refund).
+- **Parents** — **Digifunzi Connect** (the learners' community) is **off for every child** until a parent switches it on: Parent portal →
+  the child → **Connect** tab (a child needs their own login first). Nothing changes for anyone until then.
+
+### Upload in this order
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/`.
+1. **Backend** — `backend-deploy.zip` (827 files, 199 migrations — four new), in the standing order (above): **upload → Stop App →
+   Extract → Start App** (no new package, so no NPM install). The migrations run on start:
+   - `20261123090000` mentor-session clashes — `mentor_bookings.clashAt`, `clashReason`
+   - `20261123120000` Timetable Planner — `timetable_slots.dayOfWeek` gains Saturday and Sunday, `timetable_slots.validFrom`, the new
+     `timetable_slot_versions` table (a lesson's earlier versions)
+   - `20261124090000` Digifunzi Connect — 23 new `connect_*` tables (members, communities, posts, comments, reactions, files,
+     connections, blocks, conversations, messages, projects, challenges, badges, reports, moderation log, settings)
+   - `20261124150000` prospect follow-up — the new `affiliate_prospect_notes` table and `affiliate_prospects.followUpOn`
+
+   Check: `SHOW COLUMNS FROM mentor_bookings LIKE 'clashAt';`, `SHOW TABLES LIKE 'timetable_slot_versions';`,
+   `SHOW TABLES LIKE 'connect%';` (**23 rows**) and `SHOW TABLES LIKE 'affiliate_prospect_notes';`. If any is missing: Run JS
+   script → `db:migrate`.
+
+   **Keep `uploads/` as always.** Connect keeps learners' pictures and project files in a hidden `uploads/.connect/` folder (made on
+   start, like `uploads/.expenses/`); they are never served from `/uploads` — only through signed links from the API.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-Db47qXdT.js`), after the backend. In `curriculum.digifunzi.com`: delete the old `assets/` folder
+   and `index.html`, upload both and Extract `assets.zip`. Leave the `.htaccess` as it is (the 17 Nov morning's).
+
+### Then, in the portal
+
+1. **Digifunzi Connect → Settings** (admin, Quality & insights): look through the safety settings (one-to-one messages from age 13
+   between connected learners, files in messages only in project team chats, posts go up without approval — checking can be switched
+   on there), and tick the **educators who moderate**. Seven starter communities (Python Developers, Robotics Enthusiasts…) are made
+   the first time Connect is opened.
+2. **Settings → Roles & access** — staff who should moderate Connect need the new **Digifunzi Connect (moderation)** permission
+   (View = see; Create / Edit = take down, decide reports, pause posting, run communities and challenges, Settings).
+3. Optional: post a welcome **announcement** (Connect → Posts, or as a moderator in the feed) and open a first **challenge**.
+
+### What changed
+
+**Digifunzi Connect** — a community for learners that stays theirs after a class or bootcamp ends. A child's own login gets a
+**Connect** item: Discover, Community Feed (posts with pictures, learning links, projects and achievements; reactions, comments,
+replies, sharing), Communities (join, post, moderators), Messages, Projects (teams across classes and bootcamps, invitations, roles,
+milestones, updates with files, a team chat, a showcase), Challenges (individual or team entries, awards, badges), People
+(connections, blocking, muting) and My Profile (first name + initial, their profile photo or a drawn avatar, interests — never surname,
+school, class, age or contact details).
+Safety: phone numbers, emails, addresses, plans to meet, other apps, unkind words and outside links are refused as they're typed;
+pictures lose their GPS and are only sent by signed links; everything can be reported; moderators take down posts and comments, decide
+reports (reading a reported conversation is recorded) and pause a learner's posting. **Messages are age-tiered**: one-to-one and group
+chats only from 13 (Settings), only with accepted connections, and parents can switch them off; younger learners chat in project
+teams only; never adult-to-child. **Parents** switch Connect on (consent), see who their child chats with and when — never what — and
+can block someone or switch Connect off and delete what the child shared. Admins: **Digifunzi Connect** (Overview, Posts, Review,
+Members, Communities, Challenges, History, Settings); educators named moderators get **Connect moderation** in the teacher portal.
+Notices are on the bell only (no emails). Children's posts and messages are kept out of the staff activity log.
+
+**Timetable Planner and My Availability** — see "Before you upload" above. Also fixed: a hub's educator clash check always came back
+empty; hubs could be refused the course list of their own classes; an edit could save an end time before its start time.
+
+**Book a mentor** (parent portal → Mentor sessions → Book a session) — redesigned to use the whole screen: a strip of the six steps,
+every choice as a card (mentors with headline, rating, online / in person and free days), free times by day and part of the day, and
+**Your booking** filling in beside the steps (on a phone, a bar at the bottom with the total and Next / Book and pay). Same rules and
+prices.
+
+**Affiliates → Prospects** — adding a family opens in a pop-up (admin and affiliates); notes are "Notes for follow-up"; **clicking a
+family opens its page** — the family, the claim, a possible match to decide, Move / Release / History, and **Follow-up**: a "follow up
+on" date and the team's notes (only the team sees them). The list shows each family's follow-up date (due / overdue) and latest note.
+Notes go with the family's details when a claim closes without a sign-up.
+
+### Verify
+
+1. Admin → **Digifunzi Connect**: Overview opens; Communities lists the seven starter communities; Settings saves.
+2. Parent → a child with their own login → **Connect** → switch it on; sign in as the child → **Connect**: Discover opens; join a
+   community and post (try a phone number — it's refused); the admin's **Posts** tab shows the post with **Take down** in its ⋯ menu.
+3. Admin → **Timetable**: the Weekly plan opens for every hub; Educator → **My Availability** opens with their classes on the week.
+4. Parent → **Mentor sessions → Book a session**: the steps, the cards and Your booking (mentor bookings must be on in Settings →
+   Educator Pay → Mentor bookings).
+5. Admin → **Affiliates → Prospects** → click a family: its page opens; add a follow-up note and a date — both show on the list.
+
+---
+
 ## This release (21 Nov 2026) — Every module's certificate on Reports
 
 **Portal only**, from `curriculum` (branch `modules`) at `9017c4df`. The backend (`6ecbfb10`) and website zips are unchanged. **No migration, no new
