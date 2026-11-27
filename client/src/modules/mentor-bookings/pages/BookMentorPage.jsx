@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
-import { FiArrowLeft, FiArrowRight, FiCheck, FiClock, FiInfo, FiMapPin, FiStar, FiVideo, FiSun, FiSunrise, FiMoon, FiUser, FiBookOpen, FiCalendar, FiAlertCircle } from "react-icons/fi";
+import { Link, useLocation, useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
+import { FiArrowLeft, FiArrowRight, FiCheck, FiClock, FiInfo, FiMapPin, FiStar, FiVideo, FiSun, FiSunrise, FiMoon, FiUser, FiBookOpen, FiCalendar, FiAlertCircle, FiDollarSign } from "react-icons/fi";
 import Avatar from "../../../components/ui/Avatar";
 import { useMentorDirectory } from "../../educator-profiles/hooks/useEducatorProfile";
 import { useBook, useBookingOptions, useFreeTimes, errorText } from "../hooks/useMentorBookings";
@@ -16,6 +16,24 @@ import { BRAND, FONT, HERO_GRADIENT, card } from "../../../theme/brand";
 // them on smaller screens, with a bar fixed to the bottom of a phone (the total, and the next
 // step or Book). The time is held while the invoice is paid (pay first).
 // ?learnerId= &teacherId= &help= open it on a child, a mentor (from their profile) or a request.
+//
+// Family credits (27 Nov 2026): a parent may pay with their credits (what the wallet covers; the
+// invoice holds the rest). A child's own login (/learner-portal/bookings/new) books for THEMSELF
+// with the family's credits — no "who" step, worded to them, booked at once when there are enough
+// credits and their parent lets them; otherwise it says to ask their parent.
+
+const credit = (n) => `${Number(n || 0).toLocaleString("en-KE")} credits`;
+
+// Can a child pay this from the family's credits? { ok, reason }
+function childCanPay(credits, total) {
+  if (!credits) return { ok: false, reason: null };
+  if (!credits.enabled) return { ok: false, reason: "Booking a mentor yourself isn't on at your learning centre yet. Ask your parent to book for you." };
+  if (!credits.hasParentLogin) return { ok: false, reason: "Your parent needs a Digifunzi login before you can book. Ask them." };
+  if (!credits.allowed) return { ok: false, reason: "Your parent hasn't switched on booking with credits for you. Ask them to book, or to switch it on." };
+  if (total > 0 && credits.left != null && total > credits.left) return { ok: false, reason: `That's more than you can spend this month (${credit(credits.left)} left). Ask your parent.` };
+  if (total > credits.balance) return { ok: false, reason: `You need ${credit(total)} and your family has ${credit(credits.balance)}. Ask your parent to add some.` };
+  return { ok: true, reason: null };
+}
 
 const label = { display: "block", fontSize: 13, fontWeight: 700, color: BRAND.inkSoft, marginBottom: 6 };
 const control = { width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${BRAND.border}`, fontSize: 15, fontFamily: FONT, color: BRAND.ink, background: "#fff", minHeight: 46 };
@@ -78,11 +96,14 @@ const WEEKDAYS = { monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "T
 
 export default function BookMentorPage() {
   const navigate = useNavigate();
+  const forChild = useLocation().pathname.startsWith("/learner-portal");
+  const base = forChild ? "/learner-portal/bookings" : "/parent/bookings";
   const [params] = useSearchParams();
   const width = useWidth();
   const wide = width >= 1100; // "Your booking" beside the steps
   const phone = width < 900; // a bar fixed to the bottom of the screen
-  const { children = [] } = useOutletContext() || {};
+  const outlet = useOutletContext() || {};
+  const children = forChild ? (outlet.learner ? [outlet.learner] : []) : (outlet.children || []);
   const { data: mentors = [], isLoading: mentorsLoading } = useMentorDirectory();
 
   const [learnerId, setLearnerId] = useState(params.get("learnerId") || "");
@@ -97,6 +118,7 @@ export default function BookMentorPage() {
   const [spaceId, setSpaceId] = useState("");
   const [day, setDay] = useState("");
   const [slot, setSlot] = useState(null);
+  const [useCredits, setUseCredits] = useState(false);
 
   useEffect(() => { if (!learnerId && children.length === 1) setLearnerId(children[0].id); }, [children, learnerId]);
   const mentor = mentors.find((m) => m.teacherId === teacherId) || null;
@@ -135,7 +157,11 @@ export default function BookMentorPage() {
   const total = mentorFee + deskFee;
   const book = useBook();
   const about = !!(courseId || topic.trim());
-  const ready = learnerId && teacherId && length && placeChosen && slot && about;
+  const credits = options?.credits || null;
+  // A parent's credits cover what they can; a child pays it all in credits.
+  const creditsApplied = forChild ? total : useCredits && credits?.enabled ? Math.min(total, credits.balance || 0) : 0;
+  const childPay = forChild ? childCanPay(credits, total) : { ok: true };
+  const ready = learnerId && teacherId && length && placeChosen && slot && about && (!forChild || total === 0 || childPay.ok);
 
   const submit = () => {
     if (!ready) return;
@@ -143,18 +169,19 @@ export default function BookMentorPage() {
       learnerId, teacherId, minutes, date: slot.date, startTime: slot.startTime, mode,
       hubId: mode === "hub" ? hubId : null, spaceId: mode === "hub" ? spaceId : null,
       courseId: courseId || null, sessionId: sessionId || null, topic: topic.trim(), helpRequestId: helpId || null,
+      useCredits: forChild || (useCredits && creditsApplied > 0),
     }, {
-      onSuccess: (r) => navigate(r.invoiceId ? `/parent/invoices/${r.invoiceId}` : `/parent/bookings/${r.booking.id}`),
+      onSuccess: (r) => navigate(!forChild && r.invoiceId ? `/parent/invoices/${r.invoiceId}` : `${base}/${r.booking.id}`),
     });
   };
 
   const child = children.find((c) => c.id === learnerId);
-  const childName = child?.firstName || "your child";
+  const childName = forChild ? "you" : child?.firstName || "your child";
   const open = !!(learnerId && teacherId && options?.enabled);
 
   // The steps, for the progress strip, the summary and "Next".
   const steps = [
-    { n: 1, short: "Child", done: !!learnerId, value: child ? [child.firstName, child.lastName].filter(Boolean).join(" ") : null, Icon: FiUser },
+    { n: 1, short: forChild ? "You" : "Child", done: !!learnerId, value: child ? [child.firstName, child.lastName].filter(Boolean).join(" ") : null, Icon: FiUser },
     { n: 2, short: "Mentor", done: !!teacherId && !!mentor, value: mentor?.name || null, Icon: FiStar },
     { n: 3, short: "Help with", done: about, value: session?.title || course?.name || (topic.trim() ? "Described" : null), Icon: FiBookOpen },
     { n: 4, short: "Length", done: !!length, value: length ? lengthLabel(length.minutes) : null, Icon: FiClock },
@@ -166,7 +193,8 @@ export default function BookMentorPage() {
 
   const summary = (
     <Summary steps={steps} total={total} mentorFee={mentorFee} deskFee={deskFee} included={included} length={length} mode={mode} hub={hub} space={space}
-      options={options} ready={ready} book={book} submit={submit} nextStep={nextStep} childName={childName} />
+      options={options} ready={ready} book={book} submit={submit} nextStep={nextStep} childName={childName}
+      forChild={forChild} credits={credits} creditsApplied={creditsApplied} useCredits={useCredits} setUseCredits={setUseCredits} childPay={childPay} />
   );
 
   return (
@@ -174,12 +202,15 @@ export default function BookMentorPage() {
       {/* Grid items may shrink below their content, so the row of days scrolls instead of widening
           the page; and a clear focus ring on every choice. */}
       <style>{`.bk [style*="display: grid"] > * { min-width: 0; } .bk button:focus-visible, .bk a:focus-visible { outline: 3px solid ${BRAND.sky}; outline-offset: 2px; } .bk-row { scrollbar-width: thin; }`}</style>
-      <button type="button" onClick={() => navigate("/parent/bookings")} style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", minHeight: 40, borderRadius: 999, border: `1.5px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><FiArrowLeft /> Mentor sessions</button>
+      <button type="button" onClick={() => navigate(base)} style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", minHeight: 40, borderRadius: 999, border: `1.5px solid ${BRAND.border}`, background: "#fff", color: BRAND.inkSoft, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><FiArrowLeft /> Mentor sessions</button>
 
       <header style={{ background: HERO_GRADIENT, borderRadius: 20, padding: phone ? "18px 18px" : "24px 28px", color: "#fff", display: "grid", gap: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: phone ? 22 : 26, fontWeight: 900 }}>Book a mentor</h1>
-          <p style={{ margin: "6px 0 0", fontSize: 14.5, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>Stuck on a session? A mentor takes your child through it, online or at a hub. Pay to confirm the time.</p>
+          <p style={{ margin: "6px 0 0", fontSize: 14.5, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{forChild
+            ? "Stuck on a session? Book a mentor to take you through it, online or at a hub. It's paid with your family's credits."
+            : "Stuck on a session? A mentor takes your child through it, online or at a hub. Pay to confirm the time, or use your credits."}</p>
+          {forChild && credits && <p style={{ margin: "10px 0 0", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: "rgba(255,255,255,0.16)", fontSize: 13.5, fontWeight: 800 }}><FiDollarSign size={14} /> Your family has {credit(credits.balance)}{credits.left != null ? ` · ${credit(credits.left)} left for you this month` : ""}</p>}
         </div>
         {/* Where they are in the six steps — tap a done one to go back to it. */}
         <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: `repeat(${phone ? 3 : 6}, minmax(0, 1fr))`, gap: 8 }}>
@@ -200,7 +231,7 @@ export default function BookMentorPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: wide ? "minmax(0, 1fr) 380px" : "100%", gap: 16, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-          <Step n={1} title="Who is it for?" done={!!learnerId} summary={steps[0].value}>
+          {!forChild && <Step n={1} title="Who is it for?" done={!!learnerId} summary={steps[0].value}>
             {children.length === 0 ? <p style={{ margin: 0, fontSize: 14, color: BRAND.muted }}>No children on your account yet.</p> : (
               <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))" }}>
                 {children.map((c) => {
@@ -215,13 +246,13 @@ export default function BookMentorPage() {
                 })}
               </div>
             )}
-          </Step>
+          </Step>}
 
           {learnerId && (
-            <Step n={2} title="Choose a mentor" note="Published mentors at your children's learning centres." done={!!teacherId && !!mentor} summary={steps[1].value}>
+            <Step n={2} title="Choose a mentor" note={forChild ? "Mentors at your learning centre." : "Published mentors at your children's learning centres."} done={!!teacherId && !!mentor} summary={steps[1].value}>
               {mentorsLoading ? <p style={{ margin: 0, color: BRAND.faint, fontSize: 14 }}>Loading mentors…</p> : mentors.length === 0 ? <p style={{ margin: 0, fontSize: 14, color: BRAND.muted }}>No mentor has published their profile yet.</p> : (
                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
-                  {mentors.map((m) => <MentorCard key={m.teacherId} m={m} on={teacherId === m.teacherId} onPick={() => setTeacherId(m.teacherId)} />)}
+                  {mentors.map((m) => <MentorCard key={m.teacherId} m={m} on={teacherId === m.teacherId} onPick={() => setTeacherId(m.teacherId)} forChild={forChild} />)}
                 </div>
               )}
               {teacherId && !mentor && !mentorsLoading && <p style={{ margin: "10px 0 0", fontSize: 13, color: BRAND.danger }}>That mentor isn&apos;t listed for your children.</p>}
@@ -230,15 +261,15 @@ export default function BookMentorPage() {
 
           {learnerId && teacherId && (optionsLoading ? <div style={{ ...card, padding: 20, color: BRAND.faint, fontSize: 14 }}>Loading what {mentor?.name?.split(" ")[0] || "this mentor"} offers…</div>
             : optionsError ? <Notice tone="danger">{errorText(optionsError)}</Notice>
-              : options && !options.enabled ? <Notice>Booking a mentor isn&apos;t open at this learning centre yet. Ask the team, or check back soon.</Notice>
+              : options && !options.enabled ? <Notice>Booking a mentor isn&apos;t open at this learning centre yet. {forChild ? "Ask your parent." : "Ask the team, or check back soon."}</Notice>
                 : options && (
                   <>
                     {!options.hasAvailability && <Notice tone="gold">{options.mentor.name} hasn&apos;t shared when they&apos;re free yet, so there are no times to book. Choose another mentor, or check back soon.</Notice>}
 
-                    <Step n={3} title={`What is ${childName} stuck on?`} done={about} summary={steps[2].value}>
+                    <Step n={3} title={forChild ? "What are you stuck on?" : `What is ${childName} stuck on?`} done={about} summary={steps[2].value}>
                       {helpRequests.length > 0 && (
                         <div style={{ marginBottom: 14 }}>
-                          <span style={label}>{child?.firstName || "Your child"} asked for help with</span>
+                          <span style={label}>{forChild ? "You asked for help with" : `${child?.firstName || "Your child"} asked for help with`}</span>
                           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))" }}>
                             {helpRequests.map((h) => {
                               const on = helpId === h.id;
@@ -364,11 +395,11 @@ export default function BookMentorPage() {
         <div style={{ position: "fixed", left: 0, bottom: 0, width: "100%", zIndex: 1100, background: "#fff", borderTop: `1px solid ${BRAND.border}`, boxShadow: "0 -8px 24px rgba(15,23,42,0.10)", padding: "10px 16px calc(10px + env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: 12, boxSizing: "border-box", fontFamily: FONT }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, color: BRAND.muted, fontWeight: 700 }}>{doneCount} of 6 done</div>
-            <div style={{ fontSize: 17, fontWeight: 900, color: BRAND.ink }}>{length ? (total > 0 ? ksh(total) : "Nothing to pay") : "—"}</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: BRAND.ink }}>{length ? (total > 0 ? (forChild ? credit(total) : ksh(total - creditsApplied)) : "Nothing to pay") : "—"}</div>
           </div>
           {ready ? (
             <button type="button" onClick={submit} disabled={book.isPending} style={{ padding: "12px 18px", minHeight: 48, borderRadius: 12, border: "none", background: BRAND.gold, color: BRAND.navy, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: FONT }}>
-              {book.isPending ? "Booking…" : total > 0 ? "Book and pay" : "Book"}
+              {book.isPending ? "Booking…" : forChild ? (total > 0 ? "Book with credits" : "Book") : total - creditsApplied > 0 ? "Book and pay" : "Book"}
             </button>
           ) : (
             <button type="button" onClick={() => nextStep && scrollToStep(nextStep.n)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "12px 16px", minHeight: 48, borderRadius: 12, border: "none", background: BRAND.navy, color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: FONT }}>
@@ -388,7 +419,7 @@ function Notice({ tone = "neutral", children }) {
   return <div role={tone === "danger" ? "alert" : "status"} style={{ ...card, padding: "16px 20px", fontSize: 14.5, display: "flex", gap: 10, alignItems: "flex-start", lineHeight: 1.5, ...look }}><FiAlertCircle size={18} style={{ flexShrink: 0, marginTop: 2 }} /> <span>{children}</span></div>;
 }
 
-function MentorCard({ m, on, onPick }) {
+function MentorCard({ m, on, onPick, forChild = false }) {
   const [first, ...rest] = m.name.split(" ");
   const order = Object.keys(WEEKDAYS);
   const days = [...(m.availability || [])].sort((x, y) => order.indexOf(x) - order.indexOf(y)).map((d) => WEEKDAYS[d] || d);
@@ -412,7 +443,7 @@ function MentorCard({ m, on, onPick }) {
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button type="button" onClick={onPick} style={{ flex: 1, padding: "10px 12px", minHeight: 42, borderRadius: 10, border: "none", background: on ? BRAND.navy : BRAND.skyTint, color: on ? "#fff" : BRAND.navy, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: FONT }}>{on ? "Chosen" : `Choose ${first}`}</button>
-        {m.slug && <Link to={`/parent/mentors/${m.slug}`} style={{ padding: "10px 12px", minHeight: 42, boxSizing: "border-box", display: "inline-flex", alignItems: "center", borderRadius: 10, border: `1.5px solid ${BRAND.border}`, color: BRAND.inkSoft, fontSize: 13.5, fontWeight: 700, textDecoration: "none" }}>Profile</Link>}
+        {m.slug && <Link to={forChild ? `/public/educators/${m.slug}` : `/parent/mentors/${m.slug}`} target={forChild ? "_blank" : undefined} style={{ padding: "10px 12px", minHeight: 42, boxSizing: "border-box", display: "inline-flex", alignItems: "center", borderRadius: 10, border: `1.5px solid ${BRAND.border}`, color: BRAND.inkSoft, fontSize: 13.5, fontWeight: 700, textDecoration: "none" }}>Profile</Link>}
       </div>
       <Tick on={on} />
     </div>
@@ -464,7 +495,8 @@ function TimePicker({ byDay, day, setDay, slot, setSlot }) {
   );
 }
 
-function Summary({ steps, total, mentorFee, deskFee, included, length, mode, hub, space, options, ready, book, submit, nextStep, childName }) {
+function Summary({ steps, total, mentorFee, deskFee, included, length, mode, hub, space, options, ready, book, submit, nextStep, childName, forChild, credits, creditsApplied, useCredits, setUseCredits, childPay }) {
+  const toPay = total - creditsApplied;
   return (
     <section aria-label="Your booking" style={{ ...card, padding: "20px 22px", fontFamily: FONT, border: `1.5px solid ${BRAND.skyBorder}`, display: "grid", gap: 14 }}>
       <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: BRAND.ink }}>Your booking</h2>
@@ -486,21 +518,43 @@ function Summary({ steps, total, mentorFee, deskFee, included, length, mode, hub
         <div style={{ display: "grid", gap: 6, fontSize: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Mentor session · {lengthLabel(length.minutes)}</span><span>{included ? "Included" : ksh(mentorFee)}</span></div>
           {mode === "hub" && space && <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>{space.name} at {hub.name}</span><span>{deskFee ? ksh(deskFee) : "No charge"}</span></div>}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: `1px solid ${BRAND.line}`, fontWeight: 900, fontSize: 18 }}><span>To pay</span><span>{ksh(total)}</span></div>
+          {forChild ? (
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: `1px solid ${BRAND.line}`, fontWeight: 900, fontSize: 18 }}><span>Credits</span><span>{credit(total)}</span></div>
+          ) : (
+            <>
+              {creditsApplied > 0 && <div style={{ display: "flex", justifyContent: "space-between", gap: 10, color: BRAND.navy, fontWeight: 700 }}><span>From your credits</span><span>− {ksh(creditsApplied)}</span></div>}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 10, borderTop: `1px solid ${BRAND.line}`, fontWeight: 900, fontSize: 18 }}><span>To pay</span><span>{ksh(toPay)}</span></div>
+            </>
+          )}
+        </div>
+      )}
+      {/* A parent with credits here may use them. */}
+      {!forChild && length && total > 0 && credits?.enabled && credits.balance > 0 && (
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${useCredits ? BRAND.navy : BRAND.border}`, background: useCredits ? BRAND.skyTint : "#fff", cursor: "pointer", fontSize: 14 }}>
+          <input type="checkbox" checked={useCredits} onChange={(e) => setUseCredits(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2 }} />
+          <span><strong>Pay with credits</strong><span style={{ display: "block", fontSize: 12.5, color: BRAND.muted }}>You have {credit(credits.balance)}.{credits.balance < total ? " They cover part of it; the rest goes on the invoice." : " It's booked straight away."}</span></span>
+        </label>
+      )}
+      {forChild && length && credits && (
+        <div style={{ padding: "10px 12px", borderRadius: 12, background: childPay.ok || total === 0 ? BRAND.skyTint : BRAND.goldTint, color: childPay.ok || total === 0 ? BRAND.navy : BRAND.goldText, fontSize: 13.5, lineHeight: 1.5 }}>
+          {total === 0 ? "Nothing to pay. It's booked straight away."
+            : childPay.ok ? `Your family has ${credit(credits.balance)}. After this booking: ${credit(credits.balance - total)}. Your parent is told.`
+              : childPay.reason}
         </div>
       )}
       {options?.enabled && (
         <p style={{ margin: 0, fontSize: 13, color: BRAND.muted, display: "flex", gap: 6, lineHeight: 1.5 }}>
           <FiInfo size={14} style={{ flexShrink: 0, marginTop: 2 }} />
           <span>
-            {total > 0 ? `We hold the time for ${options.holdMinutes >= 60 ? `${Math.round(options.holdMinutes / 60)} hour${options.holdMinutes >= 120 ? "s" : ""}` : `${options.holdMinutes} minutes`} while you pay — once paid, it's booked. ` : "Nothing to pay — it's booked straight away. "}
-            You can cancel up to {options.cancelHours} hours before for your money back.
+            {forChild ? `You can cancel up to ${options.cancelHours} hours before and the credits go back.`
+              : <>{toPay > 0 ? `We hold the time for ${options.holdMinutes >= 60 ? `${Math.round(options.holdMinutes / 60)} hour${options.holdMinutes >= 120 ? "s" : ""}` : `${options.holdMinutes} minutes`} while you pay — once paid, it's booked. ` : "Nothing more to pay — it's booked straight away. "}
+                You can cancel up to {options.cancelHours} hours before for your money back{creditsApplied > 0 ? " (credits go straight back to your wallet)" : ""}.</>}
           </span>
         </p>
       )}
       <button type="button" onClick={ready ? submit : () => nextStep && scrollToStep(nextStep.n)} disabled={book.isPending}
         style={{ padding: "14px 20px", minHeight: 50, borderRadius: 12, border: "none", background: ready ? BRAND.gold : BRAND.navy, color: ready ? BRAND.navy : "#fff", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: FONT, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        {book.isPending ? "Booking…" : ready ? (total > 0 ? `Book and pay ${ksh(total)}` : "Book") : <>Next: {nextStep?.short === "Help with" ? `what ${childName} needs help with` : (nextStep?.short || "").toLowerCase()} <FiArrowRight /></>}
+        {book.isPending ? "Booking…" : ready ? (forChild ? (total > 0 ? `Book with ${credit(total)}` : "Book") : toPay > 0 ? `Book and pay ${ksh(toPay)}` : creditsApplied > 0 ? `Book with ${credit(creditsApplied)}` : "Book") : forChild && length && total > 0 && !childPay.ok && nextStep == null ? "Ask your parent" : <>Next: {nextStep?.short === "Help with" ? `what ${childName} needs help with` : (nextStep?.short || "").toLowerCase()} <FiArrowRight /></>}
       </button>
     </section>
   );

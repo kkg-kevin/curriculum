@@ -21,8 +21,9 @@ const invoicePath = (base, id) => (base.startsWith("/parent") ? `/parent/invoice
 function CancelDialog({ booking, base, onClose }) {
   const cancel = useCancelBooking();
   const [reason, setReason] = useState("");
-  const family = base.startsWith("/parent");
+  const family = base.startsWith("/parent") || base.startsWith("/learner-portal");
   const paid = booking.invoice?.amountPaid || 0;
+  const credits = booking.creditsUsed || 0;
   return (
     <Modal
       title="Cancel this session?"
@@ -36,7 +37,9 @@ function CancelDialog({ booking, base, onClose }) {
     >
       <CheckinStyles />
       <p style={{ margin: "0 0 12px", fontSize: 13.5, color: BRAND.inkSoft, lineHeight: 1.6 }}>
-        {booking.status === "held" ? "The time goes back and the invoice is cancelled." : paid > 0 ? `${ksh(paid)} was paid — it's refunded to the family${booking.clashAt ? " in full" : ""}.` : "The time goes back to the mentor."}
+        {credits > 0 && paid <= credits ? `The ${credits.toLocaleString("en-KE")} credits it used go straight back to the family's wallet.`
+          : booking.status === "held" ? "The time goes back and the invoice is cancelled."
+            : paid > 0 ? `${ksh(paid)} was paid${credits > 0 ? ` (${credits.toLocaleString("en-KE")} of it in credits, which go straight back)` : ""} — it's refunded to the family${booking.clashAt ? " in full" : ""}.` : "The time goes back to the mentor."}
       </p>
       <label htmlFor="bk-reason" style={label}>{family ? "Why? (optional)" : "Why? The family sees this."}</label>
       <textarea id="bk-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} style={{ ...input, resize: "vertical" }} />
@@ -168,7 +171,8 @@ export default function BookingPage() {
   const base = useBookingsBase();
   const { data: b, isLoading, isError } = useBooking(id);
   const [dialog, setDialog] = useState(null);
-  const family = base.startsWith("/parent");
+  const family = base.startsWith("/parent") || base.startsWith("/learner-portal");
+  const childView = base.startsWith("/learner-portal");
   const mentorView = base.startsWith("/teacher-portal");
   const hubView = base.startsWith("/school-portal");
 
@@ -197,7 +201,7 @@ export default function BookingPage() {
                   {b.refundStatus === "due" && <span style={pill("danger")}>Refund due</span>}
                   {b.refundStatus === "refunded" && <span style={pill("neutral")}>Refunded</span>}
                 </div>
-                <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.85)" }}>{family && b.learner ? `With ${b.learner.name}` : !family && !mentorView && b.mentor ? `With ${b.mentor.name}` : person.sub}</p>
+                <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.85)" }}>{family && !childView && b.learner ? `With ${b.learner.name}` : (!family || childView) && !mentorView && b.mentor ? `With ${b.mentor.name}` : person.sub}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 7, fontSize: 13, color: "rgba(255,255,255,0.82)" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><FiClock size={13} /> {dayLabel(b.date, { weekday: "long", day: "numeric", month: "long" })}, {b.startTime}–{b.endTime} ({lengthLabel(b.minutes)})</span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{b.mode === "online" ? <FiVideo size={13} /> : <FiMapPin size={13} />} {whereLabel(b)}</span>
@@ -265,7 +269,8 @@ export default function BookingPage() {
               {!hubView && <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 7, borderTop: `1px solid ${BRAND.line}`, fontWeight: 900 }}><span>Total</span><span>{ksh(b.total)}</span></div>}
               {b.hubShare > 0 && <p style={{ margin: "6px 0 0", fontSize: 12.5, color: BRAND.muted }}>{ksh(b.hubShare)} of the space fee is owed to {b.hubName} ({b.deskCollectionPercent}% kept for collecting){b.settlementId ? " — settled." : "."}</p>}
               {b.educatorPay != null && !family && !hubView && <p style={{ margin: "2px 0 0", fontSize: 12.5, color: BRAND.muted }}>Mentor earns {ksh(b.educatorPay)}{b.claimId ? " (claimed)" : ""}.</p>}
-              {b.invoice && !hubView && (
+              {b.creditsUsed > 0 && <p style={{ margin: "2px 0 0", fontSize: 12.5, color: BRAND.navy, fontWeight: 700 }}>Paid with {b.creditsUsed.toLocaleString("en-KE")} family credits{b.bookedByRole === "child" ? ` · booked by ${b.learner?.name?.split(" ")[0] || "the learner"}` : ""}.</p>}
+              {b.invoice && !hubView && !childView && (
                 <Link to={invoicePath(base, b.invoice.id)} style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: BRAND.mid, display: "inline-flex", alignItems: "center", gap: 5 }}>
                   {b.invoice.invoiceNumber} · {b.invoice.status.replace(/_/g, " ")} <FiExternalLink size={12} />
                 </Link>
@@ -279,7 +284,7 @@ export default function BookingPage() {
           <section style={{ ...box, gridColumn: "1 / -1" }}>
             <h2 style={{ ...cardHeading, marginBottom: 10 }}><FiMessageSquare size={12} /> From the mentor</h2>
             {b.mentorNote ? <p style={{ margin: 0, fontSize: 14, color: BRAND.ink, lineHeight: 1.65, whiteSpace: "pre-line" }}>{b.mentorNote}</p> : <p style={{ margin: 0, fontSize: 13.5, color: BRAND.muted }}>{b.status === "no_show" ? `${b.learner?.name?.split(" ")[0] || "The learner"} didn't join.` : "No note."}</p>}
-            {family && b.status === "completed" && b.courseId && <Link to="/parent/feedback" style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: BRAND.mid }}><FiStar size={13} /> Rate {b.mentor?.name?.split(" ")[0] || "the mentor"}</Link>}
+            {family && !childView && b.status === "completed" && b.courseId && <Link to="/parent/feedback" style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: BRAND.mid }}><FiStar size={13} /> Rate {b.mentor?.name?.split(" ")[0] || "the mentor"}</Link>}
           </section>
         )}
 

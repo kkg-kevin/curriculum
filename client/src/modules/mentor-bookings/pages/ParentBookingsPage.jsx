@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FiAlertCircle, FiPlus, FiX } from "react-icons/fi";
+import { FiAlertCircle, FiDollarSign, FiPlus, FiX } from "react-icons/fi";
 import { useBookings, useCloseHelp, useHelpRequests } from "../hooks/useMentorBookings";
 import { BookingRow, EmptyNote, RowStyles, SectionHead, splitBookings } from "../shared";
 import { BRAND, FONT, HERO_GRADIENT, card } from "../../../theme/brand";
@@ -28,7 +28,10 @@ export default function ParentBookingsPage() {
           <h1 style={{ margin: 0, fontSize: 23, fontWeight: 900 }}>Mentor sessions</h1>
           <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.82)", maxWidth: 620, lineHeight: 1.6 }}>When your child is stuck on a session, book a mentor to take them through it — online or at a hub.</p>
         </div>
-        <Link to="/parent/bookings/new" style={goldBtn}><FiPlus /> Book a mentor</Link>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link to="/parent/credits" style={{ ...goldBtn, background: "rgba(255,255,255,0.14)", color: "#fff", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)" }}><FiDollarSign /> Credits</Link>
+          <Link to="/parent/bookings/new" style={goldBtn}><FiPlus /> Book a mentor</Link>
+        </div>
       </div>
 
       {needNewTime.length > 0 && (

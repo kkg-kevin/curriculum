@@ -79,6 +79,7 @@ export const ADMIN_SECTIONS = [
           { name: "Bookings", path: "/mentor-bookings?tab=bookings", isDefault: true, match: (l) => l.pathname.startsWith("/mentor-bookings") && (!tabOf(l) || tabOf(l) === "bookings") },
           { name: "Refunds", path: "/mentor-bookings?tab=refunds" },
           { name: "Hub settlements", path: "/mentor-bookings?tab=hubs" },
+          { name: "Credits", path: "/mentor-bookings?tab=credits" },
         ],
       },
       {

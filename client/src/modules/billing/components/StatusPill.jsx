@@ -11,6 +11,9 @@ export const TYPE_LABELS = {
   store_order: "Website order",
   pathway: "Pathway enrolment",
   pathway_subscription: "Pathway subscription",
+  mentor_booking: "Mentor session",
+  competition: "Competition entry",
+  credits: "Mentor credits",
 };
 
 export const TYPE_HELP = {
@@ -28,6 +31,8 @@ export const TYPE_HELP = {
   tech_club: "Monthly Estate Tech Club membership billed to the family's parent.",
   // A website pathway subscription's period, billed to the parent (Pathway Subscriptions page).
   pathway_subscription: "A website pathway subscription's period, billed to the family's parent.",
+  // Bought on the parent's Mentor credits page; paid in full, the credits land in their wallet.
+  credits: "Mentor credits a parent bought (1 credit = KSh 1) for their children to book mentors with.",
 };
 
 export const STATUS_LABELS = { draft: "Draft", issued: "Issued", partially_paid: "Partially paid", paid: "Paid", overdue: "Overdue", cancelled: "Cancelled", void: "Void" };

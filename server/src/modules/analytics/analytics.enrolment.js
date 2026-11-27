@@ -95,7 +95,9 @@ async function getEnrolment(scope) {
   let inPeriod = 0;
   let inPrev = 0;
   for (const p of payments) {
-    if (p.paymentMethod === "affiliate_credit") continue; // credit given, not money in
+    // Credit given, not money in: affiliate credit, and family credits (their money came in when the
+    // credits were bought — counting the booking they pay for again would count it twice).
+    if (p.paymentMethod === "affiliate_credit" || p.paymentMethod === "credits") continue;
     const when = p.paymentDate || p.paidAt || p.createdAt;
     const day = kenyaDay(when);
     const amount = Number(p.amount) || 0;

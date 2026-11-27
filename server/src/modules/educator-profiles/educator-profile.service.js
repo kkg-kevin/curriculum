@@ -226,8 +226,11 @@ const EducatorProfileService = {
   },
 
   // Find a mentor (parent portal): the published educators of the workspaces their children learn in.
+  // A child's own login gets the same list for their own workspaces (27 Nov 2026), to book a
+  // mentor themself with the family's credits.
   async directory(req) {
-    if (req.user.role !== "learner" || !isParent(req.user)) fail("For parents", 403);
+    const child = req.user.role === "learner" && !!req.user.username && !req.user.totLearner;
+    if (req.user.role !== "learner" || (!isParent(req.user) && !child)) fail("For families", 403);
     const learnerIds = (req.ownLearners || []).map((l) => l.id);
     if (!learnerIds.length) return [];
     const hubIds = await db("learner_hub_links").whereIn("learnerId", learnerIds).distinct("hubId").pluck("hubId");

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FiAlertCircle, FiCalendar, FiHome, FiRotateCcw, FiSearch } from "react-icons/fi";
+import { FiAlertCircle, FiCalendar, FiDollarSign, FiHome, FiRotateCcw, FiSearch } from "react-icons/fi";
 import { Tabs } from "../../../components/ui/TabBar";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuth } from "../../../context/AuthContext";
 import HubStatement from "../components/HubStatement";
+import CreditsTab from "../components/CreditsTab";
 import { useBookings, usePartnerHubs } from "../hooks/useMentorBookings";
 import { BookingRow, EmptyNote, RowStyles, ksh, splitBookings } from "../shared";
 import { BRAND, FONT, HERO_GRADIENT, card, pill } from "../../../theme/brand";
@@ -14,12 +15,15 @@ import { BRAND, FONT, HERO_GRADIENT, card, pill } from "../../../theme/brand";
 //   Bookings         every family's booking of a mentor — search, filter by state
 //   Refunds          cancelled after payment: give the money back, then mark it refunded
 //   Hub settlements  partner hubs' desk fees (option C): what each is owed, its statement, settle
+//   Credits          families' credit wallets (27 Nov 2026): balances, each wallet's history, add
+//                    or take off credits with a reason
 // The rates and rules are in Settings → Educator Pay → Mentor bookings.
 
 const TABS = [
   { key: "bookings", label: "Bookings", icon: FiCalendar },
   { key: "refunds", label: "Refunds", icon: FiRotateCcw },
   { key: "hubs", label: "Hub settlements", icon: FiHome },
+  { key: "credits", label: "Credits", icon: FiDollarSign },
 ];
 const FILTERS = [["all", "All"], ["coming", "Coming up"], ["needs_new_time", "Needs a new time"], ["to_mark", "To mark"], ["held", "Waiting for payment"], ["done", "Held"], ["cancelled", "Cancelled"]];
 const control = { padding: "9px 11px", borderRadius: 9, border: `1.5px solid ${BRAND.border}`, fontSize: 13, fontFamily: FONT, background: "#fff", minWidth: 0 };
@@ -131,7 +135,7 @@ export default function AdminBookingsPage() {
         <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "rgba(255,255,255,0.82)", maxWidth: 680, lineHeight: 1.6 }}>Families book a mentor when their child is stuck — paid first, online or at a hub. Rates: Settings → Educator Pay.</p>
       </div>
       <div className="pp-tabs"><style>{"@media (max-width: 640px) { .pp-tabs .ui-tab-scroll { flex-wrap: wrap; overflow-x: visible !important; width: 100% !important; } }"}</style><Tabs label="Mentor bookings" tabs={TABS} value={tab} onChange={setTab} /></div>
-      {tab === "refunds" ? <RefundsTab /> : tab === "hubs" ? <HubsTab canSettle={canManage} /> : <BookingsTab />}
+      {tab === "refunds" ? <RefundsTab /> : tab === "hubs" ? <HubsTab canSettle={canManage} /> : tab === "credits" ? <CreditsTab canManage={canManage} /> : <BookingsTab />}
     </div>
   );
 }

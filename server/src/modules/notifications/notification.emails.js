@@ -197,6 +197,11 @@ const EMAIL_TYPES = {
   mentor_booking_hours_taken: { label: "A new class uses hours you offer families", roles: ["teacher"], default: true, look: { tone: "info", icon: "refresh", eyebrow: "My availability" }, path: (p) => routeOr(p, "/teacher-portal/availability") },
   mentor_booking_today: { label: "A mentor session is today", roles: BOOKING_BOTH_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
   mentor_booking_note: { label: "The mentor's note after a session", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Mentor sessions" }, path: (p) => routeOr(p, "/parent/bookings") },
+  // Family credits (modules/family-credits/credit.service.js), to the parent.
+  credits_added: { label: "Credits you bought are in your wallet", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "success", icon: "check", eyebrow: "Mentor credits" }, path: (p) => routeOr(p, "/parent/credits") },
+  credits_spent_by_child: { label: "Your child books a mentor with credits", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor credits" }, path: (p) => routeOr(p, "/parent/credits") },
+  credits_refunded: { label: "Credits come back from a cancelled session", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "refresh", eyebrow: "Mentor credits" }, path: (p) => routeOr(p, "/parent/credits") },
+  credits_adjusted: { label: "The team adds or takes off credits", roles: BOOKING_PARENT_ROLES, default: true, look: { tone: "info", icon: "document", eyebrow: "Mentor credits" }, path: (p) => routeOr(p, "/parent/credits") },
   mentor_checkin_today: { label: "A parent check-in is today", roles: MENTOR_CHECKIN_BOTH_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "Mentor check-in" }, path: (p) => routeOr(p, "/parent/mentor-checkins") },
 
   qa_visit_announced: { label: "A QA visit to you is coming up", roles: EDUCATOR_ROLES, default: true, look: { tone: "info", icon: "home", eyebrow: "QA visit" }, path: (p) => routeOr(p, "/teacher-portal/qa") },

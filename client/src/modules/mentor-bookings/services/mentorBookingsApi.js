@@ -34,6 +34,15 @@ export const mentorBookingsApi = {
   statement: (hubId) => api.get(`${BASE}/hubs/${hubId}/statement`).then(data),
   settle: (hubId, body) => api.post(`${BASE}/hubs/${hubId}/settle`, body).then(data),
 
+  // Family credits (server modules/family-credits/): 1 credit = KSh 1.
+  myCredits: () => api.get("/api/family-credits/mine").then(data),
+  buyCredits: (body) => api.post("/api/family-credits/buy", body).then(data),
+  setChildCredits: (learnerId, body) => api.put(`/api/family-credits/children/${learnerId}`, body).then(data),
+  childCredits: () => api.get("/api/family-credits/child").then(data),
+  wallets: () => api.get("/api/family-credits/wallets").then(data),
+  wallet: (id) => api.get(`/api/family-credits/wallets/${id}`).then(data),
+  adjustWallet: (id, body) => api.post(`/api/family-credits/wallets/${id}/adjust`, body).then(data),
+
   // A mentor's held sessions waiting to be claimed (claims module).
   earnings: () => api.get("/api/claims/bookings").then(data),
   claimEarnings: (body) => api.post("/api/claims/bookings", body).then(data),

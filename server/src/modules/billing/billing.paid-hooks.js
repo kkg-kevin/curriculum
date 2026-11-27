@@ -45,6 +45,8 @@ function runInvoicePaidHooks(invoice) {
     () => require("../affiliates/affiliate.service").onInvoicePaid(invoice),
     // A mentor booking is paid for: its time is confirmed (modules/mentor-bookings/).
     () => require("../mentor-bookings/mentor-booking.service").onInvoicePaid(invoice),
+    // Credits bought: they land in the parent's wallet (modules/family-credits/).
+    () => require("../family-credits/credit.service").onInvoicePaid(invoice),
   ]);
 }
 

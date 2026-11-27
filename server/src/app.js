@@ -70,6 +70,7 @@ const qaRoutes = require("./modules/qa/qa.routes");
 const mentorCheckinRoutes = require("./modules/mentor-checkins/mentor-checkin.routes");
 const sessionCoverRoutes = require("./modules/session-covers/session-cover.routes");
 const mentorBookingRoutes = require("./modules/mentor-bookings/mentor-booking.routes");
+const familyCreditRoutes = require("./modules/family-credits/credit.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const mentorStandardRoutes = require("./modules/mentor-standards/mentor-standards.routes");
 const { router: mentorReviewRoutes, publicRouter: publicMentorReviewRoutes } = require("./modules/mentor-reviews/mentor-review.routes");
@@ -426,6 +427,9 @@ app.use("/api/covers", protect, attachOwnRecords, sessionCoverRoutes);
 // first, online or at a hub's space; partner hubs' desk fees settled from their statement. See
 // modules/mentor-bookings/ (mentor-booking.service.js for who sees what).
 app.use("/api/mentor-bookings", protect, attachOwnRecords, mentorBookingRoutes);
+// Family credits (27 Nov 2026): a parent buys credits (1 credit = KSh 1) that any of their children
+// can spend booking a mentor themselves. See modules/family-credits/.
+app.use("/api/family-credits", protect, attachOwnRecords, familyCreditRoutes);
 // The admin dashboard (12 Nov 2026): today, to-dos, counts, programmes — modules/dashboard/.
 app.use("/api/dashboard", protect, attachOwnRecords, dashboardRoutes);
 // Mentor standards — the bar every mentor is measured against (Settings → Mentor standards); each

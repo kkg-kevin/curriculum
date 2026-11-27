@@ -125,6 +125,8 @@ const PATH_PREFIX_TO_MODULE = {
   // The booking rates sit on Settings → Educator Pay (first match wins — before the bookings).
   "/api/mentor-bookings/settings": "claims-approval",
   "/api/mentor-bookings": "mentor-bookings",
+  // Family credits: staff see wallets and adjust them under Mentor bookings (family-credits/).
+  "/api/family-credits": "mentor-bookings",
   // The dashboard: open to every staff role (CATALOG_READERS below); its sections follow the role.
   "/api/dashboard": "dashboard",
   // The workspace's mentor standards are a setting.

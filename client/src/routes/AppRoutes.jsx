@@ -162,6 +162,9 @@ const MentorMeetingPage = lazyPage(() => import("../modules/mentor-checkins/page
 const ParentBookingsPage = lazyPage(() => import("../modules/mentor-bookings/pages/ParentBookingsPage"));
 const BookMentorPage = lazyPage(() => import("../modules/mentor-bookings/pages/BookMentorPage"));
 const BookingPage = lazyPage(() => import("../modules/mentor-bookings/pages/BookingPage"));
+// Family credits (27 Nov 2026): the parent's wallet, and a child's own Mentor sessions.
+const ParentCreditsPage = lazyPage(() => import("../modules/mentor-bookings/pages/ParentCreditsPage"));
+const ChildBookingsPage = lazyPage(() => import("../modules/mentor-bookings/pages/ChildBookingsPage"));
 const MentorBookingsPage = lazyPage(() => import("../modules/mentor-bookings/pages/MentorBookingsPage"));
 const AdminBookingsPage = lazyPage(() => import("../modules/mentor-bookings/pages/AdminBookingsPage"));
 const HubBookingsPage = lazyPage(() => import("../modules/mentor-bookings/pages/HubBookingsPage"));
@@ -593,6 +596,10 @@ export default function AppRoutes() {
           <Route path="progress" element={<LearnerProgressPage />} />
           <Route path="position" element={<PositionPage />} />
           <Route path="analytics" element={<LearnerAnalyticsPage />} />
+          {/* A child books a mentor themself with the family's credits (modules/mentor-bookings). */}
+          <Route path="bookings" element={<ChildBookingsPage />} />
+          <Route path="bookings/new" element={<BookMentorPage />} />
+          <Route path="bookings/:id" element={<BookingPage />} />
           {/* Digifunzi Connect (modules/connect) — the learner's, whatever classes they're in. */}
           <Route path="connect" element={<ConnectLayout />}>
             <Route index element={<ConnectDiscoverPage />} />
@@ -657,6 +664,7 @@ export default function AppRoutes() {
           <Route path="bookings" element={<ParentBookingsPage />} />
           <Route path="bookings/new" element={<BookMentorPage />} />
           <Route path="bookings/:id" element={<BookingPage />} />
+          <Route path="credits" element={<ParentCreditsPage />} />
           {/* Check-ins with their children's mentors: confirm or move, read and approve the report (modules/mentor-checkins). */}
           <Route path="mentor-checkins" element={<MentorCheckinsPage />} />
           <Route path="mentor-checkins/meetings/:id" element={<MentorMeetingPage />} />

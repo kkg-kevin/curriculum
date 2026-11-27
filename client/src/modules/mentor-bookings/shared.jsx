@@ -11,6 +11,8 @@ export function bookingsBaseFor(pathname) {
   if (pathname.startsWith("/parent")) return "/parent/bookings";
   if (pathname.startsWith("/teacher-portal")) return "/teacher-portal/bookings";
   if (pathname.startsWith("/school-portal")) return "/school-portal/mentor-bookings";
+  // A child's own login books with the family's credits (27 Nov 2026).
+  if (pathname.startsWith("/learner-portal")) return "/learner-portal/bookings";
   return "/mentor-bookings";
 }
 export const useBookingsBase = () => bookingsBaseFor(useLocation().pathname);

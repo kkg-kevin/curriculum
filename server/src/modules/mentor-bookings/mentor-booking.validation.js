@@ -31,6 +31,8 @@ const bookSchema = z.object({
   sessionId: optionalId,
   topic: z.string().max(1000).optional().default(""),
   helpRequestId: optionalId,
+  // Pay with the family's credits: a child's own booking always does; a parent may choose to.
+  useCredits: z.boolean().optional().default(false),
 }).refine((d) => d.mode !== "hub" || (d.hubId && d.spaceId), { message: "Choose the hub and the space", path: ["spaceId"] });
 
 const listSchema = z.object({
@@ -71,6 +73,11 @@ const settingsSchema = z.object({
   holdMinutes: z.coerce.number().int().min(15).max(2880),
   cancelHours: z.coerce.number().int().min(0).max(336),
   horizonDays: z.coerce.number().int().min(3).max(90).optional(),
+  // Family credits (family-credits/credit.rules.js cleans them).
+  creditsEnabled: z.boolean().optional(),
+  childBooking: z.boolean().optional(),
+  minimumPurchase: z.coerce.number().int().min(1).max(100000).optional(),
+  creditPresets: z.array(z.coerce.number().int().positive()).max(6).optional(),
 });
 
 module.exports = { optionsSchema, freeTimesSchema, bookSchema, listSchema, cancelSchema, rescheduleSchema, markSchema, linkSchema, refundSchema, helpSchema, settleSchema, settingsSchema };

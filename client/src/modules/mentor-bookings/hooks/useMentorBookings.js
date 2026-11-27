@@ -45,4 +45,12 @@ export const useMarkRefunded = () => useBookingMutation(({ id, ...body }) => A.r
 export const useAskForHelp = () => useBookingMutation(A.askForHelp, null);
 export const useCloseHelp = () => useBookingMutation(A.closeHelp, "Request closed");
 export const useSettleHub = () => useBookingMutation(({ hubId, ...body }) => A.settle(hubId, body), "Settlement recorded");
+// Family credits — kept under KEY, so a booking paid with credits refreshes the balance too.
+export const useMyCredits = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "credits", "mine"], queryFn: A.myCredits, enabled });
+export const useChildCredits = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "credits", "child"], queryFn: A.childCredits, enabled });
+export const useCreditWallets = ({ enabled = true } = {}) => useQuery({ queryKey: [...KEY, "credits", "wallets"], queryFn: A.wallets, enabled });
+export const useCreditWallet = (id) => useQuery({ queryKey: [...KEY, "credits", "wallet", id], queryFn: () => A.wallet(id), enabled: !!id });
+export const useBuyCredits = () => useBookingMutation(A.buyCredits, null);
+export const useSetChildCredits = () => useBookingMutation(({ learnerId, ...body }) => A.setChildCredits(learnerId, body), "Saved");
+export const useAdjustWallet = () => useBookingMutation(({ id, ...body }) => A.adjustWallet(id, body), "Credits updated");
 export const useClaimEarnings = () => useBookingMutation(A.claimEarnings, "Claim sent");

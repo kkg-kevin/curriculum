@@ -7,6 +7,8 @@ const { can } = require("../access/access.service");
 const R = require("./mentor-booking.rules");
 const Notify = require("./mentor-booking.notifications");
 const EducatorBusy = require("./educator-busy");
+const CreditRules = require("../family-credits/credit.rules");
+const Credits = () => require("../family-credits/credit.service");
 
 // Mentor bookings (11 Nov 2026). Pathway learners learn on their own; their mentors mark the work.
 // When a learner is stuck on a session, they ask for help (a help request — a child's login never
@@ -43,7 +45,7 @@ const parseJson = (v) => (typeof v === "string" ? (() => { try { return JSON.par
 const lower = (v) => String(v || "").trim().toLowerCase();
 const fullName = (p) => [p?.firstName, p?.lastName].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 const money = R.money;
-const MONEY = ["mentorFee", "deskFee", "deskCollectionPercent", "hubShare", "educatorPay", "refundAmount"];
+const MONEY = ["mentorFee", "deskFee", "deskCollectionPercent", "hubShare", "educatorPay", "refundAmount", "creditsUsed"];
 
 function shapeRow(row) {
   if (!row) return row;
@@ -75,7 +77,8 @@ async function saveSettings(ownerAdminId, raw) {
 //   hub      the hub's own login: bookings at its spaces, and its statement (read only)
 //   parent   a parent's own email login: their children's bookings and help requests; books, pays,
 //            cancels
-//   child    a child's username login: asks for help, sees their own requests
+//   child    a child's username login: asks for help, sees their own requests, and (27 Nov 2026)
+//            books a mentor themself with the family's credits (family-credits/)
 async function contextOf(req) {
   const { role } = req.user;
   if (role === "admin") {
@@ -98,6 +101,10 @@ async function contextOf(req) {
 }
 
 const ownLearner = (ctx, learnerId) => {
+  if (ctx.kind === "child") {
+    if (!ctx.learner || (learnerId && ctx.learner.id !== learnerId)) fail("Not allowed", 403);
+    return ctx.learner;
+  }
   const l = (ctx.learners || []).find((x) => x.id === learnerId);
   if (!l) fail("Choose one of your children", 404);
   return l;
@@ -272,6 +279,7 @@ async function decorate(rows, ctx) {
     const manager = ctx.kind === "manager";
     const mine = ctx.kind === "mentor" && ctx.teacherIds.includes(b.teacherId);
     const family = ctx.kind === "parent";
+    const child = ctx.kind === "child";
     const live = R.ACTIVE.includes(b.status) && state !== "cancelled";
     const out = {
       ...b,
@@ -282,7 +290,8 @@ async function decorate(rows, ctx) {
       total: money(b.mentorFee + b.deskFee),
       can: {
         pay: family && b.status === "held" && state === "held" && !!inv && OPEN_INVOICE.includes(inv.status),
-        cancel: live && ((manager && ctx.canManage) || mine || family),
+        // A child may cancel what they booked themselves (its credits come back).
+        cancel: live && ((manager && ctx.canManage) || mine || family || (child && b.bookedByRole === "child")),
         mark: (manager && ctx.canManage || mine) && R.canMark(b, now),
         editLink: (manager && ctx.canManage || mine) && live && b.mode === "online",
         refund: manager && ctx.canManage && b.refundStatus === "due",
@@ -294,7 +303,8 @@ async function decorate(rows, ctx) {
     // the mentor sees their pay, never the hub split.
     if (!manager) { delete out.hubShare; delete out.deskCollectionPercent; delete out.settlementId; }
     if (ctx.kind === "hub") { delete out.educatorPay; delete out.mentorNote; delete out.topic; }
-    if (family || ctx.kind === "child") { delete out.educatorPay; delete out.claimId; }
+    if (family || child) { delete out.educatorPay; delete out.claimId; }
+    if (child) { delete out.invoice; delete out.refundAmount; delete out.refundStatus; delete out.refundReference; }
     if (manager) out.parent = l ? { name: l.guardianName || null, email: l.guardianEmail || null, phone: l.guardianPhone || null } : null;
     return out;
   });
@@ -306,6 +316,7 @@ function canSee(ctx, b) {
     case "mentor": return ctx.teacherIds.includes(b.teacherId);
     case "hub": return b.mode === "hub" && ctx.hubIds.includes(b.hubId);
     case "parent": return (ctx.learners || []).some((l) => l.id === b.learnerId);
+    case "child": return !!ctx.learner && ctx.learner.id === b.learnerId;
     default: return false;
   }
 }
@@ -335,6 +346,14 @@ async function cancelInvoiceIfUnpaid(invoiceId, actorUserId, reason) {
     });
   }
   return paid;
+}
+
+// What a cancelled booking's paid amount becomes: the credits it was paid with go straight back to
+// the family's wallet; anything paid another way is a refund due for staff to give back.
+async function settleRefund(b, refund) {
+  const { credits, money: due } = CreditRules.splitRefund(refund, b.creditsUsed);
+  if (credits > 0) await Credits().refundBooking(b, credits).catch((err) => console.error(`[mentor-bookings] credits for ${b.id} not put back:`, err.message));
+  return { credits, due };
 }
 
 // Everyone to tell about a booking.
@@ -382,6 +401,24 @@ async function openTimesFor(b, { from = null, to = null } = {}) {
   return slots;
 }
 
+/* ── Credits on the booking page ────────────────────────────────────────────────────────── */
+
+// What the booking page needs about the family's credits in this workspace.
+//   parent: their wallet's balance (they may choose to pay with it)
+//   child:  the balance they can use, whether their parent lets them, what's left this month
+async function creditsFor(ctx, learner, ownerAdminId, settings) {
+  const enabled = settings.enabled && settings.creditsEnabled;
+  if (ctx.kind === "child") {
+    const cw = await Credits().childWallet(await learnerById(learner.id), ownerAdminId);
+    return {
+      enabled: enabled && settings.childBooking, balance: cw.balance, allowed: cw.rule.allowed,
+      monthlyLimit: cw.rule.monthlyLimit, left: cw.left, hasParentLogin: cw.hasParentLogin,
+    };
+  }
+  const wallet = await Credits().findWallet(ownerAdminId, ctx.userId);
+  return { enabled, balance: wallet?.balance || 0, childBooking: settings.childBooking };
+}
+
 /* ── The service ─────────────────────────────────────────────────────────────────────────── */
 
 const MentorBookingService = {
@@ -404,7 +441,7 @@ const MentorBookingService = {
   // and any sessions their plan includes.
   async options(req, { learnerId, teacherId }) {
     const ctx = await contextOf(req);
-    if (ctx.kind !== "parent") fail("For parents", 403);
+    if (ctx.kind !== "parent" && ctx.kind !== "child") fail("For families", 403);
     const learner = ownLearner(ctx, learnerId);
     const teacher = await teacherById(teacherId);
     const ownerAdminId = await bookableWorkspace(learner.id, teacher);
@@ -424,13 +461,14 @@ const MentorBookingService = {
         spaces: h.spaces.map((s) => ({ id: s.id, name: s.name, spaceType: s.spaceType || "desk", pricingModel: s.pricingModel, rate: Number(s.rate) || 0, priceUnit: s.priceUnit || "", capacity: R.spaceCapacity(s) })),
       })),
       allowance: await allowanceFor(ownerAdminId, learner.id),
+      credits: await creditsFor(ctx, learner, ownerAdminId, settings),
     };
   },
 
   // Step two: the mentor's free times for this length (and space).
   async freeTimes(req, { learnerId, teacherId, minutes, hubId = null, spaceId = null, from = null, to = null }) {
     const ctx = await contextOf(req);
-    if (ctx.kind !== "parent") fail("For parents", 403);
+    if (ctx.kind !== "parent" && ctx.kind !== "child") fail("For families", 403);
     const learner = ownLearner(ctx, learnerId);
     const teacher = await teacherById(teacherId);
     const ownerAdminId = await bookableWorkspace(learner.id, teacher);
@@ -457,7 +495,8 @@ const MentorBookingService = {
   // confirmed at once). Returns the booking and the invoice to pay.
   async book(req, input) {
     const ctx = await contextOf(req);
-    if (ctx.kind !== "parent") fail("For parents", 403);
+    if (ctx.kind !== "parent" && ctx.kind !== "child") fail("For families", 403);
+    const byChild = ctx.kind === "child";
     const learner = ownLearner(ctx, input.learnerId);
     const teacher = await teacherById(input.teacherId);
     const ownerAdminId = await bookableWorkspace(learner.id, teacher);
@@ -500,6 +539,28 @@ const MentorBookingService = {
     const included = !!allowance && allowance.left > 0;
     const mentorFee = included ? 0 : price.price;
     const total = money(mentorFee + deskFee);
+
+    // Paying with the family's credits (27 Nov 2026): a child's own booking always does, and must
+    // have enough (and be allowed) before anything is held; a parent who chose credits pays what
+    // the wallet covers and the invoice holds the rest.
+    let wallet = null;
+    let creditsToUse = 0;
+    let parentUserId = ctx.userId;
+    if (byChild) {
+      const full = await learnerById(learner.id);
+      const cw = await Credits().childWallet(full, ownerAdminId);
+      const check = CreditRules.childSpendCheck({ settings, rule: cw.rule, balance: cw.balance, amount: total, spentThisMonth: cw.spentThisMonth });
+      if (total > 0 && !check.ok) fail(check.reason, 409);
+      if (!cw.parentUserId) fail("Your parent needs a Digifunzi login before you can book. Ask them.", 409);
+      wallet = cw.wallet;
+      parentUserId = cw.parentUserId;
+      creditsToUse = total;
+    } else if (input.useCredits && total > 0) {
+      if (!settings.creditsEnabled) fail("Credits aren't on at this learning centre", 409);
+      wallet = await Credits().findWallet(ownerAdminId, ctx.userId);
+      creditsToUse = Math.min(total, wallet?.balance || 0);
+      if (!(creditsToUse > 0)) fail("You have no credits here yet. Buy some, or pay the invoice.", 409);
+    }
     const deskOwner = hub ? (hub.deskFeeOwner === "hub" ? "hub" : "ours") : null;
     const collection = hub ? hub.deskCollectionPercent : 0;
 
@@ -516,7 +577,7 @@ const MentorBookingService = {
     try {
       await db.transaction(async (trx) => {
         await trx(B).insert({
-          id, ownerAdminId, learnerId: learner.id, parentUserId: ctx.userId, teacherId: teacher.id, helpRequestId: help?.id || null,
+          id, ownerAdminId, learnerId: learner.id, parentUserId, teacherId: teacher.id, helpRequestId: help?.id || null, bookedByRole: byChild ? "child" : "parent",
           courseId: course?.id || null, sessionId: session?.id || null, courseName: course?.name || help?.courseName || null,
           sessionTitle: session?.title || help?.sessionTitle || null, topic: input.topic ? String(input.topic).trim().slice(0, 1000) : (help?.message || null),
           mode: input.mode === "hub" ? "hub" : "online", hubId: invoiceHubId, hubName: hub?.name || hubRow?.name || null,
@@ -530,7 +591,7 @@ const MentorBookingService = {
         if (total > 0) {
           const invoice = await BillingModel.createInvoice({
             invoiceNumber: await nextInvoiceNumber(trx),
-            issuerType: "platform", issuerHubId: null, payerUserId: ctx.userId, payerHubId: null,
+            issuerType: "platform", issuerHubId: null, payerUserId: parentUserId, payerHubId: null,
             learnerId: learner.id, hubId: invoiceHubId, invoiceType: "mentor_booking", status: "issued",
             currency: "KES", subtotal: total, discount: 0, total, amountPaid: 0,
             periodStart: slot.date, periodEnd: slot.date, periodLabel: `Mentor session · ${slot.date} ${slot.startTime}`,
@@ -558,10 +619,29 @@ const MentorBookingService = {
       if (err.code === "ER_DUP_ENTRY") fail("That time was just taken — pick another", 409);
       throw err;
     }
-    const booking = shapeRow(await db(B).where({ id }).first());
+    let booking = shapeRow(await db(B).where({ id }).first());
     if (booking.status === "confirmed") await Notify.confirmed(booking, await peopleOf(booking));
-    else require("../billing/billing.service").emailIssuedInvoice(invoiceId);
-    return { booking: (await decorate([booking], ctx))[0], invoiceId };
+    else if (creditsToUse > 0 && wallet) {
+      // Paid from the wallet: paying the invoice in full confirms the booking (onInvoicePaid).
+      let spent = 0;
+      try {
+        await db(B).where({ id }).update({ creditsUsed: creditsToUse });
+        spent = await Credits().spendOnInvoice({
+          wallet, amount: creditsToUse, invoiceId, bookingId: id, learnerId: learner.id, byUserId: ctx.userId, byRole: byChild ? "child" : "parent",
+          note: `Mentor session with ${fullName(teacher)}, ${slot.date} ${slot.startTime}`,
+        });
+      } catch (err) {
+        await db(B).where({ id }).update({ creditsUsed: 0 });
+        if (byChild) { await MentorBookingService.releaseHold(shapeRow(await db(B).where({ id }).first()), "Credits couldn't be used"); throw err; }
+        console.error(`[mentor-bookings] credits not used on ${id}:`, err.message);
+      }
+      if (spent !== creditsToUse) await db(B).where({ id }).update({ creditsUsed: spent });
+      booking = shapeRow(await db(B).where({ id }).first());
+      if (byChild && spent > 0) await Credits().tellParentChildBooked({ wallet, booking, childName: learner.firstName || "Your child", mentorName: fullName(teacher), spent });
+      if (booking.status === "held") require("../billing/billing.service").emailIssuedInvoice(invoiceId);
+    } else require("../billing/billing.service").emailIssuedInvoice(invoiceId);
+    const owing = booking.status === "held" ? invoiceId : null;
+    return { booking: (await decorate([booking], ctx))[0], invoiceId: byChild ? null : owing };
   },
 
   async list(req, query = {}) {
@@ -571,6 +651,7 @@ const MentorBookingService = {
     else if (ctx.kind === "mentor") q = ctx.teacherIds.length ? q.whereIn("teacherId", ctx.teacherIds) : q.whereRaw("1 = 0");
     else if (ctx.kind === "hub") q = ctx.hubIds.length ? q.where({ mode: "hub" }).whereIn("hubId", ctx.hubIds) : q.whereRaw("1 = 0");
     else if (ctx.kind === "parent") { const ids = ctx.learners.map((l) => l.id); q = ids.length ? q.whereIn("learnerId", ids) : q.whereRaw("1 = 0"); }
+    else if (ctx.kind === "child") q = ctx.learner ? q.where({ learnerId: ctx.learner.id }) : q.whereRaw("1 = 0");
     else fail("Not allowed", 403);
     if (query.teacherId && ctx.kind === "manager") q = q.where({ teacherId: query.teacherId });
     if (query.hubId && ["manager", "hub"].includes(ctx.kind)) q = q.where({ hubId: query.hubId });
@@ -579,7 +660,7 @@ const MentorBookingService = {
     const rows = await q.orderBy("date", "desc").orderBy("startTime", "desc").limit(500);
     const shaped = await decorate(rows, ctx);
     // Held times that ran out show as cancelled; the family doesn't need to see those.
-    return ctx.kind === "parent" ? shaped.filter((b) => !(b.status === "held" && b.state === "cancelled")) : shaped;
+    return ["parent", "child"].includes(ctx.kind) ? shaped.filter((b) => !(b.status === "held" && b.state === "cancelled")) : shaped;
   },
 
   async get(req, id) {
@@ -594,7 +675,8 @@ const MentorBookingService = {
   async cancel(req, id, { reason = "" } = {}) {
     const ctx = await contextOf(req);
     const b = await load(ctx, id);
-    const by = ctx.kind === "parent" ? "parent" : ctx.kind === "mentor" ? "mentor" : ctx.kind === "manager" && ctx.canManage ? "staff" : null;
+    // A child cancelling what they booked follows the family's rules (up to the cut-off).
+    const by = ctx.kind === "parent" || (ctx.kind === "child" && b.bookedByRole === "child") ? "parent" : ctx.kind === "mentor" ? "mentor" : ctx.kind === "manager" && ctx.canManage ? "staff" : null;
     if (!by) fail("Not allowed", 403);
     const settings = await settingsFor(b.ownerAdminId);
     const inv = b.invoiceId ? await db("billing_invoices").where({ id: b.invoiceId }).first("amountPaid") : null;
@@ -603,14 +685,15 @@ const MentorBookingService = {
     if (!outcome.allowed) fail(outcome.reason, 409);
     if (by !== "parent" && !String(reason).trim()) fail("Say why, so the family understands");
     const refund = b.status === "held" ? await cancelInvoiceIfUnpaid(b.invoiceId, ctx.userId, "Mentor booking cancelled") : outcome.refund;
+    const { due } = await settleRefund(b, refund);
     await db(B).where({ id }).update({
       status: "cancelled", slotKey: null, cancelledAt: new Date(), cancelledBy: by, cancelReason: String(reason || "").trim().slice(0, 500) || null,
-      hubShare: 0, refundStatus: refund > 0 ? "due" : null, refundAmount: refund > 0 ? refund : null, updatedAt: new Date(),
+      hubShare: 0, refundStatus: due > 0 ? "due" : null, refundAmount: due > 0 ? due : null, updatedAt: new Date(),
     });
     if (b.helpRequestId) await db(H).where({ id: b.helpRequestId, bookingId: id }).update({ status: "open", bookingId: null, updatedAt: new Date() });
     const fresh = shapeRow(await db(B).where({ id }).first());
-    if (b.status === "confirmed") await Notify.cancelled(fresh, { ...(await peopleOf(fresh)), by, refund });
-    if (refund > 0) await Notify.refundDue(fresh, refund);
+    if (b.status === "confirmed") await Notify.cancelled(fresh, { ...(await peopleOf(fresh)), by, refund: due });
+    if (due > 0) await Notify.refundDue(fresh, due);
     return (await decorate([fresh], ctx))[0];
   },
 
@@ -648,13 +731,15 @@ const MentorBookingService = {
   // Still flagged when its time came: it can't happen, so it's cancelled and what was paid is due back.
   async cancelForClash(b) {
     const inv = b.invoiceId ? await db("billing_invoices").where({ id: b.invoiceId }).first("amountPaid") : null;
-    const refund = Number(inv?.amountPaid) || 0;
+    const paid = Number(inv?.amountPaid) || 0;
     const reason = "The mentor had a class at this time and no new time was picked";
+    const { money: refund } = CreditRules.splitRefund(paid, b.creditsUsed);
     const changed = await db(B).where({ id: b.id, status: "confirmed" }).whereNotNull("clashAt").update({
       status: "cancelled", slotKey: null, cancelledAt: new Date(), cancelledBy: "clash", cancelReason: reason,
       hubShare: 0, refundStatus: refund > 0 ? "due" : null, refundAmount: refund > 0 ? refund : null, updatedAt: new Date(),
     });
     if (!changed) return;
+    await settleRefund(b, paid);
     if (b.helpRequestId) await db(H).where({ id: b.helpRequestId, bookingId: b.id }).update({ status: "open", bookingId: null, updatedAt: new Date() });
     const fresh = shapeRow(await db(B).where({ id: b.id }).first());
     await Notify.cancelled(fresh, { ...(await peopleOf(fresh)), by: "system", refund });
@@ -800,7 +885,9 @@ const MentorBookingService = {
   // A hold that wasn't paid in time: the time goes back and its invoice is cancelled (part of it
   // paid: that part is a refund due).
   async releaseHold(b, reason = "Not paid in time") {
-    const paid = await cancelInvoiceIfUnpaid(b.invoiceId, null, reason);
+    const paidTotal = await cancelInvoiceIfUnpaid(b.invoiceId, null, reason);
+    const current = shapeRow(await db(B).where({ id: b.id }).first()) || b;
+    const { due: paid } = await settleRefund(current, paidTotal);
     await db(B).where({ id: b.id, status: "held" }).update({
       status: "cancelled", slotKey: null, cancelledAt: new Date(), cancelledBy: "system", cancelReason: reason, hubShare: 0,
       refundStatus: paid > 0 ? "due" : null, refundAmount: paid > 0 ? paid : null, updatedAt: new Date(),
@@ -950,3 +1037,5 @@ const MentorBookingService = {
 
 module.exports = MentorBookingService;
 module.exports.contextOf = contextOf;
+// For family-credits/: which workspaces a learner learns in, and the hub to bill through.
+module.exports._internal = { learnerWorkspaces, invoiceHubFor };

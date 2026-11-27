@@ -5,7 +5,9 @@ import { useBookingSettings, useSaveBookingSettings } from "../hooks/useMentorBo
 // Settings → Educator Pay → Mentor bookings (modules/mentor-bookings/): whether families can book a
 // mentor, the lengths offered with what the family pays and what the mentor earns for each, and the
 // rules — notice, how long an unpaid time is held, how late a family may cancel for their money
-// back. A hub's space fee is set on the hub (its spaces), not here.
+// back. A hub's space fee is set on the hub (its spaces), not here. Family credits (27 Nov 2026):
+// whether parents can buy credits, whether children can book for themselves with them, the least
+// a parent can buy and the amounts offered.
 
 const LENGTHS = [30, 45, 60, 90, 120];
 const asText = (v) => (v == null ? "" : String(v));
@@ -22,7 +24,11 @@ export default function BookingSettingsSection({ readOnly = false }) {
       const l = data.lengths.find((x) => x.minutes === m);
       return [m, { on: !!l, price: asText(l?.price), educatorPay: asText(l?.educatorPay) }];
     }));
-    setForm({ enabled: data.enabled, rows, noticeHours: asText(data.noticeHours), holdMinutes: asText(data.holdMinutes), cancelHours: asText(data.cancelHours) });
+    setForm({
+      enabled: data.enabled, rows, noticeHours: asText(data.noticeHours), holdMinutes: asText(data.holdMinutes), cancelHours: asText(data.cancelHours),
+      creditsEnabled: data.creditsEnabled !== false, childBooking: data.childBooking !== false,
+      minimumPurchase: asText(data.minimumPurchase ?? 100), creditPresets: (data.creditPresets || [500, 1000, 2000, 5000]).join(", "),
+    });
   }, [data]);
 
   if (isLoading || !form) return null;
@@ -33,6 +39,8 @@ export default function BookingSettingsSection({ readOnly = false }) {
       enabled: form.enabled,
       lengths: LENGTHS.filter((m) => form.rows[m].on).map((m) => ({ minutes: m, price: form.rows[m].price === "" ? null : Number(form.rows[m].price), educatorPay: form.rows[m].educatorPay === "" ? null : Number(form.rows[m].educatorPay) })),
       noticeHours: Number(form.noticeHours), holdMinutes: Number(form.holdMinutes), cancelHours: Number(form.cancelHours),
+      creditsEnabled: form.creditsEnabled, childBooking: form.childBooking, minimumPurchase: Number(form.minimumPurchase) || 100,
+      creditPresets: form.creditPresets.split(/[\s,]+/).map(Number).filter((n) => n > 0).slice(0, 6),
     });
   };
   const cell = { padding: "8px 6px", borderBottom: "1px solid #F3F4F6", fontSize: 13 };
@@ -88,6 +96,24 @@ export default function BookingSettingsSection({ readOnly = false }) {
           <input id="mb-cancel" className="stg-input" type="number" min="0" max="336" disabled={readOnly} value={form.cancelHours} onChange={(e) => setForm((f) => ({ ...f, cancelHours: e.target.value }))} />
         </Field>
       </FieldGrid>
+      <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid #F3F4F6", display: "grid", gap: 10 }}>
+        <strong style={{ fontSize: 14, color: "#111827" }}>Family credits</strong>
+        <p style={{ margin: 0, fontSize: 12.5, color: "#6B7280", lineHeight: 1.5 }}>Parents buy credits (1 credit = KSh 1) on an invoice; paid, they&apos;re in the family&apos;s wallet. Any of their children can then book a mentor from their own login, without waiting for the parent, and the parent can pay with them too. A cancelled session&apos;s credits go straight back. Wallets are in Mentor bookings → Credits.</p>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#374151" }}>
+          <input type="checkbox" checked={form.creditsEnabled} disabled={readOnly} onChange={(e) => setForm((f) => ({ ...f, creditsEnabled: e.target.checked }))} /> Parents can buy and use credits
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#374151" }}>
+          <input type="checkbox" checked={form.childBooking} disabled={readOnly || !form.creditsEnabled} onChange={(e) => setForm((f) => ({ ...f, childBooking: e.target.checked }))} /> Children can book a mentor themselves with their family&apos;s credits
+        </label>
+        <FieldGrid min={200}>
+          <Field label="Least a parent can buy (credits)" htmlFor="mb-cr-min">
+            <input id="mb-cr-min" className="stg-input" type="number" min="1" max="100000" disabled={readOnly || !form.creditsEnabled} value={form.minimumPurchase} onChange={(e) => setForm((f) => ({ ...f, minimumPurchase: e.target.value }))} />
+          </Field>
+          <Field label="Amounts offered" htmlFor="mb-cr-presets" note="Up to 6, separated by commas.">
+            <input id="mb-cr-presets" className="stg-input" disabled={readOnly || !form.creditsEnabled} value={form.creditPresets} onChange={(e) => setForm((f) => ({ ...f, creditPresets: e.target.value }))} placeholder="500, 1000, 2000, 5000" />
+          </Field>
+        </FieldGrid>
+      </div>
     </SettingsSection>
   );
 }

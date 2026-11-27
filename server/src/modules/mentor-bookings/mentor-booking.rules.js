@@ -46,6 +46,8 @@ function cleanSettings(raw = {}) {
     holdMinutes: whole(src.holdMinutes, 15, 2880, DEFAULT_SETTINGS.holdMinutes),
     cancelHours: whole(src.cancelHours, 0, 336, DEFAULT_SETTINGS.cancelHours),
     horizonDays: whole(src.horizonDays, 3, 90, DEFAULT_SETTINGS.horizonDays),
+    // Family credits (family-credits/): on/off, children booking for themselves, what can be bought.
+    ...require("../family-credits/credit.rules").cleanCreditSettings(src),
   };
   let error = null;
   if (settings.enabled) {
