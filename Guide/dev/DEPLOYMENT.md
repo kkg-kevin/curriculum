@@ -148,6 +148,94 @@ change. A portal- or website-only release needs no restart at all.
 
 ---
 
+## This release (27 Nov 2026) — Learner follow-up cases, Connect announcements and everyone on Connect, prospect statuses, expenses linked to records, family credits for mentor sessions
+
+**Backend and portal** from `curriculum` (branch `modules`) at `28ad34a2`. The website zip is unchanged (the 26 Nov one).
+**Six new migrations, no new npm package, no new environment variable, no new cron job** (the new daily work runs inside the
+hourly `checkins:process` you already have). If the 26 Nov release below isn't up yet, these files include it (its two migrations run
+too, and the 24 Nov one's if that isn't up either) — upload only this one, then the 26 Nov website zip.
+
+### Before you upload: tell the team
+
+- **Digifunzi Connect is on for every learner** with their own login at a hub — no parent's switch any more and no age limit on
+  messages. Parents see everything their child posts, comments and writes in chats (Parent portal → the child → Connect). Parents'
+  consent for this now has to come from your enrolment terms (Kenya Data Protection Act) — check they say so.
+- **Connect → Announcements** (the **New announcement** button on the Connect page): the team posts to educators, parents, learners,
+  hubs, supervisors, staff or affiliates, narrowed by hub and class, with reactions, comments, "I've read this", scheduling, pinning,
+  an Important pop-up at sign-in and optional email. Everyone gets an **Announcements** page in their portal.
+- **Learner follow-ups are now cases.** Once a day each workspace's learners are checked (low scores, attendance, missed work, not
+  signing in, absent several times in a row, stuck on a skill, parents not opening reports); each reason opens a case owned by the
+  class's educator, due in 3 days, re-checked every two weeks. **The first check opens many cases at once** and each educator gets
+  one notice for theirs: tell educators before, and where to find them (Teacher portal → **Follow-ups**; admins: Reports & Analytics →
+  Summary → **Follow-ups**; the learner page's Follow-ups tab).
+- **Affiliates → Prospects:** a family the team registers belongs to the team (no affiliate earns from it); every prospect has a
+  status (Contacted, Couldn't reach, Interested, Visit booked…) with its history; details can be corrected. **Move** and **Release**
+  are gone.
+- **Expenses:** each line can say what it was for (a Home Learning family, class, hub, mentor session, bootcamp, event, QA visit…).
+  Optional rule in Expenses → Settings (off). Records' pages show an **Expenses** card; Expenses → **What it was for** adds it up.
+- **Family credits:** parents buy mentor credits (1 credit = KSh 1) under **Mentor credits** in their portal, and their children book a
+  mentor themselves from **Mentor sessions** in their own login. It only matters once mentor bookings are switched on (Settings →
+  Educator Pay → Mentor bookings, where **Family credits** can be switched off too).
+- Timetable: an ended bootcamp run's lessons no longer clash with the next run's.
+
+### Upload in this order
+
+0. **Take a database backup** of the Dev database into `Guide/dev/backup/`.
+1. **Backend** — `backend-deploy.zip` (850 files, 207 migrations — six new), in the standing order (above): **upload → Stop App →
+   Extract → Start App** (no new package, so no NPM install). Keep `uploads/` with its hidden `.expenses` and `.connect` folders. The
+   migrations run on start:
+   - `20261127100000` prospect statuses — `affiliate_prospects.affiliateId` may be empty; `stage`, `stageAt`, `stageBy`, `stageHistory`
+   - `20261127120000` Connect announcements — four `connect_announcement…` tables
+   - `20261127130000` everyone on Connect — every learner with their own login at a hub becomes a member (no table change)
+   - `20261127140000` follow-up cases — `learner_followup_cases`, `learner_followup_runs`, `learner_followups.caseId`
+   - `20261127160000` expense links — `expense_items.linkType` / `linkId` / `linkLabel`, `expense_settings.requireLink`
+   - `20261127170000` family credits — `family_credit_wallets`, `family_credit_entries`, `mentor_bookings.creditsUsed` /
+     `bookedByRole`, invoice type `credits`
+
+   Check: `SELECT name FROM knex_migrations WHERE name LIKE '20261127%';` (seven rows, with 26 Nov's `20261127090000`),
+   `SHOW TABLES LIKE 'connect_announcement%';` (4 rows), `SHOW TABLES LIKE 'learner_followup_%';` (2 rows),
+   `SHOW TABLES LIKE 'family_credit%';` (2 rows) and `SHOW COLUMNS FROM expense_items LIKE 'link%';` (3 rows). If any is short: Run
+   JS script → `db:migrate`.
+2. **Portal** — `index.html` + `assets.zip` (entry `index-L47o5BfG.js`), after the backend. In `curriculum.digifunzi.com`: delete the old `assets/` folder
+   and `index.html`, upload both and Extract `assets.zip`. Leave the `.htaccess` as it is (the 17 Nov morning's).
+3. **Website** — nothing new. If the 26 Nov website zip isn't up yet, upload it after this backend (see below).
+
+### Then, in the portal
+
+1. Optional: **Settings → Educator Pay → Mentor bookings → Family credits** — the least a parent can buy and the amounts offered
+   (all on by default).
+2. Optional: **Expenses → Settings → Every expense must say what it was for**.
+3. Optional: **Connect → Announcements → New announcement** to tell parents and educators what's new.
+
+### What changed
+
+**Follow-up cases** — a case per learner per reason, an owner (the class's educator, else the admins), a ready message to the parent
+for each reason, Contacted / Plan agreed / Tell the educators / Book a parent check-in / Close / Escalate, notes and history; a two-week
+re-check closes it as "Back on track" when the reason has gone. Overdue cases show in Overview's Needs your attention.
+
+**Connect** — announcements to groups across the system (one comment thread per group: parents never see children's comments); every
+learner on Connect; parents read their child's posts, comments and chats in full.
+
+**Affiliates** — team-owned prospects, prospect statuses, editing a prospect's details; Move / Release removed.
+
+**Expenses** — a **Linked to** picker on each line (educators only see their own records), a chip on each line of a claim, an
+**Expenses** card on the record's page and the **What it was for** report with a spreadsheet.
+
+**Family credits** — the parent's **Mentor credits** page (buy, balance, history, per child: can book on/off and a monthly limit); a
+child's **Mentor sessions** (book with credits only, never sees money); "Pay with credits" on the parent's booking page; credits
+return when a booking is cancelled or released; staff see and adjust wallets in Mentor Bookings → **Credits**. Paying with credits
+isn't counted again in Reports' money in.
+
+### Verify
+
+1. Reports & Analytics → Summary → **Follow-ups** opens (cases appear within the hour, after `checkins:process`).
+2. Connect → **Announcements** opens; **New announcement** shows the group counts.
+3. Affiliates → Prospects shows a **Status** column.
+4. A new expense claim: each line has **Linked to**; Expenses → **What it was for** opens.
+5. Mentor Bookings → **Credits** opens; a parent login shows **Mentor credits** in its sidebar.
+
+---
+
 ## This release (26 Nov 2026) — Returning learners for another bootcamp run, affiliate monthly targets, town pages on the website
 
 **Backend and portal** from `curriculum` (branch `modules`) at `605636fa`. **Website** from `curriculum-web` (branch `new`) at `a341f88`.
