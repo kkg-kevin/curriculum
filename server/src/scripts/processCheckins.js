@@ -31,6 +31,8 @@ const MentorCheckinService = require("../modules/mentor-checkins/mentor-checkin.
   console.log("Session covers:", JSON.stringify(await require("../modules/session-covers/session-cover.service").keepCurrent({ force: true })));
   // General events: reminders to the people registered, and "say thank you" to the admins after.
   console.log("General events:", JSON.stringify(await require("../modules/general-events/general-event.service").processAll()));
+  // Learner follow-ups: open cases for learners who need help, re-check the older ones (once a day per workspace).
+  console.log("Learner follow-ups:", JSON.stringify(await require("../modules/analytics/analytics.cases").processAll()));
   // Connect announcements scheduled for later whose time has come.
   console.log("Announcements sent:", await require("../modules/connect/connect.announcements").publishDue({ force: true }));
 })()

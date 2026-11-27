@@ -135,7 +135,8 @@ async function outsideRunHint(classId) {
   const span = `${fmtDay(run.startDate)} to ${fmtDay(run.endDate)}`;
   if (next) return ` This class belongs to the run of ${span}. For the run starting ${fmtDay(next.startDate)}, use its own class: ${next.label}.`;
   if (laterRunWithoutClass) return ` This class belongs to the run of ${span}. The run starting ${fmtDay(laterRunWithoutClass.startDate)} has no class for this cohort at this hub yet: open that run's page and add the hub (or "Add missing classes" on it).`;
-  return ` This class belongs to the run of ${span}. To run the bootcamp again, use "Schedule another run" on the bootcamp's page: the new run gets its own classes with its own dates.`;
+  if (run.state === "ended") return ` This class belongs to the run of ${span}, which has ended. To run the bootcamp again, use "Schedule another run" on the bootcamp's page: the new run gets its own classes with its own dates.`;
+  return ` This class's run is ${span}.`;
 }
 
 module.exports = { formerMembersOf, formerMembers, finishingLearnerIds, runsOfClasses, withRunInfo, runState, laterRunClassOf, outsideRunHint };

@@ -91,8 +91,11 @@ async function record(scope, user, { learnerId, action, note = "", message = "",
     sentTo = users.length;
   }
 
+  // The learner's open follow-up cases (analytics.cases.js) take this action into their history.
+  const caseId = await require("./analytics.cases").attachAtRiskAction(learnerId, action).catch(() => null);
   const row = {
     id: generateId(),
+    caseId,
     ownerAdminId,
     hubId: link?.hubId || null,
     learnerId,
