@@ -11,6 +11,7 @@ import { TemplateItem } from "../../qa/components/ReviewForm";
 import { ScoreHeader, TemplateAnswers, liveScore } from "../../qa/components/Report";
 import { CheckinStyles, FORMAT_LABEL, Pill, REPORT_PARTS, T, btn, card, childNames, font, formatDate, formatDateTime, hint, input, label, reportHtml, safeMeetingLink, stateFor, useMentorBase } from "../shared";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 
 import { askConfirm } from "../../../components/ui/AskDialog";
 const toForm = (m) => ({ summary: reportHtml(m?.report?.summary), actions: reportHtml(m?.report?.actions), answers: m?.answers || {} });
@@ -154,6 +155,7 @@ export default function MeetingPage() {
       </section>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="mentor_checkin_meetings" id={id} />
+      <LinkedExpenses type="mentor_checkin" id={id} />
 
       {/* The report — not for the hub; a supervisor reads it. */}
       {(viewer === "parent" || viewer === "educator" || viewer === "manager" || viewer === "supervisor") && m.state !== "cancelled" && (

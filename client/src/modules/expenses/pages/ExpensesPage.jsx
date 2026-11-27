@@ -1,12 +1,13 @@
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FiCheckCircle, FiCornerUpLeft, FiDollarSign, FiInbox, FiList, FiSettings, FiUser, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiCornerUpLeft, FiDollarSign, FiInbox, FiLink2, FiList, FiSettings, FiUser, FiXCircle } from "react-icons/fi";
 import { BRAND, FONT, HERO_GRADIENT } from "../../../theme/brand";
 import { Tabs } from "../../../components/ui/TabBar";
 import { expensesApi, formatMoney } from "../services/expensesApi";
 import ClaimList from "../components/ClaimList";
 import ClaimView from "../components/ClaimView";
 import SettingsPanel from "../components/SettingsPanel";
+import ByLinkReport from "../components/ByLinkReport";
 import MyExpensesPage from "./MyExpensesPage";
 import { btn } from "../components/ui";
 
@@ -43,6 +44,8 @@ export default function ExpensesPage({ mode = "admin" }) {
       { key: "returned", label: "Sent back", icon: FiCornerUpLeft },
       { key: "rejected", label: "Declined", icon: FiXCircle },
       { key: "all", label: "All", icon: FiList },
+      // Spending by what each expense was linked to (27 Nov 2026).
+      { key: "for", label: "What it was for", icon: FiLink2 },
       ...(options?.canApprove ? [{ key: "settings", label: "Settings", icon: FiSettings }] : []),
     ];
   const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : TABS[0].key;
@@ -99,7 +102,8 @@ export default function ExpensesPage({ mode = "admin" }) {
 
       {tab === "mine" && <MyExpensesPage embedded />}
       {tab === "settings" && <SettingsPanel />}
-      {tab !== "mine" && tab !== "settings" && (
+      {tab === "for" && <ByLinkReport />}
+      {tab !== "mine" && tab !== "settings" && tab !== "for" && (
         isLoading ? <p style={{ color: BRAND.muted, fontSize: 13 }}>Loading…</p> : (
           <>
             {tab === "approve" && waitingOthers.length > 0 && (

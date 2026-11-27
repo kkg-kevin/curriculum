@@ -123,6 +123,7 @@ export const ADMIN_SECTIONS = [
           { name: "To pay", path: "/expenses?tab=pay" },
           { name: "Paid", path: "/expenses?tab=paid" },
           { name: "All", path: "/expenses?tab=all" },
+          { name: "What it was for", path: "/expenses?tab=for" },
           { name: "Settings", path: "/expenses?tab=settings" },
         ],
       },

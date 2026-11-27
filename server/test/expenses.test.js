@@ -79,3 +79,38 @@ test("a claim needs a title and at least one complete line", () => {
   assert.deepEqual(ok.items[0].fileIds, []);
   assert.equal(ok.hubId, null);
 });
+
+// What each expense was for (27 Nov 2026, expense.links.js).
+test("a claim can require every line to say what it was for; 'general' counts", () => {
+  const on = R.settingsOf({ categories: [], requireLink: 1 });
+  assert.equal(on.requireLink, true);
+  assert.deepEqual(R.unlinkedLines(on, [{ linkType: "household" }, { linkType: null }, { linkType: "general" }, {}]), [2, 4]);
+  assert.deepEqual(R.unlinkedLines(R.settingsOf(null), [{}, {}]), []);
+});
+
+test("spending is summed per linked record — claimed, still standing, paid", () => {
+  const paid = { id: "c1", status: "paid", claimantUserId: "u1" };
+  const pending = { id: "c2", status: "pending_admin", claimantUserId: "u2" };
+  const rows = R.summariseByLink([
+    { item: { linkType: "household", linkId: "h1", linkLabel: "Otieno family", amount: 500, status: "open" }, claim: paid },
+    { item: { linkType: "household", linkId: "h1", linkLabel: "Otieno family", amount: 200, status: "rejected" }, claim: paid },
+    { item: { linkType: "household", linkId: "h1", linkLabel: "Otieno family", amount: 300, status: "open" }, claim: pending },
+    { item: { linkType: null, amount: 100, status: "open" }, claim: pending },
+  ]);
+  const family = rows.find((r) => r.linkId === "h1");
+  assert.equal(family.claimed, 1000);
+  assert.equal(family.approved, 500);
+  assert.equal(family.paid, 500);
+  assert.equal(family.claims, 2);
+  assert.equal(family.people, 2);
+  assert.equal(rows.find((r) => r.linkType === null).claimed, 100);
+});
+
+test("a line's link is kept by the claim schema", () => {
+  const parsed = claimSchema.parse({ title: "Visit", items: [{ spentOn: "2026-11-20", category: "transport", description: "Fare", amount: 200, linkType: "household", linkId: "h1" }, { spentOn: "2026-11-20", category: "transport", description: "Fare", amount: 50, linkType: "general" }] });
+  assert.equal(parsed.items[0].linkType, "household");
+  assert.equal(parsed.items[0].linkId, "h1");
+  assert.equal(parsed.items[1].linkType, "general");
+  assert.throws(() => claimSchema.parse({ title: "Visit", items: [{ spentOn: "2026-11-20", category: "x", description: "d", amount: 1, linkType: "spaceship" }] }));
+  assert.equal(settingsSchema.parse({ categories: [{ key: "a", label: "A" }], requireLink: true }).requireLink, true);
+});

@@ -7,6 +7,7 @@ import { errorText, useBooking, useCancelBooking, useMarkBooking, useMarkRefunde
 import { StatePill, dayLabel, ksh, lengthLabel, useBookingsBase, whereLabel } from "../shared";
 import { BRAND, FONT, HERO_GRADIENT, card, cardHeading, pill } from "../../../theme/brand";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 
 // One booking — the same page in every portal (/parent/bookings/:id, /teacher-portal/bookings/:id,
 // /mentor-bookings/:id, /school-portal/mentor-bookings/:id). The server decides what each sees and
@@ -217,6 +218,7 @@ export default function BookingPage() {
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="mentor_bookings" id={id} />
+      <LinkedExpenses type="mentor_booking" id={id} />
 
       {b.state === "needs_new_time" && (
         <div role="status" style={{ ...box, display: "flex", gap: 10, alignItems: "flex-start", background: BRAND.goldTint, border: `1px solid ${BRAND.goldBorder}`, color: BRAND.goldText, fontSize: 13.5, lineHeight: 1.55 }}>

@@ -1,26 +1,30 @@
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { FiCamera, FiPaperclip, FiPlus, FiSend, FiTrash2 } from "react-icons/fi";
+import { FiCamera, FiCopy, FiPaperclip, FiPlus, FiSend, FiTrash2 } from "react-icons/fi";
 import { BRAND, FONT, card } from "../../../theme/brand";
 import { expensesApi, errorOf, formatMoney, kenyaToday } from "../services/expensesApi";
 import { Modal, ProofFile, btn, hint, input, label, primary } from "./ui";
+import LinkPicker from "./LinkPicker";
 
-// Making or changing an expense claim: what it was for, the hub it was for (optional — when one
-// is named, reviewers see whether anything was recorded there on those days), and its lines,
-// each with optional proof. Save keeps a draft; Send sends it for review.
+// Making or changing an expense claim: what it was for, the hub it was for (optional), and its
+// lines, each with optional proof and what it was spent on — linked to a record (a Home Learning
+// family, a class, a bootcamp…, 27 Nov 2026), so reviewers and the record's own page see it. A
+// new line starts linked like the one before it. Save keeps a draft; Send sends it for review.
 
 let keySeq = 0;
 const newKey = () => `l${Date.now()}-${keySeq++}`;
 
-const blankLine = (category) => ({ key: newKey(), id: null, spentOn: kenyaToday(), category, description: "", vendor: "", amount: "", mpesaCode: "", noReceiptReason: "", files: [], uploading: 0 });
+const noLink = { linkType: null, linkId: null, linkLabel: null };
+const blankLine = (category) => ({ key: newKey(), id: null, spentOn: kenyaToday(), category, description: "", vendor: "", amount: "", mpesaCode: "", noReceiptReason: "", files: [], uploading: 0, ...noLink });
 
 const lineOf = (item) => ({
   key: newKey(), id: item.id, spentOn: item.spentOn, category: item.category, description: item.description || "", vendor: item.vendor || "",
   amount: String(item.amount ?? ""), mpesaCode: item.mpesaCode || "", noReceiptReason: item.noReceiptReason || "", files: item.files || [], uploading: 0,
   note: item.status === "rejected" ? item.rejectionReason : null,
+  linkType: item.linkType || null, linkId: item.linkId || null, linkLabel: item.linkLabel || null,
 });
 
-function LineCard({ line, index, count, settings, categories, onChange, onRemove }) {
+function LineCard({ line, index, count, settings, categories, linkTypes, onChange, onRemove, onLinkAll }) {
   const pickRef = useRef(null);
   const cameraRef = useRef(null);
   const set = (k, v) => onChange({ ...line, [k]: v });
@@ -67,6 +71,12 @@ function LineCard({ line, index, count, settings, categories, onChange, onRemove
       <label style={label}>What it was for
         <input style={input} value={line.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Fuel to Brookhouse and back" maxLength={500} required />
       </label>
+      <LinkPicker types={linkTypes} required={settings.requireLink} idPrefix={`lk-${line.key}`}
+        value={{ linkType: line.linkType, linkId: line.linkId, linkLabel: line.linkLabel }}
+        onChange={(link) => onChange((l) => ({ ...l, ...link }))} />
+      {count > 1 && line.linkType && (line.linkType === "general" || line.linkId) && (
+        <div><button type="button" style={{ ...btn, padding: "5px 10px", fontSize: 12 }} onClick={onLinkAll}><FiCopy size={12} /> Link every expense on this claim the same way</button></div>
+      )}
       <label style={{ ...label, maxWidth: 280 }}>M-Pesa transaction code <span style={{ fontWeight: 500, color: BRAND.muted }}>(if you paid by M-Pesa)</span>
         <input style={{ ...input, textTransform: "uppercase", letterSpacing: "0.04em" }} value={line.mpesaCode} onChange={(e) => set("mpesaCode", e.target.value)} placeholder="e.g. SGH7K2LM3P" maxLength={30} />
       </label>
@@ -94,7 +104,7 @@ function LineCard({ line, index, count, settings, categories, onChange, onRemove
 }
 
 export default function ClaimForm({ claim, options, onClose, onSaved }) {
-  const { settings, hubs, reviewer } = options;
+  const { settings, hubs, reviewer, linkTypes = [] } = options;
   const categories = settings.categories.filter((c) => c.active || claim?.items?.some((i) => i.category === c.key));
   const firstCategory = categories[0]?.key || "other";
   const [title, setTitle] = useState(claim?.title || "");
@@ -118,6 +128,7 @@ export default function ClaimForm({ claim, options, onClose, onSaved }) {
     items: lines.map((l) => ({
       id: l.id || null, clientKey: l.key, spentOn: l.spentOn, category: l.category, description: l.description.trim(), vendor: l.vendor.trim() || null,
       amount: l.amount, mpesaCode: l.mpesaCode.trim() || null, noReceiptReason: l.files.length ? null : l.noReceiptReason.trim() || null, fileIds: l.files.map((f) => f.id),
+      linkType: l.linkType || null, linkId: l.linkType === "general" ? null : l.linkId || null,
     })),
   });
 
@@ -177,10 +188,11 @@ export default function ClaimForm({ claim, options, onClose, onSaved }) {
         </label>
 
         {lines.map((line, index) => (
-          <LineCard key={line.key} line={line} index={index} count={lines.length} settings={settings} categories={categories}
-            onChange={updateLine(line.key)} onRemove={() => setLines((all) => all.filter((l) => l.key !== line.key))} />
+          <LineCard key={line.key} line={line} index={index} count={lines.length} settings={settings} categories={categories} linkTypes={linkTypes}
+            onChange={updateLine(line.key)} onRemove={() => setLines((all) => all.filter((l) => l.key !== line.key))}
+            onLinkAll={() => setLines((all) => all.map((l) => ({ ...l, linkType: line.linkType, linkId: line.linkId, linkLabel: line.linkLabel })))} />
         ))}
-        <div><button type="button" style={btn} onClick={() => setLines((all) => [...all, { ...blankLine(firstCategory), spentOn: all[all.length - 1]?.spentOn || kenyaToday() }])}><FiPlus size={14} /> Add another expense</button></div>
+        <div><button type="button" style={btn} onClick={() => setLines((all) => [...all, { ...blankLine(firstCategory), spentOn: all[all.length - 1]?.spentOn || kenyaToday(), linkType: all[all.length - 1]?.linkType || null, linkId: all[all.length - 1]?.linkId || null, linkLabel: all[all.length - 1]?.linkLabel || null }])}><FiPlus size={14} /> Add another expense</button></div>
 
         {error && <p role="alert" style={{ margin: 0, padding: "10px 12px", borderRadius: 10, background: BRAND.dangerTint, border: `1px solid ${BRAND.dangerBorder}`, color: BRAND.danger, fontSize: 13, fontWeight: 600 }}>{error}</p>}
       </div>

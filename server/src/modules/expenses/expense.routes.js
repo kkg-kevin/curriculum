@@ -2,7 +2,7 @@ const express = require("express");
 const asyncHandler = require("express-async-handler");
 const ExpenseService = require("./expense.service");
 const Files = require("./expense.files");
-const { claimSchema, decisionSchema, paySchema, settingsSchema } = require("./expense.validation");
+const { claimSchema, decisionSchema, paySchema, settingsSchema, linkQuerySchema, linkedQuerySchema, byLinkQuerySchema } = require("./expense.validation");
 
 // /api/expenses — mounted in app.js behind protect + expenseContext (expense.context.js), which
 // says who is asking and what they may review. Everyone who works for the organisation claims their
@@ -15,6 +15,11 @@ const ok = (res, data, status = 200) => res.status(status).json({ success: true,
 // The claimant's own
 router.get("/mine", asyncHandler(async (req, res) => ok(res, await ExpenseService.listMine(req.expense))));
 router.get("/options", asyncHandler(async (req, res) => ok(res, await ExpenseService.options(req.expense))));
+
+// What an expense was for: the picker, a record's expenses, spending per record.
+router.get("/link-options", asyncHandler(async (req, res) => ok(res, await ExpenseService.linkOptions(req.expense, linkQuerySchema.parse(req.query)))));
+router.get("/linked", asyncHandler(async (req, res) => ok(res, await ExpenseService.linked(req.expense, linkedQuerySchema.parse(req.query)))));
+router.get("/by-link", asyncHandler(async (req, res) => ok(res, await ExpenseService.byLink(req.expense, byLinkQuerySchema.parse(req.query)))));
 
 // Reviewers
 router.get("/review", asyncHandler(async (req, res) => ok(res, await ExpenseService.listForReview(req.expense))));

@@ -8,6 +8,7 @@ import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import CoursePricingDisplay from "../../../components/CoursePricingDisplay";
 import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 import CompetitionRegistrations from "../components/CompetitionRegistrations";
 import { competitionApi } from "../services/competitionApi";
 
@@ -261,6 +262,7 @@ export default function CompetitionViewPage() {
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="competitions" id={id} style={{ marginBottom: 16 }} />
+      <LinkedExpenses type="competition" id={id} style={{ marginBottom: 16 }} />
 
       <div role="tablist" style={{ display: "flex", gap: 4, borderBottom: "1.5px solid #E5E7EB", marginBottom: 16, overflowX: "auto" }}>
         {[["overview", "Overview"], ["registrations", "Registrations"]].map(([key, label]) => (

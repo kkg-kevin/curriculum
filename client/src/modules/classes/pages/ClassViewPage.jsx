@@ -17,6 +17,7 @@ import ClassReportsPanel from "../components/ClassReportsPanel";
 import { formatClassName } from "../utils/classDisplay";
 import ClassRunBadge, { EndedRunBanner, MovedOnSection } from "../components/ClassRun";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 import ClassRankingPanel from "../../rankings/components/ClassRankingPanel";
 
 function DetailRow({ label, value, empty = "—" }) {
@@ -228,6 +229,7 @@ export default function ClassViewPage() {
       </div>
       {/* Who created it, who changed it last (admin side only — modules/activity). */}
       <RecordStamp type="classes" id={id} style={{ marginBottom: 20 }} />
+      <LinkedExpenses type="class" id={id} style={{ marginBottom: 20 }} />
       {/* An earlier run of a bootcamp: what this class is for now (26 Nov 2026). */}
       <EndedRunBanner cls={cls} style={{ marginBottom: 16 }} />
 

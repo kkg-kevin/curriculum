@@ -12,6 +12,7 @@ import RichContent, { isEmptyHtml } from "../../courses/components/RichContent";
 import HubFinanceTab from "../../hub-visits/components/HubFinanceTab";
 import { usePermissions } from "../../../hooks/usePermissions";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 import RemovePersonDialog from "../../removals/components/RemovePersonDialog";
 
 const TEAL = "#38aae1";
@@ -257,6 +258,7 @@ export default function LearningHubViewPage() {
         </div>
       )}
       <RecordStamp type="learning_hubs" id={id} style={{ marginBottom: 20 }} />
+      <LinkedExpenses type="hub" id={id} style={{ marginBottom: 20 }} />
 
       {/* Photo gallery */}
       {hub.photos?.length > 0 && (

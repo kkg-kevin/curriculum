@@ -3,6 +3,7 @@ import { FiArrowLeft } from "react-icons/fi";
 import { useAuth } from "../../../context/AuthContext";
 import { can } from "../../../hooks/usePermissions";
 import HouseholdDetail from "../components/HouseholdDetail";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 import { panelStyle } from "../components/ui";
 import { useHouseholdActions, useHouseholds, usePackages, usePickLists } from "../hooks/useHomeLearning";
 
@@ -56,5 +57,7 @@ export default function HouseholdPage() {
           onTab={setTab}
           onDeclined={() => navigate(backTo)}
         />}
+    {/* What the team claimed for this family (transport to their home, materials). */}
+    {household && <LinkedExpenses type="household" id={household.id} title="Expenses for this family" />}
   </div>;
 }

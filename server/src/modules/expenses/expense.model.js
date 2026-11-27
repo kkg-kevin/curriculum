@@ -88,6 +88,10 @@ const ExpenseModel = {
           amount: item.amount,
           mpesaCode: item.mpesaCode || null,
           noReceiptReason: item.noReceiptReason || null,
+          // What it was for (expense.links.js) — checked and named before it gets here.
+          linkType: item.linkType || null,
+          linkId: item.linkId || null,
+          linkLabel: item.linkLabel || null,
         };
         if (item.id && known.has(item.id)) {
           await trx(ITEMS).where({ id: item.id }).update({ ...row, updatedAt: now });
@@ -117,6 +121,24 @@ const ExpenseModel = {
 
   async reopenItems(claimId) {
     await db(ITEMS).where({ claimId }).update({ status: "open", rejectionReason: null, updatedAt: new Date() });
+  },
+
+  // Lines linked to one record (its page's Expenses card), with their claims — never drafts.
+  async linkedItems(ownerAdminId, linkType, linkId) {
+    const items = (await db(ITEMS).where({ ownerAdminId, linkType, linkId }).orderBy("spentOn", "desc")).map(shapeItem);
+    if (!items.length) return { items, claims: [] };
+    const claims = (await db(CLAIMS).whereIn("id", [...new Set(items.map((i) => i.claimId))]).whereNot({ status: "draft" })).map(shapeClaim);
+    return { items, claims };
+  },
+
+  // Every sent line of the workspace in a date range, with its claim (the "What it was for" report).
+  async itemsBetween(ownerAdminId, from, to) {
+    const claims = (await db(CLAIMS).where({ ownerAdminId }).whereNotIn("status", ["draft"])).map(shapeClaim);
+    if (!claims.length) return { items: [], claims };
+    let q = db(ITEMS).where({ ownerAdminId }).whereIn("claimId", claims.map((c) => c.id));
+    if (from) q = q.where("spentOn", ">=", from);
+    if (to) q = q.where("spentOn", "<=", to);
+    return { items: (await q).map(shapeItem), claims };
   },
 
   // ---- Files ---------------------------------------------------------------------------------

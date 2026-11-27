@@ -7,6 +7,7 @@ import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import { HistoryButton } from "../../activity/components/RecordStamp";
 import { ACTION_WORD, METHOD, errorOf, expensesApi, formatDay, formatMoney, formatWhen, kenyaToday } from "../services/expensesApi";
 import { Modal, ProofFile, StatusPill, btn, danger, hint, input, label, primary } from "./ui";
+import { LinkChip } from "./LinkPicker";
 
 // One expense claim, for whoever may see it: the claimant (edit, send, take back, delete), its
 // supervisor or an approver (approve — turning single lines down if need be —, send back,
@@ -53,7 +54,7 @@ function PayForm({ claim, onDone, onCancel }) {
   );
 }
 
-function Line({ item, claim, reviewing, decision, setDecision }) {
+function Line({ item, claim, reviewing, decision, setDecision, linkable }) {
   const turnedDown = reviewing ? decision?.rejected : item.status === "rejected";
   return (
     <section style={{ ...card, padding: 14, display: "grid", gap: 10, gridTemplateColumns: "100%", opacity: turnedDown ? 0.75 : 1 }}>
@@ -65,6 +66,8 @@ function Line({ item, claim, reviewing, decision, setDecision }) {
             {item.vendor && <><span>·</span><span>{item.vendor}</span></>}
             {item.mpesaCode && <><span>·</span><span style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, color: BRAND.inkSoft }}>M-Pesa {item.mpesaCode}</span></>}
           </div>
+          {item.linkType ? <div style={{ marginTop: 6 }}><LinkChip item={item} linkable={linkable} /></div>
+            : <div style={{ marginTop: 6, fontSize: 12, color: BRAND.faint, fontStyle: "italic" }}>Not linked to anything</div>}
         </div>
         <div style={{ fontSize: 15, fontWeight: 900, color: BRAND.ink, whiteSpace: "nowrap" }}>{formatMoney(item.amount, claim.currency)}</div>
       </div>
@@ -93,6 +96,9 @@ function Line({ item, claim, reviewing, decision, setDecision }) {
 export default function ClaimView({ id, onClose, onEdit }) {
   const qc = useQueryClient();
   const { data: claim, isLoading, error } = useQuery({ queryKey: ["expenses", "claim", id], queryFn: () => expensesApi.get(id) });
+  // Linked records open from here only for people who see the team's expenses (the admin app).
+  const { data: options } = useQuery({ queryKey: ["expenses", "options"], queryFn: expensesApi.options, staleTime: 5 * 60 * 1000 });
+  const linkable = !!options?.canViewAll;
   const [lineDecisions, setLineDecisions] = useState({});
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -206,7 +212,7 @@ export default function ClaimView({ id, onClose, onEdit }) {
         {reviewing && <p style={hint}>Tick any expense you won't pay back and say why — the rest is approved. To have the claimant change something, send it back instead.</p>}
 
         {claim.items.map((item) => (
-          <Line key={item.id} item={item} claim={claim} reviewing={reviewing}
+          <Line key={item.id} item={item} claim={claim} reviewing={reviewing} linkable={linkable}
             decision={lineDecisions[item.id]} setDecision={(d) => setLineDecisions((all) => ({ ...all, [item.id]: d }))} />
         ))}
 

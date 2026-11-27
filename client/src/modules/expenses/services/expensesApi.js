@@ -19,6 +19,11 @@ export const expensesApi = {
   decide: (id, body) => api.post(`${BASE}/${id}/decision`, body).then(data),
   pay: (id, body) => api.post(`${BASE}/${id}/pay`, body).then(data),
   settings: () => api.get(`${BASE}/settings`).then(data),
+  // What an expense was for (server expense.links.js): the picker, a record's expenses, spending
+  // per record.
+  linkOptions: (type, q) => api.get(`${BASE}/link-options`, { params: { type, q } }).then(data),
+  linked: (type, id) => api.get(`${BASE}/linked`, { params: { type, id } }).then(data),
+  byLink: (params) => api.get(`${BASE}/by-link`, { params }).then(data),
   saveSettings: (body) => api.put(`${BASE}/settings`, body).then(data),
 
   // Proof: a photo (shrunk in the browser when large) or a PDF, up to 10 MB.
@@ -49,6 +54,24 @@ export const STATUS = {
   returned: { label: "Sent back to change", tone: "waiting" },
   rejected: { label: "Declined", tone: "danger" },
 };
+
+// Where a linked record opens in the admin app (shown as links only to people who see the team's
+// expenses; an educator's own claim just names it).
+export const LINK_PATHS = {
+  household: (id) => `/home-learning/${id}`,
+  club: (id) => `/tech-clubs?membership=${id}`,
+  lead: (id) => `/enquiries?lead=${id}`,
+  class: (id) => `/classes/${id}/view`,
+  hub: (id) => `/learning-hubs/${id}/view`,
+  mentor_booking: (id) => `/mentor-bookings/${id}`,
+  bootcamp: (id) => `/events/bootcamps/${id}/view`,
+  competition: (id) => `/events/competitions/${id}/view`,
+  general_event: (id) => `/events/general/${id}`,
+  qa_visit: (id) => `/qa/visits/${id}`,
+  hub_checkin: (id) => `/checkins/sessions/${id}`,
+  mentor_checkin: (id) => `/mentor-checkins/meetings/${id}`,
+};
+export const GENERAL_LINK = "general";
 
 export const METHOD = { mpesa: "M-Pesa", bank: "Bank transfer", cash: "Cash", other: "Other" };
 

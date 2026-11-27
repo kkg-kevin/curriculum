@@ -28,7 +28,7 @@ const DEFAULT_CATEGORIES = [
   { key: "other", label: "Other", active: true },
 ];
 
-const DEFAULT_SETTINGS = { categories: DEFAULT_CATEGORIES, currency: "KES" };
+const DEFAULT_SETTINGS = { categories: DEFAULT_CATEGORIES, currency: "KES", requireLink: false };
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
@@ -39,7 +39,39 @@ function settingsOf(row) {
   return {
     categories: stored.map((c) => ({ key: String(c.key), label: String(c.label || c.key), active: c.active !== false })),
     currency: row.currency || DEFAULT_SETTINGS.currency,
+    // Sending a claim needs every line to say what it was for (a record, or "general work").
+    requireLink: !!row.requireLink,
   };
+}
+
+// The lines that don't yet say what they were for (numbered as on the form), when the workspace
+// asks for it. "general" counts as an answer.
+function unlinkedLines(settings, items) {
+  if (!settings.requireLink) return [];
+  return items.map((i, n) => (i.linkType ? null : n + 1)).filter(Boolean);
+}
+
+// Spending by what it was for: one row per linked record (and one per kind with nothing linked),
+// counting what's claimed, still standing after review, and paid. `lines` are { item, claim }.
+function summariseByLink(lines) {
+  const groups = new Map();
+  for (const { item, claim } of lines) {
+    const key = item.linkType ? `${item.linkType}:${item.linkId || ""}` : "none:";
+    const g = groups.get(key) || { linkType: item.linkType || null, linkId: item.linkId || null, linkLabel: item.linkLabel || null, claimed: 0, approved: 0, paid: 0, lines: 0, claimIds: new Set(), people: new Set() };
+    const amount = Number(item.amount) || 0;
+    g.claimed += amount;
+    g.lines += 1;
+    if (item.status !== "rejected" && ["approved", "paid"].includes(claim.status)) g.approved += amount;
+    if (item.status !== "rejected" && claim.status === "paid") g.paid += amount;
+    g.claimIds.add(claim.id);
+    g.people.add(claim.claimantUserId);
+    if (!g.linkLabel && item.linkLabel) g.linkLabel = item.linkLabel;
+    groups.set(key, g);
+  }
+  return [...groups.values()].map((g) => ({
+    linkType: g.linkType, linkId: g.linkId, linkLabel: g.linkLabel,
+    claimed: round2(g.claimed), approved: round2(g.approved), paid: round2(g.paid), lines: g.lines, claims: g.claimIds.size, people: g.people.size,
+  })).sort((a, b) => b.claimed - a.claimed);
 }
 
 const categoryOf = (settings, key) => settings.categories.find((c) => c.key === key) || null;
@@ -93,6 +125,6 @@ const canPay = (claim, viewer, opts) => claim.status === "approved" && viewer.ro
 module.exports = {
   STATUSES, EDITABLE, PENDING, CLAIMANT_ROLES, PAYMENT_METHODS, REFERENCE_REQUIRED,
   DEFAULT_CATEGORIES, DEFAULT_SETTINGS,
-  round2, settingsOf, categoryOf, categoryLabel, normaliseMpesaCode, kenyaDay,
+  round2, settingsOf, unlinkedLines, summariseByLink, categoryOf, categoryLabel, normaliseMpesaCode, kenyaDay,
   routeFor, totalsOf, canDecide, canPay,
 };

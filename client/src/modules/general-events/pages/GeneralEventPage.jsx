@@ -12,6 +12,7 @@ import { usePermissions } from "../../../hooks/usePermissions";
 import { askConfirm, askText } from "../../../components/ui/AskDialog";
 import ConfirmDialog from "../../curriculum/components/ConfirmDialog";
 import RecordStamp from "../../activity/components/RecordStamp";
+import LinkedExpenses from "../../expenses/components/LinkedExpenses";
 import TicketScanner from "../components/TicketScanner";
 import { errorOf, generalEventsApi } from "../services/generalEventsApi";
 import { useEventMutation, useEventRegistrations, useGeneralEvent } from "../hooks/useGeneralEvents";
@@ -108,6 +109,7 @@ function Overview({ event, onPick }) {
       </div>
       <p style={{ ...hintStyle, margin: 0 }}>Tap an answer to see who gave it — or open <strong>About them</strong> for everyone&apos;s answers.</p>
       <RecordStamp type="general_events" id={event.id} />
+      <LinkedExpenses type="general_event" id={event.id} />
     </div>
   );
 }

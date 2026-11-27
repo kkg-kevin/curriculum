@@ -3,6 +3,7 @@ const ExpenseModel = require("./expense.model");
 const R = require("./expense.rules");
 const Notify = require("./expense.notifications");
 const Files = require("./expense.files");
+const Links = require("./expense.links");
 const { rolesOf } = require("../auth/account-roles");
 
 // Expenses — people who work for the organisation claiming back what they spent from their own
@@ -82,6 +83,7 @@ async function enrich(claims, settings) {
       items: own.map((i) => ({
         ...i,
         categoryLabel: R.categoryLabel(settings, i.category),
+        linkTypeLabel: i.linkType === Links.GENERAL ? "General work" : Links.typeOf(i.linkType)?.label || null,
         files: ownFiles.filter((f) => f.itemId === i.id).map(fileView),
       })),
       removedFiles: files.filter((f) => f.claimId === claim.id && f.removedAt).map(fileView),
@@ -108,7 +110,9 @@ async function abilities(claim, ctx) {
 
 // The claim's lines as sent, checked against the workspace's categories and this person's files,
 // then saved with their files attached.
-async function saveContent(ctx, claim, items, settings) {
+async function saveContent(ctx, claim, rawItems, settings) {
+  // What each line was for: checked against what this person may link, and named.
+  const items = await Links.resolveLines(ctx, rawItems);
   for (const item of items) {
     if (!R.categoryOf(settings, item.category)) fail(`"${item.category}" isn't one of the expense categories`);
     item.mpesaCode = R.normaliseMpesaCode(item.mpesaCode);
@@ -163,7 +167,7 @@ const ExpenseService = {
     const keys = new Set(data.categories.map((c) => c.key));
     if (keys.size !== data.categories.length) fail("Two categories have the same key");
     const categories = [...data.categories, ...current.categories.filter((c) => !keys.has(c.key)).map((c) => ({ ...c, active: false }))];
-    const row = await ExpenseModel.saveSettings(ctx.ownerAdminId, { categories });
+    const row = await ExpenseModel.saveSettings(ctx.ownerAdminId, { categories, requireLink: !!data.requireLink });
     return R.settingsOf(row);
   },
 
@@ -181,7 +185,55 @@ const ExpenseService = {
     }
     const supervisor = ctx.teacher ? await activeSupervisor(ctx.teacher) : null;
     const reviewer = supervisor ? `your supervisor, ${nameOf(supervisor)}, then an admin pays it` : ctx.role === "admin" ? "another admin" : "an admin";
-    return { settings, hubs, reviewer, canApprove: ctx.canApprove, canViewAll: ctx.canViewAll, role: ctx.role };
+    return { settings, hubs, reviewer, canApprove: ctx.canApprove, canViewAll: ctx.canViewAll, role: ctx.role, linkTypes: Links.typesFor(ctx) };
+  },
+
+  // ---- What an expense was for (expense.links.js) ------------------------------------------------
+  // The picker: this person's records of one kind matching what they typed.
+  async linkOptions(ctx, { type, q }) {
+    return Links.search(ctx, type, q);
+  },
+
+  // A record's page: every sent line linked to it, with who claimed it and where the claim stands.
+  // For people who see the workspace's expenses (admins, staff with Expenses → View).
+  async linked(ctx, { type, id }) {
+    if (!ctx.canViewAll) fail("Your role doesn't include seeing the team's expenses", 403);
+    const settings = await settingsFor(ctx.ownerAdminId);
+    const { items, claims } = await ExpenseModel.linkedItems(ctx.ownerAdminId, type, id);
+    const byId = new Map(claims.map((c) => [c.id, c]));
+    const lines = items.filter((i) => byId.has(i.claimId)).map((i) => {
+      const c = byId.get(i.claimId);
+      return {
+        id: i.id, claimId: c.id, number: c.number, title: c.title, claimantName: c.claimantName, status: c.status,
+        spentOn: String(i.spentOn).slice(0, 10), category: i.category, categoryLabel: R.categoryLabel(settings, i.category),
+        description: i.description, amount: i.amount, rejected: i.status === "rejected", currency: c.currency,
+      };
+    });
+    const [summary] = R.summariseByLink(lines.map((l) => ({ item: { ...items.find((i) => i.id === l.id) }, claim: byId.get(l.claimId) })));
+    return { lines, totals: summary ? { claimed: summary.claimed, approved: summary.approved, paid: summary.paid, claims: summary.claims, people: summary.people } : { claimed: 0, approved: 0, paid: 0, claims: 0, people: 0 }, currency: settings.currency };
+  },
+
+  // Finance → Expenses → "What it was for": spending per linked record and per kind in a period.
+  async byLink(ctx, { from, to }) {
+    if (!ctx.canViewAll) fail("Your role doesn't include seeing the team's expenses", 403);
+    const settings = await settingsFor(ctx.ownerAdminId);
+    const { items, claims } = await ExpenseModel.itemsBetween(ctx.ownerAdminId, from, to);
+    const byId = new Map(claims.map((c) => [c.id, c]));
+    const lines = items.filter((i) => byId.has(i.claimId)).map((item) => ({ item, claim: byId.get(item.claimId) }));
+    const records = R.summariseByLink(lines).map((r) => ({
+      ...r, typeLabel: r.linkType === Links.GENERAL ? "General work" : r.linkType ? Links.typeOf(r.linkType)?.label || r.linkType : "Not said",
+    }));
+    const kinds = new Map();
+    for (const r of records) {
+      const key = r.linkType || "none";
+      const k = kinds.get(key) || { linkType: r.linkType, typeLabel: r.typeLabel, claimed: 0, approved: 0, paid: 0, records: 0 };
+      k.claimed = R.round2(k.claimed + r.claimed); k.approved = R.round2(k.approved + r.approved); k.paid = R.round2(k.paid + r.paid);
+      if (r.linkId) k.records += 1;
+      kinds.set(key, k);
+    }
+    const total = R.round2(records.reduce((n, r) => n + r.claimed, 0));
+    const linked = R.round2(records.filter((r) => r.linkType).reduce((n, r) => n + r.claimed, 0));
+    return { records, kinds: [...kinds.values()].sort((a, b) => b.claimed - a.claimed), total, linked, currency: settings.currency, from: from || null, to: to || null };
   },
 
   async listMine(ctx) {
@@ -275,6 +327,8 @@ const ExpenseService = {
     // proof requirement, no M-Pesa duplicate check, no date check, no declaration.
     const items = await ExpenseModel.itemsOf(id);
     if (!items.length) fail("Add at least one expense");
+    const unlinked = R.unlinkedLines(await settingsFor(ctx.ownerAdminId), items);
+    if (unlinked.length) fail(`Say what ${unlinked.length === 1 ? `expense ${unlinked[0]} was` : `expenses ${unlinked.join(", ")} were`} for — a record, or "General work"`);
     const supervisor = ctx.teacher ? await activeSupervisor(ctx.teacher) : null;
     const status = R.routeFor({ claimantRole: claim.claimantRole, supervisorId: supervisor?.id });
     const name = await actorName(ctx);
